@@ -102,9 +102,27 @@
     "empty": "No orders yet"
   },
   "search": {
-    "title": "Search",
-    "placeholder": "Search doctors & clinics",
-    "sprint_note": "Sprint 2 — provider directory"
+    "title": "Search doctors",
+    "placeholder": "Search for a doctor or clinic...",
+    "sprint_note": "Sprint 2 — provider directory",
+    "sort_top_rated": "Top rated",
+    "sort_nearest": "Nearest",
+    "sort_price": "Price: low to high",
+    "results_count": "Found {} available doctors",
+    "experience_years": "{} years experience",
+    "consultation_fee": "Consultation fee: {}",
+    "empty_title": "No doctors found",
+    "empty_subtitle": "Try another specialty or search term"
+  },
+  "doctor_profile": {
+    "title": "Doctor details",
+    "about": "About the doctor",
+    "qualifications": "Qualifications",
+    "fellowships": "Fellowships",
+    "available_slots": "Available appointments",
+    "fee_label": "Consultation fee",
+    "reviews": "reviews",
+    "booking_soon": "Booking comes in Sprint 3"
   },
   "notifications": {
     "title": "Notifications",

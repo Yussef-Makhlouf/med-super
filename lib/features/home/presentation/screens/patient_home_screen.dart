@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
@@ -46,7 +47,7 @@ class PatientHomeScreen extends ConsumerWidget {
                     _SectionHeader(
                       title: 'home.specialties'.tr(),
                       actionLabel: 'common.view_all'.tr(),
-                      onAction: () {},
+                      onAction: () => context.push('/patient/search'),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -61,7 +62,7 @@ class PatientHomeScreen extends ConsumerWidget {
                 child: _SectionHeader(
                   title: 'home.nearby_doctors'.tr(),
                   actionLabel: 'home.view_map'.tr(),
-                  onAction: () {},
+                  onAction: () => context.push('/patient/search'),
                 ),
               ),
             ),
@@ -105,7 +106,7 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () => context.push('/patient/search'),
           icon: const Icon(Icons.search, color: PatientHomeScreen._ink),
         ),
         const Spacer(),
@@ -145,7 +146,7 @@ class _HomeSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       readOnly: true,
-      onTap: () {},
+      onTap: () => context.push('/patient/search'),
       decoration: InputDecoration(
         hintText: 'home.search_hint'.tr(),
         hintStyle: const TextStyle(color: PatientHomeScreen._muted),
@@ -462,7 +463,12 @@ class _SpecialtiesRow extends StatelessWidget {
           final item = _items[index];
           return SizedBox(
             width: 78,
-            child: Column(
+            child: InkWell(
+              onTap: () => context.push(
+                '/patient/search?specialty=${item.key.split('.').last}',
+              ),
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
               children: [
                 Container(
                   width: 64,
@@ -499,6 +505,7 @@ class _SpecialtiesRow extends StatelessWidget {
                 ),
               ],
             ),
+            ),
           );
         },
       ),
@@ -522,7 +529,10 @@ class _DoctorCard extends StatelessWidget {
       elevation: 0,
       borderRadius: BorderRadius.circular(18),
       shadowColor: Colors.black12,
-      child: Container(
+      child: InkWell(
+        onTap: () => context.push('/patient/doctors/${doctor.id}'),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
@@ -567,7 +577,8 @@ class _DoctorCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () {},
+                  onPressed: () =>
+                      context.push('/patient/doctors/${doctor.id}'),
                   style: FilledButton.styleFrom(
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
@@ -673,12 +684,14 @@ class _DoctorCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 }
 
 class _Doctor {
   const _Doctor({
+    required this.id,
     required this.name,
     required this.specialty,
     required this.distanceKm,
@@ -690,6 +703,7 @@ class _Doctor {
     required this.avatarColor,
   });
 
+  final String id;
   final String name;
   final String specialty;
   final double distanceKm;
@@ -703,6 +717,7 @@ class _Doctor {
 
 const _mockDoctors = [
   _Doctor(
+    id: 'doc-sara',
     name: 'د. سارة المنصور',
     specialty: 'استشاري طب الأطفال',
     distanceKm: 2.5,
@@ -714,6 +729,7 @@ const _mockDoctors = [
     avatarColor: Color(0xFF7C3AED),
   ),
   _Doctor(
+    id: 'doc-mahmoud',
     name: 'د. محمود حامد',
     specialty: 'استشاري جراحة القلب',
     distanceKm: 4.2,

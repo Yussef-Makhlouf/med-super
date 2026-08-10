@@ -11,6 +11,7 @@ abstract final class ApiPaths {
   static const doctors = '/v1/doctors';
   static const clinics = '/v1/clinics';
   static const search = '/v1/search';
+  static const searchDoctors = '/v1/search/doctors';
 
   // Appointments
   static const appointments = '/v1/appointments';

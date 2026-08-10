@@ -33,7 +33,7 @@ final class SessionControllerProvider
   SessionController create() => SessionController();
 }
 
-String _$sessionControllerHash() => r'8513c4832d27e01ee5d8636c196ce8c2173a4478';
+String _$sessionControllerHash() => r'1c5f42ea895e9aaa9ca926634436289aeaec79d2';
 
 abstract class _$SessionController extends $AsyncNotifier<Session?> {
   FutureOr<Session?> build();

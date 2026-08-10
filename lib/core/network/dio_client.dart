@@ -35,6 +35,7 @@ Dio buildDioClient({required SecureStorageService storage}) {
   if (config.isMock) {
     final mock = MockInterceptor();
     registerFoundationMocks(mock);
+    registerSearchMocks(mock);
     dio.interceptors.add(mock);
   } else {
     dio.interceptors.addAll([

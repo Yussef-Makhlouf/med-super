@@ -102,9 +102,27 @@
     "empty": "لا توجد طلبات بعد"
   },
   "search": {
-    "title": "بحث",
-    "placeholder": "ابحث عن أطباء وعيادات",
-    "sprint_note": "Sprint 2 — دليل مزودي الخدمة"
+    "title": "أطباء",
+    "placeholder": "ابحث عن طبيب أو عيادة...",
+    "sprint_note": "Sprint 2 — دليل مزودي الخدمة",
+    "sort_top_rated": "الأعلى تقييماً",
+    "sort_nearest": "الأقرب",
+    "sort_price": "السعر: من الأقل للأعلى",
+    "results_count": "وجدنا {} طبيب متاح",
+    "experience_years": "خبرة {} عاماً",
+    "consultation_fee": "سعر الكشفية: {}",
+    "empty_title": "لا يوجد أطباء",
+    "empty_subtitle": "جرّب تخصصاً أو كلمة بحث أخرى"
+  },
+  "doctor_profile": {
+    "title": "تفاصيل الطبيب",
+    "about": "نبذة عن الطبيب",
+    "qualifications": "المؤهلات العلمية",
+    "fellowships": "الزمالات",
+    "available_slots": "المواعيد المتاحة",
+    "fee_label": "سعر الكشف",
+    "reviews": "تقييم",
+    "booking_soon": "الحجز يأتي في Sprint 3"
   },
   "notifications": {
     "title": "التنبيهات",

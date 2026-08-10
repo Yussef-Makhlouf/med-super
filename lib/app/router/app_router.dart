@@ -4,6 +4,7 @@ import 'package:med_super/app/flavor.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
+import 'package:med_super/app/router/routes/search_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
@@ -66,6 +67,7 @@ GoRouter appRouter(Ref ref) {
     },
     routes: [
       ...authRoutes,
+      ...searchRoutes,
       if (flavor.isPatient) ..._patientRoutes(),
       if (flavor.isProvider) ..._providerRoutes(),
     ],
