@@ -1,2 +1,8 @@
-// Entry point — flavor: provider (Doctor + Clinic front-desk + Pharmacy counter + Lab phlebotomist).
-// Sets Flavor.provider, then delegates to bootstrap() before running App().
+import 'package:med_super/app/app.dart';
+import 'package:med_super/app/flavor.dart';
+import 'package:med_super/bootstrap.dart';
+
+void main() {
+  setFlavor(Flavor.provider);
+  bootstrap(() => const App());
+}

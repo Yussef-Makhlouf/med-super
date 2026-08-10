@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "ميدسوبر",
+    "tagline": "صحتك، في مكان واحد",
+    "platform_name": "HealthCare Super Platform"
+  },
+  "common": {
+    "retry": "إعادة المحاولة",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ ما",
+    "no_internet": "لا يوجد اتصال بالإنترنت. تحقق من شبكتك وحاول مرة أخرى.",
+    "session_expired": "انتهت الجلسة",
+    "sign_in_again": "يرجى تسجيل الدخول مرة أخرى.",
+    "coming_soon": "قريباً",
+    "or": "أو",
+    "view_all": "عرض الكل"
+  },
+  "auth": {
+    "welcome_back": "مرحباً بك مجدداً!",
+    "sign_in_subtitle": "الرجاء تسجيل الدخول للمتابعة",
+    "role_patient": "مريض",
+    "role_doctor": "طبيب",
+    "phone_label": "رقم الجوال",
+    "phone_hint": "5X XXX XXXX",
+    "country_code": "+966",
+    "send_otp": "إرسال رمز التحقق",
+    "verify_title": "التحقق من الرمز",
+    "verify_subtitle": "تم إرسال رمز التحقق إلى رقمك",
+    "verify": "تحقق",
+    "didnt_receive": "لم تستلم الرمز؟",
+    "resend_otp": "إعادة إرسال",
+    "change_phone": "تغيير رقم الهاتف",
+    "phone_required": "رقم الجوال مطلوب",
+    "phone_invalid": "أدخل رقم جوال صحيح",
+    "otp_required": "رمز التحقق مطلوب",
+    "otp_invalid": "أدخل الرمز المكون من 6 أرقام",
+    "otp_wrong": "رمز غير صالح أو منتهٍ. حاول مرة أخرى.",
+    "role_flavor_mismatch": "هذا الدور لا يتوافق مع هذا التطبيق. استخدم تطبيق المريض أو مزود الخدمة.",
+    "mock_otp_hint": "وضع تجريبي: استخدم الرمز 123456 بعد الإرسال",
+    "mock_otp_code": "رمز التطوير: {}"
+  },
+  "onboarding": {
+    "title": "أكمل ملفك الشخصي",
+    "subtitle": "اختياري — يمكنك التخطي وإكماله لاحقاً من الحساب.",
+    "name_label": "الاسم المعروض",
+    "name_hint": "اسمك",
+    "continue": "متابعة",
+    "skip": "تخطي الآن"
+  },
+
+  "nav": {
+    "home": "الرئيسية",
+    "appointments": "مواعيدي",
+    "orders": "طلباتي",
+    "notifications": "التنبيهات",
+    "profile": "حسابي"
+  },
+  "home": {
+    "welcome": "أهلاً بك،",
+    "search_hint": "ابحث عن أطباء، تخصصات، صيدليات...",
+    "special_offer": "عرض خاص",
+    "promo_title": "خصم 30% على جميع تحاليل الشاملة",
+    "promo_subtitle": "يسري العرض حتى نهاية شهر أكتوبر",
+    "promo_en_title": "ADVANCED DIAGNOSTICS POWERED BY TRUST.",
+    "promo_en_body": "Access your personalized health insights and lab history in one place.",
+    "book_now": "احجز الآن",
+    "upload_rx": "رفع الروشتة",
+    "upload_rx_sub": "اطلب أدويتك بسهولة",
+    "book_labs": "حجز تحاليل",
+    "book_labs_sub": "أقرب المعامل المعتمدة",
+    "specialties": "التخصصات الطبية",
+    "nearby_doctors": "أطباء بالقرب منك",
+    "view_map": "مشاهدة الخريطة",
+    "book": "احجز",
+    "doctors_count": "{} طبيب",
+    "available_today": "متاح اليوم - {}",
+    "available_tomorrow": "متاح غداً - {}",
+    "patient": {
+      "title": "ميدسوبر",
+      "upcoming": "المواعيد القادمة",
+      "no_upcoming": "لا توجد مواعيد قادمة",
+      "find_doctor": "ابحث عن طبيب"
+    },
+    "provider": {
+      "title": "ميدسوبر برو",
+      "today": "جدول اليوم"
+    }
+  },
+  "specialties": {
+    "cardio": "قلب وأوعية",
+    "pediatrics": "أطفال",
+    "dermatology": "جلدية",
+    "dental": "أسنان",
+    "ophthalmology": "عيون"
+  },
+  "appointments": {
+    "title": "مواعيدي",
+    "empty": "لا توجد مواعيد بعد"
+  },
+  "orders": {
+    "title": "طلباتي",
+    "empty": "لا توجد طلبات بعد"
+  },
+  "search": {
+    "title": "بحث",
+    "placeholder": "ابحث عن أطباء وعيادات",
+    "sprint_note": "Sprint 2 — دليل مزودي الخدمة"
+  },
+  "notifications": {
+    "title": "التنبيهات",
+    "empty_title": "لا توجد تنبيهات",
+    "empty_subtitle": "Sprint 5 — الإشعارات التعاملية"
+  },
+  "profile": {
+    "title": "حسابي",
+    "sprint_note": "Sprint 1 — الهوية والتهيئة",
+    "guest_name": "مستخدم ميدسوبر",
+    "complete_profile": "أكمل الملف الشخصي",
+    "logout": "تسجيل الخروج"
+  },
+
+  "errors": {
+    "network": "لا يوجد اتصال بالإنترنت. تحقق من شبكتك وحاول مرة أخرى.",
+    "server": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "session_expired": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+    "slot_taken": "تم حجز هذا الموعد للتو من قِبل شخص آخر. يرجى اختيار موعد آخر.",
+    "unexpected": "حدث خطأ غير متوقع."
+  }
+}

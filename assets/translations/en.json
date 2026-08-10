@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "MedSuper",
+    "tagline": "Your health, all in one place",
+    "platform_name": "HealthCare Super Platform"
+  },
+  "common": {
+    "retry": "Retry",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "no_internet": "No internet connection. Check your network and try again.",
+    "session_expired": "Session expired",
+    "sign_in_again": "Please sign in again.",
+    "coming_soon": "Coming soon",
+    "or": "or",
+    "view_all": "View all"
+  },
+  "auth": {
+    "welcome_back": "Welcome back!",
+    "sign_in_subtitle": "Please sign in to continue",
+    "role_patient": "Patient",
+    "role_doctor": "Doctor",
+    "phone_label": "Mobile number",
+    "phone_hint": "5X XXX XXXX",
+    "country_code": "+966",
+    "send_otp": "Send verification code",
+    "verify_title": "Verify code",
+    "verify_subtitle": "A verification code was sent to your number",
+    "verify": "Verify",
+    "didnt_receive": "Didn't receive the code?",
+    "resend_otp": "Resend",
+    "change_phone": "Change phone number",
+    "phone_required": "Mobile number is required",
+    "phone_invalid": "Enter a valid mobile number",
+    "otp_required": "OTP is required",
+    "otp_invalid": "Enter the 6-digit code",
+    "otp_wrong": "Invalid or expired code. Try again.",
+    "role_flavor_mismatch": "This role doesn't match this app. Use the patient or provider app.",
+    "mock_otp_hint": "Mock mode: use code 123456 after send",
+    "mock_otp_code": "Dev code: {}"
+  },
+  "onboarding": {
+    "title": "Complete your profile",
+    "subtitle": "Optional — you can skip and finish later from Profile.",
+    "name_label": "Display name",
+    "name_hint": "Your name",
+    "continue": "Continue",
+    "skip": "Skip for now"
+  },
+
+  "nav": {
+    "home": "Home",
+    "appointments": "Appointments",
+    "orders": "Orders",
+    "notifications": "Alerts",
+    "profile": "Profile"
+  },
+  "home": {
+    "welcome": "Welcome,",
+    "search_hint": "Search doctors, specialties, pharmacies...",
+    "special_offer": "Special offer",
+    "promo_title": "30% off all comprehensive labs",
+    "promo_subtitle": "Offer valid until end of October",
+    "promo_en_title": "ADVANCED DIAGNOSTICS POWERED BY TRUST.",
+    "promo_en_body": "Access your personalized health insights and lab history in one place.",
+    "book_now": "Book now",
+    "upload_rx": "Upload prescription",
+    "upload_rx_sub": "Order your medicine easily",
+    "book_labs": "Book labs",
+    "book_labs_sub": "Nearest accredited labs",
+    "specialties": "Medical specialties",
+    "nearby_doctors": "Doctors near you",
+    "view_map": "View map",
+    "book": "Book",
+    "doctors_count": "{} doctors",
+    "available_today": "Available today - {}",
+    "available_tomorrow": "Available tomorrow - {}",
+    "patient": {
+      "title": "MedSuper",
+      "upcoming": "Upcoming appointments",
+      "no_upcoming": "No upcoming appointments",
+      "find_doctor": "Find a doctor"
+    },
+    "provider": {
+      "title": "MedSuper Pro",
+      "today": "Today's schedule"
+    }
+  },
+  "specialties": {
+    "cardio": "Cardiology",
+    "pediatrics": "Pediatrics",
+    "dermatology": "Dermatology",
+    "dental": "Dental",
+    "ophthalmology": "Ophthalmology"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "empty": "No appointments yet"
+  },
+  "orders": {
+    "title": "Orders",
+    "empty": "No orders yet"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search doctors & clinics",
+    "sprint_note": "Sprint 2 — provider directory"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty_title": "No notifications",
+    "empty_subtitle": "Sprint 5 — transactional notifications"
+  },
+  "profile": {
+    "title": "Profile",
+    "sprint_note": "Sprint 1 — identity & onboarding",
+    "guest_name": "MedSuper user",
+    "complete_profile": "Complete profile",
+    "logout": "Sign out"
+  },
+
+  "errors": {
+    "network": "No internet connection. Check your network and try again.",
+    "server": "Something went wrong. Please try again.",
+    "session_expired": "Session expired. Please sign in again.",
+    "slot_taken": "This slot was just taken by someone else. Please choose another.",
+    "unexpected": "An unexpected error occurred."
+  }
+}
