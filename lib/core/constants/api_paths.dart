@@ -26,4 +26,9 @@ abstract final class ApiPaths {
   // Notifications
   static const notificationPreferences = '/v1/notifications/preferences';
   static const fcmToken = '/v1/notifications/fcm-token';
+
+  // Provider registration
+  static const providerRegistrationSubmit = '/v1/provider/registration';
+  static const providerRegistrationLookups =
+      '/v1/provider/registration/lookups';
 }
