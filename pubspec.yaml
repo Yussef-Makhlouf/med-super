@@ -43,7 +43,7 @@ dependencies:
   retrofit: ^4.9.2
   hive_ce: ^2.19.3
   hive_ce_flutter: ^2.3.4
-  flutter_secure_storage: ^11.0.0
+  flutter_secure_storage: ^10.3.1
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   firebase_crashlytics: ^5.2.7
@@ -53,6 +53,10 @@ dependencies:
   path_provider: ^2.1.6
   google_fonts: ^8.2.1
   intl: ^0.20.2
+  file_picker: ^8.1.7
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
