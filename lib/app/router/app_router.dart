@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/app/flavor.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
+import 'package:med_super/app/router/routes/lab_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
 import 'package:med_super/app/router/routes/search_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
@@ -16,8 +17,9 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 
 part 'app_router.g.dart';
 
-final _patientShellNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'patientShell');
+final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'patientShell',
+);
 
 bool _isPublicAuthRoute(String path) =>
     path == '/login' || path == '/verify-otp';
@@ -69,69 +71,66 @@ GoRouter appRouter(Ref ref) {
       ...authRoutes,
       ...searchRoutes,
       if (flavor.isPatient) ..._patientRoutes(),
+      if (flavor.isPatient) ...labRoutes,
       if (flavor.isProvider) ..._providerRoutes(),
     ],
   );
 }
 
 List<RouteBase> _patientRoutes() => [
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) =>
-            PatientShellScreen(navigationShell: shell),
-        branches: [
-          StatefulShellBranch(
-            navigatorKey: _patientShellNavigatorKey,
-            routes: [
-              GoRoute(
-                path: '/patient/home',
-                name: 'patientHome',
-                builder: (context, state) => const PatientHomeScreen(),
-                routes: appointmentRoutes,
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/appointments',
-                name: 'patientAppointments',
-                builder: (context, state) =>
-                    const AppointmentsPlaceholderScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/orders',
-                name: 'patientOrders',
-                builder: (context, state) => const OrdersPlaceholderScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/notifications',
-                name: 'patientNotifications',
-                builder: (context, state) =>
-                    const NotificationsPlaceholderScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/profile',
-                name: 'patientProfile',
-                builder: (context, state) => const ProfilePlaceholderScreen(),
-              ),
-            ],
+  StatefulShellRoute.indexedStack(
+    builder: (context, state, shell) =>
+        PatientShellScreen(navigationShell: shell),
+    branches: [
+      StatefulShellBranch(
+        navigatorKey: _patientShellNavigatorKey,
+        routes: [
+          GoRoute(
+            path: '/patient/home',
+            name: 'patientHome',
+            builder: (context, state) => const PatientHomeScreen(),
+            routes: appointmentRoutes,
           ),
         ],
       ),
-    ];
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/appointments',
+            name: 'patientAppointments',
+            builder: (context, state) => const AppointmentsPlaceholderScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/orders',
+            name: 'patientOrders',
+            builder: (context, state) => const OrdersPlaceholderScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/notifications',
+            name: 'patientNotifications',
+            builder: (context, state) => const NotificationsPlaceholderScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/profile',
+            name: 'patientProfile',
+            builder: (context, state) => const ProfilePlaceholderScreen(),
+          ),
+        ],
+      ),
+    ],
+  ),
+];
 
-List<RouteBase> _providerRoutes() => [
-      ...providerDashboardRoutes,
-    ];
+List<RouteBase> _providerRoutes() => [...providerDashboardRoutes];
