@@ -31,15 +31,15 @@ final _mockAuth = _MockAuthStore();
 const kMockOtpCode = '123456';
 
 Map<String, dynamic> _error(int status, String code, String message) => {
-      'statusCode': status,
-      'data': {
-        'error': {
-          'code': code,
-          'message': message,
-          'correlation_id': 'mock-corr-auth',
-        },
-      },
-    };
+  'statusCode': status,
+  'data': {
+    'error': {
+      'code': code,
+      'message': message,
+      'correlation_id': 'mock-corr-auth',
+    },
+  },
+};
 
 Map<String, dynamic>? _body(RequestOptions options) {
   final data = options.data;
@@ -54,26 +54,31 @@ Map<String, dynamic>? _body(RequestOptions options) {
 }
 
 String? _bearer(RequestOptions options) {
-  final raw = options.headers['Authorization'] ?? options.headers['authorization'];
+  final raw =
+      options.headers['Authorization'] ?? options.headers['authorization'];
   if (raw is! String) return null;
   if (raw.startsWith('Bearer ')) return raw.substring(7);
   return raw;
 }
 
 Map<String, dynamic> _userPayload() => {
-      'id': 'user-001',
-      'phone': _mockAuth.phone ?? '+966500000000',
-      'roles': [_mockAuth.role ?? 'PATIENT'],
-      'active_role': _mockAuth.role ?? 'PATIENT',
-      'display_name': _mockAuth.displayName,
-    };
+  'id': 'user-001',
+  'phone': _mockAuth.phone ?? '+966500000000',
+  'roles': [_mockAuth.role ?? 'PATIENT'],
+  'active_role': _mockAuth.role ?? 'PATIENT',
+  'display_name': _mockAuth.displayName,
+};
 
 /// Registers foundation + Sprint 1 auth mock responses on [interceptor].
 void registerFoundationMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', '/health', (_) => {
-        'statusCode': 200,
-        'data': {'status': 'ok', 'version': '0.0.1-mock'},
-      });
+  interceptor.register(
+    'GET',
+    '/health',
+    (_) => {
+      'statusCode': 200,
+      'data': {'status': 'ok', 'version': '0.0.1-mock'},
+    },
+  );
 
   interceptor.register('POST', ApiPaths.otpRequest, (options) {
     final body = _body(options);
@@ -86,10 +91,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     _mockAuth.role = role;
     return {
       'statusCode': 200,
-      'data': {
-        'request_id': 'otp-req-001',
-        'expires_in': 60,
-      },
+      'data': {'request_id': 'otp-req-001', 'expires_in': 60},
     };
   });
 
@@ -117,10 +119,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
     return {
       'statusCode': 200,
-      'data': {
-        'access_token': access,
-        'refresh_token': refresh,
-      },
+      'data': {'access_token': access, 'refresh_token': refresh},
     };
   });
 
@@ -135,10 +134,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final access = _mockAuth.accessToken ?? 'dev_patient_refreshed';
     return {
       'statusCode': 200,
-      'data': {
-        'access_token': access,
-        'refresh_token': refresh,
-      },
+      'data': {'access_token': access, 'refresh_token': refresh},
     };
   });
 
@@ -162,10 +158,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
         ..accessToken = token;
     }
 
-    return {
-      'statusCode': 200,
-      'data': _userPayload(),
-    };
+    return {'statusCode': 200, 'data': _userPayload()};
   });
 
   interceptor.register('PATCH', ApiPaths.me, (options) {
@@ -178,10 +171,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     if (name != null) {
       _mockAuth.displayName = name.trim().isEmpty ? null : name.trim();
     }
-    return {
-      'statusCode': 200,
-      'data': _userPayload(),
-    };
+    return {'statusCode': 200, 'data': _userPayload()};
   });
 
   interceptor.register('POST', ApiPaths.logout, (options) {
@@ -196,163 +186,163 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 // ─── Sprint 2: provider directory mocks ───────────────────────────────────────
 
 List<Map<String, dynamic>> get _mockDoctorsCatalog => [
-      {
-        'id': 'doc-sara',
-        'name': 'د. سارة المنصور',
-        'specialty': 'استشارية طب الأطفال - أمراض حديثي الولادة',
-        'specialty_short': 'استشاري طب الأطفال',
-        'specialty_key': 'pediatrics',
-        'experience_years': 15,
-        'rating': 4.9,
-        'review_count': 120,
-        'location_label': 'الرياض، حي الملقا',
-        'distance_km': 2.5,
-        'consultation_fee': 300,
-        'currency': 'EGP',
-        'is_verified': true,
-        'is_online': true,
-        'clinic_name': 'مركز العناية بالطفل',
-        'languages': ['العربية', 'الإنجليزية'],
-        'bio':
-            'طبيبة أطفال معتمدة من البورد الأمريكي، متخصصة في رعاية حديثي الولادة والأطفال. تتميز بنهج شامل يركز على الوقاية والتواصل الفعّال مع الأهل لضمان أفضل رعاية للطفل.',
-        'qualifications': ['البورد الأمريكي في طب الأطفال'],
-        'fellowships': ['زمالة الكلية الملكية لطب الأطفال'],
-        'photo_url': null,
-      },
-      {
-        'id': 'doc-ahmed',
-        'name': 'د. أحمد خالد',
-        'specialty': 'استشاري طب الأطفال',
-        'specialty_short': 'استشاري طب الأطفال',
-        'specialty_key': 'pediatrics',
-        'experience_years': 12,
-        'rating': 4.8,
-        'review_count': 95,
-        'location_label': 'الرياض، حي النرجس',
-        'distance_km': 3.1,
-        'consultation_fee': 280,
-        'currency': 'EGP',
-        'is_verified': true,
-        'is_online': true,
-        'clinic_name': 'عيادة الأطفال المتقدمة',
-        'languages': ['العربية', 'الإنجليزية'],
-        'bio':
-            'استشاري طب أطفال بخبرة واسعة في الأمراض المزمنة ومتابعة النمو والتطور. يقدّم رعاية مبنية على أحدث البروتوكولات الطبية.',
-        'qualifications': ['البورد السعودي في طب الأطفال'],
-        'fellowships': ['زمالة طب الأطفال التنفسي'],
-        'photo_url': null,
-      },
-      {
-        'id': 'doc-layla',
-        'name': 'د. ليلى حسن',
-        'specialty': 'استشارية طب الأطفال',
-        'specialty_short': 'استشارية طب الأطفال',
-        'specialty_key': 'pediatrics',
-        'experience_years': 10,
-        'rating': 4.7,
-        'review_count': 78,
-        'location_label': 'الرياض، حي الياسمين',
-        'distance_km': 4.0,
-        'consultation_fee': 250,
-        'currency': 'EGP',
-        'is_verified': true,
-        'is_online': false,
-        'clinic_name': 'مستشفى الطفل التخصصي',
-        'languages': ['العربية'],
-        'bio':
-            'طبيبة أطفال متخصصة في التغذية والسمنة لدى الأطفال، مع اهتمام خاص بالتوعية الصحية للأسرة.',
-        'qualifications': ['ماجستير طب الأطفال'],
-        'fellowships': ['زمالة تغذية الأطفال'],
-        'photo_url': null,
-      },
-      {
-        'id': 'doc-mahmoud',
-        'name': 'د. محمود حامد',
-        'specialty': 'استشاري جراحة القلب',
-        'specialty_short': 'استشاري جراحة القلب',
-        'specialty_key': 'cardio',
-        'experience_years': 18,
-        'rating': 4.9,
-        'review_count': 210,
-        'location_label': 'الرياض، حي العليا',
-        'distance_km': 4.2,
-        'consultation_fee': 500,
-        'currency': 'EGP',
-        'is_verified': true,
-        'is_online': true,
-        'clinic_name': 'مركز القلب التخصصي',
-        'languages': ['العربية', 'الإنجليزية'],
-        'bio':
-            'استشاري جراحة قلب وصدر بخبرة طويلة في العمليات المعقدة ومتابعة مرضى القلب المزمنين.',
-        'qualifications': ['البورد الأوروبي في جراحة القلب'],
-        'fellowships': ['زمالة جراحة القلب طفيفة التوغل'],
-        'photo_url': null,
-      },
-    ];
+  {
+    'id': 'doc-sara',
+    'name': 'د. سارة المنصور',
+    'specialty': 'استشارية طب الأطفال - أمراض حديثي الولادة',
+    'specialty_short': 'استشاري طب الأطفال',
+    'specialty_key': 'pediatrics',
+    'experience_years': 15,
+    'rating': 4.9,
+    'review_count': 120,
+    'location_label': 'الرياض، حي الملقا',
+    'distance_km': 2.5,
+    'consultation_fee': 300,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': true,
+    'clinic_name': 'مركز العناية بالطفل',
+    'languages': ['العربية', 'الإنجليزية'],
+    'bio':
+        'طبيبة أطفال معتمدة من البورد الأمريكي، متخصصة في رعاية حديثي الولادة والأطفال. تتميز بنهج شامل يركز على الوقاية والتواصل الفعّال مع الأهل لضمان أفضل رعاية للطفل.',
+    'qualifications': ['البورد الأمريكي في طب الأطفال'],
+    'fellowships': ['زمالة الكلية الملكية لطب الأطفال'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-ahmed',
+    'name': 'د. أحمد خالد',
+    'specialty': 'استشاري طب الأطفال',
+    'specialty_short': 'استشاري طب الأطفال',
+    'specialty_key': 'pediatrics',
+    'experience_years': 12,
+    'rating': 4.8,
+    'review_count': 95,
+    'location_label': 'الرياض، حي النرجس',
+    'distance_km': 3.1,
+    'consultation_fee': 280,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': true,
+    'clinic_name': 'عيادة الأطفال المتقدمة',
+    'languages': ['العربية', 'الإنجليزية'],
+    'bio':
+        'استشاري طب أطفال بخبرة واسعة في الأمراض المزمنة ومتابعة النمو والتطور. يقدّم رعاية مبنية على أحدث البروتوكولات الطبية.',
+    'qualifications': ['البورد السعودي في طب الأطفال'],
+    'fellowships': ['زمالة طب الأطفال التنفسي'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-layla',
+    'name': 'د. ليلى حسن',
+    'specialty': 'استشارية طب الأطفال',
+    'specialty_short': 'استشارية طب الأطفال',
+    'specialty_key': 'pediatrics',
+    'experience_years': 10,
+    'rating': 4.7,
+    'review_count': 78,
+    'location_label': 'الرياض، حي الياسمين',
+    'distance_km': 4.0,
+    'consultation_fee': 250,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': false,
+    'clinic_name': 'مستشفى الطفل التخصصي',
+    'languages': ['العربية'],
+    'bio':
+        'طبيبة أطفال متخصصة في التغذية والسمنة لدى الأطفال، مع اهتمام خاص بالتوعية الصحية للأسرة.',
+    'qualifications': ['ماجستير طب الأطفال'],
+    'fellowships': ['زمالة تغذية الأطفال'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-mahmoud',
+    'name': 'د. محمود حامد',
+    'specialty': 'استشاري جراحة القلب',
+    'specialty_short': 'استشاري جراحة القلب',
+    'specialty_key': 'cardio',
+    'experience_years': 18,
+    'rating': 4.9,
+    'review_count': 210,
+    'location_label': 'الرياض، حي العليا',
+    'distance_km': 4.2,
+    'consultation_fee': 500,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': true,
+    'clinic_name': 'مركز القلب التخصصي',
+    'languages': ['العربية', 'الإنجليزية'],
+    'bio':
+        'استشاري جراحة قلب وصدر بخبرة طويلة في العمليات المعقدة ومتابعة مرضى القلب المزمنين.',
+    'qualifications': ['البورد الأوروبي في جراحة القلب'],
+    'fellowships': ['زمالة جراحة القلب طفيفة التوغل'],
+    'photo_url': null,
+  },
+];
 
 List<Map<String, dynamic>> _defaultAvailableDays() => [
-      {
-        'id': 'day-today',
-        'label': 'اليوم',
-        'day_number': 12,
-        'slots': [
-          {'id': 's1', 'label': '09:00 ص', 'available': true},
-          {'id': 's2', 'label': '09:30 ص', 'available': true},
-          {'id': 's3', 'label': '10:00 ص', 'available': false},
-          {'id': 's4', 'label': '10:30 ص', 'available': true},
-        ],
-      },
-      {
-        'id': 'day-tomorrow',
-        'label': 'غداً',
-        'day_number': 13,
-        'slots': [
-          {'id': 's5', 'label': '09:00 ص', 'available': true},
-          {'id': 's6', 'label': '11:00 ص', 'available': true},
-          {'id': 's7', 'label': '12:30 م', 'available': true},
-          {'id': 's8', 'label': '04:00 م', 'available': false},
-        ],
-      },
-      {
-        'id': 'day-thu',
-        'label': 'الخميس',
-        'day_number': 14,
-        'slots': [
-          {'id': 's9', 'label': '10:00 ص', 'available': true},
-          {'id': 's10', 'label': '10:30 ص', 'available': true},
-          {'id': 's11', 'label': '01:00 م', 'available': true},
-          {'id': 's12', 'label': '05:00 م', 'available': true},
-        ],
-      },
-    ];
+  {
+    'id': 'day-today',
+    'label': 'اليوم',
+    'day_number': 12,
+    'slots': [
+      {'id': 's1', 'label': '09:00 ص', 'available': true},
+      {'id': 's2', 'label': '09:30 ص', 'available': true},
+      {'id': 's3', 'label': '10:00 ص', 'available': false},
+      {'id': 's4', 'label': '10:30 ص', 'available': true},
+    ],
+  },
+  {
+    'id': 'day-tomorrow',
+    'label': 'غداً',
+    'day_number': 13,
+    'slots': [
+      {'id': 's5', 'label': '09:00 ص', 'available': true},
+      {'id': 's6', 'label': '11:00 ص', 'available': true},
+      {'id': 's7', 'label': '12:30 م', 'available': true},
+      {'id': 's8', 'label': '04:00 م', 'available': false},
+    ],
+  },
+  {
+    'id': 'day-thu',
+    'label': 'الخميس',
+    'day_number': 14,
+    'slots': [
+      {'id': 's9', 'label': '10:00 ص', 'available': true},
+      {'id': 's10', 'label': '10:30 ص', 'available': true},
+      {'id': 's11', 'label': '01:00 م', 'available': true},
+      {'id': 's12', 'label': '05:00 م', 'available': true},
+    ],
+  },
+];
 
 Map<String, dynamic> _doctorSummaryJson(Map<String, dynamic> d) => {
-      'id': d['id'],
-      'name': d['name'],
-      'specialty': d['specialty_short'] ?? d['specialty'],
-      'specialty_key': d['specialty_key'],
-      'experience_years': d['experience_years'],
-      'rating': d['rating'],
-      'review_count': d['review_count'],
-      'location_label': d['location_label'],
-      'distance_km': d['distance_km'],
-      'consultation_fee': d['consultation_fee'],
-      'currency': d['currency'],
-      'is_verified': d['is_verified'],
-      'photo_url': d['photo_url'],
-    };
+  'id': d['id'],
+  'name': d['name'],
+  'specialty': d['specialty_short'] ?? d['specialty'],
+  'specialty_key': d['specialty_key'],
+  'experience_years': d['experience_years'],
+  'rating': d['rating'],
+  'review_count': d['review_count'],
+  'location_label': d['location_label'],
+  'distance_km': d['distance_km'],
+  'consultation_fee': d['consultation_fee'],
+  'currency': d['currency'],
+  'is_verified': d['is_verified'],
+  'photo_url': d['photo_url'],
+};
 
 Map<String, dynamic> _doctorProfileJson(Map<String, dynamic> d) => {
-      ..._doctorSummaryJson(d),
-      'specialty': d['specialty'],
-      'clinic_name': d['clinic_name'],
-      'languages': d['languages'],
-      'bio': d['bio'],
-      'qualifications': d['qualifications'],
-      'fellowships': d['fellowships'],
-      'is_online': d['is_online'],
-      'available_days': _defaultAvailableDays(),
-    };
+  ..._doctorSummaryJson(d),
+  'specialty': d['specialty'],
+  'clinic_name': d['clinic_name'],
+  'languages': d['languages'],
+  'bio': d['bio'],
+  'qualifications': d['qualifications'],
+  'fellowships': d['fellowships'],
+  'is_online': d['is_online'],
+  'available_days': _defaultAvailableDays(),
+};
 
 /// Registers Sprint 2 doctor search + profile mock responses.
 void registerSearchMocks(MockInterceptor interceptor) {
@@ -370,10 +360,7 @@ void registerSearchMocks(MockInterceptor interceptor) {
     if (doctor == null) {
       return _error(404, 'NOT_FOUND', 'Doctor not found');
     }
-    return {
-      'statusCode': 200,
-      'data': _doctorProfileJson(doctor),
-    };
+    return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
   });
 
   interceptor.register('GET', ApiPaths.searchDoctors, (options) {
@@ -390,27 +377,35 @@ void registerSearchMocks(MockInterceptor interceptor) {
     }
 
     if (q != null && q.isNotEmpty) {
-      list = list.where((d) {
-        final name = '${d['name']}'.toLowerCase();
-        final spec = '${d['specialty']}'.toLowerCase();
-        final clinic = '${d['clinic_name']}'.toLowerCase();
-        return name.contains(q) || spec.contains(q) || clinic.contains(q);
-      }).toList(growable: false);
+      list = list
+          .where((d) {
+            final name = '${d['name']}'.toLowerCase();
+            final spec = '${d['specialty']}'.toLowerCase();
+            final clinic = '${d['clinic_name']}'.toLowerCase();
+            return name.contains(q) || spec.contains(q) || clinic.contains(q);
+          })
+          .toList(growable: false);
     }
 
-    list = [...list]..sort((a, b) {
+    list = [...list]
+      ..sort((a, b) {
         switch (sort) {
           case 'nearest':
-            return ((a['distance_km'] as num).compareTo(b['distance_km'] as num));
+            return ((a['distance_km'] as num).compareTo(
+              b['distance_km'] as num,
+            ));
           case 'price_asc':
-            return ((a['consultation_fee'] as num)
-                .compareTo(b['consultation_fee'] as num));
+            return ((a['consultation_fee'] as num).compareTo(
+              b['consultation_fee'] as num,
+            ));
           default:
-            final ratingCmp =
-                (b['rating'] as num).compareTo(a['rating'] as num);
+            final ratingCmp = (b['rating'] as num).compareTo(
+              a['rating'] as num,
+            );
             if (ratingCmp != 0) return ratingCmp;
-            return ((b['review_count'] as num)
-                .compareTo(a['review_count'] as num));
+            return ((b['review_count'] as num).compareTo(
+              a['review_count'] as num,
+            ));
         }
       });
 
@@ -419,6 +414,179 @@ void registerSearchMocks(MockInterceptor interceptor) {
       'data': {
         'doctors': list.map(_doctorSummaryJson).toList(),
         'total_count': list.length,
+      },
+    };
+  });
+}
+
+// ─── Lab Booking mocks ─────────────────────────────────────────────────────
+
+Map<String, dynamic> _labCatalogJson() => {
+  'categories': [
+    {'id': 'liver', 'label_key': 'lab_booking.categories.liver'},
+    {'id': 'vitamins', 'label_key': 'lab_booking.categories.vitamins'},
+    {'id': 'diabetes', 'label_key': 'lab_booking.categories.diabetes'},
+    {'id': 'packages', 'label_key': 'lab_booking.categories.packages'},
+  ],
+  'tests': [
+    {
+      'id': 'full-checkup-package',
+      'name': 'باقة الفحص الشامل',
+      'price': 450,
+      'currency': 'EGP',
+      'is_package': true,
+      'category_id': 'packages',
+      'includes_count': 15,
+      'requires_fasting': true,
+      'fasting_hours': 8,
+    },
+    {
+      'id': 'vitamin-d',
+      'name': 'فحص فيتامين د',
+      'price': 150,
+      'currency': 'EGP',
+      'is_package': false,
+      'category_id': 'vitamins',
+      'requires_fasting': false,
+      'result_hours': 24,
+    },
+    {
+      'id': 'hba1c',
+      'name': 'فحص السكر التراكمي',
+      'price': 80,
+      'currency': 'EGP',
+      'is_package': false,
+      'category_id': 'diabetes',
+      'requires_fasting': false,
+    },
+    {
+      'id': 'liver-function',
+      'name': 'فحص وظائف الكبد',
+      'price': 120,
+      'currency': 'EGP',
+      'is_package': false,
+      'category_id': 'liver',
+      'requires_fasting': false,
+      'result_hours': 24,
+    },
+  ],
+  'suggested_labs': [
+    {
+      'id': 'lab-alpha',
+      'name': 'مختبرات ألفا',
+      'distance_km': 2.5,
+      'rating': 4.8,
+    },
+  ],
+};
+
+const _labPartnersJson = [
+  {
+    'id': 'lab-al-borg',
+    'name': 'مختبرات البرج',
+    'distance_km': 2.5,
+    'rating': 4.8,
+    'rating_count': 124,
+    'total_price': 150,
+    'latitude': 24.7136,
+    'longitude': 46.6753,
+  },
+  {
+    'id': 'lab-alpha',
+    'name': 'مختبرات ألفا',
+    'distance_km': 3.2,
+    'rating': 4.5,
+    'rating_count': 89,
+    'total_price': 165,
+    'latitude': 24.7255,
+    'longitude': 46.6893,
+  },
+  {
+    'id': 'lab-smart',
+    'name': 'المختبرات الذكية',
+    'distance_km': 5.1,
+    'rating': 4.9,
+    'rating_count': 210,
+    'total_price': 140,
+    'latitude': 24.6980,
+    'longitude': 46.6612,
+  },
+];
+
+/// Registers Lab Booking mock responses.
+void registerLabBookingMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', ApiPaths.labTests, (options) {
+    final catalog = _labCatalogJson();
+    final categoryId = options.uri.queryParameters['category'];
+    final query = options.uri.queryParameters['q']?.trim().toLowerCase();
+    var tests = (catalog['tests'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    if (categoryId != null && categoryId.isNotEmpty) {
+      tests = tests.where((t) => t['category_id'] == categoryId).toList();
+    }
+    if (query != null && query.isNotEmpty) {
+      tests = tests
+          .where((t) => (t['name'] as String).toLowerCase().contains(query))
+          .toList();
+    }
+    return {
+      'statusCode': 200,
+      'data': {...catalog, 'tests': tests},
+    };
+  });
+
+  interceptor.register('GET', ApiPaths.labPartners, (options) {
+    final sort = options.uri.queryParameters['sort'] ?? 'nearest';
+    final partners = [..._labPartnersJson];
+    switch (sort) {
+      case 'price_asc':
+        partners.sort(
+          (a, b) =>
+              (a['total_price'] as int).compareTo(b['total_price'] as int),
+        );
+      case 'rating_desc':
+        partners.sort(
+          (a, b) => (b['rating'] as double).compareTo(a['rating'] as double),
+        );
+      default:
+        partners.sort(
+          (a, b) => (a['distance_km'] as double).compareTo(
+            b['distance_km'] as double,
+          ),
+        );
+    }
+    return {
+      'statusCode': 200,
+      'data': {'lab_partners': partners},
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.labBookings, (options) {
+    final body = _body(options) ?? const {};
+    final testIds = (body['test_ids'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .toSet();
+    final labId = body['lab_id'] as String? ?? _labPartnersJson.first['id'];
+    final lab = _labPartnersJson.firstWhere(
+      (l) => l['id'] == labId,
+      orElse: () => _labPartnersJson.first,
+    );
+    final fastingHours = (_labCatalogJson()['tests'] as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .where((t) => testIds.contains(t['id']))
+        .where((t) => t['requires_fasting'] == true)
+        .map((t) => t['fasting_hours'] as int? ?? 0)
+        .fold<int>(0, (max, h) => h > max ? h : max);
+    final bookingDate = DateTime.now().add(const Duration(days: 1));
+    return {
+      'statusCode': 200,
+      'data': {
+        'booking_number': 'LAB-${88000 + lab['id'].hashCode.abs() % 999}',
+        'lab_name': lab['name'],
+        'lab_address': 'طريق الملك فهد، الرياض',
+        'date': bookingDate.toIso8601String(),
+        'time': '10:00',
+        if (fastingHours > 0) 'fasting_hours': fastingHours,
       },
     };
   });

@@ -26,4 +26,9 @@ abstract final class ApiPaths {
   // Notifications
   static const notificationPreferences = '/v1/notifications/preferences';
   static const fcmToken = '/v1/notifications/fcm-token';
+
+  // Lab booking
+  static const labTests = '/v1/lab-tests';
+  static const labPartners = '/v1/lab-partners';
+  static const labBookings = '/v1/lab-bookings';
 }
