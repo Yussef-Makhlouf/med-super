@@ -47,7 +47,6 @@
     "continue": "Continue",
     "skip": "Skip for now"
   },
-
   "nav": {
     "home": "Home",
     "appointments": "Appointments",
@@ -136,12 +135,61 @@
     "complete_profile": "Complete profile",
     "logout": "Sign out"
   },
-
   "errors": {
     "network": "No internet connection. Check your network and try again.",
     "server": "Something went wrong. Please try again.",
     "session_expired": "Session expired. Please sign in again.",
     "slot_taken": "This slot was just taken by someone else. Please choose another.",
     "unexpected": "An unexpected error occurred."
+  },
+  "lab_booking": {
+    "title": "Lab Test Booking",
+    "search_hint": "Search for a test or package...",
+    "available_tests": "Available tests",
+    "suggested_labs": "Suggested labs",
+    "select_lab_cta": "Select lab",
+    "total_label": "Total ({} tests)",
+    "package_badge": "Package",
+    "fasting_required": "Fasting required ({}h)",
+    "no_fasting": "No fasting required",
+    "results_in_hours": "Results within {}h",
+    "includes_tests_count": "Includes {} tests",
+    "step_select_tests": "Select tests",
+    "step_select_lab": "Select lab",
+    "step_schedule_payment": "Schedule & payment",
+    "select_tests_first": "Please select at least one test first.",
+    "categories": {
+      "liver": "Liver function",
+      "vitamins": "Vitamins",
+      "diabetes": "Diabetes",
+      "packages": "Comprehensive packages"
+    },
+    "select_lab": {
+      "title": "Lab Test Booking",
+      "stepper_tests": "Tests",
+      "stepper_lab": "Lab",
+      "stepper_confirm": "Confirmation",
+      "sort_by": "Sort by",
+      "sort_price": "Lowest price",
+      "sort_rating": "Highest rated",
+      "sort_nearest": "Nearest",
+      "distance_km": "{} km",
+      "rating_count": "({} reviews)",
+      "choose_cta": "Select",
+      "total_cost_label": "Total cost",
+      "continue_cta": "Continue",
+      "grand_total_label": "Total (tax incl.)",
+      "confirm_error": "Something went wrong confirming your booking. Please try again."
+    },
+    "confirmation": {
+      "title": "Booking confirmed successfully",
+      "booking_number_prefix": "Your booking number is",
+      "date_label": "Date",
+      "time_label": "Time",
+      "instructions_title": "Important instructions",
+      "instructions_body": "Please fast for {} hours before your test. Drinking water is allowed.",
+      "go_to_bookings_cta": "Go to my bookings",
+      "go_home_cta": "Home"
+    }
   }
 }

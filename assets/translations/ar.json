@@ -47,7 +47,6 @@
     "continue": "متابعة",
     "skip": "تخطي الآن"
   },
-
   "nav": {
     "home": "الرئيسية",
     "appointments": "مواعيدي",
@@ -136,12 +135,61 @@
     "complete_profile": "أكمل الملف الشخصي",
     "logout": "تسجيل الخروج"
   },
-
   "errors": {
     "network": "لا يوجد اتصال بالإنترنت. تحقق من شبكتك وحاول مرة أخرى.",
     "server": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "session_expired": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
     "slot_taken": "تم حجز هذا الموعد للتو من قِبل شخص آخر. يرجى اختيار موعد آخر.",
     "unexpected": "حدث خطأ غير متوقع."
+  },
+  "lab_booking": {
+    "title": "حجز التحاليل الطبية",
+    "search_hint": "ابحث عن تحليل أو باقة...",
+    "available_tests": "التحاليل المتاحة",
+    "suggested_labs": "المختبرات المقترحة",
+    "select_lab_cta": "اختيار المختبر",
+    "total_label": "الإجمالي (تحليل {})",
+    "package_badge": "باقة",
+    "fasting_required": "يتطلب صيام ({} ساعات)",
+    "no_fasting": "لا يتطلب صيام",
+    "results_in_hours": "النتائج خلال {} ساعة",
+    "includes_tests_count": "تشمل {} تحليل",
+    "step_select_tests": "اختيار التحاليل",
+    "step_select_lab": "اختيار المختبر",
+    "step_schedule_payment": "الموعد والدفع",
+    "select_tests_first": "يرجى اختيار تحليل واحد على الأقل أولاً.",
+    "categories": {
+      "liver": "وظائف الكبد",
+      "vitamins": "الفيتامينات",
+      "diabetes": "مرض السكري",
+      "packages": "باقات شاملة"
+    },
+    "select_lab": {
+      "title": "حجز الفحوصات المخبرية",
+      "stepper_tests": "الفحوصات",
+      "stepper_lab": "المختبر",
+      "stepper_confirm": "التأكيد",
+      "sort_by": "ترتيب حسب",
+      "sort_price": "الأقل سعراً",
+      "sort_rating": "الأعلى تقييماً",
+      "sort_nearest": "الأقرب",
+      "distance_km": "{} كم",
+      "rating_count": "({} تقييم)",
+      "choose_cta": "اختيار",
+      "total_cost_label": "إجمالي التكلفة",
+      "continue_cta": "متابعة",
+      "grand_total_label": "الإجمالي (شامل الضريبة)",
+      "confirm_error": "حدث خطأ أثناء تأكيد الحجز. حاول مرة أخرى."
+    },
+    "confirmation": {
+      "title": "تم تأكيد الحجز بنجاح",
+      "booking_number_prefix": "رقم الحجز الخاص بك هو",
+      "date_label": "التاريخ",
+      "time_label": "الوقت",
+      "instructions_title": "تعليمات هامة",
+      "instructions_body": "يرجى الصيام لمدة {} ساعات قبل موعد الفحص. شرب الماء مسموح.",
+      "go_to_bookings_cta": "الذهاب إلى حجوزاتي",
+      "go_home_cta": "الصفحة الرئيسية"
+    }
   }
 }
