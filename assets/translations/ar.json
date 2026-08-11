@@ -95,11 +95,32 @@
   },
   "appointments": {
     "title": "مواعيدي",
-    "empty": "لا توجد مواعيد بعد"
+    "empty": "لا توجد مواعيد بعد",
+    "tab_upcoming": "قادمة",
+    "tab_past": "سابقة",
+    "status_confirmed": "مؤكد",
+    "status_pending": "قيد الانتظار",
+    "status_completed": "مكتمل",
+    "join": "انضم للموعد",
+    "edit": "تعديل",
+    "view_location": "عرض الموقع",
+    "cancel": "إلغاء الموعد",
+    "rebook": "إعادة الحجز"
   },
   "orders": {
     "title": "طلباتي",
-    "empty": "لا توجد طلبات بعد"
+    "empty": "لا توجد طلبات بعد",
+    "search_hint": "البحث برقم الطلب...",
+    "tab_current": "طلبات حالية",
+    "tab_previous": "طلبات سابقة",
+    "status_processing": "جاري التحضير",
+    "status_on_the_way": "في الطريق",
+    "status_completed": "مكتمل",
+    "track": "تتبع الطلب",
+    "details": "التفاصيل",
+    "reorder": "إعادة الطلب",
+    "total": "الإجمالي",
+    "currency": "ج.م"
   },
   "search": {
     "title": "أطباء",
@@ -127,14 +148,36 @@
   "notifications": {
     "title": "التنبيهات",
     "empty_title": "لا توجد تنبيهات",
-    "empty_subtitle": "Sprint 5 — الإشعارات التعاملية"
+    "empty_subtitle": "Sprint 5 — الإشعارات التعاملية",
+    "mark_all_read": "تحديد الكل كمقروء",
+    "today": "اليوم",
+    "yesterday": "الأمس"
   },
   "profile": {
     "title": "حسابي",
     "sprint_note": "Sprint 1 — الهوية والتهيئة",
     "guest_name": "مستخدم ميدسوبر",
     "complete_profile": "أكمل الملف الشخصي",
-    "logout": "تسجيل الخروج"
+    "logout": "تسجيل الخروج",
+    "edit_title": "تعديل الملف الشخصي",
+    "change_photo": "اضغط لتغيير الصورة",
+    "photo_soon": "رفع الصورة قريباً",
+    "full_name": "الاسم الكامل",
+    "full_name_hint": "اسمك الكامل",
+    "full_name_required": "الاسم الكامل مطلوب",
+    "mobile": "رقم الجوال",
+    "email": "البريد الإلكتروني",
+    "email_hint": "name@example.com",
+    "email_invalid": "أدخل بريداً إلكترونياً صحيحاً",
+    "date_of_birth": "تاريخ الميلاد",
+    "date_of_birth_hint": "MM/DD/YYYY",
+    "gender": "الجنس",
+    "gender_male": "ذكر",
+    "gender_female": "أنثى",
+    "address": "العنوان",
+    "address_hint": "الشارع، المدينة",
+    "save_changes": "حفظ التغييرات",
+    "saved": "تم تحديث الملف الشخصي"
   },
 
   "errors": {

@@ -203,6 +203,32 @@ class SessionController extends _$SessionController {
     return Result.ok(session);
   }
 
+  /// Persists display name via `PATCH /v1/auth/me` and refreshes session.
+  Future<Result<Session>> updateDisplayName(String displayName) async {
+    final current = state.asData?.value;
+    if (current == null) {
+      return const Result.err(Failure.auth());
+    }
+
+    final name = displayName.trim();
+    if (name.isEmpty) {
+      return const Result.err(
+        Failure.validation({'display_name': 'profile.full_name_required'}),
+      );
+    }
+
+    final result =
+        await ref.read(authRepositoryProvider).updateProfile(displayName: name);
+    switch (result) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok(:final value):
+        final session = current.copyWith(user: value);
+        state = AsyncData(session);
+        return Result.ok(session);
+    }
+  }
+
   Future<void> logout() async {
     await ref.read(logoutUseCaseProvider).call();
     await _writeOnboardingComplete(false);

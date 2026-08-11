@@ -10,7 +10,7 @@ import 'package:med_super/features/home/presentation/screens/patient_home_screen
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/notifications_placeholder_screen.dart';
-import 'package:med_super/features/home/presentation/screens/profile_placeholder_screen.dart';
+import 'package:med_super/features/profile_settings/presentation/screens/edit_profile_screen.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
@@ -96,7 +96,7 @@ List<RouteBase> _patientRoutes() => [
                 path: '/patient/appointments',
                 name: 'patientAppointments',
                 builder: (context, state) =>
-                    const AppointmentsPlaceholderScreen(),
+                    const PatientAppointmentsScreen(),
               ),
             ],
           ),
@@ -105,7 +105,7 @@ List<RouteBase> _patientRoutes() => [
               GoRoute(
                 path: '/patient/orders',
                 name: 'patientOrders',
-                builder: (context, state) => const OrdersPlaceholderScreen(),
+                builder: (context, state) => const PatientOrdersScreen(),
               ),
             ],
           ),
@@ -115,7 +115,7 @@ List<RouteBase> _patientRoutes() => [
                 path: '/patient/notifications',
                 name: 'patientNotifications',
                 builder: (context, state) =>
-                    const NotificationsPlaceholderScreen(),
+                    const PatientNotificationsScreen(),
               ),
             ],
           ),
@@ -124,7 +124,7 @@ List<RouteBase> _patientRoutes() => [
               GoRoute(
                 path: '/patient/profile',
                 name: 'patientProfile',
-                builder: (context, state) => const ProfilePlaceholderScreen(),
+                builder: (context, state) => const EditProfileScreen(),
               ),
             ],
           ),
