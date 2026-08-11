@@ -25,17 +25,21 @@ class ClinicLocationMapView extends StatefulWidget {
 
 class _ClinicLocationMapViewState extends State<ClinicLocationMapView> {
   late final _mapController = MapController();
-  late LatLng _position = widget.initialPosition;
   bool _locating = false;
+
+  /// Moves the map camera and reports the new center — used by both the
+  /// "locate me" button and tapping anywhere on the map to jump there.
+  /// Dragging the map itself is reported via [MapOptions.onPositionChanged]
+  /// below, so the clinic location is never limited to the device's GPS
+  /// position — any point can be chosen by panning or tapping the map.
+  void _moveTo(LatLng point) {
+    _mapController.move(point, _mapController.camera.zoom);
+  }
 
   Future<void> _locateMe() async {
     setState(() => _locating = true);
     final result = await widget.onLocateMe();
-    if (result != null) {
-      setState(() => _position = result);
-      _mapController.move(result, 15);
-      widget.onPositionChanged(result);
-    }
+    if (result != null) _moveTo(result);
     if (mounted) setState(() => _locating = false);
   }
 
@@ -54,33 +58,31 @@ class _ClinicLocationMapViewState extends State<ClinicLocationMapView> {
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                initialCenter: _position,
+                initialCenter: widget.initialPosition,
                 initialZoom: 14,
-                onTap: (_, point) {
-                  setState(() => _position = point);
-                  widget.onPositionChanged(point);
+                onPositionChanged: (camera, hasGesture) {
+                  widget.onPositionChanged(camera.center);
                 },
+                onTap: (_, point) => _moveTo(point),
               ),
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.medsuper.med_super',
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: _position,
-                      width: 40,
-                      height: 40,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: AppColors.providerPrimary,
-                        size: 40,
-                      ),
-                    ),
-                  ],
-                ),
               ],
+            ),
+            // Fixed pin at the exact center of the viewport — the user pans
+            // the map underneath it to choose any location, rather than the
+            // pin following a marker tied to a single stored point.
+            const IgnorePointer(
+              child: Center(
+                child: Icon(
+                  Icons.location_pin,
+                  color: AppColors.providerPrimary,
+                  size: 40,
+                ),
+              ),
             ),
             Positioned(
               bottom: 16,
