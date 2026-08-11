@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/app/flavor.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
+import 'package:med_super/core/constants/storage_keys.dart';
+import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
+import 'package:med_super/app/router/routes/provider_registration_routes.dart';
 import 'package:med_super/app/router/routes/search_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
@@ -16,11 +19,15 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 
 part 'app_router.g.dart';
 
-final _patientShellNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'patientShell');
+final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'patientShell',
+);
 
 bool _isPublicAuthRoute(String path) =>
     path == '/login' || path == '/verify-otp';
+
+bool _isProviderRegistrationRoute(String path) =>
+    path.startsWith('/provider/registration');
 
 @riverpod
 GoRouter appRouter(Ref ref) {
@@ -53,13 +60,39 @@ GoRouter appRouter(Ref ref) {
           return '/login';
         }
 
+        if (flavor.isProvider) {
+          // Providers skip the generic onboarding screen entirely — the
+          // registration flow's own basic-info step already collects the
+          // display name, and registration is mandatory before reaching
+          // the provider home screen.
+          final registrationSubmitted =
+              ref
+                  .read(hiveServiceProvider)
+                  .settingsBox
+                  .get(SettingsKeys.providerRegistrationSubmitted) ==
+              'true';
+          final isRegistrationRoute = _isProviderRegistrationRoute(path);
+
+          if (isAuthRoute || isOnboarding) {
+            return registrationSubmitted
+                ? '/provider/home'
+                : '/provider/registration/basic-info';
+          }
+
+          if (!registrationSubmitted && !isRegistrationRoute) {
+            return '/provider/registration/basic-info';
+          }
+
+          return null;
+        }
+
         if (isAuthRoute) {
           if (!session.onboardingComplete) return '/onboarding';
-          return flavor.isPatient ? '/patient/home' : '/provider/home';
+          return '/patient/home';
         }
 
         if (isOnboarding && session.onboardingComplete) {
-          return flavor.isPatient ? '/patient/home' : '/provider/home';
+          return '/patient/home';
         }
       }
 
@@ -75,63 +108,62 @@ GoRouter appRouter(Ref ref) {
 }
 
 List<RouteBase> _patientRoutes() => [
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) =>
-            PatientShellScreen(navigationShell: shell),
-        branches: [
-          StatefulShellBranch(
-            navigatorKey: _patientShellNavigatorKey,
-            routes: [
-              GoRoute(
-                path: '/patient/home',
-                name: 'patientHome',
-                builder: (context, state) => const PatientHomeScreen(),
-                routes: appointmentRoutes,
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/appointments',
-                name: 'patientAppointments',
-                builder: (context, state) =>
-                    const PatientAppointmentsScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/orders',
-                name: 'patientOrders',
-                builder: (context, state) => const PatientOrdersScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/notifications',
-                name: 'patientNotifications',
-                builder: (context, state) =>
-                    const PatientNotificationsScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/patient/profile',
-                name: 'patientProfile',
-                builder: (context, state) => const EditProfileScreen(),
-              ),
-            ],
+  StatefulShellRoute.indexedStack(
+    builder: (context, state, shell) =>
+        PatientShellScreen(navigationShell: shell),
+    branches: [
+      StatefulShellBranch(
+        navigatorKey: _patientShellNavigatorKey,
+        routes: [
+          GoRoute(
+            path: '/patient/home',
+            name: 'patientHome',
+            builder: (context, state) => const PatientHomeScreen(),
+            routes: appointmentRoutes,
           ),
         ],
       ),
-    ];
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/appointments',
+            name: 'patientAppointments',
+            builder: (context, state) => const PatientAppointmentsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/orders',
+            name: 'patientOrders',
+            builder: (context, state) => const PatientOrdersScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/notifications',
+            name: 'patientNotifications',
+            builder: (context, state) => const PatientNotificationsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: '/patient/profile',
+            name: 'patientProfile',
+            builder: (context, state) => const EditProfileScreen(),
+          ),
+        ],
+      ),
+    ],
+  ),
+];
 
 List<RouteBase> _providerRoutes() => [
-      ...providerDashboardRoutes,
-    ];
+  ...providerDashboardRoutes,
+  ...providerRegistrationRoutes,
+];

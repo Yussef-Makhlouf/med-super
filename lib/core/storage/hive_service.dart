@@ -29,11 +29,19 @@ class HiveService {
     final cipher = await _cipher();
     await Future.wait([
       Hive.openBox<String>(HiveBoxNames.settings, encryptionCipher: cipher),
-      Hive.openBox<String>(HiveBoxNames.doctorSearchCache,
-          encryptionCipher: cipher),
-      Hive.openBox<String>(HiveBoxNames.appointmentCache,
-          encryptionCipher: cipher),
+      Hive.openBox<String>(
+        HiveBoxNames.doctorSearchCache,
+        encryptionCipher: cipher,
+      ),
+      Hive.openBox<String>(
+        HiveBoxNames.appointmentCache,
+        encryptionCipher: cipher,
+      ),
       Hive.openBox<String>(HiveBoxNames.outbox, encryptionCipher: cipher),
+      Hive.openBox<String>(
+        HiveBoxNames.providerRegistrationDraft,
+        encryptionCipher: cipher,
+      ),
     ]);
   }
 
@@ -53,6 +61,8 @@ class HiveService {
       Hive.box<String>(HiveBoxNames.doctorSearchCache);
   Box<String> get appointmentCacheBox =>
       Hive.box<String>(HiveBoxNames.appointmentCache);
+  Box<String> get providerRegistrationDraftBox =>
+      Hive.box<String>(HiveBoxNames.providerRegistrationDraft);
 }
 
 /// Generic JSON-backed cache store. Stores entities as JSON strings in Hive.
