@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/simple_success_screen.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -248,22 +249,20 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton.icon(
+                AppButton.filled(
+                  label: 'provider_registration.review.submit_cta'.tr(),
                   onPressed: draft.agreedToTerms
                       ? () => _submit(context, ref)
                       : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.patientPrimary,
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                  ),
                   icon: const Icon(Icons.send, size: 16),
-                  label: Text('provider_registration.review.submit_cta'.tr()),
+                  backgroundColor: AppColors.providerPrimary,
+                  foregroundColor: Colors.white,
+                  borderRadius: 9999,
+                  fullWidth: true,
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton(
+                AppButton.outlined(
+                  label: 'provider_registration.review.save_draft_cta'.tr(),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -274,15 +273,9 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                     );
                     context.go('/provider/home');
                   },
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                  ),
-                  child: Text(
-                    'provider_registration.review.save_draft_cta'.tr(),
-                  ),
+                  foregroundColor: AppColors.providerPrimary,
+                  borderRadius: 9999,
+                  fullWidth: true,
                 ),
               ],
             );
