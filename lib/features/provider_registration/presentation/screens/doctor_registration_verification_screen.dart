@@ -256,6 +256,10 @@ class DoctorRegistrationVerificationScreen extends ConsumerWidget {
                                   '/provider/registration/clinic-schedule',
                                 )
                               : null,
+                          icon: const Icon(Icons.arrow_back, size: 18),
+                          backgroundColor: AppColors.providerPrimary,
+                          foregroundColor: Colors.white,
+                          borderRadius: 16,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -285,10 +289,7 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
-          ),
+          const SizedBox(width: 48),
           Expanded(
             child: Text(
               'provider_registration.title'.tr(),
@@ -300,7 +301,13 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(
+              Icons.arrow_forward,
+              color: AppColors.providerPrimary,
+            ),
+          ),
         ],
       ),
     );

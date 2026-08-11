@@ -156,6 +156,9 @@ class _DoctorRegistrationBasicInfoScreenState
                                   labelText:
                                       'provider_registration.basic_info.specialty_label'
                                           .tr(),
+                                  prefixIcon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                  ),
                                 ),
                                 child: Text(
                                   _specialtyLabel ??
@@ -173,6 +176,7 @@ class _DoctorRegistrationBasicInfoScreenState
                               hint:
                                   'provider_registration.basic_info.degree_hint'
                                       .tr(),
+                              prefix: const Icon(Icons.school_outlined),
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -184,6 +188,7 @@ class _DoctorRegistrationBasicInfoScreenState
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
+                              prefix: const Icon(Icons.access_time),
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -203,6 +208,10 @@ class _DoctorRegistrationBasicInfoScreenState
                             AppButton.filled(
                               label: 'provider_registration.continue_cta'.tr(),
                               onPressed: _continue,
+                              icon: const Icon(Icons.arrow_back, size: 18),
+                              backgroundColor: AppColors.providerPrimary,
+                              foregroundColor: Colors.white,
+                              borderRadius: 16,
                             ),
                           ],
                         ),
@@ -229,10 +238,7 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
-          ),
+          const SizedBox(width: 48),
           const Expanded(
             child: Text(
               'تسجيل الطبيب',
@@ -244,7 +250,13 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(
+              Icons.arrow_forward,
+              color: AppColors.providerPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -279,62 +291,87 @@ class _ProfilePhotoUpload extends ConsumerWidget {
     final photoName = ref.watch(
       registrationFormControllerProvider.select((d) => d.profilePhotoLocalPath),
     );
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceMuted,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              photoName == null
-                  ? Icons.camera_alt_outlined
-                  : Icons.check_circle,
-              color: photoName == null ? null : AppColors.tealAccent,
-              size: 32,
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 320;
+        final avatarSize = isCompact ? 64.0 : 96.0;
+        final gap = isCompact ? 12.0 : 24.0;
+
+        return Container(
+          padding: EdgeInsets.all(isCompact ? 16 : 24),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'provider_registration.basic_info.photo_title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  shape: BoxShape.circle,
                 ),
-                Text(
-                  photoName ??
-                      'provider_registration.basic_info.photo_subtitle'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.bodyText,
-                  ),
+                child: Icon(
+                  photoName == null
+                      ? Icons.camera_alt_outlined
+                      : Icons.check_circle,
+                  color: photoName == null ? null : AppColors.tealAccent,
+                  size: avatarSize * 0.33,
                 ),
-                TextButton.icon(
-                  onPressed: () => _pickPhoto(context, ref),
-                  icon: const Icon(Icons.upload, size: 16),
-                  label: Text(
-                    'provider_registration.basic_info.photo_upload_cta'.tr(),
-                  ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'provider_registration.basic_info.photo_title'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isCompact ? 16 : 20,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink900,
+                      ),
+                    ),
+                    Text(
+                      photoName ??
+                          'provider_registration.basic_info.photo_subtitle'
+                              .tr(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.bodyText,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _pickPhoto(context, ref),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.upload, size: 16),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'provider_registration.basic_info.photo_upload_cta'
+                                  .tr(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
