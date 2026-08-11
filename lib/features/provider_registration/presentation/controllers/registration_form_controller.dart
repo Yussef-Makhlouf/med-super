@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/provider_registration/data/datasources/remote/provider_registration_remote_datasource.dart';
@@ -190,6 +191,10 @@ class RegistrationFormController extends _$RegistrationFormController {
         .call(state);
     if (result.isOk) {
       await _clearDraft();
+      await ref
+          .read(hiveServiceProvider)
+          .settingsBox
+          .put(SettingsKeys.providerRegistrationSubmitted, 'true');
     }
     return result;
   }

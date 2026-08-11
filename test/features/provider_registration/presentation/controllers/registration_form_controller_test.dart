@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive_ce.dart';
+import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
@@ -36,6 +37,7 @@ void main() {
     repository = _MockRepository();
 
     when(() => hiveService.providerRegistrationDraftBox).thenReturn(box);
+    when(() => hiveService.settingsBox).thenReturn(box);
     when(() => box.get(any())).thenReturn(null);
     when(() => box.put(any(), any())).thenAnswer((_) async {});
     when(() => box.delete(any())).thenAnswer((_) async {});
@@ -273,6 +275,9 @@ void main() {
       const DoctorRegistrationDraft(),
     );
     verify(() => box.delete('draft')).called(1);
+    verify(
+      () => box.put(SettingsKeys.providerRegistrationSubmitted, 'true'),
+    ).called(1);
   });
 
   test('submit() keeps the draft when the repository returns Err', () async {
@@ -292,5 +297,8 @@ void main() {
       'Dr. X',
     );
     verifyNever(() => box.delete(any()));
+    verifyNever(
+      () => box.put(SettingsKeys.providerRegistrationSubmitted, any()),
+    );
   });
 }
