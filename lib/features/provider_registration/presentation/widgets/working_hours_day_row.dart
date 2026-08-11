@@ -65,21 +65,27 @@ class WorkingHoursDayRow extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _TimeField(
-                  label: _fmt(day.from),
-                  enabled: day.isEnabled,
-                  onTap: onPickFrom,
+                Expanded(
+                  child: _TimeField(
+                    label: _fmt(day.from),
+                    enabled: day.isEnabled,
+                    onTap: onPickFrom,
+                  ),
                 ),
-                const Text(
-                  'إلى',
-                  style: TextStyle(fontSize: 12, color: AppColors.bodyText),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    'إلى',
+                    style: TextStyle(fontSize: 12, color: AppColors.bodyText),
+                  ),
                 ),
-                _TimeField(
-                  label: _fmt(day.to),
-                  enabled: day.isEnabled,
-                  onTap: onPickTo,
+                Expanded(
+                  child: _TimeField(
+                    label: _fmt(day.to),
+                    enabled: day.isEnabled,
+                    onTap: onPickTo,
+                  ),
                 ),
               ],
             ),
@@ -107,13 +113,20 @@ class _TimeField extends StatelessWidget {
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(AppRadii.sm),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: AppColors.surfaceApp,
           border: Border.all(color: AppColors.borderMedium),
           borderRadius: BorderRadius.circular(AppRadii.sm),
         ),
-        child: Text(label, style: const TextStyle(fontSize: 16)),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15),
+        ),
       ),
     );
   }
