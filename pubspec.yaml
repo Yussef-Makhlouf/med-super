@@ -76,6 +76,12 @@ dev_dependencies:
   retrofit_generator: ^10.2.8
   mocktail: ^1.0.5
   golden_toolkit: ^0.15.0
+  # Already resolved transitively (via easy_localization); declared directly
+  # here because test/helpers/pump_app.dart seeds its mock platform channel
+  # values directly (SharedPreferences.setMockInitialValues) so
+  # EasyLocalization.ensureInitialized() doesn't throw MissingPluginException
+  # under `flutter test`.
+  shared_preferences: ^2.5.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
