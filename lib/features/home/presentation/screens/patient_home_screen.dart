@@ -94,22 +94,12 @@ class _HomeHeader extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        IconButton(
-          onPressed: () {},
-          icon: const Badge(
-            smallSize: 8,
-            backgroundColor: Colors.red,
-            child: Icon(
-              Icons.notifications_outlined,
-              color: PatientHomeScreen._ink,
-            ),
-          ),
+        const CircleAvatar(
+          radius: 22,
+          backgroundColor: Color(0xFFDCE8FF),
+          child: Icon(Icons.person, color: brandBlue),
         ),
-        IconButton(
-          onPressed: () => context.push('/patient/search'),
-          icon: const Icon(Icons.search, color: PatientHomeScreen._ink),
-        ),
-        const Spacer(),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -128,11 +118,21 @@ class _HomeHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(width: 10),
-        const CircleAvatar(
-          radius: 22,
-          backgroundColor: Color(0xFFDCE8FF),
-          child: Icon(Icons.person, color: brandBlue),
+        const Spacer(),
+        IconButton(
+          onPressed: () => context.push('/patient/search'),
+          icon: const Icon(Icons.search, color: PatientHomeScreen._ink),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Badge(
+            smallSize: 8,
+            backgroundColor: Colors.red,
+            child: Icon(
+              Icons.notifications_outlined,
+              color: PatientHomeScreen._ink,
+            ),
+          ),
         ),
       ],
     );

@@ -94,11 +94,32 @@
   },
   "appointments": {
     "title": "Appointments",
-    "empty": "No appointments yet"
+    "empty": "No appointments yet",
+    "tab_upcoming": "Upcoming",
+    "tab_past": "Past",
+    "status_confirmed": "Confirmed",
+    "status_pending": "Pending",
+    "status_completed": "Completed",
+    "join": "Join Appointment",
+    "edit": "Edit",
+    "view_location": "View Location",
+    "cancel": "Cancel Appointment",
+    "rebook": "Rebook"
   },
   "orders": {
     "title": "Orders",
-    "empty": "No orders yet"
+    "empty": "No orders yet",
+    "search_hint": "Search by order number...",
+    "tab_current": "Current",
+    "tab_previous": "Previous",
+    "status_processing": "Processing",
+    "status_on_the_way": "On the way",
+    "status_completed": "Completed",
+    "track": "Track Order",
+    "details": "Details",
+    "reorder": "Reorder",
+    "total": "Total",
+    "currency": "EGP"
   },
   "search": {
     "title": "Search doctors",
@@ -126,14 +147,36 @@
   "notifications": {
     "title": "Notifications",
     "empty_title": "No notifications",
-    "empty_subtitle": "Sprint 5 — transactional notifications"
+    "empty_subtitle": "Sprint 5 — transactional notifications",
+    "mark_all_read": "Mark all as read",
+    "today": "Today",
+    "yesterday": "Yesterday"
   },
   "profile": {
     "title": "Profile",
     "sprint_note": "Sprint 1 — identity & onboarding",
     "guest_name": "MedSuper user",
     "complete_profile": "Complete profile",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "edit_title": "Edit profile",
+    "change_photo": "Tap to change photo",
+    "photo_soon": "Photo upload coming soon",
+    "full_name": "Full name",
+    "full_name_hint": "Your full name",
+    "full_name_required": "Full name is required",
+    "mobile": "Mobile number",
+    "email": "Email",
+    "email_hint": "name@example.com",
+    "email_invalid": "Enter a valid email address",
+    "date_of_birth": "Date of birth",
+    "date_of_birth_hint": "MM/DD/YYYY",
+    "gender": "Gender",
+    "gender_male": "Male",
+    "gender_female": "Female",
+    "address": "Address",
+    "address_hint": "Street, city",
+    "save_changes": "Save changes",
+    "saved": "Profile updated"
   },
   "errors": {
     "network": "No internet connection. Check your network and try again.",

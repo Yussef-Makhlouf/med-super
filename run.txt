@@ -1,0 +1,2 @@
+flutter run --flavor provider -t lib/main_provider.dart
+flutter run --flavor patient -t lib/main_patient.dart
