@@ -158,10 +158,7 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('the icon parameter is currently dropped for the .text variant '
-        '(documents existing AppButton._ construction, which never forwards '
-        'AppButton.text\'s icon argument into the private constructor — only '
-        'the label renders)', (tester) async {
+    testWidgets('renders the icon when one is provided', (tester) async {
       await pumpPlainApp(
         tester,
         AppButton.text(
@@ -171,7 +168,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.info), findsNothing);
+      expect(find.byIcon(Icons.info), findsOneWidget);
       expect(find.text('Info'), findsOneWidget);
     });
   });

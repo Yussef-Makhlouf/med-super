@@ -69,6 +69,7 @@ class AppButton extends StatelessWidget {
     label: label,
     onPressed: onPressed,
     variant: _AppButtonVariant.text,
+    icon: icon,
     key: key,
   );
 
