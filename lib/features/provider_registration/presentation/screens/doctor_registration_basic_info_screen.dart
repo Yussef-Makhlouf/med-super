@@ -66,8 +66,17 @@ class _DoctorRegistrationBasicInfoScreenState
     }
   }
 
+  /// Mirrors [DoctorRegistrationDraft.basicInfoComplete] against the local
+  /// field state, since nothing is written to the draft controller until
+  /// [_continue] runs — gating on the draft itself would never re-enable.
+  bool get _isBasicInfoValid =>
+      _nameController.text.trim().isNotEmpty &&
+      _specialtyId != null &&
+      _degreeController.text.trim().isNotEmpty &&
+      (int.tryParse(_experienceController.text) ?? 0) > 0;
+
   void _continue() {
-    if (!(_formKey.currentState?.validate() ?? false) || _specialtyId == null) {
+    if (!(_formKey.currentState?.validate() ?? false) || !_isBasicInfoValid) {
       return;
     }
     ref
@@ -147,6 +156,7 @@ class _DoctorRegistrationBasicInfoScreenState
                                   'provider_registration.basic_info.full_name_hint'
                                       .tr(),
                               prefix: const Icon(Icons.person_outline),
+                              onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
                             InkWell(
@@ -177,6 +187,7 @@ class _DoctorRegistrationBasicInfoScreenState
                                   'provider_registration.basic_info.degree_hint'
                                       .tr(),
                               prefix: const Icon(Icons.school_outlined),
+                              onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
@@ -189,6 +200,7 @@ class _DoctorRegistrationBasicInfoScreenState
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
                               prefix: const Icon(Icons.access_time),
+                              onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -207,7 +219,7 @@ class _DoctorRegistrationBasicInfoScreenState
                             const SizedBox(height: 16),
                             AppButton.filled(
                               label: 'provider_registration.continue_cta'.tr(),
-                              onPressed: _continue,
+                              onPressed: _isBasicInfoValid ? _continue : null,
                               icon: const Icon(Icons.arrow_back, size: 18),
                               backgroundColor: AppColors.providerPrimary,
                               foregroundColor: Colors.white,
