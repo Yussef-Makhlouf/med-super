@@ -164,6 +164,9 @@ void main() {
       // extensive comment on this same quirk), which the rest of this
       // codebase's tests already work around the same way.
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      // The header used to also show a search icon with no purpose on a
+      // success screen — removed.
+      expect(find.byIcon(Icons.search), findsNothing);
       expect(_anyTextContains(tester, '#LB-1029'), isTrue);
       expect(find.text('Alpha Diagnostics Lab'), findsOneWidget);
       expect(find.text('12 Tahrir St, Cairo'), findsOneWidget);
