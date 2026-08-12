@@ -242,8 +242,9 @@ void main() {
 
       // Header: title + back icon (the help icon was removed — the back
       // button now occupies that slot). The title text itself is a
-      // `.tr()` key ("lab_booking.select_lab.title") — this suite follows
-      // the codebase convention (see lab_confirm_bottom_bar_test.dart,
+      // `.tr()` key ("lab_booking.step_select_lab" — same wording as the
+      // stepper's own label for this step) — this suite follows the
+      // codebase convention (see lab_confirm_bottom_bar_test.dart,
       // lab_partner_card_test.dart) of asserting structure/icons rather
       // than exact translated copy, since translation resolution timing
       // under flutter_test is not reliable enough to assert on.
@@ -255,6 +256,12 @@ void main() {
       );
       expect(stepper.currentStep, 1);
       expect(stepper.stepLabels, hasLength(3));
+      // The header title must read identically to the stepper's own label
+      // for this step, matching what all three screens of this flow show
+      // — comparing against `stepLabels[1]` (not a hardcoded string) stays
+      // correct regardless of translation-resolution timing, since both
+      // are sourced from the exact same `.tr()` call in production code.
+      expect(find.text(stepper.stepLabels[1]), findsWidgets);
 
       expect(find.byType(LabPartnersMapView), findsOneWidget);
       expect(find.byType(LabSortChipBar), findsOneWidget);

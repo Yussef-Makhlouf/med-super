@@ -210,10 +210,6 @@
       "packages": "Comprehensive packages"
     },
     "select_lab": {
-      "title": "Lab Test Booking",
-      "stepper_tests": "Tests",
-      "stepper_lab": "Lab",
-      "stepper_confirm": "Confirmation",
       "sort_by": "Sort by",
       "sort_price": "Lowest price",
       "sort_rating": "Highest rated",
@@ -238,9 +234,6 @@
     },
     "schedule_payment": {
       "title": "Schedule & Payment",
-      "stepper_services": "Services",
-      "stepper_lab": "Lab",
-      "stepper_schedule": "Schedule & Payment",
       "booking_summary_title": "Booking summary",
       "summary_total_label": "Total",
       "choose_day_title": "Choose a day",

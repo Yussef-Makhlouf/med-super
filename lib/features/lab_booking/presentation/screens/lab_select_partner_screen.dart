@@ -43,10 +43,13 @@ class _LabSelectPartnerScreenState
           children: [
             _Header(),
             StepProgressHeader(
+              // Same step labels/order as the other two steps of this flow
+              // — the stepper must read identically across all three
+              // screens, not per-screen wording.
               stepLabels: [
-                'lab_booking.select_lab.stepper_tests'.tr(),
-                'lab_booking.select_lab.stepper_lab'.tr(),
-                'lab_booking.select_lab.stepper_confirm'.tr(),
+                'lab_booking.step_select_tests'.tr(),
+                'lab_booking.step_select_lab'.tr(),
+                'lab_booking.step_schedule_payment'.tr(),
               ],
               currentStep: 1,
               accentColor: AppColors.patientPrimary,
@@ -133,7 +136,7 @@ class _Header extends StatelessWidget {
           const SizedBox(width: 48),
           Expanded(
             child: Text(
-              'lab_booking.select_lab.title'.tr(),
+              'lab_booking.step_select_lab'.tr(),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,

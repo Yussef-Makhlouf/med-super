@@ -210,10 +210,6 @@
       "packages": "باقات شاملة"
     },
     "select_lab": {
-      "title": "حجز الفحوصات المخبرية",
-      "stepper_tests": "الفحوصات",
-      "stepper_lab": "المختبر",
-      "stepper_confirm": "التأكيد",
       "sort_by": "ترتيب حسب",
       "sort_price": "الأقل سعراً",
       "sort_rating": "الأعلى تقييماً",
@@ -238,9 +234,6 @@
     },
     "schedule_payment": {
       "title": "الموعد والدفع",
-      "stepper_services": "الخدمات",
-      "stepper_lab": "المختبر",
-      "stepper_schedule": "الموعد والدفع",
       "booking_summary_title": "ملخص الحجز",
       "summary_total_label": "الإجمالي",
       "choose_day_title": "اختر اليوم",

@@ -104,10 +104,13 @@ class _LabSchedulePaymentScreenState
           children: [
             _Header(),
             StepProgressHeader(
+              // Same step labels/order as the other two steps of this flow
+              // — the stepper must read identically across all three
+              // screens, not per-screen wording.
               stepLabels: [
-                'lab_booking.schedule_payment.stepper_services'.tr(),
-                'lab_booking.schedule_payment.stepper_lab'.tr(),
-                'lab_booking.schedule_payment.stepper_schedule'.tr(),
+                'lab_booking.step_select_tests'.tr(),
+                'lab_booking.step_select_lab'.tr(),
+                'lab_booking.step_schedule_payment'.tr(),
               ],
               currentStep: 2,
               accentColor: AppColors.patientPrimary,
