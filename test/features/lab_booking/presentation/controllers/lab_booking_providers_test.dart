@@ -190,5 +190,84 @@ void main() {
       final total = await container.read(selectedLabTestsTotalProvider.future);
       expect(total, cheapTest.price + vitaminDTest.price);
     });
+
+    test(
+      'stays correct after switching the active category filter — '
+      'regression test: the total used to resolve against the '
+      'category-filtered labCatalogProvider, so a selected test whose '
+      'category was no longer active silently dropped out of the sum',
+      () async {
+        // 'vitamin-d' (the default selection) belongs to category 'blood'.
+        // Switching the active filter to a category that excludes it must
+        // not change the total.
+        when(
+          () => repository.getCatalog(query: '', categoryId: 'other'),
+        ).thenAnswer(
+          (_) async => Result.ok(
+            LabCatalog(categories: const [category], tests: const [cheapTest], suggestedLabs: const []),
+          ),
+        );
+
+        final totalBefore = await container.read(
+          selectedLabTestsTotalProvider.future,
+        );
+        expect(totalBefore, vitaminDTest.price);
+
+        container.read(activeLabCategoryProvider.notifier).select('other');
+        // labCatalogProvider (category-filtered) now excludes 'vitamin-d'
+        // entirely, but the total must still find it via the unfiltered
+        // allLabTestsProvider.
+        final filteredCatalog = await container.read(
+          labCatalogProvider.future,
+        );
+        expect(
+          filteredCatalog.tests.any((t) => t.id == 'vitamin-d'),
+          isFalse,
+        );
+
+        final totalAfter = await container.read(
+          selectedLabTestsTotalProvider.future,
+        );
+        expect(totalAfter, vitaminDTest.price);
+      },
+    );
+  });
+
+  group('allLabTestsProvider', () {
+    test('always requests the unfiltered catalog (null query/category)', () async {
+      when(
+        () => repository.getCatalog(query: null, categoryId: null),
+      ).thenAnswer((_) async => Result.ok(catalog));
+
+      final result = await container.read(allLabTestsProvider.future);
+
+      expect(result, catalog);
+      verify(() => repository.getCatalog(query: null, categoryId: null)).called(1);
+    });
+
+    test(
+      'does not refetch when activeLabCategory/searchQuery change — it is '
+      'independent of those filters, unlike labCatalogProvider',
+      () async {
+        when(
+          () => repository.getCatalog(query: null, categoryId: null),
+        ).thenAnswer((_) async => Result.ok(catalog));
+        when(
+          () => repository.getCatalog(
+            query: any(named: 'query'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => Result.ok(catalog));
+
+        await container.read(allLabTestsProvider.future);
+        container.read(activeLabCategoryProvider.notifier).select('vitamins');
+        container.read(labSearchQueryProvider.notifier).setQuery('q');
+        await container.read(allLabTestsProvider.future);
+
+        verify(
+          () => repository.getCatalog(query: null, categoryId: null),
+        ).called(1);
+      },
+    );
   });
 }

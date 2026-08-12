@@ -10,5 +10,14 @@ class ConfirmLabBookingUseCase {
   Future<Result<LabBookingConfirmation>> call({
     required String labId,
     required List<String> testIds,
-  }) => _repository.confirmBooking(labId: labId, testIds: testIds);
+    DateTime? scheduledDate,
+    String? scheduledTime,
+    String? paymentMethod,
+  }) => _repository.confirmBooking(
+    labId: labId,
+    testIds: testIds,
+    scheduledDate: scheduledDate,
+    scheduledTime: scheduledTime,
+    paymentMethod: paymentMethod,
+  );
 }

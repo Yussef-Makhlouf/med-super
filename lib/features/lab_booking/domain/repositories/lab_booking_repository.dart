@@ -12,5 +12,8 @@ abstract class LabBookingRepository {
   Future<Result<LabBookingConfirmation>> confirmBooking({
     required String labId,
     required List<String> testIds,
+    DateTime? scheduledDate,
+    String? scheduledTime,
+    String? paymentMethod,
   });
 }

@@ -30,10 +30,20 @@ class LabBookingRemoteDatasource {
   Future<LabBookingConfirmation> confirmBooking({
     required String labId,
     required List<String> testIds,
+    DateTime? scheduledDate,
+    String? scheduledTime,
+    String? paymentMethod,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.labBookings,
-      data: {'lab_id': labId, 'test_ids': testIds},
+      data: {
+        'lab_id': labId,
+        'test_ids': testIds,
+        if (scheduledDate != null)
+          'scheduled_date': scheduledDate.toIso8601String(),
+        if (scheduledTime != null) 'scheduled_time': scheduledTime,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+      },
     );
     return LabBookingConfirmationDto.fromJson(
       response.data ?? const {},

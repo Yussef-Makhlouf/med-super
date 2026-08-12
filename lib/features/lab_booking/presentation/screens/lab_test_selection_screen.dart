@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_booking_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_partner_providers.dart';
@@ -25,7 +26,6 @@ class _LabTestSelectionScreenState
   late final _searchController = TextEditingController(
     text: ref.read(labSearchQueryProvider),
   );
-  bool _addingLabId = false;
 
   @override
   void dispose() {
@@ -33,7 +33,7 @@ class _LabTestSelectionScreenState
     super.dispose();
   }
 
-  Future<void> _addSuggestedLab(String labId) async {
+  void _addSuggestedLab(String labId) {
     final testIds = ref.read(selectedLabTestsProvider);
     if (testIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,19 +41,8 @@ class _LabTestSelectionScreenState
       );
       return;
     }
-    setState(() => _addingLabId = true);
-    final result = await ref
-        .read(confirmLabBookingUseCaseProvider)
-        .call(labId: labId, testIds: testIds.toList());
-    if (!mounted) return;
-    setState(() => _addingLabId = false);
-    result.when(
-      ok: (confirmation) =>
-          context.push('/patient/lab/confirmation', extra: confirmation),
-      err: (failure) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('lab_booking.select_lab.confirm_error'.tr())),
-      ),
-    );
+    ref.read(selectedLabPartnerProvider.notifier).select(labId);
+    context.push('/patient/lab/schedule-payment');
   }
 
   @override
@@ -116,18 +105,28 @@ class _LabTestSelectionScreenState
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ...catalog.tests.map(
-                      (test) => Padding(
-                        padding: const EdgeInsets.only(bottom: 24),
-                        child: SelectableTestCard(
-                          test: test,
-                          isSelected: selectedIds.contains(test.id),
-                          onToggle: () => ref
-                              .read(selectedLabTestsProvider.notifier)
-                              .toggle(test.id),
+                    if (catalog.tests.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: EmptyState(
+                          icon: Icons.search_off,
+                          title: 'lab_booking.no_results_title'.tr(),
+                          subtitle: 'lab_booking.no_results_subtitle'.tr(),
+                        ),
+                      )
+                    else
+                      ...catalog.tests.map(
+                        (test) => Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: SelectableTestCard(
+                            test: test,
+                            isSelected: selectedIds.contains(test.id),
+                            onToggle: () => ref
+                                .read(selectedLabTestsProvider.notifier)
+                                .toggle(test.id),
+                          ),
                         ),
                       ),
-                    ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -153,9 +152,7 @@ class _LabTestSelectionScreenState
                         padding: const EdgeInsets.only(bottom: 12),
                         child: SuggestedLabCard(
                           lab: lab,
-                          onAdd: _addingLabId
-                              ? null
-                              : () => _addSuggestedLab(lab.id),
+                          onAdd: () => _addSuggestedLab(lab.id),
                         ),
                       ),
                     ),
@@ -192,10 +189,10 @@ class _Header extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(Icons.arrow_back),
-                ),
+                // Balances the trailing back button's width so the title
+                // stays visually centered now that nothing occupies the
+                // leading slot.
+                const SizedBox(width: 48),
                 Expanded(
                   child: Text(
                     'lab_booking.title'.tr(),
@@ -208,8 +205,8 @@ class _Header extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.help_outline, size: 16),
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_forward),
                 ),
               ],
             ),

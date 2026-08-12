@@ -15,6 +15,20 @@ abstract final class AppFormatters {
   static String time(DateTime date, {String locale = 'en'}) =>
       DateFormat.jm(locale).format(date);
 
+  /// Formats a 24h "HH:mm" string (e.g. from a time-slot API) as a localized
+  /// 12h clock time — "10:30 AM".
+  static String time12h(String hhmm, {String locale = 'en'}) {
+    final parts = hhmm.split(':');
+    final reference = DateTime(
+      2000,
+      1,
+      1,
+      int.parse(parts[0]),
+      int.parse(parts.length > 1 ? parts[1] : '0'),
+    );
+    return time(reference, locale: locale);
+  }
+
   /// "EGP 450.00" — default currency Egyptian Pound.
   static String currency(
     num amount, {

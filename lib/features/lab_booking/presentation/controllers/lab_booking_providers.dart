@@ -31,6 +31,20 @@ Future<LabCatalog> labCatalog(Ref ref) async {
   return result.when(ok: (value) => value, err: (failure) => throw failure);
 }
 
+/// The full, unfiltered catalog — kept separate from [labCatalogProvider]
+/// (which is scoped to the active category/search query) specifically so
+/// [selectedLabTestsTotalProvider] can always resolve the price of a test
+/// selected under a *different* filter than the one currently active,
+/// instead of silently dropping it from the total the moment the user
+/// switches category or types a search query.
+@riverpod
+Future<LabCatalog> allLabTests(Ref ref) async {
+  final result = await ref
+      .watch(getLabCatalogUseCaseProvider)
+      .call(query: null, categoryId: null);
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
+
 /// Active category chip filter ('all' package chip is pre-selected by design).
 @riverpod
 class ActiveLabCategory extends _$ActiveLabCategory {
@@ -62,10 +76,13 @@ class SelectedLabTests extends _$SelectedLabTests {
   }
 }
 
-/// Live total price of the current selection.
+/// Live total price of the current selection. Resolved against
+/// [allLabTestsProvider] (unfiltered), not the category/search-scoped
+/// [labCatalogProvider], so switching filters never drops an already
+/// -selected test's price out of the total.
 @riverpod
 Future<int> selectedLabTestsTotal(Ref ref) async {
-  final catalog = await ref.watch(labCatalogProvider.future);
+  final catalog = await ref.watch(allLabTestsProvider.future);
   final selectedIds = ref.watch(selectedLabTestsProvider);
   return catalog.tests
       .where((t) => selectedIds.contains(t.id))

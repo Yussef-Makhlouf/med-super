@@ -24,23 +24,9 @@ class LabSelectPartnerScreen extends ConsumerStatefulWidget {
 
 class _LabSelectPartnerScreenState
     extends ConsumerState<LabSelectPartnerScreen> {
-  bool _confirming = false;
-
-  Future<void> _confirm(String labId) async {
-    setState(() => _confirming = true);
-    final testIds = ref.read(selectedLabTestsProvider).toList();
-    final result = await ref
-        .read(confirmLabBookingUseCaseProvider)
-        .call(labId: labId, testIds: testIds);
-    if (!mounted) return;
-    setState(() => _confirming = false);
-    result.when(
-      ok: (confirmation) =>
-          context.push('/patient/lab/confirmation', extra: confirmation),
-      err: (failure) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('lab_booking.select_lab.confirm_error'.tr())),
-      ),
-    );
+  void _continue(String labId) {
+    ref.read(selectedLabPartnerProvider.notifier).select(labId);
+    context.push('/patient/lab/schedule-payment');
   }
 
   @override
@@ -118,13 +104,13 @@ class _LabSelectPartnerScreenState
             ),
             LabConfirmBottomBar(
               totalPrice: totalAsync.value ?? 0,
-              isSubmitting: _confirming,
+              isSubmitting: false,
               onContinue: () {
                 final partners = partnersAsync.value ?? const [];
                 final labId =
                     explicitSelectedId ??
                     (partners.isEmpty ? null : partners.first.id);
-                if (labId != null) _confirm(labId);
+                if (labId != null) _continue(labId);
               },
             ),
           ],
@@ -142,10 +128,9 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back),
-          ),
+          // Balances the trailing back button's width so the title stays
+          // visually centered now that nothing occupies the leading slot.
+          const SizedBox(width: 48),
           Expanded(
             child: Text(
               'lab_booking.select_lab.title'.tr(),
@@ -158,8 +143,8 @@ class _Header extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.help_outline, size: 20),
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_forward),
           ),
         ],
       ),

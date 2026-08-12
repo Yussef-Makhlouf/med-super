@@ -82,6 +82,11 @@ Future<GoRouter> pumpWithRouter(
             const Scaffold(body: Text('select-lab-screen')),
       ),
       GoRoute(
+        path: '/patient/lab/schedule-payment',
+        builder: (context, state) =>
+            const Scaffold(body: Text('schedule-payment-screen')),
+      ),
+      GoRoute(
         path: '/patient/lab/confirmation',
         builder: (context, state) {
           final extra = state.extra as LabBookingConfirmation?;
@@ -223,8 +228,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      expect(find.byIcon(Icons.help_outline), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+      // The header's help icon was removed in favor of the back button
+      // occupying that slot.
+      expect(find.byIcon(Icons.help_outline), findsNothing);
 
       final stepper = tester.widget<StepProgressHeader>(
         find.byType(StepProgressHeader),
@@ -335,6 +342,37 @@ void main() {
     expect(find.byType(SelectableTestCard), findsNWidgets(catalog.tests.length));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'shows an empty state instead of a blank list when the catalog has no '
+    'tests (e.g. a search with no results)',
+    (tester) async {
+      when(
+        () => catalogRepo.getCatalog(
+          query: any(named: 'query'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (_) async => Result.ok(
+          const LabCatalog(categories: [category], tests: [], suggestedLabs: [suggestedLab]),
+        ),
+      );
+
+      await pumpLocalizedWidget(
+        tester,
+        const LabTestSelectionScreen(),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SelectableTestCard), findsNothing);
+      expect(find.byIcon(Icons.search_off), findsOneWidget);
+      // Suggested labs are unrelated to the test search and must still
+      // render even when the test list itself is empty.
+      expect(find.byType(SuggestedLabCard), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('typing in the search field re-fetches the catalog with the query', (
     tester,
@@ -574,8 +612,8 @@ void main() {
   );
 
   testWidgets(
-    'tapping a suggested lab\'s add button with a selection confirms the '
-    'booking and navigates to the confirmation route',
+    'tapping a suggested lab\'s add button with a selection selects that '
+    'lab and navigates to the schedule & payment route',
     (tester) async {
       await pumpWithRouter(
         tester,
@@ -587,53 +625,16 @@ void main() {
       await tester.tap(find.byType(IconButton).last);
       await tester.pumpAndSettle();
 
-      verify(
-        () => bookingRepo.confirmBooking(
-          labId: 'lab-1',
-          testIds: ['vitamin-d'],
-        ),
-      ).called(1);
-
-      expect(find.text('confirmation-screen:BK-2002'), findsOneWidget);
-
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'confirming with an error shows the error snackbar and stays on the same screen',
-    (tester) async {
-      when(
+      // Booking confirmation now happens on the schedule & payment step,
+      // not here — adding a suggested lab just records the choice and
+      // moves on.
+      verifyNever(
         () => bookingRepo.confirmBooking(
           labId: any(named: 'labId'),
           testIds: any(named: 'testIds'),
         ),
-      ).thenAnswer((_) async => const Result.err(Failure.network()));
-
-      await pumpWithRouter(
-        tester,
-        const LabTestSelectionScreen(),
-        overrides: overrides(),
       );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(IconButton).last);
-      // A couple of bounded `pump()`s (not `pumpAndSettle()`) — the first
-      // lets any pending microtask (e.g. the mocked repository call's
-      // Future) resolve and the SnackBar's overlay entry get scheduled, the
-      // second renders it; `pumpAndSettle` runs until no more frames are
-      // scheduled at all, which under the fake test clock fast-forwards
-      // straight through the SnackBar's own auto-dismiss timer too.
-      await tester.pump();
-      await tester.pump();
-
-      // Same translation-timing caveat as above: assert the SnackBar
-      // appeared rather than its exact `.tr()`-resolved copy.
-      expect(
-        find.byType(SnackBar),
-        findsOneWidget,
-      );
-      expect(find.textContaining('confirmation-screen:'), findsNothing);
+      expect(find.text('schedule-payment-screen'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
     },
@@ -651,7 +652,7 @@ void main() {
 
     expect(find.text('start-placeholder'), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.tap(find.byIcon(Icons.arrow_forward));
     await tester.pumpAndSettle();
 
     expect(find.text('start-placeholder'), findsOneWidget);

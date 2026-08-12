@@ -29,11 +29,17 @@ class LabBookingRepositoryImpl implements LabBookingRepository {
   Future<Result<LabBookingConfirmation>> confirmBooking({
     required String labId,
     required List<String> testIds,
+    DateTime? scheduledDate,
+    String? scheduledTime,
+    String? paymentMethod,
   }) async {
     try {
       final result = await _remote.confirmBooking(
         labId: labId,
         testIds: testIds,
+        scheduledDate: scheduledDate,
+        scheduledTime: scheduledTime,
+        paymentMethod: paymentMethod,
       );
       return Result.ok(result);
     } catch (e, st) {

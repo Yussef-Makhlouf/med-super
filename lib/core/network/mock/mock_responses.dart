@@ -577,7 +577,11 @@ void registerLabBookingMocks(MockInterceptor interceptor) {
         .where((t) => t['requires_fasting'] == true)
         .map((t) => t['fasting_hours'] as int? ?? 0)
         .fold<int>(0, (max, h) => h > max ? h : max);
-    final bookingDate = DateTime.now().add(const Duration(days: 1));
+    final scheduledDateRaw = body['scheduled_date'] as String?;
+    final bookingDate = scheduledDateRaw != null
+        ? DateTime.parse(scheduledDateRaw)
+        : DateTime.now().add(const Duration(days: 1));
+    final bookingTime = body['scheduled_time'] as String? ?? '10:00';
     return {
       'statusCode': 200,
       'data': {
@@ -585,7 +589,7 @@ void registerLabBookingMocks(MockInterceptor interceptor) {
         'lab_name': lab['name'],
         'lab_address': 'طريق الملك فهد، الرياض',
         'date': bookingDate.toIso8601String(),
-        'time': '10:00',
+        'time': bookingTime,
         if (fastingHours > 0) 'fasting_hours': fastingHours,
       },
     };

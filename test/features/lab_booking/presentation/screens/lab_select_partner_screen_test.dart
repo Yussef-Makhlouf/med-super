@@ -83,6 +83,11 @@ Future<GoRouter> pumpWithRouter(
       ),
       GoRoute(path: '/select-lab', builder: (context, state) => child),
       GoRoute(
+        path: '/patient/lab/schedule-payment',
+        builder: (context, state) =>
+            const Scaffold(body: Text('schedule-payment-screen')),
+      ),
+      GoRoute(
         path: '/patient/lab/confirmation',
         builder: (context, state) {
           final extra = state.extra as LabBookingConfirmation?;
@@ -235,14 +240,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Header: back icon + title + help icon. The title text itself is a
+      // Header: title + back icon (the help icon was removed — the back
+      // button now occupies that slot). The title text itself is a
       // `.tr()` key ("lab_booking.select_lab.title") — this suite follows
       // the codebase convention (see lab_confirm_bottom_bar_test.dart,
       // lab_partner_card_test.dart) of asserting structure/icons rather
       // than exact translated copy, since translation resolution timing
       // under flutter_test is not reliable enough to assert on.
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-      expect(find.byIcon(Icons.help_outline), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+      expect(find.byIcon(Icons.help_outline), findsNothing);
 
       final stepper = tester.widget<StepProgressHeader>(
         find.byType(StepProgressHeader),
@@ -418,7 +424,8 @@ void main() {
   );
 
   testWidgets(
-    'confirming navigates to the confirmation route with the booking result',
+    'tapping continue selects the lab and navigates to the schedule & '
+    'payment route',
     (tester) async {
       await pumpWithRouter(
         tester,
@@ -434,84 +441,21 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!();
       await tester.pumpAndSettle();
 
-      verify(
+      // Booking confirmation now happens on the schedule & payment step,
+      // not here — this screen's job is just to record the choice and move
+      // on.
+      verifyNever(
         () => bookingRepo.confirmBooking(
-          labId: 'p1',
-          testIds: ['vitamin-d'],
+          labId: any(named: 'labId'),
+          testIds: any(named: 'testIds'),
         ),
-      ).called(1);
-
-      // The placeholder confirmation route renders once it's pushed with
-      // the confirmation object as `extra`.
-      expect(find.text('confirmation-screen:BK-1001'), findsOneWidget);
+      );
+      expect(find.text('schedule-payment-screen'), findsOneWidget);
       expect(find.text('start-placeholder'), findsNothing);
 
       expect(tester.takeException(), isNull);
     },
   );
-
-  testWidgets(
-    'confirming with an error shows the error snackbar and does not navigate',
-    (tester) async {
-      when(
-        () => bookingRepo.confirmBooking(
-          labId: any(named: 'labId'),
-          testIds: any(named: 'testIds'),
-        ),
-      ).thenAnswer((_) async => const Result.err(Failure.network()));
-
-      await pumpWithRouter(
-        tester,
-        const LabSelectPartnerScreen(),
-        overrides: overrides(),
-      );
-      await tester.pumpAndSettle();
-
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!();
-      await tester.pumpAndSettle();
-
-      // The error path shows a SnackBar rather than navigating — assert on
-      // the widget itself rather than its `.tr()`-resolved copy.
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.textContaining('confirmation-screen:'), findsNothing);
-
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('shows a spinner on the bottom bar while confirming', (
-    tester,
-  ) async {
-    final completer = Completer<Result<LabBookingConfirmation>>();
-    when(
-      () => bookingRepo.confirmBooking(
-        labId: any(named: 'labId'),
-        testIds: any(named: 'testIds'),
-      ),
-    ).thenAnswer((_) => completer.future);
-
-    await tester.runAsync(() async {
-      await pumpWithRouter(
-        tester,
-        const LabSelectPartnerScreen(),
-        overrides: overrides(),
-      );
-      await tester.pumpAndSettle();
-
-      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!();
-      await tester.pump();
-
-      final bottomBar = tester.widget<LabConfirmBottomBar>(
-        find.byType(LabConfirmBottomBar),
-      );
-      expect(bottomBar.isSubmitting, isTrue);
-
-      completer.complete(Result.ok(confirmation));
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-    });
-  });
 
   testWidgets('tapping the back button pops the screen', (tester) async {
     await pumpWithRouter(
@@ -529,7 +473,7 @@ void main() {
     // flaky under `flutter_test` (missing `ink_sparkle` shader).
     final backButton = tester.widget<IconButton>(
       find.ancestor(
-        of: find.byIcon(Icons.arrow_back),
+        of: find.byIcon(Icons.arrow_forward),
         matching: find.byType(IconButton),
       ),
     );

@@ -201,6 +201,8 @@
     "step_select_lab": "Select lab",
     "step_schedule_payment": "Schedule & payment",
     "select_tests_first": "Please select at least one test first.",
+    "no_results_title": "No results found",
+    "no_results_subtitle": "Try a different search term or category.",
     "categories": {
       "liver": "Liver function",
       "vitamins": "Vitamins",
@@ -233,6 +235,27 @@
       "instructions_body": "Please fast for {} hours before your test. Drinking water is allowed.",
       "go_to_bookings_cta": "Go to my bookings",
       "go_home_cta": "Home"
+    },
+    "schedule_payment": {
+      "title": "Schedule & Payment",
+      "stepper_services": "Services",
+      "stepper_lab": "Lab",
+      "stepper_schedule": "Schedule & Payment",
+      "booking_summary_title": "Booking summary",
+      "summary_total_label": "Total",
+      "choose_day_title": "Choose a day",
+      "choose_time_title": "Choose a time",
+      "morning_period_label": "Morning (9:00 AM - 12:00 PM)",
+      "evening_period_label": "Evening (4:00 PM - 9:00 PM)",
+      "payment_method_title": "Payment method",
+      "payment_credit_card": "Credit card",
+      "payment_apple_pay": "Apple Pay",
+      "payment_cash": "Cash at the lab",
+      "select_time_first": "Please choose a booking time first.",
+      "confirm_payment_cta": "Confirm payment ({} EGP)",
+      "confirm_terms_prefix": "By tapping \"Confirm payment\" you agree to the",
+      "confirm_terms_link": "Terms & Conditions",
+      "confirm_error": "Something went wrong confirming your booking. Please try again."
     }
   },
   "provider_registration": {

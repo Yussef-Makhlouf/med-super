@@ -192,6 +192,64 @@ final class LabCatalogProvider
 
 String _$labCatalogHash() => r'339fb736e44297ad598eddffcbe1716d06cab347';
 
+/// The full, unfiltered catalog — kept separate from [labCatalogProvider]
+/// (which is scoped to the active category/search query) specifically so
+/// [selectedLabTestsTotalProvider] can always resolve the price of a test
+/// selected under a *different* filter than the one currently active,
+/// instead of silently dropping it from the total the moment the user
+/// switches category or types a search query.
+
+@ProviderFor(allLabTests)
+final allLabTestsProvider = AllLabTestsProvider._();
+
+/// The full, unfiltered catalog — kept separate from [labCatalogProvider]
+/// (which is scoped to the active category/search query) specifically so
+/// [selectedLabTestsTotalProvider] can always resolve the price of a test
+/// selected under a *different* filter than the one currently active,
+/// instead of silently dropping it from the total the moment the user
+/// switches category or types a search query.
+
+final class AllLabTestsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<LabCatalog>,
+          LabCatalog,
+          FutureOr<LabCatalog>
+        >
+    with $FutureModifier<LabCatalog>, $FutureProvider<LabCatalog> {
+  /// The full, unfiltered catalog — kept separate from [labCatalogProvider]
+  /// (which is scoped to the active category/search query) specifically so
+  /// [selectedLabTestsTotalProvider] can always resolve the price of a test
+  /// selected under a *different* filter than the one currently active,
+  /// instead of silently dropping it from the total the moment the user
+  /// switches category or types a search query.
+  AllLabTestsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'allLabTestsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$allLabTestsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<LabCatalog> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<LabCatalog> create(Ref ref) {
+    return allLabTests(ref);
+  }
+}
+
+String _$allLabTestsHash() => r'25ae7f4fedfd11666f2d46dc27cf81e7e731f524';
+
 /// Active category chip filter ('all' package chip is pre-selected by design).
 
 @ProviderFor(ActiveLabCategory)
@@ -366,17 +424,26 @@ abstract class _$SelectedLabTests extends $Notifier<Set<String>> {
   }
 }
 
-/// Live total price of the current selection.
+/// Live total price of the current selection. Resolved against
+/// [allLabTestsProvider] (unfiltered), not the category/search-scoped
+/// [labCatalogProvider], so switching filters never drops an already
+/// -selected test's price out of the total.
 
 @ProviderFor(selectedLabTestsTotal)
 final selectedLabTestsTotalProvider = SelectedLabTestsTotalProvider._();
 
-/// Live total price of the current selection.
+/// Live total price of the current selection. Resolved against
+/// [allLabTestsProvider] (unfiltered), not the category/search-scoped
+/// [labCatalogProvider], so switching filters never drops an already
+/// -selected test's price out of the total.
 
 final class SelectedLabTestsTotalProvider
     extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
     with $FutureModifier<int>, $FutureProvider<int> {
-  /// Live total price of the current selection.
+  /// Live total price of the current selection. Resolved against
+  /// [allLabTestsProvider] (unfiltered), not the category/search-scoped
+  /// [labCatalogProvider], so switching filters never drops an already
+  /// -selected test's price out of the total.
   SelectedLabTestsTotalProvider._()
     : super(
         from: null,
@@ -403,4 +470,4 @@ final class SelectedLabTestsTotalProvider
 }
 
 String _$selectedLabTestsTotalHash() =>
-    r'ab6b0021b799b43dfeaff849eee0c1eb0c5b3c93';
+    r'543d8b2f937efb8ec5ced186594a7f6586e0fb04';

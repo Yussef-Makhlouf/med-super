@@ -201,7 +201,7 @@ final class RegistrationFormControllerProvider
 }
 
 String _$registrationFormControllerHash() =>
-    r'21e3cb9fca545aba40bf863b81b3ba5f56ece738';
+    r'6a9eb84ec5493a06c0ba756f113e6d572c5bafa3';
 
 /// Holds the in-progress multi-step draft, auto-saved to Hive on every change
 /// so the flow survives an app restart before final submission.
