@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// Sprint 0 stub — placeholder for the provider home.
 /// Doctor calendar built in Sprint 6.
@@ -11,26 +12,35 @@ class ProviderHomeScreen extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MedSuper Pro'),
-      ),
+      appBar: AppBar(title: const Text('MedSuper Pro')),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.calendar_month_outlined,
-                size: 72, color: colorScheme.primary),
+            Icon(
+              Icons.calendar_month_outlined,
+              size: 72,
+              color: colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             Text(
               'Provider Dashboard',
-              style: textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Sprint 6 — doctor calendar & clinic queue',
-              style: textTheme.bodyMedium
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () =>
+                  context.push('/provider/registration/basic-info'),
+              child: const Text('سجّل بياناتك المهنية لتفعيل حسابك'),
             ),
           ],
         ),

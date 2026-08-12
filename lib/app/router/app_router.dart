@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/app/flavor.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
+import 'package:med_super/core/constants/storage_keys.dart';
+import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
 import 'package:med_super/app/router/routes/lab_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
+import 'package:med_super/app/router/routes/provider_registration_routes.dart';
 import 'package:med_super/app/router/routes/search_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/notifications_placeholder_screen.dart';
-import 'package:med_super/features/home/presentation/screens/profile_placeholder_screen.dart';
+import 'package:med_super/features/profile_settings/presentation/screens/edit_profile_screen.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
@@ -23,6 +26,9 @@ final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
 
 bool _isPublicAuthRoute(String path) =>
     path == '/login' || path == '/verify-otp';
+
+bool _isProviderRegistrationRoute(String path) =>
+    path.startsWith('/provider/registration');
 
 @riverpod
 GoRouter appRouter(Ref ref) {
@@ -55,13 +61,39 @@ GoRouter appRouter(Ref ref) {
           return '/login';
         }
 
+        if (flavor.isProvider) {
+          // Providers skip the generic onboarding screen entirely — the
+          // registration flow's own basic-info step already collects the
+          // display name, and registration is mandatory before reaching
+          // the provider home screen.
+          final registrationSubmitted =
+              ref
+                  .read(hiveServiceProvider)
+                  .settingsBox
+                  .get(SettingsKeys.providerRegistrationSubmitted) ==
+              'true';
+          final isRegistrationRoute = _isProviderRegistrationRoute(path);
+
+          if (isAuthRoute || isOnboarding) {
+            return registrationSubmitted
+                ? '/provider/home'
+                : '/provider/registration/basic-info';
+          }
+
+          if (!registrationSubmitted && !isRegistrationRoute) {
+            return '/provider/registration/basic-info';
+          }
+
+          return null;
+        }
+
         if (isAuthRoute) {
           if (!session.onboardingComplete) return '/onboarding';
-          return flavor.isPatient ? '/patient/home' : '/provider/home';
+          return '/patient/home';
         }
 
         if (isOnboarding && session.onboardingComplete) {
-          return flavor.isPatient ? '/patient/home' : '/provider/home';
+          return '/patient/home';
         }
       }
 
@@ -98,7 +130,7 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/appointments',
             name: 'patientAppointments',
-            builder: (context, state) => const AppointmentsPlaceholderScreen(),
+            builder: (context, state) => const PatientAppointmentsScreen(),
           ),
         ],
       ),
@@ -107,7 +139,7 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/orders',
             name: 'patientOrders',
-            builder: (context, state) => const OrdersPlaceholderScreen(),
+            builder: (context, state) => const PatientOrdersScreen(),
           ),
         ],
       ),
@@ -116,7 +148,7 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/notifications',
             name: 'patientNotifications',
-            builder: (context, state) => const NotificationsPlaceholderScreen(),
+            builder: (context, state) => const PatientNotificationsScreen(),
           ),
         ],
       ),
@@ -125,7 +157,7 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/profile',
             name: 'patientProfile',
-            builder: (context, state) => const ProfilePlaceholderScreen(),
+            builder: (context, state) => const EditProfileScreen(),
           ),
         ],
       ),
@@ -133,4 +165,7 @@ List<RouteBase> _patientRoutes() => [
   ),
 ];
 
-List<RouteBase> _providerRoutes() => [...providerDashboardRoutes];
+List<RouteBase> _providerRoutes() => [
+  ...providerDashboardRoutes,
+  ...providerRegistrationRoutes,
+];

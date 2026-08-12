@@ -591,3 +591,39 @@ void registerLabBookingMocks(MockInterceptor interceptor) {
     };
   });
 }
+
+// ─── Provider Registration mocks ───────────────────────────────────────────
+
+/// Registers Doctor/Provider Registration mock responses.
+void registerProviderRegistrationMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', ApiPaths.providerRegistrationLookups, (options) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'specialties': [
+          {'id': 'family-medicine', 'label': 'طب الأسرة والمجتمع'},
+          {'id': 'pediatrics', 'label': 'طب الأطفال'},
+          {'id': 'cardiology', 'label': 'جراحة القلب'},
+          {'id': 'dermatology', 'label': 'الأمراض الجلدية'},
+          {'id': 'ophthalmology', 'label': 'طب وجراحة العيون'},
+        ],
+        'cities': [
+          {'id': 'cairo', 'label': 'القاهرة'},
+          {'id': 'giza', 'label': 'الجيزة'},
+          {'id': 'alexandria', 'label': 'الإسكندرية'},
+          {'id': 'riyadh', 'label': 'الرياض'},
+        ],
+      },
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.providerRegistrationSubmit, (options) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'status': 'pending_review',
+        'submitted_at': DateTime.now().toIso8601String(),
+      },
+    };
+  });
+}

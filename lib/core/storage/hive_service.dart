@@ -42,6 +42,10 @@ class HiveService {
         HiveBoxNames.labTestsCache,
         encryptionCipher: cipher,
       ),
+      Hive.openBox<String>(
+        HiveBoxNames.providerRegistrationDraft,
+        encryptionCipher: cipher,
+      ),
     ]);
   }
 
@@ -63,6 +67,8 @@ class HiveService {
       Hive.box<String>(HiveBoxNames.appointmentCache);
   Box<String> get labTestsCacheBox =>
       Hive.box<String>(HiveBoxNames.labTestsCache);
+  Box<String> get providerRegistrationDraftBox =>
+      Hive.box<String>(HiveBoxNames.providerRegistrationDraft);
 }
 
 /// Generic JSON-backed cache store. Stores entities as JSON strings in Hive.
