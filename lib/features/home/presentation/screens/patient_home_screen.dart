@@ -243,7 +243,7 @@ class _PromoBanner extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: FilledButton(
-                  onPressed: () {},
+                  onPressed: () => context.push('/patient/lab/upload'),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: brandBlue,
