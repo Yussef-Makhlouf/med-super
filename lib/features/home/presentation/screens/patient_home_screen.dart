@@ -312,7 +312,7 @@ class _QuickActions extends StatelessWidget {
             iconColor: const Color(0xFF14B8A6),
             title: 'home.upload_rx'.tr(),
             subtitle: 'home.upload_rx_sub'.tr(),
-            onTap: () {},
+            onTap: () => context.push('/patient/pharmacy/upload'),
           ),
         ),
       ],
