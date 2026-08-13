@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/network/mock/mock_responses.dart';
 import 'package:med_super/core/theme/app_theme.dart';
@@ -115,7 +114,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             context.go('/onboarding');
           } else {
             context.go(
-              currentFlavor.isPatient ? '/patient/home' : '/provider/home',
+              value.user.isPatient ? '/patient/home' : '/provider/home',
             );
           }
         case Err(:final failure):

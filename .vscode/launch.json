@@ -2,35 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Patient (debug)",
+      "name": "MedSuper (debug)",
       "type": "dart",
       "request": "launch",
-      "program": "lib/main_patient.dart",
-      "args": ["--flavor", "patient"],
+      "program": "lib/main.dart",
       "flutterMode": "debug"
     },
     {
-      "name": "Provider (debug)",
+      "name": "MedSuper (release)",
       "type": "dart",
       "request": "launch",
-      "program": "lib/main_provider.dart",
-      "args": ["--flavor", "provider"],
-      "flutterMode": "debug"
-    },
-    {
-      "name": "Patient (release)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_patient.dart",
-      "args": ["--flavor", "patient"],
-      "flutterMode": "release"
-    },
-    {
-      "name": "Provider (release)",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_provider.dart",
-      "args": ["--flavor", "provider"],
+      "program": "lib/main.dart",
       "flutterMode": "release"
     }
   ]

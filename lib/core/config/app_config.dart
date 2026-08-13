@@ -1,7 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:med_super/app/flavor.dart';
-
-export 'package:med_super/app/flavor.dart' show currentFlavor;
 
 final class AppConfig {
   AppConfig._();
@@ -22,6 +19,4 @@ final class AppConfig {
   bool get isMock => baseUrl == _mockBaseUrl;
 
   bool get isDebug => kDebugMode;
-
-  String get appDisplayName => currentFlavor.displayName;
 }

@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -25,9 +24,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  String get _home =>
-      currentFlavor.isPatient ? '/patient/home' : '/provider/home';
-
   Future<void> _finish({required bool skip}) async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -39,8 +35,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           );
       if (!mounted) return;
       switch (result) {
-        case Ok():
-          context.go(_home);
+        case Ok(:final value):
+          context.go(value.user.isPatient ? '/patient/home' : '/provider/home');
         case Err(:final failure):
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(failureMessage(failure).tr())),

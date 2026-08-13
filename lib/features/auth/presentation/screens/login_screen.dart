@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
@@ -28,7 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _role = currentFlavor.isPatient ? UserRole.patient : UserRole.doctor;
+    _role = UserRole.patient;
   }
 
   @override

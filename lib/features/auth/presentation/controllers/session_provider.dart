@@ -1,4 +1,3 @@
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/error/failure.dart';
@@ -30,14 +29,6 @@ class Session {
         user: user ?? this.user,
         onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       );
-}
-
-bool roleMatchesFlavor(UserRole role, Flavor flavor) {
-  if (flavor.isPatient) return role == UserRole.patient;
-  return role == UserRole.doctor ||
-      role == UserRole.clinic ||
-      role == UserRole.pharmacy ||
-      role == UserRole.lab;
 }
 
 /// Formats a Saudi local 9-digit (or longer) number as E.164 `+966…`.
@@ -77,11 +68,8 @@ class SessionController extends _$SessionController {
         user: User(
           id: 'dev-user',
           phone: '+966500000000',
-          roles: [
-            currentFlavor.isPatient ? UserRole.patient : UserRole.doctor,
-          ],
-          activeRole:
-              currentFlavor.isPatient ? UserRole.patient : UserRole.doctor,
+          roles: [UserRole.patient],
+          activeRole: UserRole.patient,
           displayName: 'Dev User',
         ),
         onboardingComplete: true,
@@ -115,13 +103,6 @@ class SessionController extends _$SessionController {
     required String phone,
     required UserRole role,
   }) async {
-    if (!roleMatchesFlavor(role, currentFlavor)) {
-      return Result.err(
-        Failure.validation({
-          'role': 'auth.role_flavor_mismatch',
-        }),
-      );
-    }
     return ref.read(requestOtpUseCaseProvider).call(
           phone: phone,
           role: role,
@@ -133,14 +114,6 @@ class SessionController extends _$SessionController {
     required String code,
     required UserRole role,
   }) async {
-    if (!roleMatchesFlavor(role, currentFlavor)) {
-      return Result.err(
-        Failure.validation({
-          'role': 'auth.role_flavor_mismatch',
-        }),
-      );
-    }
-
     final tokensResult = await ref.read(verifyOtpUseCaseProvider).call(
           phone: phone,
           code: code,
@@ -160,14 +133,6 @@ class SessionController extends _$SessionController {
         await ref.read(secureStorageProvider).clearTokens();
         return Result.err(failure);
       case Ok(:final value):
-        if (!roleMatchesFlavor(value.activeRole, currentFlavor)) {
-          await ref.read(secureStorageProvider).clearTokens();
-          return Result.err(
-            Failure.validation({
-              'role': 'auth.role_flavor_mismatch',
-            }),
-          );
-        }
         final session = Session(
           user: value,
           onboardingComplete: _readOnboardingComplete(),
