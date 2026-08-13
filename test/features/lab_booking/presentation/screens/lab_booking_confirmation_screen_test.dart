@@ -1,42 +1,25 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
 import 'package:med_super/features/lab_booking/presentation/screens/lab_booking_confirmation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Reads `assets/translations/<locale>.json` straight off disk, mirroring
-/// `test/helpers/pump_localized_widget.dart`'s loader so `.tr()` resolves
-/// real strings synchronously in tests.
-class _SyncFileAssetLoader extends AssetLoader {
-  const _SyncFileAssetLoader();
-
-  @override
-  Future<Map<String, dynamic>?> load(String path, Locale locale) {
-    final file = File('$path/${locale.languageCode}.json');
-    final content = file.readAsStringSync();
-    return SynchronousFuture(json.decode(content) as Map<String, dynamic>);
-  }
-}
-
-/// Pumps the confirmation screen behind a real [GoRouter] so `context.pop()`
-/// and `context.go(...)` work. The initial route is a placeholder with a
-/// recognizable label; the confirmation screen is pushed on top of it so
-/// tapping back can be verified by that placeholder reappearing. Two more
-/// placeholder routes stand in for `/patient/appointments` and
-/// `/patient/home` so navigation there can be asserted the same way.
+/// Pumps the confirmation screen behind a real [GoRouter] so `context.go(...)`
+/// works. The initial route is a placeholder with a recognizable label; the
+/// confirmation screen is pushed on top of it (the screen itself has no
+/// back button — there's nothing to go back and redo once the request has
+/// been sent). Two more placeholder routes stand in for `/patient/orders`
+/// and `/patient/home` so navigation there can be asserted the same way.
 Future<GoRouter> pumpConfirmationScreen(
   WidgetTester tester,
-  LabBookingConfirmation confirmation,
-) async {
+  LabBookingConfirmation confirmation, {
+  Locale startLocale = const Locale('en'),
+}) async {
   SharedPreferences.setMockInitialValues({});
-  await EasyLocalization.ensureInitialized();
 
   tester.view.physicalSize = const Size(2400, 1400);
   tester.view.devicePixelRatio = 1.0;
@@ -48,9 +31,8 @@ Future<GoRouter> pumpConfirmationScreen(
     routes: [
       GoRoute(
         path: '/start',
-        builder: (context, state) => const Scaffold(
-          body: Text('start-placeholder'),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Text('start-placeholder')),
       ),
       GoRoute(
         path: '/confirmation',
@@ -58,16 +40,14 @@ Future<GoRouter> pumpConfirmationScreen(
             LabBookingConfirmationScreen(confirmation: confirmation),
       ),
       GoRoute(
-        path: '/patient/appointments',
-        builder: (context, state) => const Scaffold(
-          body: Text('appointments-placeholder'),
-        ),
+        path: '/patient/orders',
+        builder: (context, state) =>
+            const Scaffold(body: Text('orders-placeholder')),
       ),
       GoRoute(
         path: '/patient/home',
-        builder: (context, state) => const Scaffold(
-          body: Text('home-placeholder'),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Text('home-placeholder')),
       ),
     ],
   );
@@ -78,10 +58,9 @@ Future<GoRouter> pumpConfirmationScreen(
         supportedLocales: const [Locale('en'), Locale('ar')],
         path: 'assets/translations',
         fallbackLocale: const Locale('en'),
-        startLocale: const Locale('en'),
+        startLocale: startLocale,
         saveLocale: false,
         useOnlyLangCode: true,
-        assetLoader: const _SyncFileAssetLoader(),
         child: Builder(
           builder: (context) {
             return MaterialApp.router(
@@ -104,14 +83,23 @@ Future<GoRouter> pumpConfirmationScreen(
     );
   }
 
-  await tester.pumpWidget(shell());
-  await tester.pumpAndSettle();
+  // easy_localization's default asset loader does real `rootBundle`
+  // (non-fake-clock) I/O, so the whole pump sequence has to run inside
+  // `tester.runAsync` or `.tr()` permanently falls back to the raw key
+  // regardless of how many frames are pumped afterwards — see the doc
+  // comment on `pumpLocalizedWidget` in test/helpers/pump_localized_widget.dart
+  // for the longer story.
+  await tester.runAsync(() async {
+    await EasyLocalization.ensureInitialized();
+    await tester.pumpWidget(shell());
+    await tester.pumpAndSettle();
 
-  router.push('/confirmation');
-  for (var i = 0; i < 3; i++) {
-    await tester.pump();
-  }
-  await tester.pumpAndSettle();
+    router.push('/confirmation');
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+  });
 
   return router;
 }
@@ -125,9 +113,9 @@ Future<GoRouter> pumpConfirmationScreen(
 /// via `find.text` would be flaky. Matching only the substring that's
 /// entirely data-driven avoids depending on translation resolution timing.
 bool _anyTextContains(WidgetTester tester, String substring) {
-  final texts = tester.widgetList<Text>(find.byType(Text)).map(
-    (t) => t.data ?? t.textSpan?.toPlainText() ?? '',
-  );
+  final texts = tester
+      .widgetList<Text>(find.byType(Text))
+      .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '');
   final richTexts = tester
       .widgetList<RichText>(find.byType(RichText))
       .map((t) => t.text.toPlainText());
@@ -135,34 +123,23 @@ bool _anyTextContains(WidgetTester tester, String substring) {
 }
 
 void main() {
-  final confirmationNoFasting = LabBookingConfirmation(
+  final confirmation = LabBookingConfirmation(
     bookingNumber: 'LB-1029',
     labName: 'Alpha Diagnostics Lab',
     labAddress: '12 Tahrir St, Cairo',
-    date: DateTime(2026, 3, 15),
-    time: '10:00',
-  );
-
-  final confirmationWithFasting = LabBookingConfirmation(
-    bookingNumber: 'LB-2048',
-    labName: 'Beta Medical Lab',
-    labAddress: '5 Nile Corniche, Giza',
-    date: DateTime(2026, 3, 15),
-    time: '10:00',
-    fastingHours: 8,
+    expectedResponseHours: 2,
   );
 
   testWidgets(
-    'renders booking number, lab name/address, date and time for a confirmation with no fasting hours',
+    'renders booking number, lab name/address and expected response hours',
     (tester) async {
-      await pumpConfirmationScreen(tester, confirmationNoFasting);
+      await pumpConfirmationScreen(tester, confirmation);
 
-      // `.tr()`-resolved copy (title, booking-number prefix) is asserted via
-      // icon/structure or a data-only substring below, not the exact string
-      // — easy_localization's translation load can lag a frame under
-      // `flutter_test` (see test/helpers/pump_localized_widget.dart's
-      // extensive comment on this same quirk), which the rest of this
-      // codebase's tests already work around the same way.
+      // The booking number is rendered as part of a `Text.rich` alongside a
+      // `.tr()`-resolved prefix, so it's asserted via a data-only substring
+      // below rather than matching the full rendered string (see
+      // `_anyTextContains`'s doc comment). Exact `.tr()` copy — title,
+      // subtitle, CTA labels — is asserted in the dedicated tests below.
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       // The header used to also show a search icon with no purpose on a
       // success screen — removed.
@@ -170,64 +147,191 @@ void main() {
       expect(_anyTextContains(tester, '#LB-1029'), isTrue);
       expect(find.text('Alpha Diagnostics Lab'), findsOneWidget);
       expect(find.text('12 Tahrir St, Cairo'), findsOneWidget);
-      expect(find.text('15 Mar'), findsOneWidget);
-      expect(find.text('10:00'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
 
-  testWidgets(
-    'shows the fasting instructions banner with interpolated hours when fastingHours is set',
-    (tester) async {
-      await pumpConfirmationScreen(tester, confirmationWithFasting);
+  testWidgets('shows no fasting/instructions banner and no date/time tiles '
+      '(request is only submitted, not confirmed with a slot)', (tester) async {
+    await pumpConfirmationScreen(tester, confirmation);
 
-      // The banner's icon/structure is data-independent of translation
-      // timing; the surrounding copy (including the interpolated hours
-      // value) is entirely `.tr()`-resolved, so — per the same caveat as
-      // the test above — this only asserts the banner rendered at all,
-      // not its exact text.
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'hides the fasting instructions banner when fastingHours is null',
-    (tester) async {
-      await pumpConfirmationScreen(tester, confirmationNoFasting);
-
-      expect(find.byIcon(Icons.info_outline), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('tapping the back arrow pops the route', (tester) async {
-    await pumpConfirmationScreen(tester, confirmationNoFasting);
-
-    expect(find.text('start-placeholder'), findsNothing);
-
-    await tester.tap(find.byIcon(Icons.arrow_forward));
-    await tester.pumpAndSettle();
-
-    expect(find.text('start-placeholder'), findsOneWidget);
+    expect(find.byIcon(Icons.info_outline), findsNothing);
+    expect(_anyTextContains(tester, 'fasting'), isFalse);
+    expect(_anyTextContains(tester, 'Fasting'), isFalse);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets(
-    'tapping "go to bookings" navigates to /patient/appointments',
+    'uses the corrected copy — the lab (not the pharmacy) reviews the '
+    'request, and an expected-response time (not a delivery time)',
     (tester) async {
-      await pumpConfirmationScreen(tester, confirmationNoFasting);
+      await pumpConfirmationScreen(tester, confirmation);
 
-      await tester.tap(find.byType(FilledButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('appointments-placeholder'), findsOneWidget);
+      // Real strings loaded straight from assets/translations/en.json via
+      // the sync asset loader above (not hardcoded independently of it), so
+      // a regression that reintroduces the mockup's leaked pharmacy/delivery
+      // copy — or otherwise changes these translation values — fails here.
+      expect(_anyTextContains(tester, 'Request sent successfully'), isTrue);
+      expect(
+        _anyTextContains(
+          tester,
+          "We'll notify you as soon as the lab reviews your request and "
+          'responds.',
+        ),
+        isTrue,
+      );
+      expect(_anyTextContains(tester, 'pharmacy'), isFalse);
+      expect(_anyTextContains(tester, 'Pharmacy'), isFalse);
+      expect(_anyTextContains(tester, 'Expected response time'), isTrue);
+      expect(_anyTextContains(tester, 'Within 2 hours'), isTrue);
+      expect(_anyTextContains(tester, 'delivery'), isFalse);
+      expect(_anyTextContains(tester, 'Delivery'), isFalse);
       expect(tester.takeException(), isNull);
     },
   );
 
+  testWidgets('Arabic copy is also corrected — says "المختبر" (the lab), never '
+      '"الصيدلية" (the pharmacy), and uses response-time wording, not '
+      'delivery/date-time wording', (tester) async {
+    await pumpConfirmationScreen(
+      tester,
+      confirmation,
+      startLocale: const Locale('ar'),
+    );
+
+    // Loaded straight from assets/translations/ar.json via the same sync
+    // asset loader, so a regression that reintroduces the mockup's
+    // "الصيدلية" leak (or drops the response-time correction) in the
+    // Arabic strings fails here too, not just in English.
+    expect(_anyTextContains(tester, 'تم إرسال الطلب بنجاح'), isTrue);
+    expect(
+      _anyTextContains(
+        tester,
+        'سنقوم بإشعارك بمجرد مراجعة المختبر لطلبك والرد عليه.',
+      ),
+      isTrue,
+    );
+    expect(_anyTextContains(tester, 'الصيدلية'), isFalse);
+    expect(_anyTextContains(tester, 'الوقت المتوقع للرد'), isTrue);
+    expect(_anyTextContains(tester, 'خلال 2 ساعتين'), isTrue);
+    expect(_anyTextContains(tester, 'تتبع الطلب'), isTrue);
+    expect(_anyTextContains(tester, 'الصفحة الرئيسية'), isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows exactly one expected-response info tile (not separate '
+      'date/time tiles) and no leftover date/time/fasting icons', (
+    tester,
+  ) async {
+    await pumpConfirmationScreen(tester, confirmation);
+
+    // The old two-tile date/time layout used calendar/clock-style icons;
+    // the confirmation-screen widget tree now has no icon besides the
+    // success checkmark, the lab-summary icon and the CTA icon (no back
+    // arrow either — there's nothing to logically go back and redo from
+    // here), so there should be exactly 3 `Icon` widgets in total.
+    expect(find.byType(Icon), findsNWidgets(3));
+    expect(find.byIcon(Icons.arrow_forward), findsNothing);
+    expect(find.byIcon(Icons.calendar_today), findsNothing);
+    expect(find.byIcon(Icons.access_time), findsNothing);
+    expect(find.byIcon(Icons.schedule), findsNothing);
+    // Exactly one label/value pair for the response-time tile.
+    expect(find.text('Expected response time'), findsOneWidget);
+    expect(find.text('Within 2 hours'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'success badge is a teal checkmark circle (mockup-exact color, not the '
+    'app default green)',
+    (tester) async {
+      await pumpConfirmationScreen(tester, confirmation);
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle));
+      expect(icon.color, AppColors.tealAccent);
+
+      final badge = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.byIcon(Icons.check_circle),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = badge.decoration as BoxDecoration;
+      expect(decoration.shape, BoxShape.circle);
+      expect(decoration.color, AppColors.tealAccent.withValues(alpha: 0.12));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'primary CTA uses a tracking/document icon, not a delivery-truck icon',
+    (tester) async {
+      await pumpConfirmationScreen(tester, confirmation);
+
+      expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.local_shipping), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'shows the booking-number prefix and the track/go-home CTA labels from '
+    'real translations',
+    (tester) async {
+      await pumpConfirmationScreen(tester, confirmation);
+
+      expect(_anyTextContains(tester, 'Your booking number is'), isTrue);
+      expect(_anyTextContains(tester, 'Track request'), isTrue);
+      expect(_anyTextContains(tester, 'Home'), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('has no back button — the request is already sent, so there is '
+      'nothing to logically go back and redo', (tester) async {
+    await pumpConfirmationScreen(tester, confirmation);
+
+    expect(find.byIcon(Icons.arrow_forward), findsNothing);
+    expect(find.byType(IconButton), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'blocks the Android hardware/gesture back button too, not just the '
+    'in-app arrow — the screen stays put instead of popping to the '
+    'previous route',
+    (tester) async {
+      await pumpConfirmationScreen(tester, confirmation);
+
+      // Simulates the OS-level back button/gesture (as opposed to a
+      // Navigator.pop() call from in-app UI) — the same signal `PopScope`
+      // intercepts. `canPop: false` should swallow it, so the previous
+      // route's placeholder must never appear.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('start-placeholder'), findsNothing);
+      expect(_anyTextContains(tester, 'Request sent successfully'), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('tapping the primary CTA navigates to /patient/orders', (
+    tester,
+  ) async {
+    await pumpConfirmationScreen(tester, confirmation);
+
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('orders-placeholder'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('tapping "go home" navigates to /patient/home', (tester) async {
-    await pumpConfirmationScreen(tester, confirmationNoFasting);
+    await pumpConfirmationScreen(tester, confirmation);
 
     await tester.tap(find.byType(OutlinedButton));
     await tester.pumpAndSettle();

@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
-import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
 
-/// Step 3 result — booking success screen. Figma node 14:1396
-/// ("تأكيد الحجز - Booking Confirmation"). The design includes a confetti
-/// animation; reproduced here as a static checkmark badge (matching
-/// [SimpleSuccessScreen]'s visual language) rather than pulling in a new
-/// animation dependency for a single one-off effect.
+/// Step 3 result — lab request "submitted" screen (not a confirmed booking:
+/// the lab still has to review the uploaded request image and respond).
+/// Figma node 14:1396 ("تأكيد الحجز - Booking Confirmation"), corrected per
+/// the lab-booking mockup-fix TODO: the mockup's copy was a copy/paste leak
+/// from the pharmacy flow (it said "the pharmacy" instead of "the lab", used
+/// delivery-time wording, and used a delivery-truck icon on the primary
+/// button) — all three are fixed here rather than reproduced literally. The
+/// design includes a confetti animation; reproduced here as a static
+/// checkmark badge (matching [SimpleSuccessScreen]'s visual language) rather
+/// than pulling in a new animation dependency for a single one-off effect.
 class LabBookingConfirmationScreen extends StatelessWidget {
   const LabBookingConfirmationScreen({required this.confirmation, super.key});
 
@@ -18,179 +22,116 @@ class LabBookingConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.locale.languageCode;
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_forward, size: 20),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.tealAccent.withValues(alpha: 0.12),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.tealAccent,
-                        size: 64,
+    return PopScope(
+      // Blocks the Android hardware/gesture back button too, not just the
+      // (already-removed) in-app back arrow — the request is already sent,
+      // so there's nothing left to go back and redo. "Track request" / "Home"
+      // are the only ways off this screen.
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // No back button here on purpose: the request has already been
+              // sent, so there's nothing left to go back and re-do — only
+              // "track" or "go home" are meaningful next steps.
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.tealAccent.withValues(alpha: 0.12),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: AppColors.tealAccent,
+                          size: 64,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'lab_booking.confirmation.title'.tr(),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink900,
+                    const SizedBox(height: 24),
+                    Text(
+                      'lab_booking.confirmation.title'.tr(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink900,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text.rich(
-                    TextSpan(
-                      text: 'lab_booking.confirmation.booking_number_prefix'
-                          .tr(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'lab_booking.confirmation.subtitle'.tr(),
+                      textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.bodyText),
-                      children: [
-                        TextSpan(
-                          text: ' #${confirmation.bookingNumber}',
-                          style: const TextStyle(
-                            color: AppColors.patientPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(17),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceApp,
-                      borderRadius: BorderRadius.circular(AppRadii.md),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.patientPrimary.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadii.sm),
-                          ),
-                          child: const Icon(
-                            Icons.biotech_outlined,
-                            color: AppColors.patientPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                confirmation.labName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.ink900,
-                                ),
-                              ),
-                              Text(
-                                confirmation.labAddress,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.mutedText2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'lab_booking.confirmation.date_label'.tr(),
-                          value: AppFormatters.shortDate(
-                            confirmation.date,
-                            locale: locale,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'lab_booking.confirmation.time_label'.tr(),
-                          value: confirmation.time,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (confirmation.fastingHours != null) ...[
                     const SizedBox(height: 16),
+                    Text.rich(
+                      TextSpan(
+                        text: 'lab_booking.confirmation.booking_number_prefix'
+                            .tr(),
+                        style: const TextStyle(color: AppColors.bodyText),
+                        children: [
+                          TextSpan(
+                            text: ' #${confirmation.bookingNumber}',
+                            style: const TextStyle(
+                              color: AppColors.patientPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(17),
                       decoration: BoxDecoration(
-                        color: AppColors.warningAmberBg,
-                        border: Border.all(color: AppColors.warningAmberBorder),
+                        color: AppColors.surfaceApp,
                         borderRadius: BorderRadius.circular(AppRadii.md),
+                        border: Border.all(color: AppColors.borderLight),
                       ),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.info_outline,
-                            size: 18,
-                            color: AppColors.warningAmberText,
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.patientPrimary.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadii.sm),
+                            ),
+                            child: const Icon(
+                              Icons.biotech_outlined,
+                              color: AppColors.patientPrimary,
+                            ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'lab_booking.confirmation.instructions_title'
-                                      .tr(),
+                                  confirmation.labName,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.warningAmberText,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.ink900,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
                                 Text(
-                                  'lab_booking.confirmation.instructions_body'
-                                      .tr(
-                                        args: ['${confirmation.fastingHours}'],
-                                      ),
+                                  confirmation.labAddress,
                                   style: const TextStyle(
-                                    color: AppColors.warningAmberText,
+                                    fontSize: 12,
+                                    color: AppColors.mutedText2,
                                   ),
                                 ),
                               ],
@@ -199,37 +140,47 @@ class LabBookingConfirmationScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    _InfoTile(
+                      label: 'lab_booking.confirmation.expected_response_label'
+                          .tr(),
+                      value: 'lab_booking.confirmation.expected_response_value'
+                          .tr(args: ['${confirmation.expectedResponseHours}']),
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/patient/orders'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.patientPrimary,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.xl),
+                        ),
+                      ),
+                      // Tracking/document icon — the mockup used a
+                      // delivery-truck icon here, a copy/paste leak from the
+                      // pharmacy flow's "order on the way" concept that doesn't
+                      // apply to a lab request still awaiting review.
+                      icon: const Icon(Icons.assignment_outlined),
+                      label: Text('lab_booking.confirmation.track_cta'.tr()),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () => context.go('/patient/home'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        side: const BorderSide(color: AppColors.borderMedium),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.xl),
+                        ),
+                      ),
+                      child: Text('lab_booking.confirmation.go_home_cta'.tr()),
+                    ),
                   ],
-                  const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: () => context.go('/patient/appointments'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.patientPrimary,
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.xl),
-                      ),
-                    ),
-                    child: Text(
-                      'lab_booking.confirmation.go_to_bookings_cta'.tr(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => context.go('/patient/home'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      side: const BorderSide(color: AppColors.borderMedium),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.xl),
-                      ),
-                    ),
-                    child: Text('lab_booking.confirmation.go_home_cta'.tr()),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -245,7 +196,7 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surfaceApp,
