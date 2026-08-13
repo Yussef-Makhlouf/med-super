@@ -271,6 +271,71 @@
       "select_time_first": "يرجى اختيار وقت الحجز أولاً."
     }
   },
+  "pharmacy_booking": {
+    "step_upload": "الرفع",
+    "step_pharmacy": "الصيدلية",
+    "step_delivery": "التوصيل",
+    "step_prescription": "الروشتة",
+    "step_details": "التفاصيل",
+    "step_review": "مراجعة",
+    "upload": {
+      "title": "تحميل الوصفة الطبية",
+      "upload_cta": "اضغط هنا لتصوير أو رفع الروشتة",
+      "upload_hint": "تأكد من وضوح الصورة والبيانات لتسهيل قراءتها.",
+      "add_image_tooltip": "إضافة صورة",
+      "remove_image_tooltip": "حذف الصورة",
+      "delivery_method_title": "طريقة الاستلام",
+      "pickup_title": "استلام من الصيدلية",
+      "delivery_title": "توصيل للمنزل",
+      "notes_label": "ملاحظات للصيدلي (اختياري)",
+      "notes_hint": "اكتب أي تعليمات إضافية هنا...",
+      "submit_cta": "إرسال للصيدلية"
+    },
+    "select_pharmacy": {
+      "title": "اختر الصيدلية",
+      "search_hint": "ابحث عن صيدلية بالاسم أو الموقع...",
+      "filter_open_now": "مفتوح الآن",
+      "filter_top_rated": "الأعلى تقييماً",
+      "filter_nearest": "الأقرب إليك",
+      "nearby_count": "{} صيدلية قريبة",
+      "edit_location": "تعديل الموقع",
+      "distance_km": "{} كم",
+      "rating_count": "({})",
+      "status_open_24h": "مفتوح الآن - على مدار 24 ساعة",
+      "status_open_until": "مفتوح الآن - يغلق {}",
+      "status_closed_tomorrow": "مغلق الآن - يفتح غداً {}",
+      "choose_cta": "اختر"
+    },
+    "review": {
+      "title": "مراجعة الطلب",
+      "summary_title": "ملخص الطلب",
+      "prescription_photo_label": "صورة الروشتة المرفقة",
+      "upload_success": "تم الرفع بنجاح",
+      "delivery_method_title": "طريقة الاستلام",
+      "edit_cta": "تعديل",
+      "home_label": "المنزل",
+      "payment_summary_title": "ملخص الدفع",
+      "subtotal_label": "المجموع الفرعي (تقديري)",
+      "subtotal_value": "سيتم تحديده",
+      "delivery_fee_label": "رسوم التوصيل",
+      "vat_label": "الضريبة المضافة",
+      "vat_value": "متضمنة",
+      "total_label": "الإجمالي المتوقع",
+      "total_value": "يبدأ من {}",
+      "estimate_disclaimer": "سيقوم الصيدلي بمراجعة الروشتة وتحديد التكلفة النهائية للأدوية قبل تأكيد الدفع.",
+      "confirm_cta": "تأكيد الطلب",
+      "confirm_error": "حدث خطأ أثناء تأكيد الطلب. حاول مرة أخرى."
+    },
+    "confirmation": {
+      "title": "تم إرسال الطلب بنجاح",
+      "subtitle": "سنقوم بإشعارك بمجرد تأكيد الصيدلية لوصفتك والبدء في تجهيز طلبك.",
+      "order_number_label": "رقم الطلب",
+      "eta_label": "وقت التوصيل المتوقع",
+      "eta_value": "خلال ساعتين",
+      "track_cta": "تتبع الطلب",
+      "go_home_cta": "العودة للرئيسية"
+    }
+  },
   "provider_registration": {
     "title": "تسجيل الطبيب",
     "step_basic_info": "المعلومات الأساسية",
