@@ -1,22 +1,23 @@
-/// Payment method offered on the schedule & payment step.
+/// Payment method offered on the review step.
 enum LabPaymentMethod {
-  creditCard,
-  applePay,
-  cashAtLab;
+  onlinePayment,
+  payAtService;
 
-  /// Localization key under `lab_booking.schedule_payment.*`.
+  /// Localization key under `lab_booking.review.*`.
   String get labelKey => switch (this) {
-    LabPaymentMethod.creditCard =>
-      'lab_booking.schedule_payment.payment_credit_card',
-    LabPaymentMethod.applePay =>
-      'lab_booking.schedule_payment.payment_apple_pay',
-    LabPaymentMethod.cashAtLab =>
-      'lab_booking.schedule_payment.payment_cash',
+    LabPaymentMethod.onlinePayment => 'lab_booking.review.payment_online',
+    LabPaymentMethod.payAtService => 'lab_booking.review.payment_at_service',
+  };
+
+  /// Localization key for the small grey subtitle under the label.
+  String get subtitleKey => switch (this) {
+    LabPaymentMethod.onlinePayment => 'lab_booking.review.payment_online_sub',
+    LabPaymentMethod.payAtService =>
+      'lab_booking.review.payment_at_service_sub',
   };
 
   String get apiValue => switch (this) {
-    LabPaymentMethod.creditCard => 'credit_card',
-    LabPaymentMethod.applePay => 'apple_pay',
-    LabPaymentMethod.cashAtLab => 'cash_at_lab',
+    LabPaymentMethod.onlinePayment => 'online_payment',
+    LabPaymentMethod.payAtService => 'pay_at_service',
   };
 }
