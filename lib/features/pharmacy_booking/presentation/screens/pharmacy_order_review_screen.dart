@@ -353,6 +353,8 @@ class _DeliveryMethodSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.borderLight),
+          const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -451,6 +453,8 @@ class _PaymentSummarySection extends StatelessWidget {
               color: AppColors.ink900,
             ),
           ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.borderLight),
           const SizedBox(height: 12),
           _SummaryRow(
             label: 'pharmacy_booking.review.subtotal_label'.tr(),
@@ -609,9 +613,10 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Deliberate deviation from the raw mockup: no "?" help icon on
-          // this header. Balances the trailing slot's width so the title
-          // stays visually centered with no icon buttons at all.
+          // Balances the trailing back button's width so the title stays
+          // visually centered, matching every other screen's header in this
+          // flow. Deliberate deviation from the raw mockup: no "?" help icon
+          // on this header (only the back arrow is kept).
           const SizedBox(width: 48),
           Expanded(
             child: Text(
@@ -624,7 +629,10 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_forward),
+          ),
         ],
       ),
     );
