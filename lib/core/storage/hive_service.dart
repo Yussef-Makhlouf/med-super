@@ -39,6 +39,10 @@ class HiveService {
       ),
       Hive.openBox<String>(HiveBoxNames.outbox, encryptionCipher: cipher),
       Hive.openBox<String>(
+        HiveBoxNames.labTestsCache,
+        encryptionCipher: cipher,
+      ),
+      Hive.openBox<String>(
         HiveBoxNames.providerRegistrationDraft,
         encryptionCipher: cipher,
       ),
@@ -61,6 +65,8 @@ class HiveService {
       Hive.box<String>(HiveBoxNames.doctorSearchCache);
   Box<String> get appointmentCacheBox =>
       Hive.box<String>(HiveBoxNames.appointmentCache);
+  Box<String> get labTestsCacheBox =>
+      Hive.box<String>(HiveBoxNames.labTestsCache);
   Box<String> get providerRegistrationDraftBox =>
       Hive.box<String>(HiveBoxNames.providerRegistrationDraft);
 }

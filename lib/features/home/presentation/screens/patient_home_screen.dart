@@ -150,12 +150,13 @@ class _HomeSearchBar extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'home.search_hint'.tr(),
         hintStyle: const TextStyle(color: PatientHomeScreen._muted),
-        prefixIcon:
-            const Icon(Icons.search, color: PatientHomeScreen._muted),
+        prefixIcon: const Icon(Icons.search, color: PatientHomeScreen._muted),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
           borderSide: BorderSide.none,
@@ -189,11 +190,7 @@ class _PromoBanner extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.centerRight,
               end: Alignment.centerLeft,
-              colors: [
-                Color(0xFF1E6FE8),
-                Color(0xFF4AA3F5),
-                Color(0xFFB8D9FF),
-              ],
+              colors: [Color(0xFF1E6FE8), Color(0xFF4AA3F5), Color(0xFFB8D9FF)],
             ),
             boxShadow: [
               BoxShadow(
@@ -209,8 +206,10 @@ class _PromoBanner extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF22C55E),
                     borderRadius: BorderRadius.circular(20),
@@ -244,7 +243,7 @@ class _PromoBanner extends StatelessWidget {
               Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: FilledButton(
-                  onPressed: () {},
+                  onPressed: () => context.push('/patient/lab/upload'),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: brandBlue,
@@ -281,13 +280,13 @@ class _PromoBanner extends StatelessWidget {
   }
 
   static Widget _dot(bool active) => Container(
-        width: active ? 8 : 6,
-        height: active ? 8 : 6,
-        decoration: BoxDecoration(
-          color: active ? brandBlue : const Color(0xFFD0D7E2),
-          shape: BoxShape.circle,
-        ),
-      );
+    width: active ? 8 : 6,
+    height: active ? 8 : 6,
+    decoration: BoxDecoration(
+      color: active ? brandBlue : const Color(0xFFD0D7E2),
+      shape: BoxShape.circle,
+    ),
+  );
 }
 
 class _QuickActions extends StatelessWidget {
@@ -303,6 +302,7 @@ class _QuickActions extends StatelessWidget {
             iconColor: brandBlue,
             title: 'home.book_labs'.tr(),
             subtitle: 'home.book_labs_sub'.tr(),
+            onTap: () => context.push('/patient/lab/upload'),
           ),
         ),
         const SizedBox(width: 12),
@@ -312,6 +312,7 @@ class _QuickActions extends StatelessWidget {
             iconColor: const Color(0xFF14B8A6),
             title: 'home.upload_rx'.tr(),
             subtitle: 'home.upload_rx_sub'.tr(),
+            onTap: () {},
           ),
         ),
       ],
@@ -325,12 +326,14 @@ class _QuickActionCard extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   final IconData icon;
   final Color iconColor;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -340,7 +343,7 @@ class _QuickActionCard extends StatelessWidget {
       elevation: 0,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -469,42 +472,42 @@ class _SpecialtiesRow extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(12),
               child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(item.icon, color: item.color, size: 28),
                   ),
-                  child: Icon(item.icon, color: item.color, size: 28),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.key.tr(),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: PatientHomeScreen._ink,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 8),
+                  Text(
+                    item.key.tr(),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelMedium?.copyWith(
+                      color: PatientHomeScreen._ink,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                Text(
-                  'home.doctors_count'.tr(args: ['${item.count}']),
-                  style: textTheme.labelSmall?.copyWith(
-                    color: PatientHomeScreen._muted,
+                  Text(
+                    'home.doctors_count'.tr(args: ['${item.count}']),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: PatientHomeScreen._muted,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           );
         },
@@ -521,8 +524,9 @@ class _DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final availabilityColor =
-        doctor.today ? const Color(0xFF16A34A) : brandBlue;
+    final availabilityColor = doctor.today
+        ? const Color(0xFF16A34A)
+        : brandBlue;
 
     return Material(
       color: Colors.white,
@@ -533,157 +537,163 @@ class _DoctorCard extends StatelessWidget {
         onTap: () => context.push('/patient/doctors/${doctor.id}'),
         borderRadius: BorderRadius.circular(18),
         child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Column(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        doctor.rating.toStringAsFixed(1),
-                        style: textTheme.labelMedium?.copyWith(
-                          color: const Color(0xFFEA580C),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.star,
-                        size: 14,
-                        color: Color(0xFFF59E0B),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () =>
-                      context.push('/patient/doctors/${doctor.id}'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: brandBlue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(72, 36),
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'home.book'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Column(
                 children: [
-                  Text(
-                    doctor.name,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: PatientHomeScreen._ink,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    doctor.specialty,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF16A34A),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${doctor.price} LE',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: PatientHomeScreen._muted,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.payments_outlined,
-                        size: 14,
-                        color: PatientHomeScreen._muted,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${doctor.distanceKm} km',
-                        style: textTheme.labelMedium?.copyWith(
-                          color: PatientHomeScreen._muted,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.place_outlined,
-                        size: 14,
-                        color: PatientHomeScreen._muted,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: availabilityColor.withValues(alpha: 0.12),
+                      color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      doctor.today
-                          ? 'home.available_today'
-                              .tr(args: [doctor.timeLabel])
-                          : 'home.available_tomorrow'
-                              .tr(args: [doctor.timeLabel]),
-                      style: textTheme.labelSmall?.copyWith(
-                        color: availabilityColor,
-                        fontWeight: FontWeight.w700,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          doctor.rating.toStringAsFixed(1),
+                          style: textTheme.labelMedium?.copyWith(
+                            color: const Color(0xFFEA580C),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Color(0xFFF59E0B),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () =>
+                        context.push('/patient/doctors/${doctor.id}'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(72, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                    ),
+                    child: Text(
+                      'home.book'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 12),
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: doctor.avatarColor,
-              child: Text(
-                doctor.initials,
-                style: textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      doctor.name,
+                      style: textTheme.titleSmall?.copyWith(
+                        color: PatientHomeScreen._ink,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      doctor.specialty,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF16A34A),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${doctor.price} LE',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: PatientHomeScreen._muted,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.payments_outlined,
+                          size: 14,
+                          color: PatientHomeScreen._muted,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${doctor.distanceKm} km',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: PatientHomeScreen._muted,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.place_outlined,
+                          size: 14,
+                          color: PatientHomeScreen._muted,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: availabilityColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        doctor.today
+                            ? 'home.available_today'.tr(
+                                args: [doctor.timeLabel],
+                              )
+                            : 'home.available_tomorrow'.tr(
+                                args: [doctor.timeLabel],
+                              ),
+                        style: textTheme.labelSmall?.copyWith(
+                          color: availabilityColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: doctor.avatarColor,
+                child: Text(
+                  doctor.initials,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

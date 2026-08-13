@@ -5,6 +5,7 @@ import 'package:med_super/app/router/routes/auth_routes.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
+import 'package:med_super/app/router/routes/lab_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
 import 'package:med_super/app/router/routes/provider_registration_routes.dart';
 import 'package:med_super/app/router/routes/search_routes.dart';
@@ -102,6 +103,7 @@ GoRouter appRouter(Ref ref) {
       ...authRoutes,
       ...searchRoutes,
       if (flavor.isPatient) ..._patientRoutes(),
+      if (flavor.isPatient) ...labRoutes,
       if (flavor.isProvider) ..._providerRoutes(),
     ],
   );

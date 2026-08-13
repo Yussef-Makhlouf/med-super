@@ -419,6 +419,99 @@ void registerSearchMocks(MockInterceptor interceptor) {
   });
 }
 
+// ─── Lab Booking mocks ─────────────────────────────────────────────────────
+
+const _labPartnersJson = [
+  {
+    'id': 'lab-al-borg',
+    'name': 'مختبرات البرج',
+    'address': 'شارع الجمهورية، مفاعية',
+    'distance_km': 2.5,
+    'rating': 4.8,
+    'rating_count': 124,
+    'starting_price': 150,
+    'latitude': 24.7136,
+    'longitude': 46.6753,
+    'status': 'open_now',
+  },
+  {
+    'id': 'lab-alpha',
+    'name': 'مختبرات ألفا',
+    'address': 'شارع طه حسين، مفاعية',
+    'distance_km': 3.2,
+    'rating': 4.5,
+    'rating_count': 89,
+    'starting_price': 165,
+    'latitude': 24.7255,
+    'longitude': 46.6893,
+    'status': 'closed_now',
+  },
+  {
+    'id': 'lab-smart',
+    'name': 'المختبرات الذكية',
+    'address': 'شارع عبد العظيم',
+    'distance_km': 5.1,
+    'rating': 4.9,
+    'rating_count': 210,
+    'starting_price': 140,
+    'latitude': 24.6980,
+    'longitude': 46.6612,
+    'status': 'busy_now',
+  },
+];
+
+/// Registers Lab Booking mock responses.
+void registerLabBookingMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', ApiPaths.labPartners, (options) {
+    final sort = options.uri.queryParameters['sort'] ?? 'nearest';
+    final partners = [..._labPartnersJson];
+    switch (sort) {
+      case 'price_asc':
+        partners.sort(
+          (a, b) => (a['starting_price'] as int).compareTo(
+            b['starting_price'] as int,
+          ),
+        );
+      case 'rating_desc':
+        partners.sort(
+          (a, b) => (b['rating'] as double).compareTo(a['rating'] as double),
+        );
+      default:
+        partners.sort(
+          (a, b) => (a['distance_km'] as double).compareTo(
+            b['distance_km'] as double,
+          ),
+        );
+    }
+    return {
+      'statusCode': 200,
+      'data': {'lab_partners': partners},
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.labBookings, (options) {
+    final body = _body(options) ?? const {};
+    final labId = body['lab_id'] as String? ?? _labPartnersJson.first['id'];
+    final lab = _labPartnersJson.firstWhere(
+      (l) => l['id'] == labId,
+      orElse: () => _labPartnersJson.first,
+    );
+    final serviceType = body['service_type'] as String? ?? 'branch_visit';
+    return {
+      'statusCode': 200,
+      'data': {
+        'booking_number': 'LAB-${88000 + lab['id'].hashCode.abs() % 999}',
+        'lab_name': lab['name'],
+        'lab_address': 'طريق الملك فهد، الرياض',
+        // The lab hasn't reviewed the uploaded request image yet, so the
+        // response is only an ETA — home-collection requests need a courier
+        // dispatched first, hence the slightly longer window.
+        'expected_response_hours': serviceType == 'home_collection' ? 3 : 2,
+      },
+    };
+  });
+}
+
 // ─── Provider Registration mocks ───────────────────────────────────────────
 
 /// Registers Doctor/Provider Registration mock responses.
