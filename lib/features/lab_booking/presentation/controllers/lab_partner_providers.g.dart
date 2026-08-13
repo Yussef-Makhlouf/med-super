@@ -297,7 +297,7 @@ final class LabPartnersProvider
   }
 }
 
-String _$labPartnersHash() => r'1eeb1b62723fca537d17400982b816f8ec1e3e71';
+String _$labPartnersHash() => r'80506aac3f42ebdd20d621dd419d31734bc2ff76';
 
 /// Explicitly chosen lab id — null means "not chosen yet, default to the
 /// first (nearest) result", matching the Figma state where the top card is
@@ -365,3 +365,171 @@ abstract class _$SelectedLabPartner extends $Notifier<String?> {
     return element.handleCreate(ref, build);
   }
 }
+
+/// Free-text search query typed into the "ابحث عن مختبر..." box.
+
+@ProviderFor(LabSearchQuery)
+final labSearchQueryProvider = LabSearchQueryProvider._();
+
+/// Free-text search query typed into the "ابحث عن مختبر..." box.
+final class LabSearchQueryProvider
+    extends $NotifierProvider<LabSearchQuery, String> {
+  /// Free-text search query typed into the "ابحث عن مختبر..." box.
+  LabSearchQueryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'labSearchQueryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$labSearchQueryHash();
+
+  @$internal
+  @override
+  LabSearchQuery create() => LabSearchQuery();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$labSearchQueryHash() => r'6b899b506b1443d3f26d28bb13c7b27174423bc9';
+
+/// Free-text search query typed into the "ابحث عن مختبر..." box.
+
+abstract class _$LabSearchQuery extends $Notifier<String> {
+  String build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<String, String>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String, String>,
+              String,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// "مفتوح الآن" filter chip — when true, only labs currently open are shown.
+
+@ProviderFor(LabOpenNowOnlyFilter)
+final labOpenNowOnlyFilterProvider = LabOpenNowOnlyFilterProvider._();
+
+/// "مفتوح الآن" filter chip — when true, only labs currently open are shown.
+final class LabOpenNowOnlyFilterProvider
+    extends $NotifierProvider<LabOpenNowOnlyFilter, bool> {
+  /// "مفتوح الآن" filter chip — when true, only labs currently open are shown.
+  LabOpenNowOnlyFilterProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'labOpenNowOnlyFilterProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$labOpenNowOnlyFilterHash();
+
+  @$internal
+  @override
+  LabOpenNowOnlyFilter create() => LabOpenNowOnlyFilter();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$labOpenNowOnlyFilterHash() =>
+    r'606c62e7da7ac3450128ce19b1673711c8ba28a6';
+
+/// "مفتوح الآن" filter chip — when true, only labs currently open are shown.
+
+abstract class _$LabOpenNowOnlyFilter extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// [labPartnersProvider] narrowed by the search query and the "مفتوح الآن"
+/// filter — both are client-side (no backend query params exist for them),
+/// applied on top of whatever the backend already sorted.
+
+@ProviderFor(filteredLabPartners)
+final filteredLabPartnersProvider = FilteredLabPartnersProvider._();
+
+/// [labPartnersProvider] narrowed by the search query and the "مفتوح الآن"
+/// filter — both are client-side (no backend query params exist for them),
+/// applied on top of whatever the backend already sorted.
+
+final class FilteredLabPartnersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<LabPartner>>,
+          List<LabPartner>,
+          FutureOr<List<LabPartner>>
+        >
+    with $FutureModifier<List<LabPartner>>, $FutureProvider<List<LabPartner>> {
+  /// [labPartnersProvider] narrowed by the search query and the "مفتوح الآن"
+  /// filter — both are client-side (no backend query params exist for them),
+  /// applied on top of whatever the backend already sorted.
+  FilteredLabPartnersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'filteredLabPartnersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$filteredLabPartnersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<LabPartner>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<LabPartner>> create(Ref ref) {
+    return filteredLabPartners(ref);
+  }
+}
+
+String _$filteredLabPartnersHash() =>
+    r'd52fa49e86d1450f16728bfb439648b0ee74c6ae';

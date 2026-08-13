@@ -15,12 +15,19 @@ class LabPartnersMapView extends StatefulWidget {
     required this.partners,
     required this.selectedId,
     required this.onSelect,
+    this.tileProvider,
     super.key,
   });
 
   final List<LabPartner> partners;
   final String? selectedId;
   final ValueChanged<String> onSelect;
+
+  /// Overridable for tests, so `flutter test` never issues a real network
+  /// request to the OSM tile servers (which is slow, flaky, and — under
+  /// `pumpAndSettle` — can hang the test on retry). Defaults to `null`,
+  /// which lets [TileLayer] fall back to its own real [NetworkTileProvider].
+  final TileProvider? tileProvider;
 
   @override
   State<LabPartnersMapView> createState() => _LabPartnersMapViewState();
@@ -70,6 +77,7 @@ class _LabPartnersMapViewState extends State<LabPartnersMapView> {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.medsuper.med_super',
+                  tileProvider: widget.tileProvider,
                 ),
                 MarkerLayer(
                   markers: widget.partners

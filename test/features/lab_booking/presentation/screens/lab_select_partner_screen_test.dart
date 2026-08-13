@@ -1,24 +1,18 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_catalog.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_partner.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_partner_status.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_sort_option.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_test.dart';
 import 'package:med_super/features/lab_booking/domain/repositories/lab_booking_repository.dart';
-import 'package:med_super/features/lab_booking/domain/repositories/lab_catalog_repository.dart';
-import 'package:med_super/features/lab_booking/presentation/controllers/lab_booking_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_partner_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/screens/lab_select_partner_screen.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_confirm_bottom_bar.dart';
@@ -29,25 +23,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../helpers/fake_tile_provider.dart';
 import '../../../../helpers/pump_localized_widget.dart';
 
 class _MockLabBookingRepository extends Mock implements LabBookingRepository {}
-
-class _MockLabCatalogRepository extends Mock implements LabCatalogRepository {}
-
-/// Same synchronous asset loader as `pump_localized_widget.dart`, needed
-/// again here because navigation tests build their own `MaterialApp.router`
-/// shell instead of going through `pumpLocalizedWidget`.
-class _SyncFileAssetLoader extends AssetLoader {
-  const _SyncFileAssetLoader();
-
-  @override
-  Future<Map<String, dynamic>?> load(String path, Locale locale) {
-    final file = File('$path/${locale.languageCode}.json');
-    final content = file.readAsStringSync();
-    return SynchronousFuture(json.decode(content) as Map<String, dynamic>);
-  }
-}
 
 /// Wraps [child] in a real [GoRouter] (so `context.push`/`context.pop` work)
 /// plus the same EasyLocalization/ProviderScope shell `pumpLocalizedWidget`
@@ -66,7 +45,6 @@ Future<GoRouter> pumpWithRouter(
   required List<Override> overrides,
 }) async {
   SharedPreferences.setMockInitialValues({});
-  await EasyLocalization.ensureInitialized();
 
   tester.view.physicalSize = const Size(2400, 1400);
   tester.view.devicePixelRatio = 1.0;
@@ -83,18 +61,9 @@ Future<GoRouter> pumpWithRouter(
       ),
       GoRoute(path: '/select-lab', builder: (context, state) => child),
       GoRoute(
-        path: '/patient/lab/schedule-payment',
+        path: '/patient/lab/review',
         builder: (context, state) =>
-            const Scaffold(body: Text('schedule-payment-screen')),
-      ),
-      GoRoute(
-        path: '/patient/lab/confirmation',
-        builder: (context, state) {
-          final extra = state.extra as LabBookingConfirmation?;
-          return Scaffold(
-            body: Text('confirmation-screen:${extra?.bookingNumber}'),
-          );
-        },
+            const Scaffold(body: Text('review-screen')),
       ),
     ],
   );
@@ -109,7 +78,6 @@ Future<GoRouter> pumpWithRouter(
       startLocale: const Locale('en'),
       saveLocale: false,
       useOnlyLangCode: true,
-      assetLoader: const _SyncFileAssetLoader(),
       child: Builder(
         builder: (context) {
           return MaterialApp.router(
@@ -124,83 +92,106 @@ Future<GoRouter> pumpWithRouter(
     ),
   );
 
-  await tester.pumpWidget(shell());
-  await tester.pumpAndSettle();
+  // easy_localization's default asset loader does real `rootBundle`
+  // (non-fake-clock) I/O, so the whole pump sequence has to run inside
+  // `tester.runAsync` or `.tr()` permanently falls back to the raw key
+  // regardless of how many frames are pumped afterwards — see the doc
+  // comment on `pumpLocalizedWidget` in test/helpers/pump_localized_widget.dart
+  // for the longer story.
+  await tester.runAsync(() async {
+    await EasyLocalization.ensureInitialized();
+    await tester.pumpWidget(shell());
+    await tester.pumpAndSettle();
 
-  router.push('/select-lab');
-  for (var i = 0; i < 3; i++) {
-    await tester.pump();
-  }
-  await tester.pumpAndSettle();
+    router.push('/select-lab');
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+  });
 
   return router;
 }
+
+/// A bounded stand-in for `tester.pumpAndSettle()` for use whenever a
+/// `CircularProgressIndicator` (an indeterminate, perpetually-animating
+/// spinner) might still be in the tree — `pumpAndSettle()` never stops
+/// scheduling frames while one is present, and hangs until its own
+/// timeout. Mirrors `pumpLocalizedWidget`'s own internal pump loop (see its
+/// doc comment) — a handful of real-async-driven pumps inside `runAsync`
+/// is enough to flush a resolved/rejected Future without waiting for
+/// "no more frames ever."
+Future<void> _settle(WidgetTester tester) => tester.runAsync(() async {
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+});
 
 void main() {
   setUpAll(() {
     registerFallbackValue(LabSortOption.nearest);
   });
 
+  // This screen renders a `LabPartnersMapView` (`FlutterMap`), whose
+  // built-in tile disk cache asks path_provider for a cache directory as
+  // soon as it builds. There is no path_provider platform implementation in
+  // `flutter test`, so without a mock handler this throws a
+  // MissingPluginException asynchronously *after* the test body has
+  // already finished, which flutter_test then reports as a (spurious)
+  // failure of whichever test happens to be running next (mirrors
+  // clinic_location_map_view_test.dart's setup).
+  const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async {
+          switch (call.method) {
+            case 'getApplicationCacheDirectory':
+            case 'getTemporaryDirectory':
+            case 'getApplicationSupportDirectory':
+              return '.dart_tool/test_cache';
+            default:
+              return null;
+          }
+        });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, null);
+  });
+
   late _MockLabBookingRepository bookingRepo;
-  late _MockLabCatalogRepository catalogRepo;
 
   const partners = [
     LabPartner(
       id: 'p1',
       name: 'Alpha Lab',
+      address: '1 Tahrir St, Cairo',
       distanceKm: 1.2,
       rating: 4.8,
       ratingCount: 120,
-      totalPrice: 300,
+      startingPrice: 300,
       latitude: 24.71,
       longitude: 46.67,
+      status: LabPartnerStatus.openNow,
     ),
     LabPartner(
       id: 'p2',
       name: 'Beta Lab',
+      address: '2 Nile St, Cairo',
       distanceKm: 3.4,
       rating: 4.2,
       ratingCount: 40,
-      totalPrice: 250,
+      startingPrice: 250,
       latitude: 24.72,
       longitude: 46.68,
+      status: LabPartnerStatus.busyNow,
     ),
   ];
 
-  const catalog = LabCatalog(
-    categories: [],
-    tests: [
-      LabTest(
-        id: 'vitamin-d',
-        name: 'Vitamin D',
-        price: 150,
-        currency: 'EGP',
-        isPackage: false,
-        requiresFasting: false,
-        categoryId: 'vitamins',
-      ),
-    ],
-    suggestedLabs: [],
-  );
-
-  final confirmation = LabBookingConfirmation(
-    bookingNumber: 'BK-1001',
-    labName: 'Alpha Lab',
-    labAddress: '123 Main St',
-    date: DateTime(2026, 8, 20),
-    time: '10:00',
-  );
-
-  /// Scopes an [Icons.check] search to a single [LabPartnerCard] — the
-  /// screen also renders sort chips, whose Material 3 [ChoiceChip] already
-  /// paints its own check icon when selected, so a bare
-  /// `find.byIcon(Icons.check)` over-matches.
-  Finder checkIconIn(Finder card) =>
-      find.descendant(of: card, matching: find.byIcon(Icons.check));
-
   setUp(() {
     bookingRepo = _MockLabBookingRepository();
-    catalogRepo = _MockLabCatalogRepository();
 
     when(
       () => bookingRepo.getLabPartners(
@@ -208,34 +199,19 @@ void main() {
         sort: any(named: 'sort'),
       ),
     ).thenAnswer((_) async => Result.ok(partners));
-
-    when(
-      () => catalogRepo.getCatalog(
-        query: any(named: 'query'),
-        categoryId: any(named: 'categoryId'),
-      ),
-    ).thenAnswer((_) async => Result.ok(catalog));
-
-    when(
-      () => bookingRepo.confirmBooking(
-        labId: any(named: 'labId'),
-        testIds: any(named: 'testIds'),
-      ),
-    ).thenAnswer((_) async => Result.ok(confirmation));
   });
 
   List<Override> overrides() => [
     labBookingRepositoryProvider.overrideWithValue(bookingRepo),
-    labCatalogRepositoryProvider.overrideWithValue(catalogRepo),
   ];
 
   testWidgets(
     'renders header, stepper, map, sort bar, a card per partner and the '
-    'bottom bar with the resolved total',
+    'bottom bar (no price shown at this step)',
     (tester) async {
       await pumpLocalizedWidget(
         tester,
-        const LabSelectPartnerScreen(),
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
         overrides: overrides(),
       );
       await tester.pumpAndSettle();
@@ -269,10 +245,12 @@ void main() {
       expect(find.text('Alpha Lab'), findsWidgets);
       expect(find.text('Beta Lab'), findsOneWidget);
 
+      // The bottom bar no longer carries any price — pricing at this step
+      // is unknown until the lab reviews the uploaded request.
+      expect(find.byType(LabConfirmBottomBar), findsOneWidget);
       final bottomBar = tester.widget<LabConfirmBottomBar>(
         find.byType(LabConfirmBottomBar),
       );
-      expect(bottomBar.totalPrice, 150);
       expect(bottomBar.isSubmitting, isFalse);
 
       expect(tester.takeException(), isNull);
@@ -290,22 +268,20 @@ void main() {
       ),
     ).thenAnswer((_) => completer.future);
 
-    await tester.runAsync(() async {
-      await pumpLocalizedWidget(
-        tester,
-        const LabSelectPartnerScreen(),
-        overrides: overrides(),
-      );
+    await pumpLocalizedWidget(
+      tester,
+      LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
+      overrides: overrides(),
+    );
 
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
-      expect(find.byType(LabPartnerCard), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(LabPartnerCard), findsNothing);
 
-      completer.complete(Result.ok(partners));
-      await tester.pumpAndSettle();
+    completer.complete(Result.ok(partners));
+    await _settle(tester);
 
-      expect(find.byType(LabPartnerCard), findsNWidgets(partners.length));
-      expect(tester.takeException(), isNull);
-    });
+    expect(find.byType(LabPartnerCard), findsNWidgets(partners.length));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('renders an error view instead of crashing when partners fail', (
@@ -320,10 +296,10 @@ void main() {
 
     await pumpLocalizedWidget(
       tester,
-      const LabSelectPartnerScreen(),
+      LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
       overrides: overrides(),
     );
-    await tester.pumpAndSettle();
+    await _settle(tester);
 
     expect(find.byType(LabPartnerCard), findsNothing);
     expect(tester.takeException(), isNull);
@@ -334,7 +310,7 @@ void main() {
     (tester) async {
       await pumpLocalizedWidget(
         tester,
-        const LabSelectPartnerScreen(),
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
         overrides: overrides(),
       );
       await tester.pumpAndSettle();
@@ -346,10 +322,37 @@ void main() {
       expect(cards[0].isSelected, isTrue);
       expect(cards[1].isSelected, isFalse);
 
-      // The selected-only check badge renders once, on the first card.
-      expect(checkIconIn(find.byType(LabPartnerCard).at(0)), findsOneWidget);
-      expect(checkIconIn(find.byType(LabPartnerCard).at(1)), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
+  testWidgets(
+    'renders a status chip per partner card matching its operating status',
+    (tester) async {
+      await pumpLocalizedWidget(
+        tester,
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      // p1 is openNow, p2 is busyNow — both status labels must be showing
+      // simultaneously, one per card, proving the chip's text is wired to
+      // each partner's own status rather than a shared/static value.
+      // Resolved via the same `.labelKey.tr()` the production widget uses
+      // (see the stepLabels comparison above for why this is timing-safe).
+      // openNow's label is scoped to inside a LabPartnerCard specifically —
+      // the screen's own "مفتوح الآن" filter chip (outside any card) uses
+      // the exact same English/Arabic copy, so an unscoped `find.text`
+      // would over-match.
+      expect(
+        find.descendant(
+          of: find.byType(LabPartnerCard),
+          matching: find.text(LabPartnerStatus.openNow.labelKey.tr()),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(LabPartnerStatus.busyNow.labelKey.tr()), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -359,30 +362,30 @@ void main() {
   ) async {
     await pumpLocalizedWidget(
       tester,
-      const LabSelectPartnerScreen(),
+      LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
       overrides: overrides(),
     );
     await tester.pumpAndSettle();
 
-    // Only the currently-unselected card renders its "choose" CTA InkWell
-    // (LabPartnerCard hides it once `isSelected` is true), so with the
-    // first partner pre-selected by default there's exactly one inside a
-    // LabPartnerCard to tap. Scope past `find.byType(InkWell)` since
-    // Material's own chips/buttons elsewhere on screen use InkWell too.
-    final chooseCta = find.descendant(
-      of: find.byType(LabPartnerCard),
-      matching: find.byType(InkWell),
+    // Every card always shows its own "choose" CTA (this design has no
+    // separate hidden/shown state per selection), so tap the second
+    // card's specifically rather than relying on there being just one.
+    // Invoke `onPressed` directly instead of `tester.tap(...)`: a
+    // simulated pointer down/up starts the button's ripple, which needs
+    // the `ink_sparkle` shader — unavailable under `flutter_test`'s
+    // default backend, and it throws once flushed (even across a bounded
+    // pump budget, since the framework flushes leftover animation
+    // microtasks at test teardown regardless). Calling the callback
+    // directly exercises the same `onSelect` wiring without going through
+    // the gesture/ripple pipeline.
+    final secondCardChoose = find.descendant(
+      of: find.byType(LabPartnerCard).at(1),
+      matching: find.widgetWithText(
+        ElevatedButton,
+        'lab_booking.select_lab.choose_cta'.tr(),
+      ),
     );
-    expect(chooseCta, findsOneWidget);
-    // Invoke `onTap` directly instead of `tester.tap(...)`: a simulated
-    // pointer down/up starts the InkWell's ripple, which needs the
-    // `ink_sparkle` shader — unavailable under `flutter_test`'s default
-    // backend, and it throws once flushed (even across a bounded pump
-    // budget, since the framework flushes leftover animation microtasks at
-    // test teardown regardless). Calling the callback directly exercises
-    // the same `onSelect` wiring without going through the gesture/ripple
-    // pipeline.
-    tester.widget<InkWell>(chooseCta).onTap!();
+    tester.widget<ElevatedButton>(secondCardChoose).onPressed!();
     await tester.pumpAndSettle();
 
     final cards = tester
@@ -392,8 +395,6 @@ void main() {
     final unselected = cards.firstWhere((c) => c.partner.id == 'p1');
     expect(selected.isSelected, isTrue);
     expect(unselected.isSelected, isFalse);
-    expect(checkIconIn(find.byType(LabPartnerCard).at(1)), findsOneWidget);
-    expect(checkIconIn(find.byType(LabPartnerCard).at(0)), findsNothing);
 
     expect(tester.takeException(), isNull);
   });
@@ -403,21 +404,22 @@ void main() {
     (tester) async {
       await pumpLocalizedWidget(
         tester,
-        const LabSelectPartnerScreen(),
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
         overrides: overrides(),
       );
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
-      // LabSortChipBar renders its chips in this fixed order: priceAsc,
-      // ratingDesc, nearest (see lab_sort_chip_bar.dart's `_chip(...)`
-      // calls) — select the first chip's "lowest price" option. Invoke
-      // `onSelected` directly instead of `tester.tap(...)` — see the
-      // comment in the partner-card-tap test above on why a simulated
-      // pointer tap on a ripple-based Material widget is flaky under
-      // `flutter_test` (missing `ink_sparkle` shader).
-      final chip = tester.widget<ChoiceChip>(find.byType(ChoiceChip).first);
+      // LabSortChipBar renders its chips in this fixed order: the "مفتوح
+      // الآن" filter chip first, then priceAsc, ratingDesc, nearest (see
+      // lab_sort_chip_bar.dart's `_filterChip()`/`_chip(...)` calls) —
+      // select the second chip ("lowest price"), not the first (that's now
+      // the filter chip). Invoke `onSelected` directly instead of
+      // `tester.tap(...)` — see the comment in the partner-card-tap test
+      // above on why a simulated pointer tap on a ripple-based Material
+      // widget is flaky under `flutter_test` (missing `ink_sparkle` shader).
+      final chip = tester.widget<ChoiceChip>(find.byType(ChoiceChip).at(1));
       chip.onSelected!(true);
-      await tester.pumpAndSettle();
+      await _settle(tester);
 
       verify(
         () => bookingRepo.getLabPartners(
@@ -431,12 +433,11 @@ void main() {
   );
 
   testWidgets(
-    'tapping continue selects the lab and navigates to the schedule & '
-    'payment route',
+    'tapping continue selects the lab and navigates to the review route',
     (tester) async {
       await pumpWithRouter(
         tester,
-        const LabSelectPartnerScreen(),
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
         overrides: overrides(),
       );
       await tester.pumpAndSettle();
@@ -448,17 +449,36 @@ void main() {
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!();
       await tester.pumpAndSettle();
 
-      // Booking confirmation now happens on the schedule & payment step,
-      // not here — this screen's job is just to record the choice and move
-      // on.
-      verifyNever(
-        () => bookingRepo.confirmBooking(
-          labId: any(named: 'labId'),
-          testIds: any(named: 'testIds'),
-        ),
-      );
-      expect(find.text('schedule-payment-screen'), findsOneWidget);
+      expect(find.text('review-screen'), findsOneWidget);
       expect(find.text('start-placeholder'), findsNothing);
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'renders no cards and does not crash when the lab list is empty',
+    (tester) async {
+      when(
+        () => bookingRepo.getLabPartners(
+          testIds: any(named: 'testIds'),
+          sort: any(named: 'sort'),
+        ),
+      ).thenAnswer((_) async => const Result.ok([]));
+
+      await pumpLocalizedWidget(
+        tester,
+        LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LabPartnerCard), findsNothing);
+
+      // Falls back to a null selected id with no partners to default to —
+      // tapping continue must be a no-op rather than crash on a null id.
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed!();
+      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
     },
@@ -467,7 +487,7 @@ void main() {
   testWidgets('tapping the back button pops the screen', (tester) async {
     await pumpWithRouter(
       tester,
-      const LabSelectPartnerScreen(),
+      LabSelectPartnerScreen(mapTileProvider: FakeTileProvider()),
       overrides: overrides(),
     );
     await tester.pumpAndSettle();

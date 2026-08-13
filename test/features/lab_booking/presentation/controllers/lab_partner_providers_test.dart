@@ -6,9 +6,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_partner.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_partner_status.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_sort_option.dart';
 import 'package:med_super/features/lab_booking/domain/repositories/lab_booking_repository.dart';
-import 'package:med_super/features/lab_booking/presentation/controllers/lab_booking_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_partner_providers.dart';
 
 class _MockLabBookingRepository extends Mock implements LabBookingRepository {}
@@ -20,22 +20,26 @@ void main() {
   const partnerA = LabPartner(
     id: 'p1',
     name: 'Alpha',
+    address: '1 Tahrir St, Cairo',
     distanceKm: 1,
     rating: 4.5,
     ratingCount: 10,
-    totalPrice: 300,
+    startingPrice: 300,
     latitude: 1,
     longitude: 1,
+    status: LabPartnerStatus.openNow,
   );
   const partnerB = LabPartner(
     id: 'p2',
     name: 'Beta',
+    address: '2 Nile St, Cairo',
     distanceKm: 2,
     rating: 4.9,
     ratingCount: 20,
-    totalPrice: 200,
+    startingPrice: 200,
     latitude: 2,
     longitude: 2,
+    status: LabPartnerStatus.openNow,
   );
 
   setUpAll(() {
@@ -88,31 +92,30 @@ void main() {
       expect(result, [partnerA, partnerB]);
     });
 
-    test('forwards the selected test ids and sort option', () async {
-      when(
-        () => repository.getLabPartners(
-          testIds: any(named: 'testIds'),
-          sort: any(named: 'sort'),
-        ),
-      ).thenAnswer((_) async => const Result.ok([]));
-
-      container.read(selectedLabTestsProvider.notifier).toggle('t1');
-      container
-          .read(labSortControllerProvider.notifier)
-          .select(LabSortOption.ratingDesc);
-
-      await container.read(labPartnersProvider.future);
-
-      verify(
-        () => repository.getLabPartners(
-          testIds: any(
-            named: 'testIds',
-            that: containsAll(['vitamin-d', 't1']),
+    test(
+      'forwards the selected sort option with an empty test id list',
+      () async {
+        when(
+          () => repository.getLabPartners(
+            testIds: any(named: 'testIds'),
+            sort: any(named: 'sort'),
           ),
-          sort: LabSortOption.ratingDesc,
-        ),
-      ).called(1);
-    });
+        ).thenAnswer((_) async => const Result.ok([]));
+
+        container
+            .read(labSortControllerProvider.notifier)
+            .select(LabSortOption.ratingDesc);
+
+        await container.read(labPartnersProvider.future);
+
+        verify(
+          () => repository.getLabPartners(
+            testIds: const [],
+            sort: LabSortOption.ratingDesc,
+          ),
+        ).called(1);
+      },
+    );
 
     test('throws the Failure when the repository returns Result.err', () async {
       when(

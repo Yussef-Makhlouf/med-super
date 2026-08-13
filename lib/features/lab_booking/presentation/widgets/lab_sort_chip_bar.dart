@@ -8,11 +8,18 @@ class LabSortChipBar extends StatelessWidget {
   const LabSortChipBar({
     required this.selected,
     required this.onSelected,
+    required this.openNowOnly,
+    required this.onToggleOpenNow,
     super.key,
   });
 
   final LabSortOption selected;
   final ValueChanged<LabSortOption> onSelected;
+
+  /// Whether the "مفتوح الآن" filter chip is active — a filter, not a sort
+  /// order, but rendered in the same chip row per the mockup.
+  final bool openNowOnly;
+  final VoidCallback onToggleOpenNow;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +50,7 @@ class LabSortChipBar extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
+            _filterChip(),
             _chip(LabSortOption.priceAsc, 'lab_booking.select_lab.sort_price'),
             _chip(
               LabSortOption.ratingDesc,
@@ -52,6 +60,25 @@ class LabSortChipBar extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _filterChip() {
+    return ChoiceChip(
+      label: Text('lab_booking.select_lab.filter_open_now'.tr()),
+      selected: openNowOnly,
+      onSelected: (_) => onToggleOpenNow(),
+      backgroundColor: Colors.white,
+      selectedColor: AppColors.patientPrimary.withValues(alpha: 0.1),
+      side: BorderSide(
+        color: openNowOnly ? AppColors.patientPrimary : AppColors.borderMedium,
+      ),
+      labelStyle: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: openNowOnly ? AppColors.patientPrimary : AppColors.mutedText2,
+      ),
+      shape: const StadiumBorder(),
     );
   }
 
