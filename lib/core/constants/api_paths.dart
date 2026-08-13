@@ -36,4 +36,10 @@ abstract final class ApiPaths {
   static const providerRegistrationSubmit = '/v1/provider/registration';
   static const providerRegistrationLookups =
       '/v1/provider/registration/lookups';
+
+  // Provider dashboard
+  static const providerAppointments = '/v1/provider/appointments';
+  static const providerPatients = '/v1/provider/patients';
+  static const providerNotifications = '/v1/provider/notifications';
+  static const providerMe = '/v1/provider/me';
 }

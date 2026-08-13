@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:med_super/core/constants/api_paths.dart';
+import 'package:med_super/core/constants/hive_box_names.dart';
 import 'mock_interceptor.dart';
 
 /// In-memory mock Identity store for Sprint 1 auth flows.
@@ -547,3 +549,464 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
     };
   });
 }
+
+// ─── Provider Dashboard mocks ────────────────────────────────────────────────
+
+// ─── Seed data helpers ────────────────────────────────────────────────────────
+
+List<Map<String, dynamic>> _seedAppointments() => [
+      {
+        'id': 'apt-1',
+        'patient_name': 'سارة المحمد',
+        'patient_avatar_url': null,
+        'scheduled_start': DateTime.now().toLocal().toIso8601String(),
+        'scheduled_end':
+            DateTime.now().toLocal().add(const Duration(minutes: 30)).toIso8601String(),
+        'location_status': 'في العيادة',
+        'med_id': 'MED-1234',
+        'status': 'pending',
+      },
+      {
+        'id': 'apt-2',
+        'patient_name': 'أحمد العتيبي',
+        'patient_avatar_url': null,
+        'scheduled_start':
+            DateTime.now().toLocal().add(const Duration(hours: 1)).toIso8601String(),
+        'scheduled_end': DateTime.now()
+            .toLocal()
+            .add(const Duration(hours: 1, minutes: 30))
+            .toIso8601String(),
+        'location_status': 'في العيادة',
+        'med_id': 'MED-1235',
+        'status': 'confirmed',
+      },
+      {
+        'id': 'apt-3',
+        'patient_name': 'خالد بن فهد',
+        'patient_avatar_url': null,
+        'scheduled_start':
+            DateTime.now().toLocal().add(const Duration(hours: 2)).toIso8601String(),
+        'scheduled_end': DateTime.now()
+            .toLocal()
+            .add(const Duration(hours: 2, minutes: 30))
+            .toIso8601String(),
+        'location_status': 'في العيادة',
+        'med_id': 'MED-1236',
+        'status': 'cancelled',
+      },
+      {
+        'id': 'apt-4',
+        'patient_name': 'فاطمة الشهري',
+        'patient_avatar_url': null,
+        'scheduled_start':
+            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
+        'scheduled_end': DateTime.now()
+            .toLocal()
+            .subtract(const Duration(hours: 1, minutes: 30))
+            .toIso8601String(),
+        'location_status': 'في العيادة',
+        'med_id': 'MED-1237',
+        'status': 'completed',
+      },
+      {
+        'id': 'apt-5',
+        'patient_name': 'نورة العمري',
+        'patient_avatar_url': null,
+        'scheduled_start':
+            DateTime.now().toLocal().add(const Duration(days: 1)).toIso8601String(),
+        'scheduled_end': DateTime.now()
+            .toLocal()
+            .add(const Duration(days: 1, hours: 1))
+            .toIso8601String(),
+        'location_status': 'عيادة خارجية',
+        'med_id': 'MED-1238',
+        'status': 'pending',
+      },
+      {
+        'id': 'apt-6',
+        'patient_name': 'محمد الغامدي',
+        'patient_avatar_url': null,
+        'scheduled_start':
+            DateTime.now().toLocal().add(const Duration(days: 2)).toIso8601String(),
+        'scheduled_end': DateTime.now()
+            .toLocal()
+            .add(const Duration(days: 2, hours: 1))
+            .toIso8601String(),
+        'location_status': 'في العيادة',
+        'med_id': 'MED-1239',
+        'status': 'confirmed',
+      },
+    ];
+
+List<Map<String, dynamic>> _seedPatients() => [
+      {
+        'id': 'pat-1',
+        'name': 'سارة المحمد',
+        'med_id': 'MED-1234',
+        'avatar_url': null,
+        'status': 'مؤكد',
+        'next_appointment': DateTime.now().toLocal().toIso8601String(),
+      },
+      {
+        'id': 'pat-2',
+        'name': 'أحمد العتيبي',
+        'med_id': 'MED-1235',
+        'avatar_url': null,
+        'status': 'مؤكد',
+        'next_appointment':
+            DateTime.now().toLocal().add(const Duration(hours: 1)).toIso8601String(),
+      },
+      {
+        'id': 'pat-3',
+        'name': 'خالد بن فهد',
+        'med_id': 'MED-1236',
+        'avatar_url': null,
+        'status': 'ملغى',
+        'next_appointment':
+            DateTime.now().toLocal().add(const Duration(hours: 2)).toIso8601String(),
+      },
+      {
+        'id': 'pat-4',
+        'name': 'فاطمة الشهري',
+        'med_id': 'MED-1237',
+        'avatar_url': null,
+        'status': 'مكتمل',
+        'next_appointment':
+            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
+      },
+      {
+        'id': 'pat-5',
+        'name': 'نورة العمري',
+        'med_id': 'MED-1238',
+        'avatar_url': null,
+        'status': 'مؤكد',
+        'next_appointment':
+            DateTime.now().toLocal().add(const Duration(days: 1)).toIso8601String(),
+      },
+      {
+        'id': 'pat-6',
+        'name': 'محمد الغامدي',
+        'med_id': 'MED-1239',
+        'avatar_url': null,
+        'status': 'مؤكد',
+        'next_appointment':
+            DateTime.now().toLocal().add(const Duration(days: 2)).toIso8601String(),
+      },
+    ];
+
+List<Map<String, dynamic>> _seedNotifications() => [
+      {
+        'id': 'notif-1',
+        'type': 'newBookingRequest',
+        'title': 'طلب حجز جديد',
+        'subtitle': 'قامت سارة المحمد بحجز موعد جديد الساعة 09:00 ص',
+        'created_at':
+            DateTime.now().toLocal().subtract(const Duration(minutes: 45)).toIso8601String(),
+        'is_unread': true,
+        'deep_link_route': '/provider/home',
+      },
+      {
+        'id': 'notif-2',
+        'type': 'appointmentConfirmed',
+        'title': 'تأكيد موعد',
+        'subtitle': 'تم تأكيد موعد أحمد العتيبي الساعة 10:00 ص',
+        'created_at':
+            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
+        'is_unread': true,
+        'deep_link_route': '/provider/home',
+      },
+      {
+        'id': 'notif-3',
+        'type': 'labReportReady',
+        'title': 'تقرير مختبر جاهز',
+        'subtitle': 'تقرير التحاليل الطبية الخاص بـ خالد بن فهد جاهز',
+        'created_at':
+            DateTime.now().toLocal().subtract(const Duration(hours: 5)).toIso8601String(),
+        'is_unread': false,
+      },
+      {
+        'id': 'notif-4',
+        'type': 'reminder',
+        'title': 'تذكير بمؤتمر',
+        'subtitle': 'مؤتمر الطب الباطني يبدأ غداً الساعة 10:00 ص',
+        'created_at':
+            DateTime.now().toLocal().subtract(const Duration(days: 1)).toIso8601String(),
+        'is_unread': false,
+      },
+    ];
+
+// ─── Hive-backed mock store ────────────────────────────────────────────────────
+
+/// Gets the providerDashboardCache Hive box, returning null if Hive is not
+/// yet initialised (e.g. in unit tests that don't call HiveService.init).
+Box<String>? get _cacheBox {
+  try {
+    return Hive.isBoxOpen(HiveBoxNames.providerDashboardCache)
+        ? Hive.box<String>(HiveBoxNames.providerDashboardCache)
+        : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+List<Map<String, dynamic>> _loadOrSeed(
+  String key,
+  List<Map<String, dynamic>> Function() seed,
+) {
+  final box = _cacheBox;
+  if (box != null) {
+    final raw = box.get(key);
+    if (raw != null) {
+      try {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        final list = decoded.cast<Map<String, dynamic>>();
+        if (list.isNotEmpty) {
+          return list;
+        }
+      } catch (_) {}
+    }
+  }
+  final seeded = seed();
+  _cacheBox?.put(key, jsonEncode(seeded));
+  return seeded;
+}
+
+void _persist(String key, List<Map<String, dynamic>> list) {
+  _cacheBox?.put(key, jsonEncode(list));
+}
+
+class _MockProviderDashboardStore {
+  _MockProviderDashboardStore() {
+    appointments = _loadOrSeed('appointments', _seedAppointments);
+    patients = _loadOrSeed('patients', _seedPatients);
+    notifications = _loadOrSeed('notifications', _seedNotifications);
+  }
+
+  late List<Map<String, dynamic>> appointments;
+  late List<Map<String, dynamic>> patients;
+  late List<Map<String, dynamic>> notifications;
+
+  final Map<String, dynamic> doctorAccount = {
+    'id': 'doc-001',
+    'name': 'د. أحمد علي',
+    'specialty': 'استشاري الطب الباطني',
+    'hospital_name': 'مستشفى الملك فيصل التخصصي',
+    'avatar_url': null,
+  };
+
+  void persistAppointments() => _persist('appointments', appointments);
+  void persistPatients() => _persist('patients', patients);
+  void persistNotifications() => _persist('notifications', notifications);
+}
+
+final _mockProviderDashboardStore = _MockProviderDashboardStore();
+
+void registerProviderDashboardMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', ApiPaths.providerAppointments, (options) {
+    final dateParam = options.queryParameters['date'] as String?;
+    final statusParam = options.queryParameters['status'] as String?;
+
+    if (_mockProviderDashboardStore.appointments.isEmpty) {
+      _mockProviderDashboardStore.appointments = _seedAppointments();
+      _mockProviderDashboardStore.persistAppointments();
+    }
+
+    var filtered = List<Map<String, dynamic>>.from(
+        _mockProviderDashboardStore.appointments);
+    if (dateParam != null && dateParam.isNotEmpty) {
+      // Parse year/month/day from the query param (YYYY-MM-DD format)
+      // and compare with appointment date in local time — timezone-safe on Web.
+      final parts = dateParam.split('-');
+      if (parts.length == 3) {
+        final qYear = int.tryParse(parts[0]);
+        final qMonth = int.tryParse(parts[1]);
+        final qDay = int.tryParse(parts[2]);
+        filtered = filtered.where((a) {
+          try {
+            final dt = DateTime.parse(a['scheduled_start'] as String).toLocal();
+            return dt.year == qYear && dt.month == qMonth && dt.day == qDay;
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+      }
+    }
+
+    if (statusParam != null && statusParam.isNotEmpty) {
+      final statuses =
+          statusParam.split(',').map((s) => s.trim().toLowerCase()).toList();
+      filtered = filtered.where((a) {
+        final st = (a['status'] as String).toLowerCase();
+        return statuses.contains(st);
+      }).toList();
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'items': filtered,
+      },
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.providerAppointments, (options) {
+    final path = options.path;
+    if (path.contains('/accept') || path.contains('/reject')) {
+      final isAccept = path.contains('/accept');
+      final parts = path.split('/');
+      final actionIndex = parts.indexWhere((p) => p == 'accept' || p == 'reject');
+      final id = actionIndex > 0 ? parts[actionIndex - 1] : '';
+
+      final index = _mockProviderDashboardStore.appointments
+          .indexWhere((a) => a['id'] == id);
+      if (index == -1) {
+        return _error(404, 'NOT_FOUND', 'Appointment not found');
+      }
+
+      final updated = Map<String, dynamic>.from(
+          _mockProviderDashboardStore.appointments[index]);
+      updated['status'] = isAccept ? 'confirmed' : 'cancelled';
+      _mockProviderDashboardStore.appointments[index] = updated;
+      // Persist mutation to Hive so it survives a cold restart.
+      _mockProviderDashboardStore.persistAppointments();
+
+      return {
+        'statusCode': 200,
+        'data': updated,
+      };
+    }
+
+    final body = _body(options) ?? {};
+    final newId =
+        'apt-${_mockProviderDashboardStore.appointments.length + 1}';
+    final medId =
+        'MED-${1240 + _mockProviderDashboardStore.appointments.length}';
+    final newApt = {
+      'id': newId,
+      'patient_name': body['patient_name'] ?? 'مريض جديد',
+      'patient_avatar_url': null,
+      'scheduled_start':
+          body['scheduled_start'] ?? DateTime.now().toIso8601String(),
+      'scheduled_end': body['scheduled_end'] ??
+          DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
+      'location_status': 'في العيادة',
+      'med_id': medId,
+      'status': 'pending',
+    };
+    _mockProviderDashboardStore.appointments.add(newApt);
+    _mockProviderDashboardStore.patients.add({
+      'id': 'pat-${_mockProviderDashboardStore.patients.length + 1}',
+      'name': newApt['patient_name'],
+      'med_id': medId,
+      'avatar_url': null,
+      'status': 'مؤكد',
+      'next_appointment': newApt['scheduled_start'],
+    });
+    // Persist both lists to Hive so new appointment survives restart.
+    _mockProviderDashboardStore.persistAppointments();
+    _mockProviderDashboardStore.persistPatients();
+
+    return {
+      'statusCode': 200,
+      'data': newApt,
+    };
+  });
+
+  interceptor.register('GET', ApiPaths.providerPatients, (options) {
+    final q = (options.queryParameters['q'] as String?)?.toLowerCase();
+    final filter = options.queryParameters['filter'] as String?;
+
+    if (_mockProviderDashboardStore.patients.isEmpty) {
+      _mockProviderDashboardStore.patients = _seedPatients();
+      _mockProviderDashboardStore.persistPatients();
+    }
+
+    var filtered =
+        List<Map<String, dynamic>>.from(_mockProviderDashboardStore.patients);
+    if (q != null && q.isNotEmpty) {
+      filtered = filtered.where((p) {
+        final name = (p['name'] as String).toLowerCase();
+        final medId = (p['med_id'] as String).toLowerCase();
+        return name.contains(q) || medId.contains(q);
+      }).toList();
+    }
+
+    if (filter != null && filter != 'all' && filter != 'الكل') {
+      final now = DateTime.now();
+      if (filter == 'today' || filter == 'اليوم') {
+        filtered = filtered.where((p) {
+          final next = DateTime.parse(p['next_appointment'] as String);
+          return next.year == now.year &&
+              next.month == now.month &&
+              next.day == now.day;
+        }).toList();
+      } else if (filter == 'week' || filter == 'هذا الأسبوع') {
+        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        final endOfWeek = startOfWeek.add(const Duration(days: 7));
+        filtered = filtered.where((p) {
+          final next = DateTime.parse(p['next_appointment'] as String);
+          return next.isAfter(startOfWeek) && next.isBefore(endOfWeek);
+        }).toList();
+      }
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'items': filtered,
+      },
+    };
+  });
+
+  interceptor.register('GET', ApiPaths.providerNotifications, (options) {
+    if (_mockProviderDashboardStore.notifications.isEmpty) {
+      _mockProviderDashboardStore.notifications = _seedNotifications();
+      _mockProviderDashboardStore.persistNotifications();
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'items': _mockProviderDashboardStore.notifications,
+      },
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.providerNotifications, (options) {
+    final path = options.path;
+    if (path.contains('/read')) {
+      final parts = path.split('/');
+      final readIndex = parts.indexWhere((p) => p == 'read');
+      final id = readIndex > 0 ? parts[readIndex - 1] : '';
+
+      final index = _mockProviderDashboardStore.notifications
+          .indexWhere((n) => n['id'] == id);
+      if (index != -1) {
+        final updated = Map<String, dynamic>.from(
+            _mockProviderDashboardStore.notifications[index]);
+        updated['is_unread'] = false;
+        _mockProviderDashboardStore.notifications[index] = updated;
+        // Persist to Hive so read-state survives a cold restart.
+        _mockProviderDashboardStore.persistNotifications();
+      }
+
+      return {
+        'statusCode': 200,
+        'data': {'success': true},
+      };
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {'success': true},
+    };
+  });
+
+  interceptor.register('GET', ApiPaths.providerMe, (options) {
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.doctorAccount,
+    };
+  });
+}
+

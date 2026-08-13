@@ -22,9 +22,14 @@ class AuthInterceptor extends Interceptor {
       handler.next(options);
       return;
     }
-    final token = await _storage.accessToken;
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await _storage.accessToken;
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (_) {
+      // Token read failed (e.g. secure storage unavailable) — proceed
+      // unauthenticated rather than silently dropping the request.
     }
     handler.next(options);
   }
