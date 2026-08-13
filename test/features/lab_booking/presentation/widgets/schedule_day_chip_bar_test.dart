@@ -25,9 +25,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tapping a day invokes onSelected with that day', (
-    tester,
-  ) async {
+  testWidgets('tapping a day invokes onSelected with that day', (tester) async {
     DateTime? tapped;
     await pumpLocalizedWidget(
       tester,

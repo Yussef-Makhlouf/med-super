@@ -56,11 +56,24 @@ class SelectedTimeSlot extends _$SelectedTimeSlot {
   void select(String? time) => state = time;
 }
 
-/// Selected payment method — credit card pre-selected, matching Figma.
+/// Selected payment method — online payment pre-selected, matching Figma.
 @riverpod
 class SelectedPaymentMethod extends _$SelectedPaymentMethod {
   @override
-  LabPaymentMethod build() => LabPaymentMethod.creditCard;
+  LabPaymentMethod build() => LabPaymentMethod.onlinePayment;
 
   void select(LabPaymentMethod method) => state = method;
+}
+
+/// Home-collection address, edited from the review step's schedule/address
+/// edit modal. Only meaningful when the service type is home collection;
+/// seeded with a placeholder since no saved-address feature exists yet.
+@riverpod
+class SelectedLabAddress extends _$SelectedLabAddress {
+  @override
+  // Placeholder default — no saved-address / geolocation feature exists yet
+  // to seed a real one. Flagged for review in the C3 agent report.
+  String build() => 'العنوان الحالي غير محدد';
+
+  void select(String address) => state = address;
 }

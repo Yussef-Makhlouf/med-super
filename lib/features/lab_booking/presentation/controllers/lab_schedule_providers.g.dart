@@ -246,15 +246,15 @@ abstract class _$SelectedTimeSlot extends $Notifier<String?> {
   }
 }
 
-/// Selected payment method — credit card pre-selected, matching Figma.
+/// Selected payment method — online payment pre-selected, matching Figma.
 
 @ProviderFor(SelectedPaymentMethod)
 final selectedPaymentMethodProvider = SelectedPaymentMethodProvider._();
 
-/// Selected payment method — credit card pre-selected, matching Figma.
+/// Selected payment method — online payment pre-selected, matching Figma.
 final class SelectedPaymentMethodProvider
     extends $NotifierProvider<SelectedPaymentMethod, LabPaymentMethod> {
-  /// Selected payment method — credit card pre-selected, matching Figma.
+  /// Selected payment method — online payment pre-selected, matching Figma.
   SelectedPaymentMethodProvider._()
     : super(
         from: null,
@@ -283,9 +283,9 @@ final class SelectedPaymentMethodProvider
 }
 
 String _$selectedPaymentMethodHash() =>
-    r'd7230abc2c325119dd93d0c0cd172a0b842d3010';
+    r'06110e0b3cfbb1d746ec1bd1b2581ddf2c892db0';
 
-/// Selected payment method — credit card pre-selected, matching Figma.
+/// Selected payment method — online payment pre-selected, matching Figma.
 
 abstract class _$SelectedPaymentMethod extends $Notifier<LabPaymentMethod> {
   LabPaymentMethod build();
@@ -298,6 +298,73 @@ abstract class _$SelectedPaymentMethod extends $Notifier<LabPaymentMethod> {
             as $ClassProviderElement<
               AnyNotifier<LabPaymentMethod, LabPaymentMethod>,
               LabPaymentMethod,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// Home-collection address, edited from the review step's schedule/address
+/// edit modal. Only meaningful when the service type is home collection;
+/// seeded with a placeholder since no saved-address feature exists yet.
+
+@ProviderFor(SelectedLabAddress)
+final selectedLabAddressProvider = SelectedLabAddressProvider._();
+
+/// Home-collection address, edited from the review step's schedule/address
+/// edit modal. Only meaningful when the service type is home collection;
+/// seeded with a placeholder since no saved-address feature exists yet.
+final class SelectedLabAddressProvider
+    extends $NotifierProvider<SelectedLabAddress, String> {
+  /// Home-collection address, edited from the review step's schedule/address
+  /// edit modal. Only meaningful when the service type is home collection;
+  /// seeded with a placeholder since no saved-address feature exists yet.
+  SelectedLabAddressProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'selectedLabAddressProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectedLabAddressHash();
+
+  @$internal
+  @override
+  SelectedLabAddress create() => SelectedLabAddress();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$selectedLabAddressHash() =>
+    r'8db27c291b07450666a2516648d5b461f1b5c3bd';
+
+/// Home-collection address, edited from the review step's schedule/address
+/// edit modal. Only meaningful when the service type is home collection;
+/// seeded with a placeholder since no saved-address feature exists yet.
+
+abstract class _$SelectedLabAddress extends $Notifier<String> {
+  String build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<String, String>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String, String>,
+              String,
               Object?,
               Object?
             >;

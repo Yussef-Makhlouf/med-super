@@ -54,9 +54,7 @@ void main() {
 
     test('select updates the state', () {
       final days = container.read(labAvailableDaysProvider);
-      container
-          .read(selectedScheduleDayProvider.notifier)
-          .select(days.first);
+      container.read(selectedScheduleDayProvider.notifier).select(days.first);
       expect(container.read(selectedScheduleDayProvider), days.first);
     });
   });
@@ -78,21 +76,32 @@ void main() {
   });
 
   group('selectedPaymentMethodProvider', () {
-    test('defaults to creditCard', () {
+    test('defaults to onlinePayment', () {
       expect(
         container.read(selectedPaymentMethodProvider),
-        LabPaymentMethod.creditCard,
+        LabPaymentMethod.onlinePayment,
       );
     });
 
     test('select updates the state', () {
       container
           .read(selectedPaymentMethodProvider.notifier)
-          .select(LabPaymentMethod.cashAtLab);
+          .select(LabPaymentMethod.payAtService);
       expect(
         container.read(selectedPaymentMethodProvider),
-        LabPaymentMethod.cashAtLab,
+        LabPaymentMethod.payAtService,
       );
+    });
+  });
+
+  group('selectedLabAddressProvider', () {
+    test('has a non-empty placeholder default', () {
+      expect(container.read(selectedLabAddressProvider), isNotEmpty);
+    });
+
+    test('select updates the state', () {
+      container.read(selectedLabAddressProvider.notifier).select('123 Main St');
+      expect(container.read(selectedLabAddressProvider), '123 Main St');
     });
   });
 }

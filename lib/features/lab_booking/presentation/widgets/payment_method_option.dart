@@ -4,7 +4,8 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_payment_method.dart';
 
-/// Single radio-style row for one [LabPaymentMethod] option.
+/// Single radio-style row for one [LabPaymentMethod] option, with a small
+/// grey subtitle line under the label (e.g. "Visa, Mastercard, Meeza").
 class PaymentMethodOption extends StatelessWidget {
   const PaymentMethodOption({
     required this.method,
@@ -18,9 +19,8 @@ class PaymentMethodOption extends StatelessWidget {
   final VoidCallback onSelected;
 
   IconData get _icon => switch (method) {
-    LabPaymentMethod.creditCard => Icons.credit_card,
-    LabPaymentMethod.applePay => Icons.phone_iphone,
-    LabPaymentMethod.cashAtLab => Icons.payments_outlined,
+    LabPaymentMethod.onlinePayment => Icons.credit_card,
+    LabPaymentMethod.payAtService => Icons.payments_outlined,
   };
 
   @override
@@ -44,13 +44,27 @@ class PaymentMethodOption extends StatelessWidget {
             Icon(_icon, color: AppColors.bodyText, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                method.labelKey.tr(),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.ink900,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    method.labelKey.tr(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    method.subtitleKey.tr(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.mutedText2,
+                    ),
+                  ),
+                ],
               ),
             ),
             Radio<LabPaymentMethod>(
