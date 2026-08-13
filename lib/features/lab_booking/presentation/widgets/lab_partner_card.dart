@@ -102,6 +102,36 @@ class LabPartnerCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Logo tile sits at the reading-start side (right, in RTL) —
+              // rendered first here so Row's RTL layout places it there,
+              // matching the mockup (rating badge is the trailing/left
+              // element, not the logo).
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  border: Border.all(color: AppColors.borderSubtle),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                ),
+                child: Icon(
+                  Icons.biotech_outlined,
+                  size: 20,
+                  color: AppColors.patientPrimary.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  partner.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink900,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -128,33 +158,14 @@ class LabPartnerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  partner.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink900,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  border: Border.all(color: AppColors.borderSubtle),
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                ),
-                child: Icon(
-                  Icons.biotech_outlined,
-                  size: 20,
-                  color: AppColors.patientPrimary.withValues(alpha: 0.6),
-                ),
-              ),
             ],
+          ),
+          const SizedBox(height: 8),
+          // Status chip on its own row (under the rating, at the same
+          // trailing/left edge) — not sharing a row with the address.
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: _StatusChip(status: partner.status),
           ),
           const SizedBox(height: 8),
           Row(
@@ -175,8 +186,6 @@ class LabPartnerCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              _StatusChip(status: partner.status),
             ],
           ),
           const SizedBox(height: 12),
@@ -214,6 +223,19 @@ class LabPartnerCard extends StatelessWidget {
                   label: 'lab_booking.select_lab.choose_cta'.tr(),
                   onPressed: onSelect,
                   fullWidth: true,
+                  // Explicit brand color/radius — see the matching comment
+                  // in lab_request_upload_screen.dart: the shared
+                  // ElevatedButton theme default is colorScheme.primary
+                  // (brandBlue), a visibly different blue than
+                  // AppColors.patientPrimary used everywhere else in this
+                  // card and flow. Must match the mockup exactly.
+                  backgroundColor: AppColors.patientPrimary,
+                  // Without this, ElevatedButton's default M3 style
+                  // computes the label color against the *theme's*
+                  // primary rather than this explicit override, landing on
+                  // a low-contrast near-invisible blue-on-blue label.
+                  foregroundColor: Colors.white,
+                  borderRadius: AppRadii.xl,
                 ),
               ),
             ],

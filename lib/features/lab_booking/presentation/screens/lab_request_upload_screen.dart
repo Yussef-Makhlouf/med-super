@@ -113,6 +113,18 @@ class _LabRequestUploadScreenState
               child: AppButton.filled(
                 label: 'lab_booking.upload.continue_cta'.tr(),
                 fullWidth: true,
+                // Explicit brand color/radius — the shared ElevatedButton
+                // theme default is colorScheme.primary (brandBlue), which is
+                // a visibly different blue than AppColors.patientPrimary
+                // used everywhere else in this flow (stepper accent, price
+                // text, every other CTA). Must match the mockup exactly.
+                backgroundColor: AppColors.patientPrimary,
+                // Without this, ElevatedButton's default M3 style computes
+                // the label color against the *theme's* primary rather
+                // than this explicit override, landing on a low-contrast
+                // near-invisible blue-on-blue label.
+                foregroundColor: Colors.white,
+                borderRadius: AppRadii.xl,
                 onPressed: canContinue
                     ? () => context.push('/patient/lab/select-lab')
                     : null,

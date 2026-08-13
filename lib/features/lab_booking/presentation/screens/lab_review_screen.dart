@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,7 +135,7 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
                   _OrderSummaryCard(
                     labName: partner?.name,
                     distanceKm: partner?.distanceKm,
-                    imagePath: images.isEmpty ? null : images.first.path,
+                    image: images.isEmpty ? null : images.first,
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -221,12 +219,15 @@ class _OrderSummaryCard extends StatefulWidget {
   const _OrderSummaryCard({
     required this.labName,
     required this.distanceKm,
-    required this.imagePath,
+    required this.image,
   });
 
   final String? labName;
   final double? distanceKm;
-  final String? imagePath;
+
+  /// The first image the patient uploaded on step 1 — shown as the
+  /// summary's thumbnail per the mockup.
+  final LabRequestImage? image;
 
   @override
   State<_OrderSummaryCard> createState() => _OrderSummaryCardState();
@@ -259,7 +260,7 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Thumbnail(path: widget.imagePath),
+              _Thumbnail(image: widget.image),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -345,21 +346,28 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
 }
 
 class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({required this.path});
+  const _Thumbnail({required this.image});
 
-  final String? path;
+  final LabRequestImage? image;
 
-  static const _size = 48.0;
+  static const _size = 56.0;
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = path;
-    if (imagePath == null || imagePath.isEmpty) {
-      return _fallback();
+    final image = this.image;
+    if (image == null) return _fallback();
+
+    // `Image.memory` (not `Image.file`/`dart:io`) — this must render on
+    // every platform including Flutter Web, where there is no real
+    // filesystem path to read `image.path` from at all.
+    ImageProvider? provider;
+    if (image.bytes != null) {
+      provider = MemoryImage(image.bytes!);
+    } else if (image.path.startsWith('http')) {
+      provider = NetworkImage(image.path);
     }
-    final ImageProvider provider = imagePath.startsWith('http')
-        ? NetworkImage(imagePath)
-        : FileImage(File(imagePath));
+    if (provider == null) return _fallback();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadii.sm),
       child: Image(
