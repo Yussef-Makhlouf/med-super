@@ -52,7 +52,11 @@
     "appointments": "مواعيدي",
     "orders": "طلباتي",
     "notifications": "التنبيهات",
-    "profile": "حسابي"
+    "profile": "حسابي",
+    "provider_home": "الرئيسية",
+    "provider_appointments": "المواعيد",
+    "provider_patients": "المرضى",
+    "provider_profile": "الملف الشخصي"
   },
   "home": {
     "welcome": "أهلاً بك،",

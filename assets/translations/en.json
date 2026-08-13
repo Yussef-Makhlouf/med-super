@@ -52,7 +52,11 @@
     "appointments": "Appointments",
     "orders": "Orders",
     "notifications": "Alerts",
-    "profile": "Profile"
+    "profile": "Profile",
+    "provider_home": "Home",
+    "provider_appointments": "Appointments",
+    "provider_patients": "Patients",
+    "provider_profile": "Profile"
   },
   "home": {
     "welcome": "Welcome,",

@@ -106,7 +106,10 @@ class AppButton extends StatelessWidget {
       ? null
       : ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
-          foregroundColor: foregroundColor,
+          // When a custom backgroundColor is set, default the text/icon to white
+          // so it stays legible on any coloured background (Material3 otherwise
+          // falls back to colorScheme.onSurface which may be dark on a dark bg).
+          foregroundColor: foregroundColor ?? (backgroundColor != null ? Colors.white : null),
           elevation: 0,
           minimumSize: _minimumSize,
           shape: borderRadius == null
