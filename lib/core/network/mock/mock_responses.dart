@@ -421,128 +421,56 @@ void registerSearchMocks(MockInterceptor interceptor) {
 
 // ─── Lab Booking mocks ─────────────────────────────────────────────────────
 
-Map<String, dynamic> _labCatalogJson() => {
-  'categories': [
-    {'id': 'liver', 'label_key': 'lab_booking.categories.liver'},
-    {'id': 'vitamins', 'label_key': 'lab_booking.categories.vitamins'},
-    {'id': 'diabetes', 'label_key': 'lab_booking.categories.diabetes'},
-    {'id': 'packages', 'label_key': 'lab_booking.categories.packages'},
-  ],
-  'tests': [
-    {
-      'id': 'full-checkup-package',
-      'name': 'باقة الفحص الشامل',
-      'price': 450,
-      'currency': 'EGP',
-      'is_package': true,
-      'category_id': 'packages',
-      'includes_count': 15,
-      'requires_fasting': true,
-      'fasting_hours': 8,
-    },
-    {
-      'id': 'vitamin-d',
-      'name': 'فحص فيتامين د',
-      'price': 150,
-      'currency': 'EGP',
-      'is_package': false,
-      'category_id': 'vitamins',
-      'requires_fasting': false,
-      'result_hours': 24,
-    },
-    {
-      'id': 'hba1c',
-      'name': 'فحص السكر التراكمي',
-      'price': 80,
-      'currency': 'EGP',
-      'is_package': false,
-      'category_id': 'diabetes',
-      'requires_fasting': false,
-    },
-    {
-      'id': 'liver-function',
-      'name': 'فحص وظائف الكبد',
-      'price': 120,
-      'currency': 'EGP',
-      'is_package': false,
-      'category_id': 'liver',
-      'requires_fasting': false,
-      'result_hours': 24,
-    },
-  ],
-  'suggested_labs': [
-    {
-      'id': 'lab-alpha',
-      'name': 'مختبرات ألفا',
-      'distance_km': 2.5,
-      'rating': 4.8,
-    },
-  ],
-};
-
 const _labPartnersJson = [
   {
     'id': 'lab-al-borg',
     'name': 'مختبرات البرج',
+    'address': 'شارع الجمهورية، مفاعية',
     'distance_km': 2.5,
     'rating': 4.8,
     'rating_count': 124,
-    'total_price': 150,
+    'starting_price': 150,
     'latitude': 24.7136,
     'longitude': 46.6753,
+    'status': 'open_now',
   },
   {
     'id': 'lab-alpha',
     'name': 'مختبرات ألفا',
+    'address': 'شارع طه حسين، مفاعية',
     'distance_km': 3.2,
     'rating': 4.5,
     'rating_count': 89,
-    'total_price': 165,
+    'starting_price': 165,
     'latitude': 24.7255,
     'longitude': 46.6893,
+    'status': 'closed_now',
   },
   {
     'id': 'lab-smart',
     'name': 'المختبرات الذكية',
+    'address': 'شارع عبد العظيم',
     'distance_km': 5.1,
     'rating': 4.9,
     'rating_count': 210,
-    'total_price': 140,
+    'starting_price': 140,
     'latitude': 24.6980,
     'longitude': 46.6612,
+    'status': 'busy_now',
   },
 ];
 
 /// Registers Lab Booking mock responses.
 void registerLabBookingMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', ApiPaths.labTests, (options) {
-    final catalog = _labCatalogJson();
-    final categoryId = options.uri.queryParameters['category'];
-    final query = options.uri.queryParameters['q']?.trim().toLowerCase();
-    var tests = (catalog['tests'] as List<dynamic>)
-        .cast<Map<String, dynamic>>();
-    if (categoryId != null && categoryId.isNotEmpty) {
-      tests = tests.where((t) => t['category_id'] == categoryId).toList();
-    }
-    if (query != null && query.isNotEmpty) {
-      tests = tests
-          .where((t) => (t['name'] as String).toLowerCase().contains(query))
-          .toList();
-    }
-    return {
-      'statusCode': 200,
-      'data': {...catalog, 'tests': tests},
-    };
-  });
-
   interceptor.register('GET', ApiPaths.labPartners, (options) {
     final sort = options.uri.queryParameters['sort'] ?? 'nearest';
     final partners = [..._labPartnersJson];
     switch (sort) {
       case 'price_asc':
         partners.sort(
-          (a, b) =>
-              (a['total_price'] as int).compareTo(b['total_price'] as int),
+          (a, b) => (a['starting_price'] as int).compareTo(
+            b['starting_price'] as int,
+          ),
         );
       case 'rating_desc':
         partners.sort(
@@ -563,34 +491,22 @@ void registerLabBookingMocks(MockInterceptor interceptor) {
 
   interceptor.register('POST', ApiPaths.labBookings, (options) {
     final body = _body(options) ?? const {};
-    final testIds = (body['test_ids'] as List<dynamic>? ?? const [])
-        .whereType<String>()
-        .toSet();
     final labId = body['lab_id'] as String? ?? _labPartnersJson.first['id'];
     final lab = _labPartnersJson.firstWhere(
       (l) => l['id'] == labId,
       orElse: () => _labPartnersJson.first,
     );
-    final fastingHours = (_labCatalogJson()['tests'] as List<dynamic>)
-        .whereType<Map<String, dynamic>>()
-        .where((t) => testIds.contains(t['id']))
-        .where((t) => t['requires_fasting'] == true)
-        .map((t) => t['fasting_hours'] as int? ?? 0)
-        .fold<int>(0, (max, h) => h > max ? h : max);
-    final scheduledDateRaw = body['scheduled_date'] as String?;
-    final bookingDate = scheduledDateRaw != null
-        ? DateTime.parse(scheduledDateRaw)
-        : DateTime.now().add(const Duration(days: 1));
-    final bookingTime = body['scheduled_time'] as String? ?? '10:00';
+    final serviceType = body['service_type'] as String? ?? 'branch_visit';
     return {
       'statusCode': 200,
       'data': {
         'booking_number': 'LAB-${88000 + lab['id'].hashCode.abs() % 999}',
         'lab_name': lab['name'],
         'lab_address': 'طريق الملك فهد، الرياض',
-        'date': bookingDate.toIso8601String(),
-        'time': bookingTime,
-        if (fastingHours > 0) 'fasting_hours': fastingHours,
+        // The lab hasn't reviewed the uploaded request image yet, so the
+        // response is only an ETA — home-collection requests need a courier
+        // dispatched first, hence the slightly longer window.
+        'expected_response_hours': serviceType == 'home_collection' ? 3 : 2,
       },
     };
   });

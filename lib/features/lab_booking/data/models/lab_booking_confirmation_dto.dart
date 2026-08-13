@@ -5,34 +5,26 @@ class LabBookingConfirmationDto {
     required this.bookingNumber,
     required this.labName,
     required this.labAddress,
-    required this.date,
-    required this.time,
-    this.fastingHours,
+    required this.expectedResponseHours,
   });
 
   final String bookingNumber;
   final String labName;
   final String labAddress;
-  final DateTime date;
-  final String time;
-  final int? fastingHours;
+  final int expectedResponseHours;
 
   factory LabBookingConfirmationDto.fromJson(Map<String, dynamic> json) =>
       LabBookingConfirmationDto(
         bookingNumber: json['booking_number'] as String,
         labName: json['lab_name'] as String,
         labAddress: json['lab_address'] as String,
-        date: DateTime.parse(json['date'] as String),
-        time: json['time'] as String,
-        fastingHours: json['fasting_hours'] as int?,
+        expectedResponseHours: json['expected_response_hours'] as int? ?? 2,
       );
 
   LabBookingConfirmation toEntity() => LabBookingConfirmation(
     bookingNumber: bookingNumber,
     labName: labName,
     labAddress: labAddress,
-    date: date,
-    time: time,
-    fastingHours: fastingHours,
+    expectedResponseHours: expectedResponseHours,
   );
 }
