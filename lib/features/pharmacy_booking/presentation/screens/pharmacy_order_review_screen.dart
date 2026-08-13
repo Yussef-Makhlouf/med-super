@@ -356,7 +356,6 @@ class _DeliveryMethodSection extends StatelessWidget {
           const Divider(height: 1, color: AppColors.borderLight),
           const SizedBox(height: 12),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
                 isHome
@@ -367,59 +366,64 @@ class _DeliveryMethodSection extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      method.titleKey.tr(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink900,
-                      ),
-                    ),
-                    if (isHome) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.place_outlined,
-                            size: 13,
-                            color: AppColors.mutedText2,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'pharmacy_booking.review.home_label'.tr(),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.ink900,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  _mockHomeAddress,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.mutedText2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  method.titleKey.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
                 ),
               ),
             ],
           ),
+          if (isHome) ...[
+            const SizedBox(height: 12),
+            // Full-width address box — a separate card-within-a-card below
+            // the title row, not indented under it, matching the mockup.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceApp,
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.place_outlined,
+                    size: 13,
+                    color: AppColors.mutedText2,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'pharmacy_booking.review.home_label'.tr(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          _mockHomeAddress,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.mutedText2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
