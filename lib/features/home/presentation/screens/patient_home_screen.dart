@@ -302,7 +302,7 @@ class _QuickActions extends StatelessWidget {
             iconColor: brandBlue,
             title: 'home.book_labs'.tr(),
             subtitle: 'home.book_labs_sub'.tr(),
-            onTap: () => context.push('/patient/lab/select-tests'),
+            onTap: () => context.push('/patient/lab/upload'),
           ),
         ),
         const SizedBox(width: 12),
