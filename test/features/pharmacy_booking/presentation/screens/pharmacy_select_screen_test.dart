@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_status.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
@@ -158,7 +159,7 @@ void main() {
   ];
 
   testWidgets(
-    'renders header (no stepper), map, filter chips and a card per pharmacy',
+    'renders header, stepper, map, filter chips and a card per pharmacy',
     (tester) async {
       await pumpLocalizedWidget(
         tester,
@@ -172,6 +173,7 @@ void main() {
         find.text('pharmacy_booking.select_pharmacy.title'.tr()),
         findsOneWidget,
       );
+      expect(find.byType(StepProgressHeader), findsOneWidget);
 
       expect(find.byType(PharmacyMapView), findsOneWidget);
       expect(find.byType(PharmacyFilterChipBar), findsOneWidget);
@@ -228,8 +230,8 @@ void main() {
   );
 
   testWidgets(
-    'tapping a pharmacy card choose CTA selects it and navigates to the '
-    'review route',
+    'tapping a pharmacy card choose CTA only selects it — it does not '
+    'navigate, so the patient can change their mind',
     (tester) async {
       await pumpWithRouter(
         tester,
@@ -248,11 +250,40 @@ void main() {
       tester.widget<OutlinedButton>(secondCardChoose).onPressed!();
       await tester.pumpAndSettle();
 
-      expect(find.text('review-screen'), findsOneWidget);
-      expect(find.text('start-placeholder'), findsNothing);
+      expect(find.text('review-screen'), findsNothing);
+      expect(
+        tester
+            .widgetList<PharmacyCard>(find.byType(PharmacyCard))
+            .toList()[1]
+            .isSelected,
+        isTrue,
+      );
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('tapping the bottom "التالي" bar navigates to the review route', (
+    tester,
+  ) async {
+    await pumpWithRouter(
+      tester,
+      PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
+      overrides: overrides(),
+    );
+    await _settle(tester);
+
+    final nextButton = find.widgetWithText(
+      ElevatedButton,
+      'pharmacy_booking.select_pharmacy.next_cta'.tr(),
+    );
+    expect(nextButton, findsOneWidget);
+    tester.widget<ElevatedButton>(nextButton).onPressed!();
+    await tester.pumpAndSettle();
+
+    expect(find.text('review-screen'), findsOneWidget);
+    expect(find.text('start-placeholder'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('tapping the back button pops the screen', (tester) async {
     await pumpWithRouter(

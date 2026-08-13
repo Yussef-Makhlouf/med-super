@@ -66,11 +66,16 @@ class PharmacyFilterChipBar extends StatelessWidget {
         : AppColors.patientPrimary.withValues(alpha: 0.1);
 
     return ChoiceChip(
+      // The selected state swaps the icon itself for a checkmark rather
+      // than overlaying one on top of it — ChoiceChip's default checkmark
+      // stacks on top of `avatar` instead of replacing it, so it must be
+      // turned off here.
       avatar: Icon(
-        icon,
+        selected ? Icons.check : icon,
         size: 16,
         color: selected ? activeColor : AppColors.mutedText2,
       ),
+      showCheckmark: false,
       label: Text(label),
       selected: selected,
       onSelected: onSelected,

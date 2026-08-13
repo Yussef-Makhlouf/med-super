@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 
-/// Loading placeholder for the pharmacy select screen, shown via
+/// Loading placeholder for the pharmacy select screen's card list, shown via
 /// [AsyncValueView]'s `loadingWidget` while [pharmaciesProvider] resolves.
 ///
-/// Explicitly *not* a spinner: a structural skeleton (map + 3 card shapes)
-/// that pulses opacity via a repeating [AnimationController] — no new
-/// shimmer package dependency, matching the "keep it dependency-free"
-/// requirement for this screen.
+/// Scoped to the card list only — the search bar, filter chips and map
+/// render immediately regardless of loading state, so this must not
+/// replace them too.
+///
+/// Explicitly *not* a spinner: a structural skeleton (3 card shapes) that
+/// pulses opacity via a repeating [AnimationController] — no new shimmer
+/// package dependency, matching the "keep it dependency-free" requirement
+/// for this screen.
 class PharmacySearchSkeleton extends StatefulWidget {
   const PharmacySearchSkeleton({super.key});
 
@@ -110,25 +114,21 @@ class _PharmacySearchSkeletonState extends State<PharmacySearchSkeleton>
       builder: (context, _) {
         return Opacity(
           opacity: _opacity.value,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                height: 220,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ...List.generate(
+          // This placeholder stands in for the real card list, which lives
+          // inside a scrolling ListView — a plain Column here would instead
+          // be forced to fit its parent's height and overflow once the 3
+          // card skeletons exceed it (e.g. on narrower/shorter viewports).
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(
                 3,
                 (index) => Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _cardSkeleton(),
                 ),
               ),
-            ],
+            ),
           ),
         );
       },

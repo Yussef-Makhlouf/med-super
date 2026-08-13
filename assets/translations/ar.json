@@ -304,7 +304,8 @@
       "status_open_24h": "مفتوح الآن - على مدار 24 ساعة",
       "status_open_until": "مفتوح الآن - يغلق {}",
       "status_closed_tomorrow": "مغلق الآن - يفتح غداً {}",
-      "choose_cta": "اختر"
+      "choose_cta": "اختر",
+      "next_cta": "التالي"
     },
     "review": {
       "title": "مراجعة الطلب",

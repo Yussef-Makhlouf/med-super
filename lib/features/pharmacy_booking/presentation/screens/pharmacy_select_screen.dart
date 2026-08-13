@@ -4,7 +4,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_filter_chip_bar.dart';
@@ -12,8 +15,9 @@ import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmac
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
 
 /// Step 2 of the pharmacy booking flow — choose a pharmacy to fulfil the
-/// prescription uploaded in step 1. No stepper on this screen (unlike steps
-/// 1 and 3 of this flow), matching the mockup.
+/// prescription uploaded in step 1. Selecting a card only marks it as the
+/// current choice (the patient may change their mind); a bottom "التالي"
+/// bar is the only thing that actually advances to step 3.
 class PharmacySelectScreen extends ConsumerStatefulWidget {
   const PharmacySelectScreen({this.mapTileProvider, super.key});
 
@@ -49,8 +53,11 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     super.dispose();
   }
 
-  void _choose(String pharmacyId) {
+  void _select(String pharmacyId) {
     ref.read(selectedPharmacyProvider.notifier).select(pharmacyId);
+  }
+
+  void _next() {
     context.push('/patient/pharmacy/review');
   }
 
@@ -60,6 +67,19 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     final openNowOnly = ref.watch(pharmacyOpenNowOnlyFilterProvider);
     final selectedSort = ref.watch(pharmacySortProvider);
     final explicitSelectedId = ref.watch(selectedPharmacyProvider);
+    // The search bar, filter chips and map render immediately regardless of
+    // loading state — only the card list below waits on the async result
+    // (and shows the skeleton while it does), so the map is fed whatever is
+    // already resolved (empty before the first load completes).
+    final loadedPharmacies = pharmaciesAsync.value ?? const [];
+    final selectedId =
+        explicitSelectedId ??
+        (loadedPharmacies.isEmpty ? null : loadedPharmacies.first.id);
+    // A pharmacy is "chosen" either explicitly (a card was tapped) or
+    // implicitly (the first result is pre-selected once the list loads,
+    // matching the mockup's pre-selected top card) — the "التالي" bar must
+    // treat both the same way.
+    final hasSelection = selectedId != null;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -67,80 +87,114 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
         child: Column(
           children: [
             const _Header(),
+            StepProgressHeader(
+              // Same step labels/order as step 1's stepper — must read
+              // identically across every screen of this flow.
+              stepLabels: [
+                'pharmacy_booking.step_upload'.tr(),
+                'pharmacy_booking.step_pharmacy'.tr(),
+                'pharmacy_booking.step_delivery'.tr(),
+              ],
+              currentStep: 1,
+              accentColor: AppColors.patientPrimary,
+            ),
             Expanded(
-              child: AsyncValueView(
-                value: pharmaciesAsync,
-                onRetry: () => ref.invalidate(pharmaciesProvider),
-                loadingWidget: const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  child: PharmacySearchSkeleton(),
-                ),
-                data: (pharmacies) {
-                  final selectedId =
-                      explicitSelectedId ??
-                      (pharmacies.isEmpty ? null : pharmacies.first.id);
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      TextField(
-                        controller: _searchController,
-                        textAlign: TextAlign.right,
-                        onChanged: (value) => ref
-                            .read(pharmacySearchQueryProvider.notifier)
-                            .setQuery(value),
-                        decoration: InputDecoration(
-                          hintText:
-                              'pharmacy_booking.select_pharmacy.search_hint'
-                                  .tr(),
-                          suffixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: AppColors.borderLight,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    textAlign: TextAlign.right,
+                    onChanged: (value) => ref
+                        .read(pharmacySearchQueryProvider.notifier)
+                        .setQuery(value),
+                    decoration: InputDecoration(
+                      hintText: 'pharmacy_booking.select_pharmacy.search_hint'
+                          .tr(),
+                      suffixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  PharmacyFilterChipBar(
+                    openNowOnly: openNowOnly,
+                    onToggleOpenNow: () => ref
+                        .read(pharmacyOpenNowOnlyFilterProvider.notifier)
+                        .toggle(),
+                    selectedSort: selectedSort,
+                    onSelectSort: (sort) =>
+                        ref.read(pharmacySortProvider.notifier).select(sort),
+                  ),
+                  const SizedBox(height: 16),
+                  PharmacyMapView(
+                    pharmacies: loadedPharmacies,
+                    selectedId: selectedId,
+                    onSelect: (id) =>
+                        ref.read(selectedPharmacyProvider.notifier).select(id),
+                    tileProvider: widget.mapTileProvider,
+                  ),
+                  const SizedBox(height: 16),
+                  AsyncValueView(
+                    value: pharmaciesAsync,
+                    onRetry: () => ref.invalidate(pharmaciesProvider),
+                    loadingWidget: const PharmacySearchSkeleton(),
+                    data: (pharmacies) => Column(
+                      children: pharmacies
+                          .map(
+                            (pharmacy) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: PharmacyCard(
+                                pharmacy: pharmacy,
+                                isSelected: pharmacy.id == selectedId,
+                                onSelect: () => _select(pharmacy.id),
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      PharmacyFilterChipBar(
-                        openNowOnly: openNowOnly,
-                        onToggleOpenNow: () => ref
-                            .read(pharmacyOpenNowOnlyFilterProvider.notifier)
-                            .toggle(),
-                        selectedSort: selectedSort,
-                        onSelectSort: (sort) => ref
-                            .read(pharmacySortProvider.notifier)
-                            .select(sort),
-                      ),
-                      const SizedBox(height: 16),
-                      PharmacyMapView(
-                        pharmacies: pharmacies,
-                        selectedId: selectedId,
-                        onSelect: (id) => ref
-                            .read(selectedPharmacyProvider.notifier)
-                            .select(id),
-                        tileProvider: widget.mapTileProvider,
-                      ),
-                      const SizedBox(height: 16),
-                      ...pharmacies.map(
-                        (pharmacy) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: PharmacyCard(
-                            pharmacy: pharmacy,
-                            isSelected: pharmacy.id == selectedId,
-                            onSelect: () => _choose(pharmacy.id),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ],
               ),
             ),
+            _NextBar(enabled: hasSelection, onNext: _next),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Fixed bottom bar with the "التالي" CTA — advancing to step 3 is a
+/// deliberate, separate action from picking a card, so the patient can
+/// freely change their mind between pharmacies before committing.
+class _NextBar extends StatelessWidget {
+  const _NextBar({required this.enabled, required this.onNext});
+
+  final bool enabled;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.borderLight)),
+      ),
+      child: AppButton.filled(
+        label: 'pharmacy_booking.select_pharmacy.next_cta'.tr(),
+        fullWidth: true,
+        backgroundColor: AppColors.patientPrimary,
+        foregroundColor: Colors.white,
+        borderRadius: AppRadii.xl,
+        onPressed: enabled ? onNext : null,
       ),
     );
   }

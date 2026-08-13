@@ -304,7 +304,8 @@
       "status_open_24h": "Open now - 24 hours",
       "status_open_until": "Open now - closes {}",
       "status_closed_tomorrow": "Closed now - opens tomorrow {}",
-      "choose_cta": "Choose"
+      "choose_cta": "Choose",
+      "next_cta": "Next"
     },
     "review": {
       "title": "Review Order",
