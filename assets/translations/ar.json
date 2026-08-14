@@ -144,6 +144,7 @@
     "qualifications": "المؤهلات العلمية",
     "fellowships": "الزمالات",
     "available_slots": "المواعيد المتاحة",
+    "no_slots": "لا توجد مواعيد متاحة خلال الـ 14 يوم القادمة",
     "fee_label": "سعر الكشف",
     "reviews": "تقييم",
     "booking_soon": "الحجز يأتي في Sprint 3"

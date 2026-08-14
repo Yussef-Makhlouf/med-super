@@ -8,6 +8,10 @@ class IdempotencyKeyInterceptor extends Interceptor {
   static const _headerName = 'Idempotency-Key';
   static const _extraKey = '_idempotencyKey';
 
+  // Forward-looking for Phase 4 (Appointments) / Phase 5 (Payments), neither
+  // of which exists in the backend yet — no current code path hits these,
+  // so this list is intentionally inert today, not dead code to delete
+  // (med-super/docs/backend_frontend_parity_matrix.md).
   static const _idempotentPaths = [
     '/appointments',
     '/payment-intents',

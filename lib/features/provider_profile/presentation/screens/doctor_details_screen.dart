@@ -6,6 +6,7 @@ import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
+import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_profile_providers.dart';
 
 const _ink = Color(0xFF1A2B4A);
@@ -116,17 +117,11 @@ class _ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AvailableDay? selectedDay;
-    for (final d in profile.availableDays) {
-      if (d.id == selectedDayId) {
-        selectedDay = d;
-        break;
-      }
-    }
-    selectedDay ??= profile.availableDays.isEmpty
-        ? null
-        : profile.availableDays.first;
-
+    // Deliberately does NOT pre-resolve selectedDayId against
+    // profile.availableDays here: _AvailabilitySection may render a
+    // completely different (real, backend-sourced) day list with different
+    // ids, and _SlotsCard already does its own "fall back to first day"
+    // resolution against whichever list it actually receives.
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -134,9 +129,9 @@ class _ProfileBody extends StatelessWidget {
         const SizedBox(height: 12),
         _AboutCard(profile: profile),
         const SizedBox(height: 12),
-        _SlotsCard(
-          days: profile.availableDays,
-          selectedDayId: selectedDay?.id,
+        _AvailabilitySection(
+          profile: profile,
+          selectedDayId: selectedDayId,
           selectedSlotId: selectedSlotId,
           onDaySelected: onDaySelected,
           onSlotSelected: onSlotSelected,
@@ -299,6 +294,73 @@ class _AboutCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Real Phase 3 availability (`GET /v1/doctors/{doctorId}/slots`) when the
+/// resolved profile carries a `clinicBranchId`; falls back to the profile's
+/// own (mock-only) `availableDays` otherwise — see
+/// `DoctorProfile.clinicBranchId`'s doc comment for why that fallback still
+/// exists. No hold/booking affordance either way (Phase 4 doesn't exist).
+class _AvailabilitySection extends ConsumerWidget {
+  const _AvailabilitySection({
+    required this.profile,
+    required this.selectedDayId,
+    required this.selectedSlotId,
+    required this.onDaySelected,
+    required this.onSlotSelected,
+  });
+
+  final DoctorProfile profile;
+  final String? selectedDayId;
+  final String? selectedSlotId;
+  final ValueChanged<String> onDaySelected;
+  final ValueChanged<String> onSlotSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clinicBranchId = profile.clinicBranchId;
+    if (clinicBranchId == null) {
+      return _SlotsCard(
+        days: profile.availableDays,
+        selectedDayId: selectedDayId,
+        selectedSlotId: selectedSlotId,
+        onDaySelected: onDaySelected,
+        onSlotSelected: onSlotSelected,
+      );
+    }
+
+    final params = (
+      doctorId: profile.id,
+      clinicBranchId: clinicBranchId,
+      ianaTimezone: profile.ianaTimezone,
+    );
+    final asyncDays = ref.watch(doctorAvailabilityProvider(params));
+
+    return AsyncValueView(
+      value: asyncDays,
+      onRetry: () => ref.invalidate(doctorAvailabilityProvider(params)),
+      loadingWidget: const _Card(
+        child: SizedBox(
+          height: 120,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      data: (days) => days.isEmpty
+          ? _Card(
+              child: SizedBox(
+                height: 64,
+                child: Center(child: Text('doctor_profile.no_slots'.tr())),
+              ),
+            )
+          : _SlotsCard(
+              days: days,
+              selectedDayId: selectedDayId,
+              selectedSlotId: selectedSlotId,
+              onDaySelected: onDaySelected,
+              onSlotSelected: onSlotSelected,
+            ),
     );
   }
 }

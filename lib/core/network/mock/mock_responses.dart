@@ -343,32 +343,93 @@ Map<String, dynamic> _doctorProfileJson(Map<String, dynamic> d) => {
   'qualifications': d['qualifications'],
   'fellowships': d['fellowships'],
   'is_online': d['is_online'],
+  // Kept for backward compatibility (used only if the real availability
+  // call below has no data yet) — real availability now comes from
+  // registerAvailabilityMocks / GET /v1/doctors/{id}/slots.
   'available_days': _defaultAvailableDays(),
+  // One mock clinic branch per doctor. The real backend exposes this via
+  // affiliations[].clinic_branch on the doctor-detail response (currently
+  // raw snake_case Prisma fields, not this flat shape — see
+  // med-super/docs/backend_frontend_parity_matrix.md).
+  'clinic_branch_id': 'branch-${d['id']}',
+  'iana_timezone': 'Africa/Cairo',
 };
+
+/// Registers the real Phase 3 availability contract's mock:
+/// `GET /v1/doctors/{doctorId}/slots?clinicBranchId=&from=&to=` →
+/// `{ slots: [{ slotId, startAt, endAt, status: 'OPEN' }] }` — matches
+/// clinic-reservations' `GetDoctorSlotsUseCase` response shape exactly.
+/// Must be registered before `registerSearchMocks`'s doctor-detail handler
+/// (see the ordering note there) since `/v1/doctors/{id}/slots` also
+/// contains `/v1/doctors/`.
+void registerAvailabilityMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', '/slots', (options) {
+    final clinicBranchId = options.queryParameters['clinicBranchId'] as String?;
+    if (clinicBranchId == null || clinicBranchId.isEmpty) {
+      return _error(400, 'VALIDATION_ERROR', 'clinicBranchId is required.');
+    }
+
+    final fromParam = options.queryParameters['from'] as String?;
+    final toParam = options.queryParameters['to'] as String?;
+    final nowUtc = DateTime.now().toUtc();
+    final from =
+        (fromParam != null ? DateTime.tryParse(fromParam) : null) ??
+        DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+    final to =
+        (toParam != null ? DateTime.tryParse(toParam) : null) ??
+        from.add(const Duration(days: 14));
+
+    // 09:00–16:30 Cairo-local (UTC+2), 30-min slots, next 14 days — a
+    // deterministic mock standing in for real GenerateSlotsUseCase output.
+    const cairoOffset = Duration(hours: 2);
+    final slots = <Map<String, dynamic>>[];
+    for (var dayOffset = 0; dayOffset < 14; dayOffset++) {
+      final dayStartLocal = DateTime.utc(
+        from.year,
+        from.month,
+        from.day,
+      ).add(Duration(days: dayOffset)).add(const Duration(hours: 9));
+      for (var i = 0; i < 16; i++) {
+        final startLocal = dayStartLocal.add(Duration(minutes: 30 * i));
+        final startUtc = startLocal.subtract(cairoOffset);
+        final endUtc = startUtc.add(const Duration(minutes: 30));
+        if (startUtc.isBefore(from) || !startUtc.isBefore(to)) continue;
+        slots.add({
+          'slotId': '$clinicBranchId-${startUtc.toIso8601String()}',
+          'startAt': startUtc.toIso8601String(),
+          'endAt': endUtc.toIso8601String(),
+          'status': 'OPEN',
+        });
+      }
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {'slots': slots},
+    };
+  });
+}
 
 /// Registers Sprint 2 doctor search + profile mock responses.
 void registerSearchMocks(MockInterceptor interceptor) {
-  // More specific path first so detail wins over bare /v1/doctors.
-  interceptor.register('GET', '${ApiPaths.doctors}/', (options) {
-    final segments = options.path.split('/');
-    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
-    Map<String, dynamic>? doctor;
-    for (final d in _mockDoctorsCatalog) {
-      if (d['id'] == id) {
-        doctor = d;
-        break;
-      }
-    }
-    if (doctor == null) {
-      return _error(404, 'NOT_FOUND', 'Doctor not found');
-    }
-    return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
-  });
-
+  // MockInterceptor matches by first-registered-wins substring containment
+  // (mock_interceptor.dart:58-69), so the more specific pattern must be
+  // registered first. `ApiPaths.searchDoctors` ('/v1/doctors/search') is now
+  // *itself* a substring match for the detail pattern below
+  // ('/v1/doctors/'), so search must register before detail — the reverse of
+  // this file's previous ordering, which predates the doctors/search path fix
+  // (see ApiPaths.searchDoctors and med-super/docs/backend_frontend_parity_matrix.md).
   interceptor.register('GET', ApiPaths.searchDoctors, (options) {
     final q = (options.queryParameters['q'] as String?)?.trim().toLowerCase();
     final specialty = options.queryParameters['specialty'] as String?;
     final sort = options.queryParameters['sort'] as String? ?? 'top_rated';
+    // Cursor is just a stringified offset into the sorted/filtered list —
+    // opaque to the client, matching 05_API_RULES.md's cursor contract.
+    final cursor = int.tryParse(
+      options.queryParameters['cursor'] as String? ?? '',
+    );
+    final limit =
+        int.tryParse('${options.queryParameters['limit'] ?? ''}') ?? 20;
 
     var list = List<Map<String, dynamic>>.from(_mockDoctorsCatalog);
 
@@ -411,13 +472,42 @@ void registerSearchMocks(MockInterceptor interceptor) {
         }
       });
 
+    final totalCount = list.length;
+    // Avoid num.clamp() here — it returns num, not int, and list.sublist()
+    // requires int bounds.
+    var start = cursor ?? 0;
+    if (start < 0) start = 0;
+    if (start > totalCount) start = totalCount;
+    var end = start + limit;
+    if (end > totalCount) end = totalCount;
+    if (end < start) end = start;
+    final page = list.sublist(start, end);
+    final nextCursor = end < totalCount ? '$end' : null;
+
     return {
       'statusCode': 200,
       'data': {
-        'doctors': list.map(_doctorSummaryJson).toList(),
-        'total_count': list.length,
+        'doctors': page.map(_doctorSummaryJson).toList(),
+        'total_count': totalCount,
+        'next_cursor': nextCursor,
       },
     };
+  });
+
+  interceptor.register('GET', '${ApiPaths.doctors}/', (options) {
+    final segments = options.path.split('/');
+    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
+    Map<String, dynamic>? doctor;
+    for (final d in _mockDoctorsCatalog) {
+      if (d['id'] == id) {
+        doctor = d;
+        break;
+      }
+    }
+    if (doctor == null) {
+      return _error(404, 'NOT_FOUND', 'Doctor not found');
+    }
+    return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
   });
 }
 

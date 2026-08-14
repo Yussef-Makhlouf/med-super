@@ -21,6 +21,8 @@ class DoctorProfile {
     required this.availableDays,
     this.photoUrl,
     this.specialtyKey,
+    this.clinicBranchId,
+    this.ianaTimezone,
   });
 
   final String id;
@@ -41,4 +43,12 @@ class DoctorProfile {
   final bool isOnline;
   final String? photoUrl;
   final List<AvailableDay> availableDays;
+
+  /// Needed to call the real Phase 3 slots endpoint
+  /// (`GET /v1/doctors/{doctorId}/slots?clinicBranchId=`). Null means the
+  /// caller falls back to [availableDays] (mock-only fake data) — see
+  /// med-super/docs/backend_frontend_parity_matrix.md for why the real
+  /// doctor-detail backend endpoint doesn't cleanly expose this yet.
+  final String? clinicBranchId;
+  final String? ianaTimezone;
 }

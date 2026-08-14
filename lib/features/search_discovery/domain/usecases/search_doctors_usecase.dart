@@ -12,6 +12,13 @@ class SearchDoctorsUseCase {
     String? query,
     String? specialty,
     DoctorSort sort = DoctorSort.topRated,
-  }) =>
-      _repository.searchDoctors(query: query, specialty: specialty, sort: sort);
+    String? cursor,
+    int limit = 20,
+  }) => _repository.searchDoctors(
+    query: query,
+    specialty: specialty,
+    sort: sort,
+    cursor: cursor,
+    limit: limit,
+  );
 }

@@ -22,6 +22,8 @@ class DoctorProfileDto {
     required this.availableDays,
     this.photoUrl,
     this.specialtyKey,
+    this.clinicBranchId,
+    this.ianaTimezone,
   });
 
   final String id;
@@ -42,6 +44,8 @@ class DoctorProfileDto {
   final bool isOnline;
   final String? photoUrl;
   final List<AvailableDay> availableDays;
+  final String? clinicBranchId;
+  final String? ianaTimezone;
 
   factory DoctorProfileDto.fromJson(Map<String, dynamic> json) {
     final days = (json['available_days'] as List<dynamic>? ?? const [])
@@ -74,6 +78,8 @@ class DoctorProfileDto {
       isOnline: json['is_online'] as bool? ?? false,
       photoUrl: json['photo_url'] as String?,
       availableDays: days,
+      clinicBranchId: json['clinic_branch_id'] as String?,
+      ianaTimezone: json['iana_timezone'] as String?,
     );
   }
 
@@ -112,5 +118,7 @@ class DoctorProfileDto {
     isOnline: isOnline,
     photoUrl: photoUrl,
     availableDays: availableDays,
+    clinicBranchId: clinicBranchId,
+    ianaTimezone: ianaTimezone,
   );
 }

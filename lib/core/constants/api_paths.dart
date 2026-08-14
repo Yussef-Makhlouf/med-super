@@ -8,10 +8,13 @@ abstract final class ApiPaths {
   static const logout = '/v1/auth/logout';
 
   // Provider directory
+  // Real backend route is GET /v1/doctors/search (provider-directory module) —
+  // was `/v1/search/doctors` here, which does not exist on the backend and
+  // would 404 the instant BASE_URL points at a real server. Fixed per the
+  // backend/frontend parity audit (med-super/docs/backend_frontend_parity_matrix.md).
   static const doctors = '/v1/doctors';
   static const clinics = '/v1/clinics';
-  static const search = '/v1/search';
-  static const searchDoctors = '/v1/search/doctors';
+  static const searchDoctors = '/v1/doctors/search';
 
   // Appointments
   static const appointments = '/v1/appointments';

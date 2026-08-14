@@ -144,6 +144,7 @@
     "qualifications": "Qualifications",
     "fellowships": "Fellowships",
     "available_slots": "Available appointments",
+    "no_slots": "No open slots in the next 14 days",
     "fee_label": "Consultation fee",
     "reviews": "reviews",
     "booking_soon": "Booking comes in Sprint 3"
