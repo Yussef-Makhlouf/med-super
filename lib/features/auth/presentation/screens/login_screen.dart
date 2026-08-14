@@ -43,10 +43,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final phone = normalizeSaudiPhone(_phoneController.text);
     setState(() => _sending = true);
     try {
-      final result = await ref.read(sessionControllerProvider.notifier).requestOtp(
-            phone: phone,
-            role: _role,
-          );
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .requestOtp(phone: phone, role: _role);
 
       if (!mounted) return;
 
@@ -54,16 +53,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         case Ok():
           context.push(
             '/verify-otp',
-            extra: {
-              'phone': phone,
-              'role': _role.name,
-            },
+            extra: {'phone': phone, 'role': _role.name},
           );
         case Err(:final failure):
           final key = failureMessage(failure);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(key.tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(key.tr())));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -142,9 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              _PhoneField(
-                                controller: _phoneController,
-                              ),
+                              _PhoneField(controller: _phoneController),
                               const SizedBox(height: 24),
                               SizedBox(
                                 height: 56,
@@ -153,8 +147,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: brandBlue,
                                     foregroundColor: Colors.white,
-                                    disabledBackgroundColor:
-                                        brandBlue.withValues(alpha: 0.5),
+                                    disabledBackgroundColor: brandBlue
+                                        .withValues(alpha: 0.5),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -177,9 +171,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               'auth.send_otp'.tr(),
                                               style: textTheme.titleMedium
                                                   ?.copyWith(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
                                             ),
                                             const SizedBox(width: 8),
                                             const Icon(
@@ -480,8 +474,8 @@ class _LoginHeroIllustration extends StatelessWidget {
   }
 
   static Widget _blob(double size, Color color) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }

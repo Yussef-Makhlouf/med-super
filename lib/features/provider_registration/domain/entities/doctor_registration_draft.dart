@@ -6,9 +6,11 @@ class DoctorRegistrationDraft {
     this.fullName = '',
     this.specialty,
     this.degree = '',
+    this.email = '',
     this.experienceYears = 0,
     this.bio = '',
     this.profilePhotoLocalPath,
+    this.profilePhotoDataUri,
     this.documents = const [],
     this.clinicName = '',
     this.clinicAddress = '',
@@ -31,9 +33,16 @@ class DoctorRegistrationDraft {
   final String fullName;
   final String? specialty;
   final String degree;
+  final String email;
   final int experienceYears;
   final String bio;
   final String? profilePhotoLocalPath;
+
+  /// Base64 `data:` URI of the actually-picked photo bytes — the app has no
+  /// real file storage in mock mode, so this is what actually becomes the
+  /// doctor's `avatar_url` after submission. [profilePhotoLocalPath] is only
+  /// the display filename.
+  final String? profilePhotoDataUri;
   final List<UploadedDocument> documents;
   final String clinicName;
   final String clinicAddress;
@@ -65,9 +74,11 @@ class DoctorRegistrationDraft {
     String? fullName,
     String? specialty,
     String? degree,
+    String? email,
     int? experienceYears,
     String? bio,
     String? profilePhotoLocalPath,
+    String? profilePhotoDataUri,
     List<UploadedDocument>? documents,
     String? clinicName,
     String? clinicAddress,
@@ -81,9 +92,11 @@ class DoctorRegistrationDraft {
     fullName: fullName ?? this.fullName,
     specialty: specialty ?? this.specialty,
     degree: degree ?? this.degree,
+    email: email ?? this.email,
     experienceYears: experienceYears ?? this.experienceYears,
     bio: bio ?? this.bio,
     profilePhotoLocalPath: profilePhotoLocalPath ?? this.profilePhotoLocalPath,
+    profilePhotoDataUri: profilePhotoDataUri ?? this.profilePhotoDataUri,
     documents: documents ?? this.documents,
     clinicName: clinicName ?? this.clinicName,
     clinicAddress: clinicAddress ?? this.clinicAddress,

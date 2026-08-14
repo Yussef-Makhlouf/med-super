@@ -6,10 +6,7 @@ class GetAppointmentsUseCase {
   const GetAppointmentsUseCase(this._repository);
   final ProviderDashboardRepository _repository;
 
-  Future<Result<List<Appointment>>> call({
-    DateTime? date,
-    String? status,
-  }) {
+  Future<Result<List<Appointment>>> call({DateTime? date, String? status}) {
     return _repository.getAppointments(date: date, status: status);
   }
 }

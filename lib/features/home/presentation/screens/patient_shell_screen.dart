@@ -5,10 +5,7 @@ import 'package:med_super/core/theme/color_schemes.dart';
 
 /// Bottom-tab shell for the patient flavor (Figma: 5 tabs).
 class PatientShellScreen extends StatelessWidget {
-  const PatientShellScreen({
-    required this.navigationShell,
-    super.key,
-  });
+  const PatientShellScreen({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 

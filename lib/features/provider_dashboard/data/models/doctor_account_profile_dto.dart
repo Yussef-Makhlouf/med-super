@@ -7,6 +7,8 @@ class DoctorAccountProfileDto {
     required this.specialty,
     required this.hospitalName,
     this.avatarUrl,
+    this.yearsOfExperience = 10,
+    this.bio = '',
   });
 
   factory DoctorAccountProfileDto.fromJson(Map<String, dynamic> json) {
@@ -16,6 +18,8 @@ class DoctorAccountProfileDto {
       specialty: json['specialty'] as String,
       hospitalName: json['hospital_name'] as String,
       avatarUrl: json['avatar_url'] as String?,
+      yearsOfExperience: json['years_of_experience'] as int? ?? 10,
+      bio: json['bio'] as String? ?? '',
     );
   }
 
@@ -24,14 +28,18 @@ class DoctorAccountProfileDto {
   final String specialty;
   final String hospitalName;
   final String? avatarUrl;
+  final int yearsOfExperience;
+  final String bio;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'specialty': specialty,
-        'hospital_name': hospitalName,
-        'avatar_url': avatarUrl,
-      };
+    'id': id,
+    'name': name,
+    'specialty': specialty,
+    'hospital_name': hospitalName,
+    'avatar_url': avatarUrl,
+    'years_of_experience': yearsOfExperience,
+    'bio': bio,
+  };
 
   DoctorAccountProfile toEntity() {
     return DoctorAccountProfile(
@@ -40,6 +48,8 @@ class DoctorAccountProfileDto {
       specialty: specialty,
       hospitalName: hospitalName,
       avatarUrl: avatarUrl,
+      yearsOfExperience: yearsOfExperience,
+      bio: bio,
     );
   }
 }

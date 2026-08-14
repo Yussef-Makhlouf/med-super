@@ -1,9 +1,4 @@
-enum AppointmentStatus {
-  pending,
-  confirmed,
-  cancelled,
-  completed,
-}
+enum AppointmentStatus { pending, confirmed, cancelled, completed }
 
 class Appointment {
   const Appointment({

@@ -9,14 +9,18 @@ class OutboxBox {
   Box<String> get _box => Hive.box<String>(HiveBoxNames.outbox);
 
   List<PendingAction> readAll() {
-    return _box.values.map((raw) {
-      try {
-        return PendingAction.fromJson(
-            jsonDecode(raw) as Map<String, dynamic>);
-      } catch (_) {
-        return null;
-      }
-    }).whereType<PendingAction>().toList()
+    return _box.values
+        .map((raw) {
+          try {
+            return PendingAction.fromJson(
+              jsonDecode(raw) as Map<String, dynamic>,
+            );
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<PendingAction>()
+        .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 

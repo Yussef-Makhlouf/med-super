@@ -3,22 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
+import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
-import 'package:med_super/features/provider_dashboard/presentation/screens/provider_placeholder_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_clinic_settings_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_edit_profile_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_schedule_editor_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_security_privacy_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 
 /// Provider Profile Screen pixel-perfect against mockup `profile.png`.
 class ProviderProfileScreen extends ConsumerWidget {
   const ProviderProfileScreen({super.key});
-
-  void _navigateToPlaceholder(BuildContext context, String title) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ProviderPlaceholderScreen(title: title),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,149 +50,147 @@ class ProviderProfileScreen extends ConsumerWidget {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
-            children: [
-              const SizedBox(height: 12),
-              // Centered Avatar with edit pencil badge
-              Center(
-                child: GestureDetector(
-                  onTap: () =>
-                      _navigateToPlaceholder(context, 'تعديل الصورة الشخصية'),
-                  child: Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 55,
-                        backgroundColor: AppColors.surfaceCard,
-                        backgroundImage: avatarUrl != null
-                            ? NetworkImage(avatarUrl)
-                            : null,
-                        child: avatarUrl == null
-                            ? const Icon(
-                                Icons.person,
-                                size: 64,
-                                color: AppColors.mutedText,
-                              )
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 2,
-                        right: 2,
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: brandBlue,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.edit,
-                            size: 14,
-                            color: Colors.white,
-                          ),
+                children: [
+                  const SizedBox(height: 12),
+                  // Centered Avatar with edit pencil badge
+                  Center(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderEditProfileScreen(),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                doctorName,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink900,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                hospitalName,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: AppColors.mutedText2,
-                ),
-              ),
-              const SizedBox(height: 32),
-              // Navigation Options List
-              _buildNavTile(
-                icon: Icons.person_outline,
-                iconBg: brandBlue.withValues(alpha: 0.1),
-                iconColor: brandBlue,
-                title: 'المعلومات الشخصية',
-                subtitle: 'الاسم، التخصص، سنوات الخبرة',
-                onTap: () =>
-                    _navigateToPlaceholder(context, 'المعلومات الشخصية'),
-              ),
-              const SizedBox(height: 14),
-              _buildNavTile(
-                icon: Icons.domain_outlined,
-                iconBg: const Color(0xFFECFDF5),
-                iconColor: const Color(0xFF10B981),
-                title: 'إعدادات العيادة',
-                subtitle: 'العنوان، معلومات الاتصال',
-                onTap: () =>
-                    _navigateToPlaceholder(context, 'إعدادات العيادة'),
-              ),
-              const SizedBox(height: 14),
-              _buildNavTile(
-                icon: Icons.calendar_today_outlined,
-                iconBg: const Color(0xFFF3E8FF),
-                iconColor: const Color(0xFFA855F7),
-                title: 'جدول المواعيد',
-                subtitle: 'ساعات العمل والحضور',
-                onTap: () =>
-                    _navigateToPlaceholder(context, 'جدول المواعيد'),
-              ),
-              const SizedBox(height: 14),
-              _buildNavTile(
-                icon: Icons.shield_outlined,
-                iconBg: const Color(0xFFFEF2F2),
-                iconColor: const Color(0xFFEF4444),
-                title: 'الأمان والخصوصية',
-                subtitle: 'كلمة المرور، المصادقة الثنائية',
-                onTap: () =>
-                    _navigateToPlaceholder(context, 'الأمان والخصوصية'),
-              ),
-              const SizedBox(height: 36),
-              // Logout button (red outlined stadium/rounded)
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(
-                        color: Color(0xFFDC2626), width: 1.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 55,
+                            backgroundColor: AppColors.surfaceCard,
+                            backgroundImage: avatarUrl != null
+                                ? resolveAvatarImage(avatarUrl)
+                                : null,
+                            child: avatarUrl == null
+                                ? const Icon(
+                                    Icons.account_circle,
+                                    size: 110,
+                                    color: AppColors.mutedText,
+                                  )
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 2,
+                            right: 2,
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: brandBlue,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  onPressed: () {
-                    ref.read(sessionControllerProvider.notifier).logout();
-                    context.go('/login');
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'تسجيل الخروج',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.logout, size: 20),
-                    ],
+                  const SizedBox(height: 16),
+                  Text(
+                    doctorName,
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink900,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'الإصدار 2.4.0 • تواصل مع الدعم الفني',
-                style: textTheme.bodySmall?.copyWith(
-                  color: AppColors.mutedText2,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+                  const SizedBox(height: 6),
+                  Text(
+                    hospitalName,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.mutedText2,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Navigation Options List
+                  _buildNavTile(
+                    icon: Icons.person_outline,
+                    iconBg: brandBlue.withValues(alpha: 0.1),
+                    iconColor: brandBlue,
+                    title: 'المعلومات الشخصية',
+                    subtitle: 'الاسم، التخصص، سنوات الخبرة',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderEditProfileScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildNavTile(
+                    icon: Icons.domain_outlined,
+                    iconBg: const Color(0xFFECFDF5),
+                    iconColor: const Color(0xFF10B981),
+                    title: 'إعدادات العيادة',
+                    subtitle: 'العنوان، معلومات الاتصال',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderClinicSettingsScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildNavTile(
+                    icon: Icons.calendar_today_outlined,
+                    iconBg: const Color(0xFFF3E8FF),
+                    iconColor: const Color(0xFFA855F7),
+                    title: 'جدول المواعيد',
+                    subtitle: 'ساعات العمل والحضور',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderScheduleEditorScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildNavTile(
+                    icon: Icons.shield_outlined,
+                    iconBg: const Color(0xFFFEF2F2),
+                    iconColor: const Color(0xFFEF4444),
+                    title: 'الأمان والخصوصية',
+                    subtitle: 'كلمة المرور، المصادقة الثنائية',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderSecurityPrivacyScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  // Logout button — AppButton.outlined, same as every other
+                  // action button across the provider dashboard screens.
+                  AppButton.outlined(
+                    label: 'تسجيل الخروج',
+                    icon: const Icon(Icons.logout, size: 20),
+                    foregroundColor: const Color(0xFFDC2626),
+                    borderRadius: 16,
+                    fullWidth: true,
+                    onPressed: () {
+                      ref.read(sessionControllerProvider.notifier).logout();
+                      context.go('/login');
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'الإصدار 2.4.0 • تواصل مع الدعم الفني',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedText2,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

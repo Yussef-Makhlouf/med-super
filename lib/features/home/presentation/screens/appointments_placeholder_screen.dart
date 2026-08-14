@@ -85,10 +85,9 @@ class _PatientAppointmentsScreenState
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionControllerProvider).asData?.value;
-    final displayName =
-        session?.user.displayName?.trim().isNotEmpty == true
-            ? session!.user.displayName!
-            : 'أحمد محمد';
+    final displayName = session?.user.displayName?.trim().isNotEmpty == true
+        ? session!.user.displayName!
+        : 'أحمد محمد';
 
     final appts = _selectedTab == 0 ? _upcomingAppts : _pastAppts;
 
@@ -109,9 +108,9 @@ class _PatientAppointmentsScreenState
                 child: Text(
                   'appointments.title'.tr(),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: brandBlue,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: brandBlue,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
@@ -129,10 +128,9 @@ class _PatientAppointmentsScreenState
                   ? Center(
                       child: Text(
                         'appointments.empty'.tr(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: _muted),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(color: _muted),
                       ),
                     )
                   : ListView.separated(
@@ -273,9 +271,9 @@ class _TabBtn extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isActive ? Colors.white : const Color(0xFF9CA3AF),
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                ),
+              color: isActive ? Colors.white : const Color(0xFF9CA3AF),
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -295,16 +293,16 @@ class _AppointmentCard extends StatelessWidget {
   static const _divider = Color(0xFFEFF2F7);
 
   Color _statusColor(_ApptStatus s) => switch (s) {
-        _ApptStatus.confirmed => brandBlue,
-        _ApptStatus.pending => const Color(0xFFF59E0B),
-        _ApptStatus.completed => const Color(0xFF22C55E),
-      };
+    _ApptStatus.confirmed => brandBlue,
+    _ApptStatus.pending => const Color(0xFFF59E0B),
+    _ApptStatus.completed => const Color(0xFF22C55E),
+  };
 
   String _statusLabel(_ApptStatus s) => switch (s) {
-        _ApptStatus.confirmed => 'appointments.status_confirmed'.tr(),
-        _ApptStatus.pending => 'appointments.status_pending'.tr(),
-        _ApptStatus.completed => 'appointments.status_completed'.tr(),
-      };
+    _ApptStatus.confirmed => 'appointments.status_confirmed'.tr(),
+    _ApptStatus.pending => 'appointments.status_pending'.tr(),
+    _ApptStatus.completed => 'appointments.status_completed'.tr(),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -363,10 +361,7 @@ class _AppointmentCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _StatusPill(
-                label: _statusLabel(appt.status),
-                color: statusColor,
-              ),
+              _StatusPill(label: _statusLabel(appt.status), color: statusColor),
             ],
           ),
           const SizedBox(height: 14),
@@ -375,20 +370,31 @@ class _AppointmentCard extends StatelessWidget {
           // Date & time row
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined,
-                  size: 16, color: Color(0xFF6B7280)),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 16,
+                color: Color(0xFF6B7280),
+              ),
               const SizedBox(width: 4),
               Text(
                 appt.date,
                 style: textTheme.bodySmall?.copyWith(color: _muted),
               ),
               const SizedBox(width: 12),
-              Container(width: 4, height: 4,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFD1D5DB), shape: BoxShape.circle)),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD1D5DB),
+                  shape: BoxShape.circle,
+                ),
+              ),
               const SizedBox(width: 12),
-              const Icon(Icons.access_time_outlined,
-                  size: 16, color: Color(0xFF6B7280)),
+              const Icon(
+                Icons.access_time_outlined,
+                size: 16,
+                color: Color(0xFF6B7280),
+              ),
               const SizedBox(width: 4),
               Text(
                 appt.time,
@@ -400,8 +406,11 @@ class _AppointmentCard extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 16, color: Color(0xFF6B7280)),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 16,
+                  color: Color(0xFF6B7280),
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -441,9 +450,9 @@ class _StatusPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -458,111 +467,111 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (status) {
       _ApptStatus.confirmed => Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: FilledButton(
-                onPressed: () {},
-                style: FilledButton.styleFrom(
-                  backgroundColor: brandBlue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+        children: [
+          Expanded(
+            flex: 3,
+            child: FilledButton(
+              onPressed: () {},
+              style: FilledButton.styleFrom(
+                backgroundColor: brandBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text('appointments.join'.tr()),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 2,
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF374151),
-                  side: const BorderSide(color: Color(0xFFD1D5DB)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
                 ),
-                child: Text('appointments.edit'.tr()),
               ),
+              child: Text('appointments.join'.tr()),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 2,
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF374151),
+                side: const BorderSide(color: Color(0xFFD1D5DB)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Text('appointments.edit'.tr()),
+            ),
+          ),
+        ],
+      ),
       _ApptStatus.pending => Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF374151),
-                  side: const BorderSide(color: Color(0xFFD1D5DB)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF374151),
+                side: const BorderSide(color: Color(0xFFD1D5DB)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text('appointments.view_location'.tr()),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFEF4444),
-                  side: const BorderSide(color: Color(0xFFFECACA)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text('appointments.cancel'.tr()),
               ),
+              child: Text('appointments.view_location'.tr()),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFEF4444),
+                side: const BorderSide(color: Color(0xFFFECACA)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Text('appointments.cancel'.tr()),
+            ),
+          ),
+        ],
+      ),
       _ApptStatus.completed => Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: brandBlue,
-                  side: BorderSide(color: brandBlue.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: brandBlue,
+                side: BorderSide(color: brandBlue.withValues(alpha: 0.4)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text('appointments.rebook'.tr()),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              child: Text('appointments.rebook'.tr()),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     };
   }
 }

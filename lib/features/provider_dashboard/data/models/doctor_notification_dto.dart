@@ -32,14 +32,14 @@ class DoctorNotificationDto {
   final String? deepLinkRoute;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'title': title,
-        'subtitle': subtitle,
-        'created_at': createdAt.toIso8601String(),
-        'is_unread': isUnread,
-        'deep_link_route': deepLinkRoute,
-      };
+    'id': id,
+    'type': type,
+    'title': title,
+    'subtitle': subtitle,
+    'created_at': createdAt.toIso8601String(),
+    'is_unread': isUnread,
+    'deep_link_route': deepLinkRoute,
+  };
 
   DoctorNotification toEntity() {
     return DoctorNotification(

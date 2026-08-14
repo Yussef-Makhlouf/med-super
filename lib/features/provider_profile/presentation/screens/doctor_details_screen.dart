@@ -46,9 +46,9 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
         title: Text(
           'doctor_profile.title'.tr(),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: _ink,
-                fontWeight: FontWeight.w800,
-              ),
+            color: _ink,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -67,11 +67,11 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
       ),
       body: AsyncValueView(
         value: asyncProfile,
-        onRetry: () =>
-            ref.invalidate(doctorProfileProvider(widget.doctorId)),
+        onRetry: () => ref.invalidate(doctorProfileProvider(widget.doctorId)),
         data: (profile) => _ProfileBody(
           profile: profile,
-          selectedDayId: _selectedDayId ??
+          selectedDayId:
+              _selectedDayId ??
               (profile.availableDays.isNotEmpty
                   ? profile.availableDays.first.id
                   : null),
@@ -123,8 +123,9 @@ class _ProfileBody extends StatelessWidget {
         break;
       }
     }
-    selectedDay ??=
-        profile.availableDays.isEmpty ? null : profile.availableDays.first;
+    selectedDay ??= profile.availableDays.isEmpty
+        ? null
+        : profile.availableDays.first;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -206,9 +207,7 @@ class _HeaderCard extends StatelessWidget {
           Text(
             profile.specialty,
             textAlign: TextAlign.center,
-            style: textTheme.bodyMedium?.copyWith(
-              color: _muted,
-            ),
+            style: textTheme.bodyMedium?.copyWith(color: _muted),
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -323,7 +322,8 @@ class _SlotsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final selected =
-        days.where((d) => d.id == selectedDayId).firstOrNull ?? days.firstOrNull;
+        days.where((d) => d.id == selectedDayId).firstOrNull ??
+        days.firstOrNull;
 
     return _Card(
       child: Column(
@@ -331,7 +331,11 @@ class _SlotsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.calendar_month_outlined, color: brandBlue, size: 20),
+              const Icon(
+                Icons.calendar_month_outlined,
+                color: brandBlue,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'doctor_profile.available_slots'.tr(),
@@ -399,15 +403,15 @@ class _SlotsCard extends StatelessWidget {
                       color: !enabled
                           ? const Color(0xFFF3F4F6)
                           : isSelected
-                              ? brandBlue.withValues(alpha: 0.08)
-                              : Colors.white,
+                          ? brandBlue.withValues(alpha: 0.08)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: !enabled
                             ? const Color(0xFFE5E7EB)
                             : isSelected
-                                ? brandBlue
-                                : const Color(0xFFE5EAF2),
+                            ? brandBlue
+                            : const Color(0xFFE5EAF2),
                       ),
                     ),
                     child: Text(
@@ -416,10 +420,9 @@ class _SlotsCard extends StatelessWidget {
                         color: !enabled
                             ? _muted
                             : isSelected
-                                ? brandBlue
-                                : _ink,
-                        decoration:
-                            enabled ? null : TextDecoration.lineThrough,
+                            ? brandBlue
+                            : _ink,
+                        decoration: enabled ? null : TextDecoration.lineThrough,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -446,8 +449,7 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final feeLabel =
-        currency == 'EGP' ? '$fee ج.م' : '$fee $currency';
+    final feeLabel = currency == 'EGP' ? '$fee ج.م' : '$fee $currency';
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -489,16 +491,16 @@ class _BottomBar extends StatelessWidget {
               children: [
                 Text(
                   'doctor_profile.fee_label'.tr(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _muted,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: _muted),
                 ),
                 Text(
                   feeLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: brandBlue,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: brandBlue,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -555,9 +557,9 @@ class _InfoChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: _ink.withValues(alpha: 0.8),
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: _ink.withValues(alpha: 0.8)),
         ),
       ],
     );

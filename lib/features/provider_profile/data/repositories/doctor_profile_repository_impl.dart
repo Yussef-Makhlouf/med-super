@@ -6,7 +6,7 @@ import 'package:med_super/features/provider_profile/domain/repositories/doctor_p
 
 class DoctorProfileRepositoryImpl implements DoctorProfileRepository {
   DoctorProfileRepositoryImpl({required DoctorProfileRemoteDatasource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final DoctorProfileRemoteDatasource _remote;
 

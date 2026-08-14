@@ -14,10 +14,20 @@ import 'package:med_super/features/provider_registration/presentation/widgets/re
 class DoctorRegistrationReviewScreen extends ConsumerWidget {
   const DoctorRegistrationReviewScreen({super.key});
 
-  Future<void> _submit(BuildContext context, WidgetRef ref) async {
+  Future<void> _submit(
+    BuildContext context,
+    WidgetRef ref, {
+    required String? specialtyLabel,
+    required String? cityLabel,
+    required String phone,
+  }) async {
     final result = await ref
         .read(registrationFormControllerProvider.notifier)
-        .submit();
+        .submit(
+          specialtyLabel: specialtyLabel,
+          cityLabel: cityLabel,
+          phone: phone,
+        );
     if (!context.mounted) return;
     if (result.isOk) {
       Navigator.of(context).pushReplacement(
@@ -115,7 +125,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                   title: 'provider_registration.review.personal_info_title'
                       .tr(),
                   icon: Icons.person_outline,
-                  onEdit: () => context.pop(),
+                  onEdit: () => context.goNamed('providerRegBasicInfo'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.full_name_row'.tr(),
@@ -125,6 +135,11 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                       'provider_registration.review.phone_row'.tr(),
                       phone,
                     ),
+                    if (draft.email.trim().isNotEmpty)
+                      ReviewRow(
+                        'provider_registration.review.email_row'.tr(),
+                        draft.email,
+                      ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -132,7 +147,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                   title: 'provider_registration.review.professional_info_title'
                       .tr(),
                   icon: Icons.badge_outlined,
-                  onEdit: () => Navigator.of(context).pop(),
+                  onEdit: () => context.goNamed('providerRegVerification'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.specialty_row'.tr(),
@@ -168,7 +183,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 ReviewSectionCard(
                   title: 'provider_registration.review.clinic_info_title'.tr(),
                   icon: Icons.local_hospital_outlined,
-                  onEdit: () => Navigator.of(context).pop(),
+                  onEdit: () => context.goNamed('providerRegClinicSchedule'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.clinic_name_row'.tr(),
@@ -252,7 +267,13 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 AppButton.filled(
                   label: 'provider_registration.review.submit_cta'.tr(),
                   onPressed: draft.agreedToTerms
-                      ? () => _submit(context, ref)
+                      ? () => _submit(
+                          context,
+                          ref,
+                          specialtyLabel: specialtyLabel,
+                          cityLabel: cityLabel,
+                          phone: phone,
+                        )
                       : null,
                   icon: const Icon(Icons.send, size: 16),
                   backgroundColor: AppColors.providerPrimary,

@@ -78,39 +78,39 @@ class DoctorProfileDto {
   }
 
   static AvailableDay _dayFromJson(Map<String, dynamic> json) => AvailableDay(
-        id: json['id'] as String,
-        label: json['label'] as String,
-        dayNumber: json['day_number'] as int? ?? 0,
-        slots: (json['slots'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(
-              (s) => TimeSlot(
-                id: s['id'] as String,
-                label: s['label'] as String,
-                available: s['available'] as bool? ?? true,
-              ),
-            )
-            .toList(),
-      );
+    id: json['id'] as String,
+    label: json['label'] as String,
+    dayNumber: json['day_number'] as int? ?? 0,
+    slots: (json['slots'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (s) => TimeSlot(
+            id: s['id'] as String,
+            label: s['label'] as String,
+            available: s['available'] as bool? ?? true,
+          ),
+        )
+        .toList(),
+  );
 
   DoctorProfile toEntity() => DoctorProfile(
-        id: id,
-        name: name,
-        specialty: specialty,
-        specialtyKey: specialtyKey,
-        experienceYears: experienceYears,
-        rating: rating,
-        reviewCount: reviewCount,
-        clinicName: clinicName,
-        languages: languages,
-        bio: bio,
-        qualifications: qualifications,
-        fellowships: fellowships,
-        consultationFee: consultationFee,
-        currency: currency,
-        isVerified: isVerified,
-        isOnline: isOnline,
-        photoUrl: photoUrl,
-        availableDays: availableDays,
-      );
+    id: id,
+    name: name,
+    specialty: specialty,
+    specialtyKey: specialtyKey,
+    experienceYears: experienceYears,
+    rating: rating,
+    reviewCount: reviewCount,
+    clinicName: clinicName,
+    languages: languages,
+    bio: bio,
+    qualifications: qualifications,
+    fellowships: fellowships,
+    consultationFee: consultationFee,
+    currency: currency,
+    isVerified: isVerified,
+    isOnline: isOnline,
+    photoUrl: photoUrl,
+    availableDays: availableDays,
+  );
 }

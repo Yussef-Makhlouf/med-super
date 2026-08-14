@@ -495,6 +495,345 @@ final class GetDoctorAccountUseCaseProvider
 String _$getDoctorAccountUseCaseHash() =>
     r'ed3bd84e7dabd7612885a998e45b3cabc29c466b';
 
+@ProviderFor(updateDoctorAccountUseCase)
+final updateDoctorAccountUseCaseProvider =
+    UpdateDoctorAccountUseCaseProvider._();
+
+final class UpdateDoctorAccountUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UpdateDoctorAccountUseCase,
+          UpdateDoctorAccountUseCase,
+          UpdateDoctorAccountUseCase
+        >
+    with $Provider<UpdateDoctorAccountUseCase> {
+  UpdateDoctorAccountUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'updateDoctorAccountUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateDoctorAccountUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateDoctorAccountUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UpdateDoctorAccountUseCase create(Ref ref) {
+    return updateDoctorAccountUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateDoctorAccountUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateDoctorAccountUseCase>(value),
+    );
+  }
+}
+
+String _$updateDoctorAccountUseCaseHash() =>
+    r'bc700027d8c9c6cdf1968d514f8c7369afc428d5';
+
+@ProviderFor(getClinicSettingsUseCase)
+final getClinicSettingsUseCaseProvider = GetClinicSettingsUseCaseProvider._();
+
+final class GetClinicSettingsUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetClinicSettingsUseCase,
+          GetClinicSettingsUseCase,
+          GetClinicSettingsUseCase
+        >
+    with $Provider<GetClinicSettingsUseCase> {
+  GetClinicSettingsUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getClinicSettingsUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getClinicSettingsUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetClinicSettingsUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetClinicSettingsUseCase create(Ref ref) {
+    return getClinicSettingsUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetClinicSettingsUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetClinicSettingsUseCase>(value),
+    );
+  }
+}
+
+String _$getClinicSettingsUseCaseHash() =>
+    r'96bdb75ef54527414dcf7a9248db66fa96254a23';
+
+@ProviderFor(updateClinicSettingsUseCase)
+final updateClinicSettingsUseCaseProvider =
+    UpdateClinicSettingsUseCaseProvider._();
+
+final class UpdateClinicSettingsUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UpdateClinicSettingsUseCase,
+          UpdateClinicSettingsUseCase,
+          UpdateClinicSettingsUseCase
+        >
+    with $Provider<UpdateClinicSettingsUseCase> {
+  UpdateClinicSettingsUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'updateClinicSettingsUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateClinicSettingsUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateClinicSettingsUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UpdateClinicSettingsUseCase create(Ref ref) {
+    return updateClinicSettingsUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateClinicSettingsUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateClinicSettingsUseCase>(value),
+    );
+  }
+}
+
+String _$updateClinicSettingsUseCaseHash() =>
+    r'4b3ba2007296bc1359fa0e69217a5bc2f20c3e30';
+
+@ProviderFor(getDoctorScheduleUseCase)
+final getDoctorScheduleUseCaseProvider = GetDoctorScheduleUseCaseProvider._();
+
+final class GetDoctorScheduleUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetDoctorScheduleUseCase,
+          GetDoctorScheduleUseCase,
+          GetDoctorScheduleUseCase
+        >
+    with $Provider<GetDoctorScheduleUseCase> {
+  GetDoctorScheduleUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getDoctorScheduleUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getDoctorScheduleUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetDoctorScheduleUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetDoctorScheduleUseCase create(Ref ref) {
+    return getDoctorScheduleUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetDoctorScheduleUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetDoctorScheduleUseCase>(value),
+    );
+  }
+}
+
+String _$getDoctorScheduleUseCaseHash() =>
+    r'5f5f7d9a2e6541a87e6990a61ff754a3c5f59d79';
+
+@ProviderFor(updateDoctorScheduleUseCase)
+final updateDoctorScheduleUseCaseProvider =
+    UpdateDoctorScheduleUseCaseProvider._();
+
+final class UpdateDoctorScheduleUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UpdateDoctorScheduleUseCase,
+          UpdateDoctorScheduleUseCase,
+          UpdateDoctorScheduleUseCase
+        >
+    with $Provider<UpdateDoctorScheduleUseCase> {
+  UpdateDoctorScheduleUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'updateDoctorScheduleUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateDoctorScheduleUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateDoctorScheduleUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UpdateDoctorScheduleUseCase create(Ref ref) {
+    return updateDoctorScheduleUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateDoctorScheduleUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateDoctorScheduleUseCase>(value),
+    );
+  }
+}
+
+String _$updateDoctorScheduleUseCaseHash() =>
+    r'882dc33d3f0796588fcc7ee4f714fb44f0e5bfc0';
+
+@ProviderFor(changePasswordUseCase)
+final changePasswordUseCaseProvider = ChangePasswordUseCaseProvider._();
+
+final class ChangePasswordUseCaseProvider
+    extends
+        $FunctionalProvider<
+          ChangePasswordUseCase,
+          ChangePasswordUseCase,
+          ChangePasswordUseCase
+        >
+    with $Provider<ChangePasswordUseCase> {
+  ChangePasswordUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'changePasswordUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$changePasswordUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<ChangePasswordUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ChangePasswordUseCase create(Ref ref) {
+    return changePasswordUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChangePasswordUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChangePasswordUseCase>(value),
+    );
+  }
+}
+
+String _$changePasswordUseCaseHash() =>
+    r'5b1c82cd06107d803d34852dd0033419acf352c9';
+
+@ProviderFor(uploadAvatarUseCase)
+final uploadAvatarUseCaseProvider = UploadAvatarUseCaseProvider._();
+
+final class UploadAvatarUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UploadAvatarUseCase,
+          UploadAvatarUseCase,
+          UploadAvatarUseCase
+        >
+    with $Provider<UploadAvatarUseCase> {
+  UploadAvatarUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'uploadAvatarUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$uploadAvatarUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UploadAvatarUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UploadAvatarUseCase create(Ref ref) {
+    return uploadAvatarUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UploadAvatarUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UploadAvatarUseCase>(value),
+    );
+  }
+}
+
+String _$uploadAvatarUseCaseHash() =>
+    r'4de0172865a917ad2f1585dae3f6948d69b0b624';
+
 @ProviderFor(appointments)
 final appointmentsProvider = AppointmentsFamily._();
 
@@ -740,3 +1079,83 @@ final class DoctorAccountProvider
 }
 
 String _$doctorAccountHash() => r'21db78340eab948d3983b74b389b4997a5412829';
+
+@ProviderFor(clinicSettings)
+final clinicSettingsProvider = ClinicSettingsProvider._();
+
+final class ClinicSettingsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ClinicSettings>,
+          ClinicSettings,
+          FutureOr<ClinicSettings>
+        >
+    with $FutureModifier<ClinicSettings>, $FutureProvider<ClinicSettings> {
+  ClinicSettingsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'clinicSettingsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$clinicSettingsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<ClinicSettings> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<ClinicSettings> create(Ref ref) {
+    return clinicSettings(ref);
+  }
+}
+
+String _$clinicSettingsHash() => r'853e9aad04a87553806ce34f5b3ff3732d78fcfc';
+
+@ProviderFor(doctorSchedule)
+final doctorScheduleProvider = DoctorScheduleProvider._();
+
+final class DoctorScheduleProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ClinicWorkingDay>>,
+          List<ClinicWorkingDay>,
+          FutureOr<List<ClinicWorkingDay>>
+        >
+    with
+        $FutureModifier<List<ClinicWorkingDay>>,
+        $FutureProvider<List<ClinicWorkingDay>> {
+  DoctorScheduleProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'doctorScheduleProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$doctorScheduleHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ClinicWorkingDay>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ClinicWorkingDay>> create(Ref ref) {
+    return doctorSchedule(ref);
+  }
+}
+
+String _$doctorScheduleHash() => r'fe02a1fce1cacdbd3d0244e6769438d2be178b28';

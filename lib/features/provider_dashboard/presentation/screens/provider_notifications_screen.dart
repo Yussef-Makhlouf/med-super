@@ -57,8 +57,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
       backgroundColor: AppColors.surfaceApp,
       bottomNavigationBar: ProviderBottomNavBar(
         selectedIndex: 0,
-        onDestinationSelected: (index) =>
-            context.go(_kProviderTabPaths[index]),
+        onDestinationSelected: (index) => context.go(_kProviderTabPaths[index]),
       ),
       body: Column(
         children: [
@@ -152,25 +151,25 @@ class ProviderNotificationsScreen extends ConsumerWidget {
   Widget _buildNotificationCard(DoctorNotification notification) {
     final (icon, iconBg, iconColor) = switch (notification.type) {
       NotificationType.newBookingRequest => (
-          Icons.calendar_month,
-          const Color(0xFFDBEAFE),
-          brandBlue
-        ),
+        Icons.calendar_month,
+        const Color(0xFFDBEAFE),
+        brandBlue,
+      ),
       NotificationType.appointmentConfirmed => (
-          Icons.calendar_today_outlined,
-          const Color(0xFFA7F3D0),
-          const Color(0xFF059669)
-        ),
+        Icons.calendar_today_outlined,
+        const Color(0xFFA7F3D0),
+        const Color(0xFF059669),
+      ),
       NotificationType.labReportReady => (
-          Icons.science_outlined,
-          const Color(0xFFFFEDD5),
-          const Color(0xFFEA580C)
-        ),
+        Icons.science_outlined,
+        const Color(0xFFFFEDD5),
+        const Color(0xFFEA580C),
+      ),
       NotificationType.reminder => (
-          Icons.notifications_none_rounded,
-          const Color(0xFFE2E8F0),
-          const Color(0xFF64748B)
-        ),
+        Icons.notifications_none_rounded,
+        const Color(0xFFE2E8F0),
+        const Color(0xFF64748B),
+      ),
     };
 
     final timeFormatted = _formatTimeAgo(notification.createdAt);

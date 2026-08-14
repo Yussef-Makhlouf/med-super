@@ -35,15 +35,15 @@ class AppointmentDto {
   final String status;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'patient_name': patientName,
-        'patient_avatar_url': patientAvatarUrl,
-        'scheduled_start': scheduledStart.toIso8601String(),
-        'scheduled_end': scheduledEnd.toIso8601String(),
-        'location_status': locationStatus,
-        'med_id': medId,
-        'status': status,
-      };
+    'id': id,
+    'patient_name': patientName,
+    'patient_avatar_url': patientAvatarUrl,
+    'scheduled_start': scheduledStart.toIso8601String(),
+    'scheduled_end': scheduledEnd.toIso8601String(),
+    'location_status': locationStatus,
+    'med_id': medId,
+    'status': status,
+  };
 
   Appointment toEntity() {
     return Appointment(

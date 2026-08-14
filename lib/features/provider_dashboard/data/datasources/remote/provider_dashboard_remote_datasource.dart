@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
 import '../../models/appointment_dto.dart';
+import '../../models/clinic_settings_dto.dart';
 import '../../models/doctor_account_profile_dto.dart';
 import '../../models/doctor_notification_dto.dart';
+import '../../models/doctor_schedule_dto.dart';
 import '../../models/patient_dto.dart';
 
 abstract class ProviderDashboardRemoteDatasource {
@@ -21,16 +23,35 @@ abstract class ProviderDashboardRemoteDatasource {
     required DateTime scheduledEnd,
   });
 
-  Future<List<PatientDto>> getPatients({
-    String? query,
-    String? filter,
-  });
+  Future<List<PatientDto>> getPatients({String? query, String? filter});
 
   Future<List<DoctorNotificationDto>> getNotifications();
 
   Future<void> markNotificationRead(String id);
 
   Future<DoctorAccountProfileDto> getDoctorAccount();
+
+  Future<DoctorAccountProfileDto> updateDoctorAccount({
+    required String name,
+    required String specialty,
+    required int yearsOfExperience,
+    required String bio,
+  });
+
+  Future<ClinicSettingsDto> getClinicSettings();
+
+  Future<ClinicSettingsDto> updateClinicSettings(ClinicSettingsDto settings);
+
+  Future<DoctorScheduleDto> getDoctorSchedule();
+
+  Future<DoctorScheduleDto> updateDoctorSchedule(DoctorScheduleDto schedule);
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
+  Future<DoctorAccountProfileDto> uploadAvatar(String filePath);
 }
 
 class ProviderDashboardRemoteDatasourceImpl
@@ -92,10 +113,7 @@ class ProviderDashboardRemoteDatasourceImpl
   }
 
   @override
-  Future<List<PatientDto>> getPatients({
-    String? query,
-    String? filter,
-  }) async {
+  Future<List<PatientDto>> getPatients({String? query, String? filter}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       ApiPaths.providerPatients,
       queryParameters: {
@@ -131,10 +149,97 @@ class ProviderDashboardRemoteDatasourceImpl
 
   @override
   Future<DoctorAccountProfileDto> getDoctorAccount() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerMe,
-    );
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.providerMe);
 
+    return DoctorAccountProfileDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<DoctorAccountProfileDto> updateDoctorAccount({
+    required String name,
+    required String specialty,
+    required int yearsOfExperience,
+    required String bio,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiPaths.providerMe,
+      data: {
+        'name': name,
+        'specialty': specialty,
+        'years_of_experience': yearsOfExperience,
+        'bio': bio,
+      },
+    );
+    return DoctorAccountProfileDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClinicSettingsDto> getClinicSettings() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/provider/clinic-settings',
+    );
+    return ClinicSettingsDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClinicSettingsDto> updateClinicSettings(
+    ClinicSettingsDto settings,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/v1/provider/clinic-settings',
+      data: settings.toJson(),
+    );
+    return ClinicSettingsDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<DoctorScheduleDto> getDoctorSchedule() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/v1/provider/schedule',
+    );
+    return DoctorScheduleDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<DoctorScheduleDto> updateDoctorSchedule(
+    DoctorScheduleDto schedule,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/v1/provider/schedule',
+      data: schedule.toJson(),
+    );
+    return DoctorScheduleDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/v1/provider/change-password',
+      data: {'current_password': currentPassword, 'new_password': newPassword},
+    );
+  }
+
+  @override
+  Future<DoctorAccountProfileDto> uploadAvatar(String filePath) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/v1/provider/avatar',
+      data: {'file_path': filePath},
+    );
     return DoctorAccountProfileDto.fromJson(
       response.data ?? const <String, dynamic>{},
     );

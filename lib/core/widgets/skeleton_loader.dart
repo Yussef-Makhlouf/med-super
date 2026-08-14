@@ -30,13 +30,16 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    if (!WidgetsBinding.instance.toString().contains('TestWidgetsFlutterBinding')) {
+    if (!WidgetsBinding.instance.toString().contains(
+      'TestWidgetsFlutterBinding',
+    )) {
       _controller.repeat(reverse: true);
     }
 
-    _animation = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 0.8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -106,12 +109,20 @@ class CardSkeletonList extends StatelessWidget {
             Row(
               children: const [
                 Expanded(
-                    child: SkeletonLoader(
-                        width: double.infinity, height: 36, borderRadius: 8)),
+                  child: SkeletonLoader(
+                    width: double.infinity,
+                    height: 36,
+                    borderRadius: 8,
+                  ),
+                ),
                 SizedBox(width: 12),
                 Expanded(
-                    child: SkeletonLoader(
-                        width: double.infinity, height: 36, borderRadius: 8)),
+                  child: SkeletonLoader(
+                    width: double.infinity,
+                    height: 36,
+                    borderRadius: 8,
+                  ),
+                ),
               ],
             ),
           ],

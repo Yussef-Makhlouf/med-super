@@ -30,17 +30,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       final result = await ref
           .read(sessionControllerProvider.notifier)
-          .completeOnboarding(
-            displayName: skip ? null : _nameController.text,
-          );
+          .completeOnboarding(displayName: skip ? null : _nameController.text);
       if (!mounted) return;
       switch (result) {
         case Ok(:final value):
           context.go(value.user.isPatient ? '/patient/home' : '/provider/home');
         case Err(:final failure):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failureMessage(failure).tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(failureMessage(failure).tr())));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

@@ -11,8 +11,7 @@ final class AppConfig {
   String get baseUrl =>
       const String.fromEnvironment('BASE_URL', defaultValue: _mockBaseUrl);
 
-  String get env =>
-      const String.fromEnvironment('ENV', defaultValue: 'dev');
+  String get env => const String.fromEnvironment('ENV', defaultValue: 'dev');
 
   bool get isProduction => env == 'production';
 

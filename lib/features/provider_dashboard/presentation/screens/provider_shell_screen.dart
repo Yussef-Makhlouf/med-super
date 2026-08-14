@@ -10,10 +10,28 @@ import 'package:med_super/features/provider_dashboard/presentation/widgets/provi
 class ProviderShellScreen extends StatelessWidget {
   const ProviderShellScreen({
     required this.navigationShell,
+    required this.branchNavigatorKeys,
     super.key,
   });
 
   final StatefulNavigationShell navigationShell;
+
+  /// One key per branch, in branch order — lets re-tapping the active tab
+  /// pop any screen pushed imperatively (via `Navigator.push`) on top of
+  /// that branch back to its root, since `goBranch` alone can't see those.
+  final List<GlobalKey<NavigatorState>> branchNavigatorKeys;
+
+  void _onDestinationSelected(int index) {
+    if (index == navigationShell.currentIndex) {
+      branchNavigatorKeys[index].currentState?.popUntil(
+        (route) => route.isFirst,
+      );
+    }
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +39,7 @@ class ProviderShellScreen extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: ProviderBottomNavBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
+        onDestinationSelected: _onDestinationSelected,
       ),
     );
   }

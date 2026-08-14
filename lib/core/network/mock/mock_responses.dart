@@ -540,6 +540,45 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
   });
 
   interceptor.register('POST', ApiPaths.providerRegistrationSubmit, (options) {
+    final body = _body(options) ?? {};
+
+    // Seed the provider-dashboard mock store from the actual registration
+    // submission, so Profile/Clinic Settings/Schedule show what the doctor
+    // really entered instead of an unrelated hardcoded seed. Only overwrite
+    // a field when the submission actually carried a value for it.
+    String? str(String key) {
+      final value = body[key];
+      return (value is String && value.trim().isNotEmpty) ? value : null;
+    }
+
+    _mockProviderDashboardStore.doctorAccount = {
+      ..._mockProviderDashboardStore.doctorAccount,
+      if (str('full_name') != null) 'name': str('full_name'),
+      if (str('specialty_label') != null) 'specialty': str('specialty_label'),
+      if (body['experience_years'] is int)
+        'years_of_experience': body['experience_years'],
+      if (str('bio') != null) 'bio': str('bio'),
+      if (str('clinic_name') != null) 'hospital_name': str('clinic_name'),
+      if (str('photo_data_uri') != null) 'avatar_url': str('photo_data_uri'),
+    };
+    _mockProviderDashboardStore.persistDoctorAccount();
+
+    _mockProviderDashboardStore.clinicSettings = {
+      ..._mockProviderDashboardStore.clinicSettings,
+      if (str('clinic_name') != null) 'clinic_name': str('clinic_name'),
+      if (str('clinic_address') != null) 'address': str('clinic_address'),
+      if (str('phone') != null) 'phone': str('phone'),
+      if (str('email') != null) 'email': str('email'),
+      if (str('city_label') != null) 'city': str('city_label'),
+    };
+    _mockProviderDashboardStore.persistClinicSettings();
+
+    final workingDays = body['working_days'];
+    if (workingDays is List && workingDays.isNotEmpty) {
+      _mockProviderDashboardStore.schedule = {'working_days': workingDays};
+      _mockProviderDashboardStore.persistSchedule();
+    }
+
     return {
       'statusCode': 200,
       'data': {
@@ -555,185 +594,215 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
 // ─── Seed data helpers ────────────────────────────────────────────────────────
 
 List<Map<String, dynamic>> _seedAppointments() => [
-      {
-        'id': 'apt-1',
-        'patient_name': 'سارة المحمد',
-        'patient_avatar_url': null,
-        'scheduled_start': DateTime.now().toLocal().toIso8601String(),
-        'scheduled_end':
-            DateTime.now().toLocal().add(const Duration(minutes: 30)).toIso8601String(),
-        'location_status': 'في العيادة',
-        'med_id': 'MED-1234',
-        'status': 'pending',
-      },
-      {
-        'id': 'apt-2',
-        'patient_name': 'أحمد العتيبي',
-        'patient_avatar_url': null,
-        'scheduled_start':
-            DateTime.now().toLocal().add(const Duration(hours: 1)).toIso8601String(),
-        'scheduled_end': DateTime.now()
-            .toLocal()
-            .add(const Duration(hours: 1, minutes: 30))
-            .toIso8601String(),
-        'location_status': 'في العيادة',
-        'med_id': 'MED-1235',
-        'status': 'confirmed',
-      },
-      {
-        'id': 'apt-3',
-        'patient_name': 'خالد بن فهد',
-        'patient_avatar_url': null,
-        'scheduled_start':
-            DateTime.now().toLocal().add(const Duration(hours: 2)).toIso8601String(),
-        'scheduled_end': DateTime.now()
-            .toLocal()
-            .add(const Duration(hours: 2, minutes: 30))
-            .toIso8601String(),
-        'location_status': 'في العيادة',
-        'med_id': 'MED-1236',
-        'status': 'cancelled',
-      },
-      {
-        'id': 'apt-4',
-        'patient_name': 'فاطمة الشهري',
-        'patient_avatar_url': null,
-        'scheduled_start':
-            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
-        'scheduled_end': DateTime.now()
-            .toLocal()
-            .subtract(const Duration(hours: 1, minutes: 30))
-            .toIso8601String(),
-        'location_status': 'في العيادة',
-        'med_id': 'MED-1237',
-        'status': 'completed',
-      },
-      {
-        'id': 'apt-5',
-        'patient_name': 'نورة العمري',
-        'patient_avatar_url': null,
-        'scheduled_start':
-            DateTime.now().toLocal().add(const Duration(days: 1)).toIso8601String(),
-        'scheduled_end': DateTime.now()
-            .toLocal()
-            .add(const Duration(days: 1, hours: 1))
-            .toIso8601String(),
-        'location_status': 'عيادة خارجية',
-        'med_id': 'MED-1238',
-        'status': 'pending',
-      },
-      {
-        'id': 'apt-6',
-        'patient_name': 'محمد الغامدي',
-        'patient_avatar_url': null,
-        'scheduled_start':
-            DateTime.now().toLocal().add(const Duration(days: 2)).toIso8601String(),
-        'scheduled_end': DateTime.now()
-            .toLocal()
-            .add(const Duration(days: 2, hours: 1))
-            .toIso8601String(),
-        'location_status': 'في العيادة',
-        'med_id': 'MED-1239',
-        'status': 'confirmed',
-      },
-    ];
+  {
+    'id': 'apt-1',
+    'patient_name': 'سارة المحمد',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now().toLocal().toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .add(const Duration(minutes: 30))
+        .toIso8601String(),
+    'location_status': 'في العيادة',
+    'med_id': 'MED-1234',
+    'status': 'pending',
+  },
+  {
+    'id': 'apt-2',
+    'patient_name': 'أحمد العتيبي',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 1))
+        .toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 1, minutes: 30))
+        .toIso8601String(),
+    'location_status': 'في العيادة',
+    'med_id': 'MED-1235',
+    'status': 'confirmed',
+  },
+  {
+    'id': 'apt-3',
+    'patient_name': 'خالد بن فهد',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 2))
+        .toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 2, minutes: 30))
+        .toIso8601String(),
+    'location_status': 'في العيادة',
+    'med_id': 'MED-1236',
+    'status': 'cancelled',
+  },
+  {
+    'id': 'apt-4',
+    'patient_name': 'فاطمة الشهري',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(hours: 2))
+        .toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(hours: 1, minutes: 30))
+        .toIso8601String(),
+    'location_status': 'في العيادة',
+    'med_id': 'MED-1237',
+    'status': 'completed',
+  },
+  {
+    'id': 'apt-5',
+    'patient_name': 'نورة العمري',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 1))
+        .toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 1, hours: 1))
+        .toIso8601String(),
+    'location_status': 'عيادة خارجية',
+    'med_id': 'MED-1238',
+    'status': 'pending',
+  },
+  {
+    'id': 'apt-6',
+    'patient_name': 'محمد الغامدي',
+    'patient_avatar_url': null,
+    'scheduled_start': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 2))
+        .toIso8601String(),
+    'scheduled_end': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 2, hours: 1))
+        .toIso8601String(),
+    'location_status': 'في العيادة',
+    'med_id': 'MED-1239',
+    'status': 'confirmed',
+  },
+];
 
 List<Map<String, dynamic>> _seedPatients() => [
-      {
-        'id': 'pat-1',
-        'name': 'سارة المحمد',
-        'med_id': 'MED-1234',
-        'avatar_url': null,
-        'status': 'مؤكد',
-        'next_appointment': DateTime.now().toLocal().toIso8601String(),
-      },
-      {
-        'id': 'pat-2',
-        'name': 'أحمد العتيبي',
-        'med_id': 'MED-1235',
-        'avatar_url': null,
-        'status': 'مؤكد',
-        'next_appointment':
-            DateTime.now().toLocal().add(const Duration(hours: 1)).toIso8601String(),
-      },
-      {
-        'id': 'pat-3',
-        'name': 'خالد بن فهد',
-        'med_id': 'MED-1236',
-        'avatar_url': null,
-        'status': 'ملغى',
-        'next_appointment':
-            DateTime.now().toLocal().add(const Duration(hours: 2)).toIso8601String(),
-      },
-      {
-        'id': 'pat-4',
-        'name': 'فاطمة الشهري',
-        'med_id': 'MED-1237',
-        'avatar_url': null,
-        'status': 'مكتمل',
-        'next_appointment':
-            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
-      },
-      {
-        'id': 'pat-5',
-        'name': 'نورة العمري',
-        'med_id': 'MED-1238',
-        'avatar_url': null,
-        'status': 'مؤكد',
-        'next_appointment':
-            DateTime.now().toLocal().add(const Duration(days: 1)).toIso8601String(),
-      },
-      {
-        'id': 'pat-6',
-        'name': 'محمد الغامدي',
-        'med_id': 'MED-1239',
-        'avatar_url': null,
-        'status': 'مؤكد',
-        'next_appointment':
-            DateTime.now().toLocal().add(const Duration(days: 2)).toIso8601String(),
-      },
-    ];
+  {
+    'id': 'pat-1',
+    'name': 'سارة المحمد',
+    'med_id': 'MED-1234',
+    'avatar_url': null,
+    'status': 'مؤكد',
+    'next_appointment': DateTime.now().toLocal().toIso8601String(),
+  },
+  {
+    'id': 'pat-2',
+    'name': 'أحمد العتيبي',
+    'med_id': 'MED-1235',
+    'avatar_url': null,
+    'status': 'مؤكد',
+    'next_appointment': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 1))
+        .toIso8601String(),
+  },
+  {
+    'id': 'pat-3',
+    'name': 'خالد بن فهد',
+    'med_id': 'MED-1236',
+    'avatar_url': null,
+    'status': 'ملغى',
+    'next_appointment': DateTime.now()
+        .toLocal()
+        .add(const Duration(hours: 2))
+        .toIso8601String(),
+  },
+  {
+    'id': 'pat-4',
+    'name': 'فاطمة الشهري',
+    'med_id': 'MED-1237',
+    'avatar_url': null,
+    'status': 'مكتمل',
+    'next_appointment': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(hours: 2))
+        .toIso8601String(),
+  },
+  {
+    'id': 'pat-5',
+    'name': 'نورة العمري',
+    'med_id': 'MED-1238',
+    'avatar_url': null,
+    'status': 'مؤكد',
+    'next_appointment': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 1))
+        .toIso8601String(),
+  },
+  {
+    'id': 'pat-6',
+    'name': 'محمد الغامدي',
+    'med_id': 'MED-1239',
+    'avatar_url': null,
+    'status': 'مؤكد',
+    'next_appointment': DateTime.now()
+        .toLocal()
+        .add(const Duration(days: 2))
+        .toIso8601String(),
+  },
+];
 
 List<Map<String, dynamic>> _seedNotifications() => [
-      {
-        'id': 'notif-1',
-        'type': 'newBookingRequest',
-        'title': 'طلب حجز جديد',
-        'subtitle': 'قامت سارة المحمد بحجز موعد جديد الساعة 09:00 ص',
-        'created_at':
-            DateTime.now().toLocal().subtract(const Duration(minutes: 45)).toIso8601String(),
-        'is_unread': true,
-        'deep_link_route': '/provider/home',
-      },
-      {
-        'id': 'notif-2',
-        'type': 'appointmentConfirmed',
-        'title': 'تأكيد موعد',
-        'subtitle': 'تم تأكيد موعد أحمد العتيبي الساعة 10:00 ص',
-        'created_at':
-            DateTime.now().toLocal().subtract(const Duration(hours: 2)).toIso8601String(),
-        'is_unread': true,
-        'deep_link_route': '/provider/home',
-      },
-      {
-        'id': 'notif-3',
-        'type': 'labReportReady',
-        'title': 'تقرير مختبر جاهز',
-        'subtitle': 'تقرير التحاليل الطبية الخاص بـ خالد بن فهد جاهز',
-        'created_at':
-            DateTime.now().toLocal().subtract(const Duration(hours: 5)).toIso8601String(),
-        'is_unread': false,
-      },
-      {
-        'id': 'notif-4',
-        'type': 'reminder',
-        'title': 'تذكير بمؤتمر',
-        'subtitle': 'مؤتمر الطب الباطني يبدأ غداً الساعة 10:00 ص',
-        'created_at':
-            DateTime.now().toLocal().subtract(const Duration(days: 1)).toIso8601String(),
-        'is_unread': false,
-      },
-    ];
+  {
+    'id': 'notif-1',
+    'type': 'newBookingRequest',
+    'title': 'طلب حجز جديد',
+    'subtitle': 'قامت سارة المحمد بحجز موعد جديد الساعة 09:00 ص',
+    'created_at': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(minutes: 45))
+        .toIso8601String(),
+    'is_unread': true,
+    'deep_link_route': '/provider/home',
+  },
+  {
+    'id': 'notif-2',
+    'type': 'appointmentConfirmed',
+    'title': 'تأكيد موعد',
+    'subtitle': 'تم تأكيد موعد أحمد العتيبي الساعة 10:00 ص',
+    'created_at': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(hours: 2))
+        .toIso8601String(),
+    'is_unread': true,
+    'deep_link_route': '/provider/home',
+  },
+  {
+    'id': 'notif-3',
+    'type': 'labReportReady',
+    'title': 'تقرير مختبر جاهز',
+    'subtitle': 'تقرير التحاليل الطبية الخاص بـ خالد بن فهد جاهز',
+    'created_at': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(hours: 5))
+        .toIso8601String(),
+    'is_unread': false,
+  },
+  {
+    'id': 'notif-4',
+    'type': 'reminder',
+    'title': 'تذكير بمؤتمر',
+    'subtitle': 'مؤتمر الطب الباطني يبدأ غداً الساعة 10:00 ص',
+    'created_at': DateTime.now()
+        .toLocal()
+        .subtract(const Duration(days: 1))
+        .toIso8601String(),
+    'is_unread': false,
+  },
+];
 
 // ─── Hive-backed mock store ────────────────────────────────────────────────────
 
@@ -780,23 +849,100 @@ class _MockProviderDashboardStore {
     appointments = _loadOrSeed('appointments', _seedAppointments);
     patients = _loadOrSeed('patients', _seedPatients);
     notifications = _loadOrSeed('notifications', _seedNotifications);
+    doctorAccount = _loadOrSeedSingle('doctor_account', _seedDoctorAccount);
+    clinicSettings = _loadOrSeedSingle('clinic_settings', _seedClinicSettings);
+    schedule = _loadOrSeedSingle('schedule', _seedSchedule);
   }
 
   late List<Map<String, dynamic>> appointments;
   late List<Map<String, dynamic>> patients;
   late List<Map<String, dynamic>> notifications;
+  late Map<String, dynamic> doctorAccount;
+  late Map<String, dynamic> clinicSettings;
+  late Map<String, dynamic> schedule;
 
-  final Map<String, dynamic> doctorAccount = {
+  static Map<String, dynamic> _seedDoctorAccount() => {
     'id': 'doc-001',
     'name': 'د. أحمد علي',
     'specialty': 'استشاري الطب الباطني',
     'hospital_name': 'مستشفى الملك فيصل التخصصي',
     'avatar_url': null,
+    'years_of_experience': 12,
+    'bio': 'استشاري خبرة أكثر من 12 عاماً في الطب الباطني والأمراض المزمنة.',
   };
+
+  static Map<String, dynamic> _seedClinicSettings() => {
+    'clinic_name': 'مستشفى الملك فيصل التخصصي',
+    'address': 'شارع التخصصي، المعذر، الرياض',
+    'phone': '+966112345678',
+    'email': 'dr.ahmed@kfshrc.edu.sa',
+    'city': 'الرياض',
+  };
+
+  static Map<String, dynamic> _seedSchedule() => {
+    'working_days': [
+      {
+        'day': 'saturday',
+        'is_enabled': true,
+        'from': {'hour': 9, 'minute': 0},
+        'to': {'hour': 17, 'minute': 0},
+      },
+      {
+        'day': 'sunday',
+        'is_enabled': true,
+        'from': {'hour': 9, 'minute': 0},
+        'to': {'hour': 17, 'minute': 0},
+      },
+      {
+        'day': 'monday',
+        'is_enabled': true,
+        'from': {'hour': 9, 'minute': 0},
+        'to': {'hour': 17, 'minute': 0},
+      },
+      {
+        'day': 'tuesday',
+        'is_enabled': true,
+        'from': {'hour': 9, 'minute': 0},
+        'to': {'hour': 17, 'minute': 0},
+      },
+      {
+        'day': 'wednesday',
+        'is_enabled': true,
+        'from': {'hour': 9, 'minute': 0},
+        'to': {'hour': 17, 'minute': 0},
+      },
+      {'day': 'thursday', 'is_enabled': false, 'from': null, 'to': null},
+      {'day': 'friday', 'is_enabled': false, 'from': null, 'to': null},
+    ],
+  };
+
+  static Map<String, dynamic> _loadOrSeedSingle(
+    String key,
+    Map<String, dynamic> Function() seed,
+  ) {
+    final box = _cacheBox;
+    if (box != null) {
+      final raw = box.get(key);
+      if (raw != null) {
+        try {
+          final decoded = jsonDecode(raw) as Map<String, dynamic>;
+          if (decoded.isNotEmpty) return decoded;
+        } catch (_) {}
+      }
+    }
+    final seeded = seed();
+    _cacheBox?.put(key, jsonEncode(seeded));
+    return seeded;
+  }
 
   void persistAppointments() => _persist('appointments', appointments);
   void persistPatients() => _persist('patients', patients);
   void persistNotifications() => _persist('notifications', notifications);
+  void persistDoctorAccount() =>
+      _cacheBox?.put('doctor_account', jsonEncode(doctorAccount));
+  void persistClinicSettings() =>
+      _cacheBox?.put('clinic_settings', jsonEncode(clinicSettings));
+  void persistSchedule() => _cacheBox?.put('schedule', jsonEncode(schedule));
 }
 
 final _mockProviderDashboardStore = _MockProviderDashboardStore();
@@ -812,7 +958,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     }
 
     var filtered = List<Map<String, dynamic>>.from(
-        _mockProviderDashboardStore.appointments);
+      _mockProviderDashboardStore.appointments,
+    );
     if (dateParam != null && dateParam.isNotEmpty) {
       // Parse year/month/day from the query param (YYYY-MM-DD format)
       // and compare with appointment date in local time — timezone-safe on Web.
@@ -833,8 +980,10 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     }
 
     if (statusParam != null && statusParam.isNotEmpty) {
-      final statuses =
-          statusParam.split(',').map((s) => s.trim().toLowerCase()).toList();
+      final statuses = statusParam
+          .split(',')
+          .map((s) => s.trim().toLowerCase())
+          .toList();
       filtered = filtered.where((a) {
         final st = (a['status'] as String).toLowerCase();
         return statuses.contains(st);
@@ -843,9 +992,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
     return {
       'statusCode': 200,
-      'data': {
-        'items': filtered,
-      },
+      'data': {'items': filtered},
     };
   });
 
@@ -854,31 +1001,31 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     if (path.contains('/accept') || path.contains('/reject')) {
       final isAccept = path.contains('/accept');
       final parts = path.split('/');
-      final actionIndex = parts.indexWhere((p) => p == 'accept' || p == 'reject');
+      final actionIndex = parts.indexWhere(
+        (p) => p == 'accept' || p == 'reject',
+      );
       final id = actionIndex > 0 ? parts[actionIndex - 1] : '';
 
-      final index = _mockProviderDashboardStore.appointments
-          .indexWhere((a) => a['id'] == id);
+      final index = _mockProviderDashboardStore.appointments.indexWhere(
+        (a) => a['id'] == id,
+      );
       if (index == -1) {
         return _error(404, 'NOT_FOUND', 'Appointment not found');
       }
 
       final updated = Map<String, dynamic>.from(
-          _mockProviderDashboardStore.appointments[index]);
+        _mockProviderDashboardStore.appointments[index],
+      );
       updated['status'] = isAccept ? 'confirmed' : 'cancelled';
       _mockProviderDashboardStore.appointments[index] = updated;
       // Persist mutation to Hive so it survives a cold restart.
       _mockProviderDashboardStore.persistAppointments();
 
-      return {
-        'statusCode': 200,
-        'data': updated,
-      };
+      return {'statusCode': 200, 'data': updated};
     }
 
     final body = _body(options) ?? {};
-    final newId =
-        'apt-${_mockProviderDashboardStore.appointments.length + 1}';
+    final newId = 'apt-${_mockProviderDashboardStore.appointments.length + 1}';
     final medId =
         'MED-${1240 + _mockProviderDashboardStore.appointments.length}';
     final newApt = {
@@ -887,7 +1034,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       'patient_avatar_url': null,
       'scheduled_start':
           body['scheduled_start'] ?? DateTime.now().toIso8601String(),
-      'scheduled_end': body['scheduled_end'] ??
+      'scheduled_end':
+          body['scheduled_end'] ??
           DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
       'location_status': 'في العيادة',
       'med_id': medId,
@@ -906,10 +1054,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     _mockProviderDashboardStore.persistAppointments();
     _mockProviderDashboardStore.persistPatients();
 
-    return {
-      'statusCode': 200,
-      'data': newApt,
-    };
+    return {'statusCode': 200, 'data': newApt};
   });
 
   interceptor.register('GET', ApiPaths.providerPatients, (options) {
@@ -921,8 +1066,9 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       _mockProviderDashboardStore.persistPatients();
     }
 
-    var filtered =
-        List<Map<String, dynamic>>.from(_mockProviderDashboardStore.patients);
+    var filtered = List<Map<String, dynamic>>.from(
+      _mockProviderDashboardStore.patients,
+    );
     if (q != null && q.isNotEmpty) {
       filtered = filtered.where((p) {
         final name = (p['name'] as String).toLowerCase();
@@ -952,9 +1098,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
     return {
       'statusCode': 200,
-      'data': {
-        'items': filtered,
-      },
+      'data': {'items': filtered},
     };
   });
 
@@ -966,9 +1110,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
     return {
       'statusCode': 200,
-      'data': {
-        'items': _mockProviderDashboardStore.notifications,
-      },
+      'data': {'items': _mockProviderDashboardStore.notifications},
     };
   });
 
@@ -979,11 +1121,13 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       final readIndex = parts.indexWhere((p) => p == 'read');
       final id = readIndex > 0 ? parts[readIndex - 1] : '';
 
-      final index = _mockProviderDashboardStore.notifications
-          .indexWhere((n) => n['id'] == id);
+      final index = _mockProviderDashboardStore.notifications.indexWhere(
+        (n) => n['id'] == id,
+      );
       if (index != -1) {
         final updated = Map<String, dynamic>.from(
-            _mockProviderDashboardStore.notifications[index]);
+          _mockProviderDashboardStore.notifications[index],
+        );
         updated['is_unread'] = false;
         _mockProviderDashboardStore.notifications[index] = updated;
         // Persist to Hive so read-state survives a cold restart.
@@ -1008,5 +1152,102 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       'data': _mockProviderDashboardStore.doctorAccount,
     };
   });
-}
 
+  interceptor.register('PATCH', ApiPaths.providerMe, (options) {
+    final body = _body(options) ?? {};
+    if (body.containsKey('name')) {
+      _mockProviderDashboardStore.doctorAccount['name'] = body['name'];
+    }
+    if (body.containsKey('specialty')) {
+      _mockProviderDashboardStore.doctorAccount['specialty'] =
+          body['specialty'];
+    }
+    if (body.containsKey('years_of_experience')) {
+      _mockProviderDashboardStore.doctorAccount['years_of_experience'] =
+          body['years_of_experience'];
+    }
+    if (body.containsKey('bio')) {
+      _mockProviderDashboardStore.doctorAccount['bio'] = body['bio'];
+    }
+    _mockProviderDashboardStore.persistDoctorAccount();
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.doctorAccount,
+    };
+  });
+
+  interceptor.register('GET', '/v1/provider/clinic-settings', (options) {
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.clinicSettings,
+    };
+  });
+
+  interceptor.register('PATCH', '/v1/provider/clinic-settings', (options) {
+    final body = _body(options) ?? {};
+    _mockProviderDashboardStore.clinicSettings = {
+      ..._mockProviderDashboardStore.clinicSettings,
+      ...body,
+    };
+    _mockProviderDashboardStore.persistClinicSettings();
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.clinicSettings,
+    };
+  });
+
+  interceptor.register('GET', '/v1/provider/schedule', (options) {
+    return {'statusCode': 200, 'data': _mockProviderDashboardStore.schedule};
+  });
+
+  interceptor.register('PATCH', '/v1/provider/schedule', (options) {
+    final body = _body(options) ?? {};
+    if (body.containsKey('working_days')) {
+      _mockProviderDashboardStore.schedule['working_days'] =
+          body['working_days'];
+    }
+    _mockProviderDashboardStore.persistSchedule();
+    return {'statusCode': 200, 'data': _mockProviderDashboardStore.schedule};
+  });
+
+  interceptor.register('POST', '/v1/provider/change-password', (options) {
+    final body = _body(options) ?? {};
+    final cur = body['current_password'] as String?;
+    final next = body['new_password'] as String?;
+    if (cur == null || cur.isEmpty || next == null || next.length < 6) {
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'كلمة المرور غير صحيحة أو قصيرة جداً',
+      );
+    }
+    return {
+      'statusCode': 200,
+      'data': {'success': true},
+    };
+  });
+
+  interceptor.register('POST', '/v1/provider/avatar', (options) {
+    final body = _body(options) ?? {};
+    final path = body['file_path'] as String? ?? 'uploaded_avatar.jpg';
+    if (path.isEmpty) {
+      // Empty path is the "remove photo" signal from the edit-profile screen.
+      _mockProviderDashboardStore.doctorAccount['avatar_url'] = null;
+    } else if (path.startsWith('data:')) {
+      // Real picked-image bytes (base64 data URI) — store as-is so the
+      // actually-uploaded photo displays. A fake stock-photo URL would
+      // show the same generic image regardless of what was picked, which
+      // reads as "the upload didn't do anything."
+      _mockProviderDashboardStore.doctorAccount['avatar_url'] = path;
+    } else {
+      final fakeUrl =
+          'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=300&q=80#path=$path';
+      _mockProviderDashboardStore.doctorAccount['avatar_url'] = fakeUrl;
+    }
+    _mockProviderDashboardStore.persistDoctorAccount();
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.doctorAccount,
+    };
+  });
+}

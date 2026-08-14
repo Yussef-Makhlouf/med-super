@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/utils/validators.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
@@ -26,6 +29,7 @@ class _DoctorRegistrationBasicInfoScreenState
   final _formKey = GlobalKey<FormState>();
   late final _nameController = TextEditingController();
   late final _degreeController = TextEditingController();
+  late final _emailController = TextEditingController();
   late final _experienceController = TextEditingController();
   late final _bioController = TextEditingController();
 
@@ -39,6 +43,7 @@ class _DoctorRegistrationBasicInfoScreenState
     final draft = ref.read(registrationFormControllerProvider);
     _nameController.text = draft.fullName;
     _degreeController.text = draft.degree;
+    _emailController.text = draft.email;
     _experienceController.text = draft.experienceYears == 0
         ? ''
         : '${draft.experienceYears}';
@@ -73,6 +78,7 @@ class _DoctorRegistrationBasicInfoScreenState
       _nameController.text.trim().isNotEmpty &&
       _specialtyId != null &&
       _degreeController.text.trim().isNotEmpty &&
+      Validators.email(_emailController.text) == null &&
       (int.tryParse(_experienceController.text) ?? 0) > 0;
 
   void _continue() {
@@ -85,6 +91,7 @@ class _DoctorRegistrationBasicInfoScreenState
           fullName: _nameController.text.trim(),
           specialty: _specialtyId,
           degree: _degreeController.text.trim(),
+          email: _emailController.text.trim(),
           experienceYears: int.tryParse(_experienceController.text) ?? 0,
           bio: _bioController.text.trim(),
         );
@@ -192,6 +199,30 @@ class _DoctorRegistrationBasicInfoScreenState
                             const SizedBox(height: 16),
                             AppTextField(
                               label:
+                                  'provider_registration.basic_info.email_label'
+                                      .tr(),
+                              hint:
+                                  'provider_registration.basic_info.email_hint'
+                                      .tr(),
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              prefix: const Icon(Icons.email_outlined),
+                              onChanged: (_) => setState(() {}),
+                            ),
+                            if (Validators.email(_emailController.text) != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  Validators.email(_emailController.text)!,
+                                  style: const TextStyle(
+                                    color: AppColors.errorRed,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              label:
                                   'provider_registration.basic_info.experience_label'
                                       .tr(),
                               controller: _experienceController,
@@ -279,7 +310,10 @@ class _ProfilePhotoUpload extends ConsumerWidget {
   Future<void> _pickPhoto(BuildContext context, WidgetRef ref) async {
     FilePickerResult? result;
     try {
-      result = await FilePicker.platform.pickFiles(type: FileType.image);
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -292,10 +326,16 @@ class _ProfilePhotoUpload extends ConsumerWidget {
       return;
     }
     final file = result?.files.isEmpty ?? true ? null : result!.files.first;
-    if (file == null) return;
+    if (file == null || file.bytes == null) return;
     ref
         .read(registrationFormControllerProvider.notifier)
-        .updateProfilePhoto(file.name);
+        .updateProfilePhoto(
+          file.name,
+          // No real file storage in mock mode — carry the actual picked
+          // bytes as a base64 data URI so it becomes the real avatar_url
+          // after submission instead of being dropped.
+          dataUri: 'data:image/jpeg;base64,${base64Encode(file.bytes!)}',
+        );
   }
 
   @override

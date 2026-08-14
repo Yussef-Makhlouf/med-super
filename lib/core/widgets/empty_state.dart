@@ -31,23 +31,22 @@ class EmptyState extends StatelessWidget {
             ],
             Text(
               title,
-              style: textTheme.titleMedium
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 8),
               Text(
                 subtitle!,
-                style: textTheme.bodyMedium
-                    ?.copyWith(color: colorScheme.outlineVariant),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.outlineVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
-            if (action != null) ...[
-              const SizedBox(height: 24),
-              action!,
-            ],
+            if (action != null) ...[const SizedBox(height: 24), action!],
           ],
         ),
       ),

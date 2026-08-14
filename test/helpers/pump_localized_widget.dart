@@ -15,10 +15,10 @@ Widget _shell({required Widget child, required List<Override> overrides}) {
   return ProviderScope(
     overrides: overrides,
     child: EasyLocalization(
-      supportedLocales: const [Locale('en'), Locale('ar')],
+      supportedLocales: const [Locale('ar'), Locale('en')],
       path: 'assets/translations',
-      fallbackLocale: const Locale('en'),
-      startLocale: const Locale('en'),
+      fallbackLocale: const Locale('ar'),
+      startLocale: const Locale('ar'),
       saveLocale: false,
       useOnlyLangCode: true,
       child: Builder(

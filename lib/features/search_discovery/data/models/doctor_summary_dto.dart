@@ -49,18 +49,18 @@ class DoctorSummaryDto {
       );
 
   DoctorSummary toEntity() => DoctorSummary(
-        id: id,
-        name: name,
-        specialty: specialty,
-        specialtyKey: specialtyKey,
-        experienceYears: experienceYears,
-        rating: rating,
-        reviewCount: reviewCount,
-        locationLabel: locationLabel,
-        distanceKm: distanceKm,
-        consultationFee: consultationFee,
-        currency: currency,
-        isVerified: isVerified,
-        photoUrl: photoUrl,
-      );
+    id: id,
+    name: name,
+    specialty: specialty,
+    specialtyKey: specialtyKey,
+    experienceYears: experienceYears,
+    rating: rating,
+    reviewCount: reviewCount,
+    locationLabel: locationLabel,
+    distanceKm: distanceKm,
+    consultationFee: consultationFee,
+    currency: currency,
+    isVerified: isVerified,
+    photoUrl: photoUrl,
+  );
 }

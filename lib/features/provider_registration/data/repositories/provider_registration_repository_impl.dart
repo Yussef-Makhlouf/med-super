@@ -13,9 +13,19 @@ class ProviderRegistrationRepositoryImpl
   final ProviderRegistrationRemoteDatasource _remote;
 
   @override
-  Future<Result<void>> submit(DoctorRegistrationDraft draft) async {
+  Future<Result<void>> submit(
+    DoctorRegistrationDraft draft, {
+    String? specialtyLabel,
+    String? cityLabel,
+    String? phone,
+  }) async {
     try {
-      await _remote.submit(draft);
+      await _remote.submit(
+        draft,
+        specialtyLabel: specialtyLabel,
+        cityLabel: cityLabel,
+        phone: phone,
+      );
       return const Result.ok(null);
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));

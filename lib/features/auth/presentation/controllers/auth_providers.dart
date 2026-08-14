@@ -16,9 +16,9 @@ AuthRemoteDatasource authRemoteDatasource(Ref ref) =>
 
 @riverpod
 AuthRepository authRepository(Ref ref) => AuthRepositoryImpl(
-      remote: ref.watch(authRemoteDatasourceProvider),
-      storage: ref.watch(secureStorageProvider),
-    );
+  remote: ref.watch(authRemoteDatasourceProvider),
+  storage: ref.watch(secureStorageProvider),
+);
 
 @riverpod
 RequestOtpUseCase requestOtpUseCase(Ref ref) =>

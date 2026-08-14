@@ -22,7 +22,7 @@ enum UserRole {
 
   /// Login UI only offers patient/doctor; other roles arrive from `/me`.
   static UserRole fromLogin(String name) => switch (name.toLowerCase()) {
-        'doctor' => UserRole.doctor,
-        _ => UserRole.patient,
-      };
+    'doctor' => UserRole.doctor,
+    _ => UserRole.patient,
+  };
 }

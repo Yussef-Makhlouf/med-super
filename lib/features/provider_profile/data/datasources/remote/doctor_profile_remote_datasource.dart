@@ -12,7 +12,8 @@ class DoctorProfileRemoteDatasource {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiPaths.doctors}/$doctorId',
     );
-    return DoctorProfileDto.fromJson(response.data ?? const <String, dynamic>{})
-        .toEntity();
+    return DoctorProfileDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    ).toEntity();
   }
 }

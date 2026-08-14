@@ -6,10 +6,7 @@ class GetPatientsUseCase {
   const GetPatientsUseCase(this._repository);
   final ProviderDashboardRepository _repository;
 
-  Future<Result<List<Patient>>> call({
-    String? query,
-    String? filter,
-  }) {
+  Future<Result<List<Patient>>> call({String? query, String? filter}) {
     return _repository.getPatients(query: query, filter: filter);
   }
 }

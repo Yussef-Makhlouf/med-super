@@ -6,7 +6,13 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 
 // ─── model ────────────────────────────────────────────────────────────────────
 
-enum _NotifType { appointment, orderUpdate, labResults, appointmentConfirmed, prescription }
+enum _NotifType {
+  appointment,
+  orderUpdate,
+  labResults,
+  appointmentConfirmed,
+  prescription,
+}
 
 class _Notif {
   const _Notif({
@@ -28,7 +34,8 @@ const _todayNotifs = [
   _Notif(
     type: _NotifType.appointment,
     title: 'تذكير بموعد العيادة',
-    body: 'لديك موعد مع د. خالد (قلبية) غداً الساعة 9:00 صباحاً في عيادة النور.',
+    body:
+        'لديك موعد مع د. خالد (قلبية) غداً الساعة 9:00 صباحاً في عيادة النور.',
     time: 'الآن',
     isRead: false,
   ),
@@ -84,10 +91,9 @@ class _PatientNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionControllerProvider).asData?.value;
-    final displayName =
-        session?.user.displayName?.trim().isNotEmpty == true
-            ? session!.user.displayName!
-            : 'أحمد محمد';
+    final displayName = session?.user.displayName?.trim().isNotEmpty == true
+        ? session!.user.displayName!
+        : 'أحمد محمد';
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -115,10 +121,7 @@ class _PatientNotificationsScreenState
                   ..._todayNotifs.map(
                     (n) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _NotifCard(
-                        notif: n,
-                        forceRead: _allRead,
-                      ),
+                      child: _NotifCard(notif: n, forceRead: _allRead),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -248,9 +251,9 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: const Color(0xFF1A2B4A),
-              fontWeight: FontWeight.w700,
-            ),
+          color: const Color(0xFF1A2B4A),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -280,16 +283,15 @@ class _NotifCard extends StatelessWidget {
     };
   }
 
-  Color _iconFg(bool isRead) =>
-      isRead ? const Color(0xFF9CA3AF) : Colors.white;
+  Color _iconFg(bool isRead) => isRead ? const Color(0xFF9CA3AF) : Colors.white;
 
   IconData _icon(_NotifType t) => switch (t) {
-        _NotifType.appointment => Icons.calendar_month_outlined,
-        _NotifType.orderUpdate => Icons.local_pharmacy_outlined,
-        _NotifType.labResults => Icons.science_outlined,
-        _NotifType.appointmentConfirmed => Icons.check_circle_outline,
-        _NotifType.prescription => Icons.description_outlined,
-      };
+    _NotifType.appointment => Icons.calendar_month_outlined,
+    _NotifType.orderUpdate => Icons.local_pharmacy_outlined,
+    _NotifType.labResults => Icons.science_outlined,
+    _NotifType.appointmentConfirmed => Icons.check_circle_outline,
+    _NotifType.prescription => Icons.description_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {

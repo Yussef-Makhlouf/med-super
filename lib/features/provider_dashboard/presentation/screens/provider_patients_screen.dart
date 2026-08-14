@@ -8,6 +8,7 @@ import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/patient.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_patient_detail_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 
 /// Provider Patients Screen matching mockup `patients.png`.
@@ -96,12 +97,16 @@ class _ProviderPatientsScreenState
                       color: Color(0xFF94A3B8),
                       fontSize: 14,
                     ),
-                    suffixIcon:
-                        const Icon(Icons.search, color: Color(0xFF64748B)),
+                    suffixIcon: const Icon(
+                      Icons.search,
+                      color: Color(0xFF64748B),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: const BorderSide(color: Color(0xFFF1F5F9)),
@@ -217,81 +222,47 @@ class _ProviderPatientsScreenState
     final dateTimeFormatted =
         '${patient.nextAppointment.day}/${patient.nextAppointment.month}/${patient.nextAppointment.year} - ${_formatTime(patient.nextAppointment)}';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ProviderPatientDetailScreen(patient: patient),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFCCFBF1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.check_circle_outline,
-                    size: 13, color: Color(0xFF0D9488)),
-                const SizedBox(width: 4),
-                Text(
-                  patient.status,
-                  style: const TextStyle(
-                    color: Color(0xFF0D9488),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
           ),
-          const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
             children: [
-              Text(
-                patient.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: AppColors.ink900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.badge_outlined,
-                      size: 14, color: AppColors.mutedText2),
-                  const SizedBox(width: 4),
-                  Text(
-                    patient.medId,
-                    style: const TextStyle(
-                      color: AppColors.mutedText2,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: brandBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFFCCFBF1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 12, color: brandBlue),
-                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.check_circle_outline,
+                      size: 13,
+                      color: Color(0xFF0D9488),
+                    ),
+                    const SizedBox(width: 4),
                     Text(
-                      dateTimeFormatted,
+                      patient.status,
                       style: const TextStyle(
-                        color: brandBlue,
+                        color: Color(0xFF0D9488),
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -299,26 +270,87 @@ class _ProviderPatientsScreenState
                   ],
                 ),
               ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    patient.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.badge_outlined,
+                        size: 14,
+                        color: AppColors.mutedText2,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        patient.medId,
+                        style: const TextStyle(
+                          color: AppColors.mutedText2,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: brandBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 12,
+                          color: brandBlue,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          dateTimeFormatted,
+                          style: const TextStyle(
+                            color: brandBlue,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: const Color(0xFFCCFBF1).withValues(alpha: 0.5),
+                backgroundImage: patient.avatarUrl != null
+                    ? NetworkImage(patient.avatarUrl!)
+                    : null,
+                child: patient.avatarUrl == null
+                    ? Text(
+                        initials,
+                        style: const TextStyle(
+                          color: Color(0xFF0D9488),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )
+                    : null,
+              ),
             ],
           ),
-          const SizedBox(width: 14),
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: const Color(0xFFCCFBF1).withValues(alpha: 0.5),
-            backgroundImage: patient.avatarUrl != null
-                ? NetworkImage(patient.avatarUrl!)
-                : null,
-            child: patient.avatarUrl == null
-                ? Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Color(0xFF0D9488),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  )
-                : null,
-          ),
-        ],
+        ),
       ),
     );
   }

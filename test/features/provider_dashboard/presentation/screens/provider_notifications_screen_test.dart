@@ -6,8 +6,9 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_notifications_screen.dart';
 
 void main() {
-  testWidgets('ProviderNotificationsScreen renders and handles card tap',
-      (tester) async {
+  testWidgets('ProviderNotificationsScreen renders and handles card tap', (
+    tester,
+  ) async {
     final mockNotifications = [
       DoctorNotification(
         id: 'notif-1',
@@ -22,12 +23,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          doctorNotificationsProvider
-              .overrideWith((ref) async => mockNotifications),
+          doctorNotificationsProvider.overrideWith(
+            (ref) async => mockNotifications,
+          ),
         ],
-        child: const MaterialApp(
-          home: ProviderNotificationsScreen(),
-        ),
+        child: const MaterialApp(home: ProviderNotificationsScreen()),
       ),
     );
 

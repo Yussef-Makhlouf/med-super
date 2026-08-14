@@ -9,42 +9,39 @@ import 'package:med_super/features/provider_dashboard/presentation/screens/provi
 
 void main() {
   testWidgets(
-      'ProviderHomeScreen renders, interacts with segment tabs, and opens FAB sheet',
-      (tester) async {
-    final storage = SecureStorageService(const FlutterSecureStorage());
-    final dio = buildDioClient(storage: storage);
+    'ProviderHomeScreen renders, interacts with segment tabs, and opens FAB sheet',
+    (tester) async {
+      final storage = SecureStorageService(const FlutterSecureStorage());
+      final dio = buildDioClient(storage: storage);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dioProvider.overrideWithValue(dio),
-        ],
-        child: const MaterialApp(
-          home: ProviderHomeScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [dioProvider.overrideWithValue(dio)],
+          child: const MaterialApp(home: ProviderHomeScreen()),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-    expect(find.text('لوحة التحكم'), findsOneWidget);
-    expect(find.text('مواعيد اليوم'), findsOneWidget);
-    expect(find.text('القادمة'), findsOneWidget);
+      expect(find.text('لوحة التحكم'), findsOneWidget);
+      expect(find.text('مواعيد اليوم'), findsOneWidget);
+      expect(find.text('القادمة'), findsOneWidget);
 
-    // Tap segment tab 'المنتهية'
-    final completedTab = find.text('المنتهية');
-    expect(completedTab, findsOneWidget);
-    await tester.tap(completedTab);
-    await tester.pumpAndSettle();
+      // Tap segment tab 'المنتهية'
+      final completedTab = find.text('المنتهية');
+      expect(completedTab, findsOneWidget);
+      await tester.tap(completedTab);
+      await tester.pumpAndSettle();
 
-    // Tap FAB button to open Add Appointment bottom sheet
-    final fab = find.byType(FloatingActionButton);
-    expect(fab, findsOneWidget);
-    await tester.tap(fab);
-    await tester.pumpAndSettle();
+      // Tap FAB button to open Add Appointment bottom sheet
+      final fab = find.byType(FloatingActionButton);
+      expect(fab, findsOneWidget);
+      await tester.tap(fab);
+      await tester.pumpAndSettle();
 
-    expect(find.text('إضافة موعد جديد'), findsOneWidget);
-  });
+      expect(find.text('إضافة موعد جديد'), findsOneWidget);
+    },
+  );
 }

@@ -13,11 +13,7 @@ import 'package:med_super/features/search_discovery/presentation/widgets/doctor_
 
 /// Doctor search results — matches Figma RTL search screen.
 class DoctorSearchScreen extends ConsumerStatefulWidget {
-  const DoctorSearchScreen({
-    this.initialSpecialty,
-    this.titleKey,
-    super.key,
-  });
+  const DoctorSearchScreen({this.initialSpecialty, this.titleKey, super.key});
 
   final String? initialSpecialty;
   final String? titleKey;
@@ -136,8 +132,10 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          const BorderSide(color: brandBlue, width: 1.5),
+                      borderSide: const BorderSide(
+                        color: brandBlue,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -170,9 +168,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return Text(
-                        'search.results_count'.tr(
-                          args: ['${data.totalCount}'],
-                        ),
+                        'search.results_count'.tr(args: ['${data.totalCount}']),
                         style: textTheme.bodyMedium?.copyWith(color: _muted),
                       );
                     }
@@ -194,10 +190,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
 }
 
 class _SortChips extends StatelessWidget {
-  const _SortChips({
-    required this.selected,
-    required this.onSelected,
-  });
+  const _SortChips({required this.selected, required this.onSelected});
 
   static const _muted = Color(0xFF8A94A6);
 

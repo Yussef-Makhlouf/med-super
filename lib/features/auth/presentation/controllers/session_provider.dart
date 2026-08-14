@@ -13,22 +13,15 @@ part 'session_provider.g.dart';
 const bool kDevBypassAuth = false;
 
 class Session {
-  const Session({
-    required this.user,
-    required this.onboardingComplete,
-  });
+  const Session({required this.user, required this.onboardingComplete});
 
   final User user;
   final bool onboardingComplete;
 
-  Session copyWith({
-    User? user,
-    bool? onboardingComplete,
-  }) =>
-      Session(
-        user: user ?? this.user,
-        onboardingComplete: onboardingComplete ?? this.onboardingComplete,
-      );
+  Session copyWith({User? user, bool? onboardingComplete}) => Session(
+    user: user ?? this.user,
+    onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+  );
 }
 
 /// Formats a Saudi local 9-digit (or longer) number as E.164 `+966…`.
@@ -40,24 +33,25 @@ String normalizeSaudiPhone(String raw) {
   if (digits.startsWith('0') && digits.length >= 10) {
     return '+966${digits.substring(1)}';
   }
-  final local = digits.length > 9 ? digits.substring(digits.length - 9) : digits;
+  final local = digits.length > 9
+      ? digits.substring(digits.length - 9)
+      : digits;
   return '+966$local';
 }
 
 String failureMessage(Failure failure) => switch (failure) {
-      NetworkFailure() => 'errors.network',
-      AuthFailure() => 'errors.session_expired',
-      ServerFailure(:final code, :final message) => code == 'OTP_INVALID' ||
-              code == 'OTP_EXPIRED'
-          ? 'auth.otp_wrong'
-          : (message ?? 'errors.server'),
-      ValidationFailure(:final fieldErrors) => fieldErrors.isEmpty
-          ? 'errors.server'
-          : fieldErrors.values.first,
-      ConflictFailure(:final reason) => reason,
-      CacheFailure() => 'errors.server',
-      UnknownFailure() => 'errors.unexpected',
-    };
+  NetworkFailure() => 'errors.network',
+  AuthFailure() => 'errors.session_expired',
+  ServerFailure(:final code, :final message) =>
+    code == 'OTP_INVALID' || code == 'OTP_EXPIRED'
+        ? 'auth.otp_wrong'
+        : (message ?? 'errors.server'),
+  ValidationFailure(:final fieldErrors) =>
+    fieldErrors.isEmpty ? 'errors.server' : fieldErrors.values.first,
+  ConflictFailure(:final reason) => reason,
+  CacheFailure() => 'errors.server',
+  UnknownFailure() => 'errors.unexpected',
+};
 
 @riverpod
 class SessionController extends _$SessionController {
@@ -82,9 +76,9 @@ class SessionController extends _$SessionController {
     final result = await ref.read(getCurrentUserUseCaseProvider).call();
     return switch (result) {
       Ok(:final value) => Session(
-          user: value,
-          onboardingComplete: _readOnboardingComplete(),
-        ),
+        user: value,
+        onboardingComplete: _readOnboardingComplete(),
+      ),
       Err() => null,
     };
   }
@@ -103,10 +97,7 @@ class SessionController extends _$SessionController {
     required String phone,
     required UserRole role,
   }) async {
-    return ref.read(requestOtpUseCaseProvider).call(
-          phone: phone,
-          role: role,
-        );
+    return ref.read(requestOtpUseCaseProvider).call(phone: phone, role: role);
   }
 
   Future<Result<Session>> verifyOtp({
@@ -114,11 +105,9 @@ class SessionController extends _$SessionController {
     required String code,
     required UserRole role,
   }) async {
-    final tokensResult = await ref.read(verifyOtpUseCaseProvider).call(
-          phone: phone,
-          code: code,
-          role: role,
-        );
+    final tokensResult = await ref
+        .read(verifyOtpUseCaseProvider)
+        .call(phone: phone, code: code, role: role);
 
     switch (tokensResult) {
       case Err(:final failure):
@@ -182,8 +171,9 @@ class SessionController extends _$SessionController {
       );
     }
 
-    final result =
-        await ref.read(authRepositoryProvider).updateProfile(displayName: name);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .updateProfile(displayName: name);
     switch (result) {
       case Err(:final failure):
         return Result.err(failure);

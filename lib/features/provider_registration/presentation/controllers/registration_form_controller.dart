@@ -51,9 +51,11 @@ class RegistrationFormController extends _$RegistrationFormController {
         fullName: json['full_name'] as String? ?? '',
         specialty: json['specialty'] as String?,
         degree: json['degree'] as String? ?? '',
+        email: json['email'] as String? ?? '',
         experienceYears: json['experience_years'] as int? ?? 0,
         bio: json['bio'] as String? ?? '',
         profilePhotoLocalPath: json['profile_photo_local_path'] as String?,
+        profilePhotoDataUri: json['profile_photo_data_uri'] as String?,
         documents: (json['documents'] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(
@@ -86,9 +88,11 @@ class RegistrationFormController extends _$RegistrationFormController {
         'full_name': d.fullName,
         'specialty': d.specialty,
         'degree': d.degree,
+        'email': d.email,
         'experience_years': d.experienceYears,
         'bio': d.bio,
         'profile_photo_local_path': d.profilePhotoLocalPath,
+        'profile_photo_data_uri': d.profilePhotoDataUri,
         'documents': d.documents
             .map(
               (doc) => {
@@ -113,6 +117,7 @@ class RegistrationFormController extends _$RegistrationFormController {
     String? fullName,
     String? specialty,
     String? degree,
+    String? email,
     int? experienceYears,
     String? bio,
   }) {
@@ -120,14 +125,18 @@ class RegistrationFormController extends _$RegistrationFormController {
       fullName: fullName,
       specialty: specialty,
       degree: degree,
+      email: email,
       experienceYears: experienceYears,
       bio: bio,
     );
     _persist();
   }
 
-  void updateProfilePhoto(String localPath) {
-    state = state.copyWith(profilePhotoLocalPath: localPath);
+  void updateProfilePhoto(String localPath, {String? dataUri}) {
+    state = state.copyWith(
+      profilePhotoLocalPath: localPath,
+      profilePhotoDataUri: dataUri,
+    );
     _persist();
   }
 
@@ -185,10 +194,19 @@ class RegistrationFormController extends _$RegistrationFormController {
     _persist();
   }
 
-  Future<Result<void>> submit() async {
+  Future<Result<void>> submit({
+    String? specialtyLabel,
+    String? cityLabel,
+    String? phone,
+  }) async {
     final result = await ref
         .read(submitRegistrationUseCaseProvider)
-        .call(state);
+        .call(
+          state,
+          specialtyLabel: specialtyLabel,
+          cityLabel: cityLabel,
+          phone: phone,
+        );
     if (result.isOk) {
       await _clearDraft();
       await ref

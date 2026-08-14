@@ -5,21 +5,17 @@ import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
 
 class AddAppointmentBottomSheet extends StatefulWidget {
-  const AddAppointmentBottomSheet({
-    required this.onAdd,
-    super.key,
-  });
+  const AddAppointmentBottomSheet({required this.onAdd, super.key});
 
   final Function(String patientName, DateTime startTime, DateTime endTime)
-      onAdd;
+  onAdd;
 
   @override
   State<AddAppointmentBottomSheet> createState() =>
       _AddAppointmentBottomSheetState();
 }
 
-class _AddAppointmentBottomSheetState
-    extends State<AddAppointmentBottomSheet> {
+class _AddAppointmentBottomSheetState extends State<AddAppointmentBottomSheet> {
   final _nameController = TextEditingController();
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isSubmitting = false;
@@ -77,9 +73,9 @@ class _AddAppointmentBottomSheetState
             'إضافة موعد جديد',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink900,
-                ),
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink900,
+            ),
           ),
           const SizedBox(height: 20),
           AppTextField(

@@ -29,13 +29,13 @@ class PatientDto {
   final DateTime nextAppointment;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'med_id': medId,
-        'avatar_url': avatarUrl,
-        'status': status,
-        'next_appointment': nextAppointment.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'med_id': medId,
+    'avatar_url': avatarUrl,
+    'status': status,
+    'next_appointment': nextAppointment.toIso8601String(),
+  };
 
   Patient toEntity() {
     return Patient(

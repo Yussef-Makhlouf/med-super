@@ -39,12 +39,11 @@ class DoctorSearchParams {
     String? specialty,
     DoctorSort? sort,
     bool clearSpecialty = false,
-  }) =>
-      DoctorSearchParams(
-        query: query ?? this.query,
-        specialty: clearSpecialty ? null : (specialty ?? this.specialty),
-        sort: sort ?? this.sort,
-      );
+  }) => DoctorSearchParams(
+    query: query ?? this.query,
+    specialty: clearSpecialty ? null : (specialty ?? this.specialty),
+    sort: sort ?? this.sort,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -74,13 +73,12 @@ class DoctorSearchController extends _$DoctorSearchController {
 @riverpod
 Future<DoctorSearchResult> doctorSearchResults(Ref ref) async {
   final params = ref.watch(doctorSearchControllerProvider);
-  final result = await ref.watch(searchDoctorsUseCaseProvider).call(
+  final result = await ref
+      .watch(searchDoctorsUseCaseProvider)
+      .call(
         query: params.query,
         specialty: params.specialty,
         sort: params.sort,
       );
-  return result.when(
-    ok: (value) => value,
-    err: (failure) => throw failure,
-  );
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
 }
