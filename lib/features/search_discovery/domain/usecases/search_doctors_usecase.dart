@@ -13,9 +13,5 @@ class SearchDoctorsUseCase {
     String? specialty,
     DoctorSort sort = DoctorSort.topRated,
   }) =>
-      _repository.searchDoctors(
-        query: query,
-        specialty: specialty,
-        sort: sort,
-      );
+      _repository.searchDoctors(query: query, specialty: specialty, sort: sort);
 }

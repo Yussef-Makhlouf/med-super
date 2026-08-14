@@ -30,23 +30,23 @@ class ProfilePlaceholderScreen extends ConsumerWidget {
                     ? user.displayName!
                     : 'profile.guest_name'.tr(),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: const Color(0xFF1A2B4A),
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: const Color(0xFF1A2B4A),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 user.phone,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: brandBlue,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: brandBlue),
               ),
               const SizedBox(height: 4),
               Text(
                 user.activeRole.apiValue,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF8A94A6),
-                    ),
+                  color: const Color(0xFF8A94A6),
+                ),
               ),
               if (session?.onboardingComplete == false) ...[
                 const SizedBox(height: 24),

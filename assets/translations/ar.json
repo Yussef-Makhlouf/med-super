@@ -52,7 +52,11 @@
     "appointments": "مواعيدي",
     "orders": "طلباتي",
     "notifications": "التنبيهات",
-    "profile": "حسابي"
+    "profile": "حسابي",
+    "provider_home": "الرئيسية",
+    "provider_appointments": "المواعيد",
+    "provider_patients": "المرضى",
+    "provider_profile": "الملف الشخصي"
   },
   "home": {
     "welcome": "أهلاً بك،",
@@ -357,6 +361,8 @@
       "specialty_hint": "اختر التخصص",
       "degree_label": "الدرجة العلمية *",
       "degree_hint": "مثال: بورد عربي في طب الأسرة",
+      "email_label": "البريد الإلكتروني",
+      "email_hint": "doctor@example.com",
       "experience_label": "سنوات الخبرة *",
       "bio_label": "نبذة تعريفية (ستظهر للمرضى)",
       "bio_hint": "اكتب نبذة مختصرة عن خبراتك ومجال تخصصك الدقيق...",
@@ -402,6 +408,7 @@
       "personal_info_title": "المعلومات الشخصية",
       "full_name_row": "الاسم الكامل",
       "phone_row": "رقم الهاتف",
+      "email_row": "البريد الإلكتروني",
       "professional_info_title": "المعلومات المهنية",
       "specialty_row": "التخصص",
       "experience_row": "سنوات الخبرة",

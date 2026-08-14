@@ -24,10 +24,8 @@ GetDoctorProfileUseCase getDoctorProfileUseCase(Ref ref) =>
 
 @riverpod
 Future<DoctorProfile> doctorProfile(Ref ref, String doctorId) async {
-  final result =
-      await ref.watch(getDoctorProfileUseCaseProvider).call(doctorId);
-  return result.when(
-    ok: (value) => value,
-    err: (failure) => throw failure,
-  );
+  final result = await ref
+      .watch(getDoctorProfileUseCaseProvider)
+      .call(doctorId);
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
 }

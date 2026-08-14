@@ -13,8 +13,8 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthRemoteDatasource remote,
     required SecureStorageService storage,
-  })  : _remote = remote,
-        _storage = storage;
+  }) : _remote = remote,
+       _storage = storage;
 
   final AuthRemoteDatasource _remote;
   final SecureStorageService _storage;

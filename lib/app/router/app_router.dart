@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
@@ -33,8 +32,6 @@ bool _isProviderRegistrationRoute(String path) =>
 
 @riverpod
 GoRouter appRouter(Ref ref) {
-  final flavor = currentFlavor;
-
   // Trigger redirect re-evaluation when session changes without recreating
   // the entire GoRouter (which would reset the navigation stack).
   final refresh = ValueNotifier<int>(0);
@@ -57,22 +54,23 @@ GoRouter appRouter(Ref ref) {
       }
 
       if (session != null) {
-        if (!roleMatchesFlavor(session.user.activeRole, flavor)) {
-          await ref.read(sessionControllerProvider.notifier).logout();
-          return '/login';
+        final registrationSubmitted =
+            ref
+                .read(hiveServiceProvider)
+                .settingsBox
+                .get(SettingsKeys.providerRegistrationSubmitted) ==
+            'true';
+
+        if (session.user.isPatient && path.startsWith('/provider/')) {
+          return '/patient/home';
+        }
+        if (session.user.isProvider && path.startsWith('/patient/')) {
+          return registrationSubmitted
+              ? '/provider/home'
+              : '/provider/registration/basic-info';
         }
 
-        if (flavor.isProvider) {
-          // Providers skip the generic onboarding screen entirely — the
-          // registration flow's own basic-info step already collects the
-          // display name, and registration is mandatory before reaching
-          // the provider home screen.
-          final registrationSubmitted =
-              ref
-                  .read(hiveServiceProvider)
-                  .settingsBox
-                  .get(SettingsKeys.providerRegistrationSubmitted) ==
-              'true';
+        if (session.user.isProvider) {
           final isRegistrationRoute = _isProviderRegistrationRoute(path);
 
           if (isAuthRoute || isOnboarding) {
@@ -88,13 +86,15 @@ GoRouter appRouter(Ref ref) {
           return null;
         }
 
-        if (isAuthRoute) {
-          if (!session.onboardingComplete) return '/onboarding';
-          return '/patient/home';
-        }
+        if (session.user.isPatient) {
+          if (isAuthRoute) {
+            if (!session.onboardingComplete) return '/onboarding';
+            return '/patient/home';
+          }
 
-        if (isOnboarding && session.onboardingComplete) {
-          return '/patient/home';
+          if (isOnboarding && session.onboardingComplete) {
+            return '/patient/home';
+          }
         }
       }
 
@@ -103,10 +103,10 @@ GoRouter appRouter(Ref ref) {
     routes: [
       ...authRoutes,
       ...searchRoutes,
-      if (flavor.isPatient) ..._patientRoutes(),
-      if (flavor.isPatient) ...labRoutes,
-      if (flavor.isPatient) ...pharmacyRoutes,
-      if (flavor.isProvider) ..._providerRoutes(),
+      ..._patientRoutes(),
+      ...labRoutes,
+      ...pharmacyRoutes,
+      ..._providerRoutes(),
     ],
   );
 }

@@ -6,4 +6,5 @@ abstract final class HiveBoxNames {
   static const outbox = 'pending_actions';
   static const labTestsCache = 'lab_tests_cache';
   static const providerRegistrationDraft = 'provider_registration_draft';
+  static const providerDashboardCache = 'provider_dashboard_cache';
 }

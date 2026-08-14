@@ -7,7 +7,7 @@ import 'package:med_super/features/search_discovery/domain/repositories/doctor_s
 
 class DoctorSearchRepositoryImpl implements DoctorSearchRepository {
   DoctorSearchRepositoryImpl({required DoctorSearchRemoteDatasource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final DoctorSearchRemoteDatasource _remote;
 

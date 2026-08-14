@@ -7,6 +7,15 @@ class SubmitRegistrationUseCase {
 
   final ProviderRegistrationRepository _repository;
 
-  Future<Result<void>> call(DoctorRegistrationDraft draft) =>
-      _repository.submit(draft);
+  Future<Result<void>> call(
+    DoctorRegistrationDraft draft, {
+    String? specialtyLabel,
+    String? cityLabel,
+    String? phone,
+  }) => _repository.submit(
+    draft,
+    specialtyLabel: specialtyLabel,
+    cityLabel: cityLabel,
+    phone: phone,
+  );
 }

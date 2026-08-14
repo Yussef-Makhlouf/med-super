@@ -7,20 +7,44 @@ class ProviderRegistrationRemoteDatasource {
 
   final Dio _dio;
 
-  Future<void> submit(DoctorRegistrationDraft draft) async {
+  Future<void> submit(
+    DoctorRegistrationDraft draft, {
+    String? specialtyLabel,
+    String? cityLabel,
+    String? phone,
+  }) async {
     await _dio.post<Map<String, dynamic>>(
       ApiPaths.providerRegistrationSubmit,
       data: {
         'full_name': draft.fullName,
         'specialty': draft.specialty,
+        'specialty_label': specialtyLabel,
         'degree': draft.degree,
+        'email': draft.email,
+        'phone': phone,
+        'photo_data_uri': draft.profilePhotoDataUri,
         'experience_years': draft.experienceYears,
         'bio': draft.bio,
         'documents': draft.documents.map((d) => d.fileName).toList(),
         'clinic_name': draft.clinicName,
         'clinic_address': draft.clinicAddress,
         'city': draft.city,
+        'city_label': cityLabel,
         'consultation_fee': draft.consultationFee,
+        'working_days': draft.workingDays
+            .map(
+              (d) => {
+                'day': d.day.name,
+                'is_enabled': d.isEnabled,
+                'from': d.from == null
+                    ? null
+                    : {'hour': d.from!.hour, 'minute': d.from!.minute},
+                'to': d.to == null
+                    ? null
+                    : {'hour': d.to!.hour, 'minute': d.to!.minute},
+              },
+            )
+            .toList(),
       },
     );
   }

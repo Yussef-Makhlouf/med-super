@@ -105,10 +105,9 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionControllerProvider).asData?.value;
-    final displayName =
-        session?.user.displayName?.trim().isNotEmpty == true
-            ? session!.user.displayName!
-            : 'أحمد محمد';
+    final displayName = session?.user.displayName?.trim().isNotEmpty == true
+        ? session!.user.displayName!
+        : 'أحمد محمد';
 
     return Scaffold(
       backgroundColor: _pageBg,
@@ -138,10 +137,9 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
                   ? Center(
                       child: Text(
                         'orders.empty'.tr(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge
-                            ?.copyWith(color: _muted),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(color: _muted),
                       ),
                     )
                   : ListView.separated(
@@ -234,8 +232,10 @@ class _OrderSearchBar extends StatelessWidget {
         prefixIcon: const Icon(Icons.search, color: _muted),
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
           borderSide: BorderSide.none,
@@ -323,10 +323,9 @@ class _TabButton extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isActive ? Colors.white : const Color(0xFF6B7280),
-                  fontWeight:
-                      isActive ? FontWeight.w700 : FontWeight.w500,
-                ),
+              color: isActive ? Colors.white : const Color(0xFF6B7280),
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -345,21 +344,21 @@ class _OrderCard extends StatelessWidget {
   static const _muted = Color(0xFF8A94A6);
 
   Color _statusColor(_OrderStatus s) => switch (s) {
-        _OrderStatus.processing => const Color(0xFFF59E0B),
-        _OrderStatus.onTheWay => const Color(0xFF0EA5E9),
-        _OrderStatus.completed => const Color(0xFF22C55E),
-      };
+    _OrderStatus.processing => const Color(0xFFF59E0B),
+    _OrderStatus.onTheWay => const Color(0xFF0EA5E9),
+    _OrderStatus.completed => const Color(0xFF22C55E),
+  };
 
   String _statusLabel(_OrderStatus s) => switch (s) {
-        _OrderStatus.processing => 'orders.status_processing'.tr(),
-        _OrderStatus.onTheWay => 'orders.status_on_the_way'.tr(),
-        _OrderStatus.completed => 'orders.status_completed'.tr(),
-      };
+    _OrderStatus.processing => 'orders.status_processing'.tr(),
+    _OrderStatus.onTheWay => 'orders.status_on_the_way'.tr(),
+    _OrderStatus.completed => 'orders.status_completed'.tr(),
+  };
 
   IconData _vendorIcon(_VendorType t) => switch (t) {
-        _VendorType.pharmacy => Icons.local_pharmacy_outlined,
-        _VendorType.lab => Icons.science_outlined,
-      };
+    _VendorType.pharmacy => Icons.local_pharmacy_outlined,
+    _VendorType.lab => Icons.science_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -451,8 +450,9 @@ class _OrderCard extends StatelessWidget {
                             children: [
                               Text(
                                 'orders.total'.tr(),
-                                style: textTheme.bodySmall
-                                    ?.copyWith(color: _muted),
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: _muted,
+                                ),
                               ),
                               Text(
                                 '${order.total.toStringAsFixed(0)} ${'orders.currency'.tr()}',
@@ -495,9 +495,9 @@ class _StatusPill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -512,52 +512,43 @@ class _CardCta extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (status) {
       _OrderStatus.processing => FilledButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.local_shipping_outlined, size: 16),
-          label: Text('orders.track'.tr()),
-          style: FilledButton.styleFrom(
-            backgroundColor: brandBlue,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+        onPressed: () {},
+        icon: const Icon(Icons.local_shipping_outlined, size: 16),
+        label: Text('orders.track'.tr()),
+        style: FilledButton.styleFrom(
+          backgroundColor: brandBlue,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
+      ),
       _OrderStatus.onTheWay => OutlinedButton(
-          onPressed: () {},
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF6B7280),
-            side: const BorderSide(color: Color(0xFFD1D5DB)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Text('orders.details'.tr()),
+        onPressed: () {},
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF6B7280),
+          side: const BorderSide(color: Color(0xFFD1D5DB)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
+        child: Text('orders.details'.tr()),
+      ),
       _OrderStatus.completed => OutlinedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.refresh, size: 16),
-          label: Text('orders.reorder'.tr()),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: brandBlue,
-            side: BorderSide(color: brandBlue.withValues(alpha: 0.5)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            textStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
+        onPressed: () {},
+        icon: const Icon(Icons.refresh, size: 16),
+        label: Text('orders.reorder'.tr()),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: brandBlue,
+          side: BorderSide(color: brandBlue.withValues(alpha: 0.5)),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
+      ),
     };
   }
 }

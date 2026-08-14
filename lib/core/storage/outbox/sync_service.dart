@@ -46,10 +46,12 @@ class SyncService {
           await _outbox.dequeue(action.id);
         } else {
           await _outbox.updateAttemptCount(
-              action.copyWith(attemptCount: action.attemptCount + 1));
+            action.copyWith(attemptCount: action.attemptCount + 1),
+          );
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('SyncService: error replaying ${action.id}: $e');
+        if (kDebugMode)
+          debugPrint('SyncService: error replaying ${action.id}: $e');
       }
     }
   }

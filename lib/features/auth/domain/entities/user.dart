@@ -32,12 +32,11 @@ class User {
     List<UserRole>? roles,
     UserRole? activeRole,
     String? displayName,
-  }) =>
-      User(
-        id: id ?? this.id,
-        phone: phone ?? this.phone,
-        roles: roles ?? this.roles,
-        activeRole: activeRole ?? this.activeRole,
-        displayName: displayName ?? this.displayName,
-      );
+  }) => User(
+    id: id ?? this.id,
+    phone: phone ?? this.phone,
+    roles: roles ?? this.roles,
+    activeRole: activeRole ?? this.activeRole,
+    displayName: displayName ?? this.displayName,
+  );
 }

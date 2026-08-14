@@ -57,9 +57,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       lastDate: now,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(
-                primary: brandBlue,
-              ),
+          colorScheme: Theme.of(
+            context,
+          ).colorScheme.copyWith(primary: brandBlue),
         ),
         child: child!,
       ),
@@ -83,13 +83,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       switch (result) {
         case Ok():
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('profile.saved'.tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('profile.saved'.tr())));
         case Err(:final failure):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failureMessage(failure).tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(failureMessage(failure).tr())));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -353,9 +353,9 @@ class _ProfileAvatar extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           'profile.change_photo'.tr(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF8A94A6),
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8A94A6)),
         ),
       ],
     );
@@ -376,9 +376,9 @@ class _LabeledField extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF8A94A6),
-              ),
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF8A94A6),
+          ),
         ),
         const SizedBox(height: 8),
         child,

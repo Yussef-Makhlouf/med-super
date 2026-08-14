@@ -12,6 +12,5 @@ class VerifyOtpUseCase {
     required String phone,
     required String code,
     required UserRole role,
-  }) =>
-      _repository.verifyOtp(phone: phone, code: code, role: role);
+  }) => _repository.verifyOtp(phone: phone, code: code, role: role);
 }

@@ -173,8 +173,8 @@ class _MetaRow extends StatelessWidget {
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: DoctorResultCard._ink.withValues(alpha: 0.75),
-                ),
+              color: DoctorResultCard._ink.withValues(alpha: 0.75),
+            ),
           ),
         ),
       ],

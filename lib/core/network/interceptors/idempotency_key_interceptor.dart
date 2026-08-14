@@ -17,7 +17,8 @@ class IdempotencyKeyInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final method = options.method.toUpperCase();
-    final needsKey = (method == 'POST' || method == 'PUT' || method == 'PATCH') &&
+    final needsKey =
+        (method == 'POST' || method == 'PUT' || method == 'PATCH') &&
         _idempotentPaths.any((p) => options.path.contains(p));
 
     if (needsKey && !options.headers.containsKey(_headerName)) {

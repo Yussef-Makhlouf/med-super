@@ -52,7 +52,11 @@
     "appointments": "Appointments",
     "orders": "Orders",
     "notifications": "Alerts",
-    "profile": "Profile"
+    "profile": "Profile",
+    "provider_home": "Home",
+    "provider_appointments": "Appointments",
+    "provider_patients": "Patients",
+    "provider_profile": "Profile"
   },
   "home": {
     "welcome": "Welcome,",
@@ -357,6 +361,8 @@
       "specialty_hint": "Choose specialty",
       "degree_label": "Medical degree *",
       "degree_hint": "e.g. Arab Board in Family Medicine",
+      "email_label": "Email",
+      "email_hint": "doctor@example.com",
       "experience_label": "Years of experience *",
       "bio_label": "Short bio (shown to patients)",
       "bio_hint": "Write a short bio about your experience and area of expertise...",
@@ -402,6 +408,7 @@
       "personal_info_title": "Personal information",
       "full_name_row": "Full name",
       "phone_row": "Phone number",
+      "email_row": "Email",
       "professional_info_title": "Professional information",
       "specialty_row": "Specialty",
       "experience_row": "Years of experience",

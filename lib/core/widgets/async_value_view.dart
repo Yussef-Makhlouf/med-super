@@ -25,46 +25,42 @@ class AsyncValueView<T> extends StatelessWidget {
     return value.when(
       data: data,
       loading: () =>
-          loadingWidget ??
-          const Center(child: CircularProgressIndicator()),
+          loadingWidget ?? const Center(child: CircularProgressIndicator()),
       error: (error, _) => _buildError(context, error),
     );
   }
 
   Widget _buildError(BuildContext context, Object error) {
     if (error is! Failure) {
-      return ErrorBanner(
-        message: error.toString(),
-        onRetry: onRetry,
-      );
+      return ErrorBanner(message: error.toString(), onRetry: onRetry);
     }
 
     return switch (error) {
       NetworkFailure() => ErrorBanner(
-          message: 'No internet connection. Check your network and try again.',
-          onRetry: onRetry,
-        ),
+        message: 'No internet connection. Check your network and try again.',
+        onRetry: onRetry,
+      ),
       ServerFailure(:final message) => ErrorBanner(
-          message: message ?? 'Something went wrong. Please try again.',
-          onRetry: onRetry,
-        ),
+        message: message ?? 'Something went wrong. Please try again.',
+        onRetry: onRetry,
+      ),
       AuthFailure() => const EmptyState(
-          title: 'Session expired',
-          subtitle: 'Please sign in again.',
-          icon: Icons.lock_outline,
-        ),
+        title: 'Session expired',
+        subtitle: 'Please sign in again.',
+        icon: Icons.lock_outline,
+      ),
       ValidationFailure(:final fieldErrors) => ErrorBanner(
-          message: fieldErrors.values.first,
-        ),
+        message: fieldErrors.values.first,
+      ),
       ConflictFailure(:final reason) => _ConflictDialog(reason: reason),
       CacheFailure() => ErrorBanner(
-          message: 'Could not load cached data.',
-          onRetry: onRetry,
-        ),
+        message: 'Could not load cached data.',
+        onRetry: onRetry,
+      ),
       UnknownFailure() => ErrorBanner(
-          message: 'An unexpected error occurred.',
-          onRetry: onRetry,
-        ),
+        message: 'An unexpected error occurred.',
+        onRetry: onRetry,
+      ),
     };
   }
 }

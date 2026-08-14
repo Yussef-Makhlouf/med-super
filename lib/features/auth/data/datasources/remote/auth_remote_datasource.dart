@@ -16,10 +16,7 @@ class AuthRemoteDatasource {
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.otpRequest,
-      data: {
-        'phone': phone,
-        'role': role.apiValue,
-      },
+      data: {'phone': phone, 'role': role.apiValue},
     );
     final data = response.data ?? const <String, dynamic>{};
     return OtpRequestResult(
@@ -35,11 +32,7 @@ class AuthRemoteDatasource {
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.otpVerify,
-      data: {
-        'phone': phone,
-        'code': code,
-        'role': role.apiValue,
-      },
+      data: {'phone': phone, 'code': code, 'role': role.apiValue},
     );
     return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
   }
