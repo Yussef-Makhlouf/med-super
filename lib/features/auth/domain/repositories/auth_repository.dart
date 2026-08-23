@@ -11,8 +11,20 @@ abstract class AuthRepository {
   });
 
   Future<Result<AuthTokens>> verifyOtp({
+    required String requestId,
     required String phone,
     required String code,
+    required UserRole role,
+  });
+
+  Future<Result<AuthTokens>> setPassword({
+    required String phone,
+    required String password,
+  });
+
+  Future<Result<AuthTokens>> loginWithPassword({
+    required String phone,
+    required String password,
     required UserRole role,
   });
 

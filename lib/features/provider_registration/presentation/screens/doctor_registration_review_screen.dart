@@ -7,6 +7,7 @@ import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/simple_success_screen.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/provider_registration/domain/entities/region_codes.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_lookups_providers.dart';
 import 'package:med_super/features/provider_registration/presentation/widgets/review_section_card.dart';
@@ -70,6 +71,9 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 ?.label;
             final cityLabel = lookups.cities
                 .firstWhereOrNull((c) => c.id == draft.city)
+                ?.label;
+            final regionLabel = kRegionCodes
+                .firstWhereOrNull((r) => r.id == draft.regionCode)
                 ?.label;
 
             return ListView(
@@ -159,6 +163,12 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                         args: ['${draft.experienceYears}'],
                       ),
                     ),
+                    ReviewRow(
+                      'provider_registration.review.license_number_row'.tr(),
+                      draft.licenseNumber.trim().isEmpty
+                          ? '—'
+                          : draft.licenseNumber,
+                    ),
                   ],
                   trailing: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -192,6 +202,10 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                     ReviewRow(
                       'provider_registration.review.city_row'.tr(),
                       cityLabel ?? '—',
+                    ),
+                    ReviewRow(
+                      'provider_registration.review.region_row'.tr(),
+                      regionLabel ?? '—',
                     ),
                     ReviewRow(
                       'provider_registration.review.clinic_address_row'.tr(),

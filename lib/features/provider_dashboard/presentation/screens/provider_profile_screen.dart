@@ -12,6 +12,7 @@ import 'package:med_super/features/provider_dashboard/presentation/screens/provi
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_schedule_editor_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_security_privacy_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
+import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
 /// Provider Profile Screen pixel-perfect against mockup `profile.png`.
 class ProviderProfileScreen extends ConsumerWidget {
@@ -165,6 +166,22 @@ class ProviderProfileScreen extends ConsumerWidget {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ProviderSecurityPrivacyScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _buildNavTile(
+                    icon: Icons.account_balance_wallet_outlined,
+                    iconBg: const Color(0xFFEFF6FF),
+                    iconColor: brandBlue,
+                    title: 'المحفظة',
+                    subtitle: 'الرصيد والمعاملات المالية',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        settings: const RouteSettings(
+                          name: WalletDashboardScreen.routeName,
+                        ),
+                        builder: (_) => const WalletDashboardScreen(),
                       ),
                     ),
                   ),

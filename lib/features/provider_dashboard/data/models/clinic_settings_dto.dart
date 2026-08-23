@@ -13,7 +13,7 @@ class ClinicSettingsDto {
     return ClinicSettingsDto(
       clinicName: json['clinic_name'] as String? ?? 'مستشفى الملك فيصل التخصصي',
       address: json['address'] as String? ?? 'شارع التخصصي، الرياض',
-      phone: json['phone'] as String? ?? '+966112345678',
+      phone: json['phone'] as String? ?? '+20221234567',
       email: json['email'] as String? ?? 'info@kfshrc.edu.sa',
       city: json['city'] as String? ?? 'الرياض',
     );

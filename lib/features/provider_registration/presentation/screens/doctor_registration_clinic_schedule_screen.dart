@@ -10,6 +10,7 @@ import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
+import 'package:med_super/features/provider_registration/domain/entities/region_codes.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/clinic_location_provider.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_lookups_providers.dart';
@@ -34,6 +35,7 @@ class _DoctorRegistrationClinicScheduleScreenState
   late final _feeController = TextEditingController();
   late final _locationService = const ClinicLocationService();
   String? _cityId;
+  String? _regionCode;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _DoctorRegistrationClinicScheduleScreenState
         ? ''
         : '${draft.consultationFee}';
     _cityId = draft.city;
+    _regionCode = draft.regionCode;
   }
 
   void _save({double? lat, double? lng}) {
@@ -54,6 +57,7 @@ class _DoctorRegistrationClinicScheduleScreenState
           clinicName: _nameController.text.trim(),
           clinicAddress: _addressController.text.trim(),
           city: _cityId,
+          regionCode: _regionCode,
           consultationFee: int.tryParse(_feeController.text) ?? 0,
           clinicLat: lat,
           clinicLng: lng,
@@ -178,7 +182,31 @@ class _DoctorRegistrationClinicScheduleScreenState
                                   ),
                                 )
                                 .toList(),
-                            onChanged: (v) => setState(() => _cityId = v),
+                            onChanged: (v) {
+                              setState(() => _cityId = v);
+                              _save();
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            initialValue: _regionCode,
+                            decoration: InputDecoration(
+                              labelText:
+                                  'provider_registration.clinic_schedule.region_label'
+                                      .tr(),
+                            ),
+                            items: kRegionCodes
+                                .map(
+                                  (r) => DropdownMenuItem(
+                                    value: r.id,
+                                    child: Text(r.label),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              setState(() => _regionCode = v);
+                              _save();
+                            },
                           ),
                           const SizedBox(height: 16),
                           Text(

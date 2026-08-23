@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
 /// Patient home — matches Figma light dashboard.
 class PatientHomeScreen extends ConsumerWidget {
@@ -313,6 +314,23 @@ class _QuickActions extends StatelessWidget {
             title: 'home.upload_rx'.tr(),
             subtitle: 'home.upload_rx_sub'.tr(),
             onTap: () => context.push('/patient/pharmacy/upload'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _QuickActionCard(
+            icon: Icons.account_balance_wallet_outlined,
+            iconColor: brandBlue,
+            title: 'home.wallet'.tr(),
+            subtitle: 'home.wallet_sub'.tr(),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: WalletDashboardScreen.routeName,
+                ),
+                builder: (_) => const WalletDashboardScreen(),
+              ),
+            ),
           ),
         ),
       ],

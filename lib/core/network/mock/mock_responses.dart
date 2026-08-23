@@ -29,8 +29,26 @@ class _MockAuthStore {
 
 final _mockAuth = _MockAuthStore();
 
+/// Seeded with a ready-to-use demo account so the phone+password login
+/// screen (`/account-login`) works standalone in mock mode, without first
+/// requiring a full OTP-verify → set-password run in the same session to
+/// populate an entry. Real accounts created via [ApiPaths.passwordSet]
+/// during that session are added alongside it.
+final Map<String, String> _passwordsByPhone = {
+  kMockDemoPhoneNormalized: kMockDemoPassword,
+};
+
 /// Dev OTP accepted by mock verify. Shown in debug UI hint.
 const kMockOtpCode = '123456';
+
+/// Pre-seeded demo account for the phone+password login screen
+/// (`/account-login`). [kMockDemoPhone] is what to type into the phone
+/// field; [kMockDemoPhoneNormalized] is the E.164 form
+/// `normalizeEgyptPhone` converts it to, which is what the mock keys on.
+/// Both are shown in the debug UI hint.
+const kMockDemoPhone = '01000000000';
+const kMockDemoPhoneNormalized = '+201000000000';
+const kMockDemoPassword = 'Test1234';
 
 Map<String, dynamic> _error(int status, String code, String message) => {
   'statusCode': status,
@@ -65,7 +83,7 @@ String? _bearer(RequestOptions options) {
 
 Map<String, dynamic> _userPayload() => {
   'id': 'user-001',
-  'phone': _mockAuth.phone ?? '+966500000000',
+  'phone': _mockAuth.phone ?? kMockDemoPhoneNormalized,
   'roles': [_mockAuth.role ?? 'PATIENT'],
   'active_role': _mockAuth.role ?? 'PATIENT',
   'display_name': _mockAuth.displayName,
@@ -125,6 +143,75 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     };
   });
 
+  interceptor.register('POST', ApiPaths.passwordSet, (options) {
+    final body = _body(options);
+    final phone = body?['phone'] as String?;
+    final password = body?['password'] as String?;
+
+    if (phone == null || password == null || password.length < 8) {
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'Password must be at least 8 characters',
+      );
+    }
+
+    _passwordsByPhone[phone] = password;
+
+    final access = _mockAuth.accessToken ?? 'dev_patient_$phone';
+    final refresh = _mockAuth.refreshToken ?? 'dev_refresh_$phone';
+    _mockAuth
+      ..phone = phone
+      ..accessToken = access
+      ..refreshToken = refresh;
+
+    return {
+      'statusCode': 200,
+      'data': {'access_token': access, 'refresh_token': refresh},
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.passwordLogin, (options) {
+    final body = _body(options);
+    final phone = body?['phone'] as String?;
+    final password = body?['password'] as String?;
+    final role = (body?['role'] as String?)?.toUpperCase() ?? 'PATIENT';
+
+    if (phone == null || password == null) {
+      return _error(422, 'VALIDATION_ERROR', 'phone and password are required');
+    }
+
+    final storedPassword = _passwordsByPhone[phone];
+    if (storedPassword == null) {
+      return _error(
+        404,
+        'ACCOUNT_NOT_FOUND',
+        'No account found for this number.',
+      );
+    }
+    if (storedPassword != password) {
+      return _error(
+        401,
+        'INVALID_CREDENTIALS',
+        'Incorrect phone number or password.',
+      );
+    }
+
+    final isProvider = role != 'PATIENT';
+    final access = isProvider ? 'dev_provider_$phone' : 'dev_patient_$phone';
+    final refresh = 'dev_refresh_$phone';
+    _mockAuth
+      ..phone = phone
+      ..role = role
+      ..accessToken = access
+      ..refreshToken = refresh;
+
+    return {
+      'statusCode': 200,
+      'data': {'access_token': access, 'refresh_token': refresh},
+    };
+  });
+
   interceptor.register('POST', ApiPaths.refresh, (options) {
     final body = _body(options);
     final refresh = body?['refresh_token'] as String?;
@@ -155,7 +242,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     if (token.startsWith('dev_') && _mockAuth.accessToken == null) {
       final isProvider = token.contains('provider');
       _mockAuth
-        ..phone ??= '+966500000000'
+        ..phone ??= kMockDemoPhoneNormalized
         ..role ??= isProvider ? 'DOCTOR' : 'PATIENT'
         ..accessToken = token;
     }
@@ -343,32 +430,93 @@ Map<String, dynamic> _doctorProfileJson(Map<String, dynamic> d) => {
   'qualifications': d['qualifications'],
   'fellowships': d['fellowships'],
   'is_online': d['is_online'],
+  // Kept for backward compatibility (used only if the real availability
+  // call below has no data yet) — real availability now comes from
+  // registerAvailabilityMocks / GET /v1/doctors/{id}/slots.
   'available_days': _defaultAvailableDays(),
+  // One mock clinic branch per doctor. The real backend exposes this via
+  // affiliations[].clinic_branch on the doctor-detail response (currently
+  // raw snake_case Prisma fields, not this flat shape — see
+  // med-super/docs/backend_frontend_parity_matrix.md).
+  'clinic_branch_id': 'branch-${d['id']}',
+  'iana_timezone': 'Africa/Cairo',
 };
+
+/// Registers the real Phase 3 availability contract's mock:
+/// `GET /v1/doctors/{doctorId}/slots?clinicBranchId=&from=&to=` →
+/// `{ slots: [{ slotId, startAt, endAt, status: 'OPEN' }] }` — matches
+/// clinic-reservations' `GetDoctorSlotsUseCase` response shape exactly.
+/// Must be registered before `registerSearchMocks`'s doctor-detail handler
+/// (see the ordering note there) since `/v1/doctors/{id}/slots` also
+/// contains `/v1/doctors/`.
+void registerAvailabilityMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', '/slots', (options) {
+    final clinicBranchId = options.queryParameters['clinicBranchId'] as String?;
+    if (clinicBranchId == null || clinicBranchId.isEmpty) {
+      return _error(400, 'VALIDATION_ERROR', 'clinicBranchId is required.');
+    }
+
+    final fromParam = options.queryParameters['from'] as String?;
+    final toParam = options.queryParameters['to'] as String?;
+    final nowUtc = DateTime.now().toUtc();
+    final from =
+        (fromParam != null ? DateTime.tryParse(fromParam) : null) ??
+        DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
+    final to =
+        (toParam != null ? DateTime.tryParse(toParam) : null) ??
+        from.add(const Duration(days: 14));
+
+    // 09:00–16:30 Cairo-local (UTC+2), 30-min slots, next 14 days — a
+    // deterministic mock standing in for real GenerateSlotsUseCase output.
+    const cairoOffset = Duration(hours: 2);
+    final slots = <Map<String, dynamic>>[];
+    for (var dayOffset = 0; dayOffset < 14; dayOffset++) {
+      final dayStartLocal = DateTime.utc(
+        from.year,
+        from.month,
+        from.day,
+      ).add(Duration(days: dayOffset)).add(const Duration(hours: 9));
+      for (var i = 0; i < 16; i++) {
+        final startLocal = dayStartLocal.add(Duration(minutes: 30 * i));
+        final startUtc = startLocal.subtract(cairoOffset);
+        final endUtc = startUtc.add(const Duration(minutes: 30));
+        if (startUtc.isBefore(from) || !startUtc.isBefore(to)) continue;
+        slots.add({
+          'slotId': '$clinicBranchId-${startUtc.toIso8601String()}',
+          'startAt': startUtc.toIso8601String(),
+          'endAt': endUtc.toIso8601String(),
+          'status': 'OPEN',
+        });
+      }
+    }
+
+    return {
+      'statusCode': 200,
+      'data': {'slots': slots},
+    };
+  });
+}
 
 /// Registers Sprint 2 doctor search + profile mock responses.
 void registerSearchMocks(MockInterceptor interceptor) {
-  // More specific path first so detail wins over bare /v1/doctors.
-  interceptor.register('GET', '${ApiPaths.doctors}/', (options) {
-    final segments = options.path.split('/');
-    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
-    Map<String, dynamic>? doctor;
-    for (final d in _mockDoctorsCatalog) {
-      if (d['id'] == id) {
-        doctor = d;
-        break;
-      }
-    }
-    if (doctor == null) {
-      return _error(404, 'NOT_FOUND', 'Doctor not found');
-    }
-    return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
-  });
-
+  // MockInterceptor matches by first-registered-wins substring containment
+  // (mock_interceptor.dart:58-69), so the more specific pattern must be
+  // registered first. `ApiPaths.searchDoctors` ('/v1/doctors/search') is now
+  // *itself* a substring match for the detail pattern below
+  // ('/v1/doctors/'), so search must register before detail — the reverse of
+  // this file's previous ordering, which predates the doctors/search path fix
+  // (see ApiPaths.searchDoctors and med-super/docs/backend_frontend_parity_matrix.md).
   interceptor.register('GET', ApiPaths.searchDoctors, (options) {
     final q = (options.queryParameters['q'] as String?)?.trim().toLowerCase();
     final specialty = options.queryParameters['specialty'] as String?;
     final sort = options.queryParameters['sort'] as String? ?? 'top_rated';
+    // Cursor is just a stringified offset into the sorted/filtered list —
+    // opaque to the client, matching 05_API_RULES.md's cursor contract.
+    final cursor = int.tryParse(
+      options.queryParameters['cursor'] as String? ?? '',
+    );
+    final limit =
+        int.tryParse('${options.queryParameters['limit'] ?? ''}') ?? 20;
 
     var list = List<Map<String, dynamic>>.from(_mockDoctorsCatalog);
 
@@ -411,13 +559,42 @@ void registerSearchMocks(MockInterceptor interceptor) {
         }
       });
 
+    final totalCount = list.length;
+    // Avoid num.clamp() here — it returns num, not int, and list.sublist()
+    // requires int bounds.
+    var start = cursor ?? 0;
+    if (start < 0) start = 0;
+    if (start > totalCount) start = totalCount;
+    var end = start + limit;
+    if (end > totalCount) end = totalCount;
+    if (end < start) end = start;
+    final page = list.sublist(start, end);
+    final nextCursor = end < totalCount ? '$end' : null;
+
     return {
       'statusCode': 200,
       'data': {
-        'doctors': list.map(_doctorSummaryJson).toList(),
-        'total_count': list.length,
+        'doctors': page.map(_doctorSummaryJson).toList(),
+        'total_count': totalCount,
+        'next_cursor': nextCursor,
       },
     };
+  });
+
+  interceptor.register('GET', '${ApiPaths.doctors}/', (options) {
+    final segments = options.path.split('/');
+    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
+    Map<String, dynamic>? doctor;
+    for (final d in _mockDoctorsCatalog) {
+      if (d['id'] == id) {
+        doctor = d;
+        break;
+      }
+    }
+    if (doctor == null) {
+      return _error(404, 'NOT_FOUND', 'Doctor not found');
+    }
+    return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
   });
 }
 
@@ -874,7 +1051,7 @@ class _MockProviderDashboardStore {
   static Map<String, dynamic> _seedClinicSettings() => {
     'clinic_name': 'مستشفى الملك فيصل التخصصي',
     'address': 'شارع التخصصي، المعذر، الرياض',
-    'phone': '+966112345678',
+    'phone': '+20221234567',
     'email': 'dr.ahmed@kfshrc.edu.sa',
     'city': 'الرياض',
   };
@@ -1251,3 +1428,215 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     };
   });
 }
+
+class _MockWalletStore {
+  double availableBalance = 2450.0;
+  String currency = 'EGP';
+
+  final List<Map<String, dynamic>> transactions = [
+    {
+      'id': 'tx-101',
+      'title': 'استشارة عامة - د. أسامة علي',
+      'type': 'payment',
+      'amount': 350.0,
+      'currency': 'EGP',
+      'timestamp': '2026-08-18T14:30:00Z',
+      'status': 'completed',
+      'service_name': 'كشف عيادة (حجز أونلاين)',
+      'doctor_name': 'د. أسامة علي',
+      'fees': 15.0,
+      'net_amount': 335.0,
+      'reference_number': 'REF-2026818101',
+    },
+    {
+      'id': 'tx-102',
+      'title': 'شحن رصيد المحفظة',
+      'type': 'deposit',
+      'amount': 1000.0,
+      'currency': 'EGP',
+      'timestamp': '2026-08-15T10:15:00Z',
+      'status': 'completed',
+      'service_name': 'إيداع بطاقة ائتمان',
+      'doctor_name': null,
+      'fees': 0.0,
+      'net_amount': 1000.0,
+      'reference_number': 'REF-DEP-8892',
+    },
+    {
+      'id': 'tx-103',
+      'title': 'مستحقات استشارة تحاليل - المختبر',
+      'type': 'payment',
+      'amount': 600.0,
+      'currency': 'EGP',
+      'timestamp': '2026-08-10T09:00:00Z',
+      'status': 'completed',
+      'service_name': 'تحليل شامل صائم',
+      'doctor_name': 'معمل النيل للتحاليل',
+      'fees': 25.0,
+      'net_amount': 575.0,
+      'reference_number': 'REF-LAB-3312',
+    },
+    {
+      'id': 'tx-104',
+      'title': 'استرداد مبلغ استشارة ملغاة',
+      'type': 'refund',
+      'amount': 250.0,
+      'currency': 'EGP',
+      'timestamp': '2026-08-05T16:45:00Z',
+      'status': 'completed',
+      'service_name': 'استرداد حجز ملغى',
+      'doctor_name': 'د. مروة سالم',
+      'fees': 0.0,
+      'net_amount': 250.0,
+      'reference_number': 'REF-RFD-0091',
+    },
+  ];
+
+  final Map<String, Map<String, dynamic>> refunds = {};
+}
+
+final _mockWalletStore = _MockWalletStore();
+
+void registerWalletMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', '/v1/wallet/balance', (_) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'available_balance': _mockWalletStore.availableBalance,
+        'pending_balance': 350.0,
+        'currency': _mockWalletStore.currency,
+      },
+    };
+  });
+
+  // Specific detail before list
+  interceptor.register('GET', '/v1/wallet/transactions/', (options) {
+    final pathParts = options.path.split('/');
+    final id = pathParts.isNotEmpty ? pathParts.last : 'tx-101';
+    final tx = _mockWalletStore.transactions.firstWhere(
+      (element) => element['id'] == id,
+      orElse: () => _mockWalletStore.transactions.first,
+    );
+    return {
+      'statusCode': 200,
+      'data': {
+        ...tx,
+        'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
+        'fee': tx['fees'],
+      },
+    };
+  });
+
+  interceptor.register('GET', '/v1/wallet/transactions', (_) {
+    final mapped = _mockWalletStore.transactions.map((tx) => {
+      ...tx,
+      'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
+      'fee': tx['fees'],
+    }).toList();
+    return {
+      'statusCode': 200,
+      'data': {'items': mapped},
+    };
+  });
+
+  interceptor.register('POST', '/v1/wallet/deposits', (options) {
+    final body = _body(options) ?? {};
+    final amount = (body['amount'] as num?)?.toDouble() ?? 100.0;
+    _mockWalletStore.availableBalance += amount;
+    final newTx = {
+      'id': 'tx-${DateTime.now().millisecondsSinceEpoch}',
+      'title': 'إيداع في المحفظة',
+      'type': 'deposit',
+      'amount': amount,
+      'currency': _mockWalletStore.currency,
+      'timestamp': DateTime.now().toIso8601String(),
+      'status': 'completed',
+      'service_name': 'إيداع إلكتروني',
+      'doctor_name': null,
+      'fees': 0.0,
+      'net_amount': amount,
+      'reference_number': 'REF-DEP-${DateTime.now().millisecondsSinceEpoch}',
+      'payment_method': body['payment_method_id'] ?? 'بطاقة ائتمانية',
+    };
+    _mockWalletStore.transactions.insert(0, newTx);
+    return {
+      'statusCode': 200,
+      'data': newTx,
+    };
+  });
+
+  interceptor.register('POST', '/v1/wallet/transfers', (options) {
+    final body = _body(options) ?? {};
+    final amount = (body['amount'] as num?)?.toDouble() ?? 0.0;
+    _mockWalletStore.availableBalance -= amount;
+    final destinationLabel = body['destination_account_id'] == 'bank_nbe_5566'
+        ? 'البنك الأهلي المصري **** 5566'
+        : (body['destination_account_id'] ?? 'الحساب البنكي');
+    final newTx = {
+      'id': 'tx-${DateTime.now().millisecondsSinceEpoch}',
+      'title': 'تحويل إلى الحساب البنكي',
+      'type': 'withdrawal',
+      'amount': amount,
+      'currency': _mockWalletStore.currency,
+      'timestamp': DateTime.now().toIso8601String(),
+      'status': 'completed',
+      'service_name': 'تحويل بنكي',
+      'doctor_name': null,
+      'fees': 0.0,
+      'net_amount': amount,
+      'reference_number': 'REF-TRF-${DateTime.now().millisecondsSinceEpoch}',
+      'payment_method': destinationLabel,
+    };
+    _mockWalletStore.transactions.insert(0, newTx);
+    return {
+      'statusCode': 200,
+      'data': newTx,
+    };
+  });
+
+  interceptor.register('GET', '/v1/wallet/refunds/', (options) {
+    final pathParts = options.path.split('/');
+    final id = pathParts.isNotEmpty ? pathParts.last : 'ref-201';
+    final refundObj = _mockWalletStore.refunds[id] ?? {
+      'id': id.isEmpty ? 'ref-201' : id,
+      'transaction_id': 'tx-101',
+      'reason': 'إلغاء الموعد قبل 24 ساعة',
+      'details': 'تم إلغاء الجلسة بسبب عدم تناسب الموعد',
+      'status': 'under_review',
+      'created_at': '2026-08-19T10:00:00Z',
+      'amount': 450.0,
+    };
+
+    return {
+      'statusCode': 200,
+      'data': refundObj,
+    };
+  });
+
+  interceptor.register('POST', '/v1/wallet/refunds', (options) {
+    final body = _body(options) ?? {};
+    final txId = body['transaction_id'] as String? ?? 'tx-101';
+    final reason = body['reason'] as String? ?? 'سبب آخر';
+    final details = body['details'] as String? ?? '';
+    final refundId = 'ref-${DateTime.now().millisecondsSinceEpoch}';
+
+    final refundObj = {
+      'id': refundId,
+      'transaction_id': txId,
+      'reason': reason,
+      'details': details,
+      'status': 'submitted',
+      'created_at': DateTime.now().toIso8601String(),
+      'amount': 450.0,
+    };
+
+    _mockWalletStore.refunds[refundId] = refundObj;
+
+    return {
+      'statusCode': 200,
+      'data': refundObj,
+    };
+  });
+}
+
+

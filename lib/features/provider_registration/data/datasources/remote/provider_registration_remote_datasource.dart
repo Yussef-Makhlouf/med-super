@@ -25,11 +25,13 @@ class ProviderRegistrationRemoteDatasource {
         'photo_data_uri': draft.profilePhotoDataUri,
         'experience_years': draft.experienceYears,
         'bio': draft.bio,
+        'license_number': draft.licenseNumber,
         'documents': draft.documents.map((d) => d.fileName).toList(),
         'clinic_name': draft.clinicName,
         'clinic_address': draft.clinicAddress,
         'city': draft.city,
         'city_label': cityLabel,
+        'region_code': draft.regionCode,
         'consultation_fee': draft.consultationFee,
         'working_days': draft.workingDays
             .map(

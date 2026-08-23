@@ -13,30 +13,50 @@ part 'session_provider.g.dart';
 const bool kDevBypassAuth = false;
 
 class Session {
-  const Session({required this.user, required this.onboardingComplete});
+  const Session({
+    required this.user,
+    required this.onboardingComplete,
+    required this.passwordComplete,
+  });
 
   final User user;
   final bool onboardingComplete;
+  final bool passwordComplete;
 
-  Session copyWith({User? user, bool? onboardingComplete}) => Session(
+  Session copyWith({
+    User? user,
+    bool? onboardingComplete,
+    bool? passwordComplete,
+  }) => Session(
     user: user ?? this.user,
     onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+    passwordComplete: passwordComplete ?? this.passwordComplete,
   );
 }
 
-/// Formats a Saudi local 9-digit (or longer) number as E.164 `+966…`.
-String normalizeSaudiPhone(String raw) {
+/// Formats an Egyptian local 10-digit (or longer) number as E.164 `+20…`.
+String normalizeEgyptPhone(String raw) {
   final digits = raw.replaceAll(RegExp(r'\D'), '');
-  if (digits.startsWith('966') && digits.length >= 12) {
+  if (digits.startsWith('20') && digits.length >= 12) {
     return '+$digits';
   }
-  if (digits.startsWith('0') && digits.length >= 10) {
-    return '+966${digits.substring(1)}';
+  if (digits.startsWith('0') && digits.length >= 11) {
+    return '+20${digits.substring(1)}';
   }
-  final local = digits.length > 9
-      ? digits.substring(digits.length - 9)
+  final local = digits.length > 10
+      ? digits.substring(digits.length - 10)
       : digits;
-  return '+966$local';
+  return '+20$local';
+}
+
+/// True iff [raw] is a valid Egyptian mobile number in any of the accepted
+/// forms: 11-digit local (`01XXXXXXXXX`), 10-digit without leading zero, or
+/// 12-digit with the `20` country-code prefix.
+bool isValidEgyptPhone(String raw) {
+  final digits = raw.replaceAll(RegExp(r'\D'), '');
+  return RegExp(r'^01[0125][0-9]{8}$').hasMatch(digits) ||
+      RegExp(r'^1[0125][0-9]{8}$').hasMatch(digits) ||
+      RegExp(r'^201[0125][0-9]{8}$').hasMatch(digits);
 }
 
 String failureMessage(Failure failure) => switch (failure) {
@@ -61,12 +81,13 @@ class SessionController extends _$SessionController {
       return Session(
         user: User(
           id: 'dev-user',
-          phone: '+966500000000',
+          phone: '+201000000000',
           roles: [UserRole.patient],
           activeRole: UserRole.patient,
           displayName: 'Dev User',
         ),
         onboardingComplete: true,
+        passwordComplete: true,
       );
     }
 
@@ -78,6 +99,7 @@ class SessionController extends _$SessionController {
       Ok(:final value) => Session(
         user: value,
         onboardingComplete: _readOnboardingComplete(),
+        passwordComplete: _readPasswordComplete(),
       ),
       Err() => null,
     };
@@ -93,6 +115,16 @@ class SessionController extends _$SessionController {
     await box.put(SettingsKeys.onboardingComplete, '$value');
   }
 
+  bool _readPasswordComplete() {
+    final box = ref.read(hiveServiceProvider).settingsBox;
+    return box.get(SettingsKeys.passwordComplete) == 'true';
+  }
+
+  Future<void> _writePasswordComplete(bool value) async {
+    final box = ref.read(hiveServiceProvider).settingsBox;
+    await box.put(SettingsKeys.passwordComplete, '$value');
+  }
+
   Future<Result<void>> requestOtp({
     required String phone,
     required UserRole role,
@@ -101,13 +133,14 @@ class SessionController extends _$SessionController {
   }
 
   Future<Result<Session>> verifyOtp({
+    required String requestId,
     required String phone,
     required String code,
     required UserRole role,
   }) async {
     final tokensResult = await ref
         .read(verifyOtpUseCaseProvider)
-        .call(phone: phone, code: code, role: role);
+        .call(requestId: requestId, phone: phone, code: code, role: role);
 
     switch (tokensResult) {
       case Err(:final failure):
@@ -125,6 +158,59 @@ class SessionController extends _$SessionController {
         final session = Session(
           user: value,
           onboardingComplete: _readOnboardingComplete(),
+          passwordComplete: _readPasswordComplete(),
+        );
+        state = AsyncData(session);
+        return Result.ok(session);
+    }
+  }
+
+  Future<Result<Session>> setPassword(String password) async {
+    final current = state.asData?.value;
+    if (current == null) {
+      return const Result.err(Failure.auth());
+    }
+
+    final result = await ref
+        .read(setPasswordUseCaseProvider)
+        .call(phone: current.user.phone, password: password);
+    switch (result) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok():
+        await _writePasswordComplete(true);
+        final session = current.copyWith(passwordComplete: true);
+        state = AsyncData(session);
+        return Result.ok(session);
+    }
+  }
+
+  Future<Result<Session>> loginWithPassword({
+    required String phone,
+    required String password,
+    required UserRole role,
+  }) async {
+    final tokensResult = await ref
+        .read(loginWithPasswordUseCaseProvider)
+        .call(phone: phone, password: password, role: role);
+
+    switch (tokensResult) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok():
+        break;
+    }
+
+    final userResult = await ref.read(getCurrentUserUseCaseProvider).call();
+    switch (userResult) {
+      case Err(:final failure):
+        await ref.read(secureStorageProvider).clearTokens();
+        return Result.err(failure);
+      case Ok(:final value):
+        final session = Session(
+          user: value,
+          onboardingComplete: _readOnboardingComplete(),
+          passwordComplete: true,
         );
         state = AsyncData(session);
         return Result.ok(session);
@@ -152,7 +238,7 @@ class SessionController extends _$SessionController {
     }
 
     await _writeOnboardingComplete(true);
-    final session = Session(user: user, onboardingComplete: true);
+    final session = current.copyWith(user: user, onboardingComplete: true);
     state = AsyncData(session);
     return Result.ok(session);
   }

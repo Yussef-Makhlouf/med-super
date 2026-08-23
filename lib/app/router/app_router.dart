@@ -24,8 +24,13 @@ final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'patientShell',
 );
 
+/// Lets a pushed-under screen (e.g. LoginScreen, still alive beneath a
+/// pushed '/account-login') detect when it becomes visible again after a
+/// pop, so transient UI state (like an expanded bottom sheet) can reset.
+final routeObserver = RouteObserver<PageRoute<dynamic>>();
+
 bool _isPublicAuthRoute(String path) =>
-    path == '/login' || path == '/verify-otp';
+    path == '/login' || path == '/verify-otp' || path == '/account-login';
 
 bool _isProviderRegistrationRoute(String path) =>
     path.startsWith('/provider/registration');
@@ -43,11 +48,18 @@ GoRouter appRouter(Ref ref) {
   return GoRouter(
     initialLocation: '/login',
     refreshListenable: refresh,
+    observers: [routeObserver],
     redirect: (context, state) async {
       final session = await ref.read(sessionControllerProvider.future);
       final path = state.uri.path;
       final isAuthRoute = _isPublicAuthRoute(path);
       final isOnboarding = path == '/onboarding';
+      final isSetPassword = path == '/set-password';
+      // '/' isn't a real route — screens go here after an auth action and
+      // let this redirect decide the actual destination, so it must be
+      // treated like an auth/onboarding entry point everywhere below or
+      // GoRouter throws "no routes for location: /" when nothing matches.
+      final isRoot = path == '/';
 
       if (session == null && !isAuthRoute) {
         return '/login';
@@ -71,9 +83,13 @@ GoRouter appRouter(Ref ref) {
         }
 
         if (session.user.isProvider) {
+          if (!session.passwordComplete) {
+            return isSetPassword ? null : '/set-password';
+          }
+
           final isRegistrationRoute = _isProviderRegistrationRoute(path);
 
-          if (isAuthRoute || isOnboarding) {
+          if (isAuthRoute || isOnboarding || isSetPassword || isRoot) {
             return registrationSubmitted
                 ? '/provider/home'
                 : '/provider/registration/basic-info';
@@ -87,7 +103,11 @@ GoRouter appRouter(Ref ref) {
         }
 
         if (session.user.isPatient) {
-          if (isAuthRoute) {
+          if (!session.passwordComplete) {
+            return isSetPassword ? null : '/set-password';
+          }
+
+          if (isAuthRoute || isSetPassword || isRoot) {
             if (!session.onboardingComplete) return '/onboarding';
             return '/patient/home';
           }

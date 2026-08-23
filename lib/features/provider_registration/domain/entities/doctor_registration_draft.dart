@@ -9,12 +9,14 @@ class DoctorRegistrationDraft {
     this.email = '',
     this.experienceYears = 0,
     this.bio = '',
+    this.licenseNumber = '',
     this.profilePhotoLocalPath,
     this.profilePhotoDataUri,
     this.documents = const [],
     this.clinicName = '',
     this.clinicAddress = '',
     this.city,
+    this.regionCode,
     this.clinicLat,
     this.clinicLng,
     this.consultationFee = 0,
@@ -36,6 +38,9 @@ class DoctorRegistrationDraft {
   final String email;
   final int experienceYears;
   final String bio;
+
+  /// `Doctor.license_number` (backend-required, ADR-005).
+  final String licenseNumber;
   final String? profilePhotoLocalPath;
 
   /// Base64 `data:` URI of the actually-picked photo bytes — the app has no
@@ -47,6 +52,10 @@ class DoctorRegistrationDraft {
   final String clinicName;
   final String clinicAddress;
   final String? city;
+
+  /// `Address.region_code` / `Doctor.region_code` (backend-required, ADR-005).
+  /// No backend lookup exists yet for this — governorate code, e.g. `CAI`.
+  final String? regionCode;
   final double? clinicLat;
   final double? clinicLng;
   final int consultationFee;
@@ -61,12 +70,14 @@ class DoctorRegistrationDraft {
 
   bool get verificationComplete =>
       documents.any((d) => d.type == DocumentType.medicalLicense) &&
-      documents.any((d) => d.type == DocumentType.nationalId);
+      documents.any((d) => d.type == DocumentType.nationalId) &&
+      licenseNumber.trim().isNotEmpty;
 
   bool get clinicScheduleComplete =>
       clinicName.trim().isNotEmpty &&
       clinicAddress.trim().isNotEmpty &&
       city != null &&
+      regionCode != null &&
       consultationFee > 0 &&
       workingDays.any((d) => d.isEnabled);
 
@@ -77,12 +88,14 @@ class DoctorRegistrationDraft {
     String? email,
     int? experienceYears,
     String? bio,
+    String? licenseNumber,
     String? profilePhotoLocalPath,
     String? profilePhotoDataUri,
     List<UploadedDocument>? documents,
     String? clinicName,
     String? clinicAddress,
     String? city,
+    String? regionCode,
     double? clinicLat,
     double? clinicLng,
     int? consultationFee,
@@ -95,12 +108,14 @@ class DoctorRegistrationDraft {
     email: email ?? this.email,
     experienceYears: experienceYears ?? this.experienceYears,
     bio: bio ?? this.bio,
+    licenseNumber: licenseNumber ?? this.licenseNumber,
     profilePhotoLocalPath: profilePhotoLocalPath ?? this.profilePhotoLocalPath,
     profilePhotoDataUri: profilePhotoDataUri ?? this.profilePhotoDataUri,
     documents: documents ?? this.documents,
     clinicName: clinicName ?? this.clinicName,
     clinicAddress: clinicAddress ?? this.clinicAddress,
     city: city ?? this.city,
+    regionCode: regionCode ?? this.regionCode,
     clinicLat: clinicLat ?? this.clinicLat,
     clinicLng: clinicLng ?? this.clinicLng,
     consultationFee: consultationFee ?? this.consultationFee,

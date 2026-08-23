@@ -34,14 +34,57 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<AuthTokens>> verifyOtp({
+    required String requestId,
     required String phone,
     required String code,
     required UserRole role,
   }) async {
     try {
       final tokens = await _remote.verifyOtp(
+        requestId: requestId,
         phone: phone,
         code: code,
+        role: role,
+      );
+      final entity = tokens.toEntity();
+      await _storage.saveTokens(
+        accessToken: entity.accessToken,
+        refreshToken: entity.refreshToken,
+      );
+      return Result.ok(entity);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<AuthTokens>> setPassword({
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      final tokens = await _remote.setPassword(phone: phone, password: password);
+      final entity = tokens.toEntity();
+      await _storage.saveTokens(
+        accessToken: entity.accessToken,
+        refreshToken: entity.refreshToken,
+      );
+      return Result.ok(entity);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<AuthTokens>> loginWithPassword({
+    required String phone,
+    required String password,
+    required UserRole role,
+  }) async {
+    try {
+      final tokens = await _remote.loginWithPassword(
+        phone: phone,
+        password: password,
         role: role,
       );
       final entity = tokens.toEntity();

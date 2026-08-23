@@ -54,6 +54,7 @@ class RegistrationFormController extends _$RegistrationFormController {
         email: json['email'] as String? ?? '',
         experienceYears: json['experience_years'] as int? ?? 0,
         bio: json['bio'] as String? ?? '',
+        licenseNumber: json['license_number'] as String? ?? '',
         profilePhotoLocalPath: json['profile_photo_local_path'] as String?,
         profilePhotoDataUri: json['profile_photo_data_uri'] as String?,
         documents: (json['documents'] as List<dynamic>? ?? const [])
@@ -71,6 +72,7 @@ class RegistrationFormController extends _$RegistrationFormController {
         clinicName: json['clinic_name'] as String? ?? '',
         clinicAddress: json['clinic_address'] as String? ?? '',
         city: json['city'] as String?,
+        regionCode: json['region_code'] as String?,
         consultationFee: json['consultation_fee'] as int? ?? 0,
         agreedToTerms: json['agreed_to_terms'] as bool? ?? false,
       );
@@ -91,6 +93,7 @@ class RegistrationFormController extends _$RegistrationFormController {
         'email': d.email,
         'experience_years': d.experienceYears,
         'bio': d.bio,
+        'license_number': d.licenseNumber,
         'profile_photo_local_path': d.profilePhotoLocalPath,
         'profile_photo_data_uri': d.profilePhotoDataUri,
         'documents': d.documents
@@ -107,6 +110,7 @@ class RegistrationFormController extends _$RegistrationFormController {
         'clinic_name': d.clinicName,
         'clinic_address': d.clinicAddress,
         'city': d.city,
+        'region_code': d.regionCode,
         'consultation_fee': d.consultationFee,
         'agreed_to_terms': d.agreedToTerms,
       }),
@@ -129,6 +133,11 @@ class RegistrationFormController extends _$RegistrationFormController {
       experienceYears: experienceYears,
       bio: bio,
     );
+    _persist();
+  }
+
+  void updateVerificationInfo({String? licenseNumber}) {
+    state = state.copyWith(licenseNumber: licenseNumber);
     _persist();
   }
 
@@ -156,6 +165,7 @@ class RegistrationFormController extends _$RegistrationFormController {
     String? clinicName,
     String? clinicAddress,
     String? city,
+    String? regionCode,
     double? clinicLat,
     double? clinicLng,
     int? consultationFee,
@@ -164,6 +174,7 @@ class RegistrationFormController extends _$RegistrationFormController {
       clinicName: clinicName,
       clinicAddress: clinicAddress,
       city: city,
+      regionCode: regionCode,
       clinicLat: clinicLat,
       clinicLng: clinicLng,
       consultationFee: consultationFee,

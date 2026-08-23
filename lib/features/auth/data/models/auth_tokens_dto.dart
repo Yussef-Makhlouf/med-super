@@ -7,8 +7,8 @@ class AuthTokensDto {
   final String refreshToken;
 
   factory AuthTokensDto.fromJson(Map<String, dynamic> json) => AuthTokensDto(
-    accessToken: json['access_token'] as String,
-    refreshToken: json['refresh_token'] as String,
+    accessToken: (json['accessToken'] ?? json['access_token']) as String,
+    refreshToken: (json['refreshToken'] ?? json['refresh_token']) as String,
   );
 
   AuthTokens toEntity() =>

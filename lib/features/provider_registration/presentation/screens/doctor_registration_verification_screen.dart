@@ -6,14 +6,47 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/provider_registration/domain/entities/uploaded_document.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
 import 'package:med_super/features/provider_registration/presentation/widgets/file_upload_card.dart';
 import 'package:med_super/features/provider_registration/presentation/widgets/uploaded_file_tile.dart';
 
-class DoctorRegistrationVerificationScreen extends ConsumerWidget {
+class DoctorRegistrationVerificationScreen extends ConsumerStatefulWidget {
   const DoctorRegistrationVerificationScreen({super.key});
+
+  @override
+  ConsumerState<DoctorRegistrationVerificationScreen> createState() =>
+      _DoctorRegistrationVerificationScreenState();
+}
+
+class _DoctorRegistrationVerificationScreenState
+    extends ConsumerState<DoctorRegistrationVerificationScreen> {
+  late final _licenseNumberController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _licenseNumberController.text = ref
+        .read(registrationFormControllerProvider)
+        .licenseNumber;
+  }
+
+  @override
+  void dispose() {
+    _licenseNumberController.dispose();
+    super.dispose();
+  }
+
+  void _continue() {
+    ref
+        .read(registrationFormControllerProvider.notifier)
+        .updateVerificationInfo(
+          licenseNumber: _licenseNumberController.text.trim(),
+        );
+    context.push('/provider/registration/clinic-schedule');
+  }
 
   /// Picks a file and enforces [maxMb]. On oversize, shows a clear SnackBar
   /// instead of silently dropping the file (resolved open decision #2).
@@ -106,8 +139,12 @@ class DoctorRegistrationVerificationScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final draft = ref.watch(registrationFormControllerProvider);
+    final isVerificationValid =
+        draft.documents.any((d) => d.type == DocumentType.medicalLicense) &&
+        draft.documents.any((d) => d.type == DocumentType.nationalId) &&
+        _licenseNumberController.text.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -186,6 +223,18 @@ class DoctorRegistrationVerificationScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  AppTextField(
+                    label:
+                        'provider_registration.verification.license_number_label'
+                            .tr(),
+                    controller: _licenseNumberController,
+                    hint:
+                        'provider_registration.verification.license_number_hint'
+                            .tr(),
+                    prefix: const Icon(Icons.numbers_outlined),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 24),
                   FileUploadCard(
                     icon: Icons.badge_outlined,
                     title: 'provider_registration.verification.license_title'
@@ -251,11 +300,7 @@ class DoctorRegistrationVerificationScreen extends ConsumerWidget {
                       Expanded(
                         child: AppButton.filled(
                           label: 'provider_registration.continue_cta'.tr(),
-                          onPressed: draft.verificationComplete
-                              ? () => context.push(
-                                  '/provider/registration/clinic-schedule',
-                                )
-                              : null,
+                          onPressed: isVerificationValid ? _continue : null,
                           icon: const Icon(Icons.arrow_back, size: 18),
                           backgroundColor: AppColors.providerPrimary,
                           foregroundColor: Colors.white,

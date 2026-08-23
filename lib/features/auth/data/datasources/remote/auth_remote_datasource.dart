@@ -20,19 +20,51 @@ class AuthRemoteDatasource {
     );
     final data = response.data ?? const <String, dynamic>{};
     return OtpRequestResult(
-      requestId: data['request_id'] as String? ?? 'req-unknown',
-      expiresInSeconds: data['expires_in'] as int? ?? 60,
+      requestId:
+          (data['requestId'] ?? data['request_id']) as String? ??
+          'req-unknown',
+      expiresInSeconds:
+          (data['expiresInSeconds'] ?? data['expires_in']) as int? ?? 60,
     );
   }
 
   Future<AuthTokensDto> verifyOtp({
+    required String requestId,
     required String phone,
     required String code,
     required UserRole role,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.otpVerify,
-      data: {'phone': phone, 'code': code, 'role': role.apiValue},
+      data: {
+        'requestId': requestId,
+        'phone': phone,
+        'code': code,
+        'role': role.apiValue,
+      },
+    );
+    return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
+  }
+
+  Future<AuthTokensDto> setPassword({
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.passwordSet,
+      data: {'phone': phone, 'password': password},
+    );
+    return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
+  }
+
+  Future<AuthTokensDto> loginWithPassword({
+    required String phone,
+    required String password,
+    required UserRole role,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.passwordLogin,
+      data: {'phone': phone, 'password': password, 'role': role.apiValue},
     );
     return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
   }

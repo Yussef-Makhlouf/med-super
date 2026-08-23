@@ -22,8 +22,8 @@ class UserDto {
     roles: (json['roles'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toList(),
-    displayName: json['display_name'] as String?,
-    activeRole: json['active_role'] as String?,
+    displayName: (json['displayName'] ?? json['display_name']) as String?,
+    activeRole: (json['activeRole'] ?? json['active_role']) as String?,
   );
 
   User toEntity() {

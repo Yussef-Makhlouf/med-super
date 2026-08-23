@@ -8,6 +8,7 @@ abstract final class StorageKeys {
 /// Hive settings box keys (non-sensitive UI/local flags).
 abstract final class SettingsKeys {
   static const onboardingComplete = 'onboarding_complete';
+  static const passwordComplete = 'password_complete';
   static const providerRegistrationSubmitted =
       'provider_registration_submitted';
 }

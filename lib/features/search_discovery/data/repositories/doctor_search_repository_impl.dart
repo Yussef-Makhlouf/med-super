@@ -16,12 +16,24 @@ class DoctorSearchRepositoryImpl implements DoctorSearchRepository {
     String? query,
     String? specialty,
     DoctorSort sort = DoctorSort.topRated,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+    DateTime? date,
+    String? cursor,
+    int limit = 20,
   }) async {
     try {
       final result = await _remote.searchDoctors(
         query: query,
         specialty: specialty,
         sort: sort,
+        latitude: latitude,
+        longitude: longitude,
+        radiusKm: radiusKm,
+        date: date,
+        cursor: cursor,
+        limit: limit,
       );
       return Result.ok(result);
     } catch (e, st) {

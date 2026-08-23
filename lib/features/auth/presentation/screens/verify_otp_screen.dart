@@ -19,11 +19,13 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
   const VerifyOtpScreen({
     required this.phone,
     this.role = 'patient',
+    this.requestId = '',
     super.key,
   });
 
   final String phone;
   final String role;
+  final String requestId;
 
   @override
   ConsumerState<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -82,13 +84,14 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   String get _displayPhone {
     final digits = widget.phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 9) {
-      final local = digits.length > 9
-          ? digits.substring(digits.length - 9)
+    if (digits.length >= 11) {
+      final local = digits.length > 11
+          ? digits.substring(digits.length - 11)
           : digits;
-      return '+966 ${local[0]}X XXX ${local.substring(6)}';
+      return '+20 ${local[0]}X ${local.substring(2, 5)} '
+          '${local.substring(5, 8)} ${local.substring(8)}';
     }
-    return '+966 ${widget.phone}';
+    return '+20 ${widget.phone}';
   }
 
   Future<void> _verify() async {
@@ -103,19 +106,18 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     try {
       final result = await ref
           .read(sessionControllerProvider.notifier)
-          .verifyOtp(phone: widget.phone, code: _otp, role: _role);
+          .verifyOtp(
+            requestId: widget.requestId,
+            phone: widget.phone,
+            code: _otp,
+            role: _role,
+          );
 
       if (!mounted) return;
 
       switch (result) {
-        case Ok(:final value):
-          if (!value.onboardingComplete) {
-            context.go('/onboarding');
-          } else {
-            context.go(
-              value.user.isPatient ? '/patient/home' : '/provider/home',
-            );
-          }
+        case Ok():
+          context.go('/');
         case Err(:final failure):
           final key = failureMessage(failure);
           // OTP_INVALID → prefer dedicated copy; raw API messages skip .tr()
