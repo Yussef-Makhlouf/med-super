@@ -103,7 +103,12 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   interceptor.register('POST', ApiPaths.otpRequest, (options) {
     final body = _body(options);
     final phone = body?['phone'] as String?;
-    final role = (body?['role'] as String?)?.toUpperCase() ?? 'PATIENT';
+    // Real backend body is {phone} only — `role` travels as a query param
+    // (see auth_remote_datasource.dart) purely for this mock's role-toggle
+    // UI in dev; a real controller would never see it since it only reads
+    // `@Body()`.
+    final role =
+        options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
     if (phone == null || phone.isEmpty) {
       return _error(422, 'VALIDATION_ERROR', 'phone is required');
     }
@@ -117,9 +122,13 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
   interceptor.register('POST', ApiPaths.otpVerify, (options) {
     final body = _body(options);
-    final phone = body?['phone'] as String?;
     final code = body?['code'] as String?;
-    final role = (body?['role'] as String?)?.toUpperCase() ?? 'PATIENT';
+    // Real backend body is {requestId, code} only — `phone`/`role` travel as
+    // query params (see auth_remote_datasource.dart), same reasoning as
+    // otpRequest above.
+    final phone = options.uri.queryParameters['phone'] ?? _mockAuth.phone;
+    final role =
+        options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
 
     if (phone == null || code == null) {
       return _error(422, 'VALIDATION_ERROR', 'phone and code are required');
@@ -302,7 +311,10 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
   interceptor.register('POST', ApiPaths.refresh, (options) {
     final body = _body(options);
-    final refresh = body?['refresh_token'] as String?;
+    // Real backend request/response fields are camelCase
+    // (`RefreshTokenDto.refreshToken` / `RefreshTokenResult`), no
+    // snake_case fallback — match that exactly here.
+    final refresh = body?['refreshToken'] as String?;
     if (refresh == null ||
         _mockAuth.refreshToken == null ||
         refresh != _mockAuth.refreshToken) {
@@ -311,7 +323,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final access = _mockAuth.accessToken ?? 'dev_patient_refreshed';
     return {
       'statusCode': 200,
-      'data': {'access_token': access, 'refresh_token': refresh},
+      'data': {'accessToken': access, 'refreshToken': refresh, 'expiresIn': 900},
     };
   });
 

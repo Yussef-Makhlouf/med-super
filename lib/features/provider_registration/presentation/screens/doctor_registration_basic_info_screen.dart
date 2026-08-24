@@ -272,6 +272,10 @@ class _DoctorRegistrationBasicInfoScreenState
 }
 
 class _Header extends StatelessWidget {
+  // No back button here on purpose: this is step 1, the forced entry point
+  // the router redirects an unregistered provider to right after login
+  // (app_router.dart) — there's no previous screen to return to, and even
+  // if there were, the redirect would just send them straight back here.
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -279,10 +283,10 @@ class _Header extends StatelessWidget {
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.borderMedium)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const SizedBox(width: 48),
-          const Expanded(
+          SizedBox(width: 48),
+          Expanded(
             child: Text(
               'تسجيل الطبيب',
               textAlign: TextAlign.center,
@@ -293,13 +297,7 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(
-              Icons.arrow_forward,
-              color: AppColors.providerPrimary,
-            ),
-          ),
+          SizedBox(width: 48),
         ],
       ),
     );

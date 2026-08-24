@@ -129,7 +129,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                   title: 'provider_registration.review.personal_info_title'
                       .tr(),
                   icon: Icons.person_outline,
-                  onEdit: () => context.goNamed('providerRegBasicInfo'),
+                  onEdit: () => context.pushNamed('providerRegBasicInfo'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.full_name_row'.tr(),
@@ -151,7 +151,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                   title: 'provider_registration.review.professional_info_title'
                       .tr(),
                   icon: Icons.badge_outlined,
-                  onEdit: () => context.goNamed('providerRegVerification'),
+                  onEdit: () => context.pushNamed('providerRegVerification'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.specialty_row'.tr(),
@@ -193,7 +193,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 ReviewSectionCard(
                   title: 'provider_registration.review.clinic_info_title'.tr(),
                   icon: Icons.local_hospital_outlined,
-                  onEdit: () => context.goNamed('providerRegClinicSchedule'),
+                  onEdit: () => context.pushNamed('providerRegClinicSchedule'),
                   rows: [
                     ReviewRow(
                       'provider_registration.review.clinic_name_row'.tr(),

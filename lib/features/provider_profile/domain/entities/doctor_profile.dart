@@ -1,5 +1,24 @@
 import 'available_day.dart';
 
+/// One of a doctor's clinic-branch affiliations, from the real backend's
+/// `affiliations` array (`GET /v1/doctors/{id}`) — lets a caller show/pick
+/// among more than one branch instead of only the top-level "primary" one.
+class DoctorAffiliation {
+  const DoctorAffiliation({
+    required this.clinicBranchId,
+    required this.clinicName,
+    required this.consultationFee,
+    required this.currency,
+    required this.ianaTimezone,
+  });
+
+  final String clinicBranchId;
+  final String clinicName;
+  final String consultationFee;
+  final String currency;
+  final String ianaTimezone;
+}
+
 /// Full public doctor profile — pure domain.
 class DoctorProfile {
   const DoctorProfile({
@@ -19,6 +38,7 @@ class DoctorProfile {
     required this.isVerified,
     required this.isOnline,
     required this.availableDays,
+    required this.affiliations,
     this.photoUrl,
     this.specialtyKey,
     this.clinicBranchId,
@@ -43,6 +63,10 @@ class DoctorProfile {
   final bool isOnline;
   final String? photoUrl;
   final List<AvailableDay> availableDays;
+
+  /// Every clinic-branch this doctor is affiliated with — real backend data
+  /// (`GET /v1/doctors/{id}`'s `affiliations` array), not mock-only.
+  final List<DoctorAffiliation> affiliations;
 
   /// Needed to call the real Phase 3 slots endpoint
   /// (`GET /v1/doctors/{doctorId}/slots?clinicBranchId=`). Null means the

@@ -14,6 +14,14 @@ part 'session_provider.g.dart';
 /// Dev bypass skips login/OTP. Keep false for the real Sprint 1 auth loop.
 const bool kDevBypassAuth = false;
 
+/// Dev convenience: treat every provider session as if registration were
+/// already submitted, so a mock doctor login lands straight on
+/// `/provider/home` instead of being forced through the 4-step registration
+/// wizard on every run. Only takes effect in mock mode (`AppConfig.isMock`)
+/// — never against the real backend. Set to `false` to test the actual
+/// registration flow again.
+const bool kDevSkipProviderRegistrationInMock = true;
+
 class Session {
   const Session({
     required this.user,

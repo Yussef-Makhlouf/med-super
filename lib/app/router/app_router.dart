@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/app/router/routes/auth_routes.dart';
+import 'package:med_super/core/config/app_config.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/app/router/routes/appointment_routes.dart';
@@ -72,11 +73,12 @@ GoRouter appRouter(Ref ref) {
 
       if (session != null) {
         final registrationSubmitted =
+            (kDevSkipProviderRegistrationInMock && AppConfig.instance.isMock) ||
             ref
-                .read(hiveServiceProvider)
-                .settingsBox
-                .get(SettingsKeys.providerRegistrationSubmitted) ==
-            'true';
+                    .read(hiveServiceProvider)
+                    .settingsBox
+                    .get(SettingsKeys.providerRegistrationSubmitted) ==
+                'true';
 
         if (session.user.isPatient && path.startsWith('/provider/')) {
           return '/patient/home';

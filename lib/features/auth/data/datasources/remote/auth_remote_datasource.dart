@@ -14,9 +14,17 @@ class AuthRemoteDatasource {
     required String phone,
     required UserRole role,
   }) async {
+    // Real backend body is {phone} only — the global ValidationPipe runs
+    // with forbidNonWhitelisted:true, so an extra `role` field in the body
+    // gets the whole request rejected with 400, not silently ignored. `role`
+    // travels as a query param instead (same pattern as loginWithPassword
+    // below): the real controller only reads `@Body()` so it's never
+    // validated there, while MockInterceptor still reads it to honor the
+    // role-toggle UI in dev.
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.otpRequest,
-      data: {'phone': phone, 'role': role.apiValue},
+      queryParameters: {'role': role.apiValue},
+      data: {'phone': phone},
     );
     final data = response.data ?? const <String, dynamic>{};
     return OtpRequestResult(
@@ -34,14 +42,16 @@ class AuthRemoteDatasource {
     required String code,
     required UserRole role,
   }) async {
+    // Real backend body is {requestId, code} only — `phone` is already
+    // known server-side from `requestId`, and (like `role`) isn't declared
+    // on `VerifyOtpDto`, so forbidNonWhitelisted:true would reject the call
+    // with 400 if either travelled in the body. Both go as query params
+    // instead, purely so MockInterceptor can still resolve them for its
+    // in-memory session — the real controller only reads `@Body()`.
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.otpVerify,
-      data: {
-        'requestId': requestId,
-        'phone': phone,
-        'code': code,
-        'role': role.apiValue,
-      },
+      queryParameters: {'phone': phone, 'role': role.apiValue},
+      data: {'requestId': requestId, 'code': code},
     );
     return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
   }
@@ -135,7 +145,15 @@ class AuthRemoteDatasource {
     return UserDto.fromJson(response.data ?? const <String, dynamic>{});
   }
 
-  Future<void> logout() async {
-    await _dio.post<void>(ApiPaths.logout);
+  Future<void> logout({
+    required String refreshToken,
+    bool allDevices = false,
+  }) async {
+    // Real `LogoutDto.refreshToken` is required — sending no body at all
+    // gives the backend nothing to revoke (400, not a no-op).
+    await _dio.post<void>(
+      ApiPaths.logout,
+      data: {'refreshToken': refreshToken, 'allDevices': allDevices},
+    );
   }
 }
