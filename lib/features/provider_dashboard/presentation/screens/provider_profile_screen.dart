@@ -10,7 +10,6 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_clinic_settings_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_edit_profile_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_schedule_editor_screen.dart';
-import 'package:med_super/features/provider_dashboard/presentation/screens/provider_security_privacy_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
@@ -153,19 +152,6 @@ class ProviderProfileScreen extends ConsumerWidget {
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ProviderScheduleEditorScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildNavTile(
-                    icon: Icons.shield_outlined,
-                    iconBg: const Color(0xFFFEF2F2),
-                    iconColor: const Color(0xFFEF4444),
-                    title: 'الأمان والخصوصية',
-                    subtitle: 'كلمة المرور، المصادقة الثنائية',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProviderSecurityPrivacyScreen(),
                       ),
                     ),
                   ),

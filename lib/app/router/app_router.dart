@@ -30,7 +30,12 @@ final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
 final routeObserver = RouteObserver<PageRoute<dynamic>>();
 
 bool _isPublicAuthRoute(String path) =>
-    path == '/login' || path == '/verify-otp' || path == '/account-login';
+    path == '/login' ||
+    path == '/verify-otp' ||
+    path == '/account-login' ||
+    path == '/forgot-password' ||
+    path == '/verify-reset-code' ||
+    path == '/reset-password';
 
 bool _isProviderRegistrationRoute(String path) =>
     path.startsWith('/provider/registration');

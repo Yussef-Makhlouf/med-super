@@ -73,7 +73,17 @@
     "have_account_prompt": "لديك حساب بالفعل؟",
     "login_link_cta": "تسجيل الدخول",
     "invalid_credentials": "رقم الجوال أو كلمة المرور غير صحيحة",
-    "account_not_found": "لا يوجد حساب مرتبط بهذا الرقم. يرجى إنشاء حساب."
+    "account_not_found": "لا يوجد حساب مرتبط بهذا الرقم. يرجى إنشاء حساب.",
+    "forgot_password_link_cta": "نسيت كلمة المرور؟",
+    "forgot_password_title": "إعادة تعيين كلمة المرور",
+    "forgot_password_subtitle": "أدخل رقم جوالك وسنرسل لك رمزاً لإعادة تعيين كلمة المرور",
+    "forgot_password_cta": "إرسال رمز إعادة التعيين",
+    "verify_reset_code_title": "التحقق من الرمز",
+    "verify_reset_code_subtitle": "أدخل الرمز المرسل إلى رقمك لمتابعة إعادة تعيين كلمة المرور",
+    "reset_password_title": "إعادة تعيين كلمة المرور",
+    "reset_password_subtitle": "اختر كلمة مرور جديدة لحسابك",
+    "reset_password_cta": "إعادة تعيين كلمة المرور",
+    "reset_password_success": "تم إعادة تعيين كلمة المرور بنجاح. يرجى تسجيل الدخول بكلمة المرور الجديدة."
   },
   "onboarding": {
     "title": "أكمل ملفك الشخصي",

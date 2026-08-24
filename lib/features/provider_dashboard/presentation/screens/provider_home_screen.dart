@@ -165,6 +165,10 @@ class _ProviderHomeScreenState extends ConsumerState<ProviderHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
       floatingActionButton: FloatingActionButton(
+        // Explicit heroTag — otherwise this collides with any other FAB
+        // using Flutter's shared default tag (e.g. patient_home_screen.dart's)
+        // during a route transition that has both on screen at once.
+        heroTag: 'provider_home_fab',
         onPressed: _openAddAppointment,
         backgroundColor: brandBlue,
         elevation: 4,

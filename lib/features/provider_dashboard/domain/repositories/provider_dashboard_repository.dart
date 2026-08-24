@@ -47,10 +47,6 @@ abstract class ProviderDashboardRepository {
     List<ClinicWorkingDay> workingDays,
   );
 
-  Future<Result<void>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  });
 
   Future<Result<DoctorAccountProfile>> uploadAvatar(String filePath);
 }

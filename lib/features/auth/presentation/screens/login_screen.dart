@@ -21,7 +21,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with SingleTickerProviderStateMixin, RouteAware {
+    with TickerProviderStateMixin, RouteAware {
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   late UserRole _role;
@@ -31,51 +31,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   late final Animation<Offset> _sheetOffset;
   late final Animation<double> _sheetOpacity;
 
-  // Sheet snaps between two fixed states rather than tracking the finger/
-  // scroll 1:1 — collapsed matches the original layout (60% of the screen),
-  // expanded rises to 92% (topper, but a sliver of the hero stays visible).
+  // Sheet extent as a live 0..1 fraction between _collapsedFraction (60%)
+  // and _expandedFraction (92%) — driven directly by drag deltas (not just
+  // snapped once on release) and read by an AnimatedBuilder scoped to only
+  // the sheet's Positioned wrapper, so dragging tracks the finger in real
+  // time and repaints just that subtree instead of the whole screen.
+  late final AnimationController _extentController;
   static const _collapsedFraction = 0.6;
   static const _expandedFraction = 0.92;
-  bool _expanded = false;
+  double _sheetHeight = 1;
+
+  void _animateExtentTo(double target) {
+    _extentController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   bool _handleSheetScroll(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
       final pixels = notification.metrics.pixels;
-      if (pixels > 8 && !_expanded) {
-        setState(() => _expanded = true);
-      } else if (pixels <= 0 && _expanded) {
+      if (pixels > 8 && _extentController.value < 1) {
+        _animateExtentTo(1);
+      } else if (pixels <= 0 && _extentController.value > 0) {
         // Covers mouse-wheel/trackpad scrolling back to the top, which
         // never produces an OverscrollNotification the way a touch drag
         // past the boundary does.
-        setState(() => _expanded = false);
+        _animateExtentTo(0);
       }
     } else if (notification is OverscrollNotification) {
-      if (notification.overscroll < 0 && _expanded) {
-        setState(() => _expanded = false);
+      if (notification.overscroll < 0 && _extentController.value > 0) {
+        _animateExtentTo(0);
       }
     }
     return false;
   }
 
-  void _toggleExpanded() => setState(() => _expanded = !_expanded);
-
-  double _handleDragAccum = 0;
+  void _toggleExpanded() =>
+      _animateExtentTo(_extentController.value > 0.5 ? 0 : 1);
 
   void _onHandleDragUpdate(DragUpdateDetails details) {
-    _handleDragAccum += details.delta.dy;
+    // Live 1:1 tracking: each dragged pixel maps directly to a fraction of
+    // the sheet's travel range and is applied straight to the controller,
+    // so the sheet visibly follows the finger during the drag itself
+    // instead of only jumping once on release.
+    final range = _sheetHeight * (_expandedFraction - _collapsedFraction);
+    if (range <= 0) return;
+    _extentController.value =
+        (_extentController.value - details.delta.dy / range).clamp(0.0, 1.0);
   }
 
   void _onHandleDragEnd(DragEndDetails details) {
-    // Handle drag always works, regardless of whether the form content
-    // below has anything left to scroll — unlike the scroll-notification
-    // path, which goes silent once the expanded sheet gives the form
-    // enough room that it no longer overflows.
-    if (_handleDragAccum < -12 && !_expanded) {
-      setState(() => _expanded = true);
-    } else if (_handleDragAccum > 12 && _expanded) {
-      setState(() => _expanded = false);
-    }
-    _handleDragAccum = 0;
+    // Snap to whichever side is closer, nudged by fling velocity so a
+    // quick flick commits even from near the midpoint.
+    final velocityBias = (details.primaryVelocity ?? 0) / 2000;
+    final target =
+        (_extentController.value - velocityBias) > 0.5 ? 1.0 : 0.0;
+    _animateExtentTo(target);
   }
 
   @override
@@ -96,6 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       parent: _sheetController,
       curve: const Interval(0, 0.5, curve: Curves.easeOut),
     );
+    _extentController = AnimationController(vsync: this, value: 0);
     // Small delay before starting so the screen isn't mid-flight before the
     // first frame even paints — makes the rise-up unmistakable on load.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     // Coming back into view after popping a pushed screen (e.g. back from
     // '/account-login') — collapse back to the initial position instead of
     // staying in whatever state it was left in.
-    if (_expanded) setState(() => _expanded = false);
+    if (_extentController.value > 0) _animateExtentTo(0);
   }
 
   @override
@@ -125,6 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     routeObserver.unsubscribe(this);
     _phoneController.dispose();
     _sheetController.dispose();
+    _extentController.dispose();
     super.dispose();
   }
 
@@ -175,10 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             body: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final sheetTop =
-                      constraints.maxHeight *
-                      (1 -
-                          (_expanded ? _expandedFraction : _collapsedFraction));
+                  _sheetHeight = constraints.maxHeight;
                   return Stack(
                     children: [
                       // Pinned to the original top region (unchanged design)
@@ -201,13 +213,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                         ),
                       ),
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 380),
-                        curve: Curves.easeOutCubic,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        top: sheetTop,
+                      AnimatedBuilder(
+                        animation: _extentController,
+                        builder: (context, child) {
+                          final fraction = _collapsedFraction +
+                              (_expandedFraction - _collapsedFraction) *
+                                  _extentController.value;
+                          return Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            top: constraints.maxHeight * (1 - fraction),
+                            child: child!,
+                          );
+                        },
                         child: SlideTransition(
                           position: _sheetOffset,
                           child: FadeTransition(

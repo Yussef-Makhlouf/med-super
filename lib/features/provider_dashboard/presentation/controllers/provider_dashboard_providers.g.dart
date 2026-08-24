@@ -738,54 +738,6 @@ final class UpdateDoctorScheduleUseCaseProvider
 String _$updateDoctorScheduleUseCaseHash() =>
     r'882dc33d3f0796588fcc7ee4f714fb44f0e5bfc0';
 
-@ProviderFor(changePasswordUseCase)
-final changePasswordUseCaseProvider = ChangePasswordUseCaseProvider._();
-
-final class ChangePasswordUseCaseProvider
-    extends
-        $FunctionalProvider<
-          ChangePasswordUseCase,
-          ChangePasswordUseCase,
-          ChangePasswordUseCase
-        >
-    with $Provider<ChangePasswordUseCase> {
-  ChangePasswordUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'changePasswordUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$changePasswordUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<ChangePasswordUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ChangePasswordUseCase create(Ref ref) {
-    return changePasswordUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ChangePasswordUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ChangePasswordUseCase>(value),
-    );
-  }
-}
-
-String _$changePasswordUseCaseHash() =>
-    r'5b1c82cd06107d803d34852dd0033419acf352c9';
-
 @ProviderFor(uploadAvatarUseCase)
 final uploadAvatarUseCaseProvider = UploadAvatarUseCaseProvider._();
 

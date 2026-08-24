@@ -1,5 +1,4 @@
 import 'package:med_super/core/error/result.dart';
-import 'package:med_super/features/auth/domain/entities/auth_tokens.dart';
 import 'package:med_super/features/auth/domain/repositories/auth_repository.dart';
 
 class SetPasswordUseCase {
@@ -7,8 +6,6 @@ class SetPasswordUseCase {
 
   final AuthRepository _repository;
 
-  Future<Result<AuthTokens>> call({
-    required String phone,
-    required String password,
-  }) => _repository.setPassword(phone: phone, password: password);
+  Future<Result<void>> call({required String password}) =>
+      _repository.setPassword(password: password);
 }

@@ -10,7 +10,6 @@ import '../../domain/entities/doctor_notification.dart';
 import '../../domain/entities/patient.dart';
 import '../../domain/repositories/provider_dashboard_repository.dart';
 import '../../domain/usecases/accept_appointment_usecase.dart';
-import '../../domain/usecases/change_password_usecase.dart';
 import '../../domain/usecases/clinic_settings_usecases.dart';
 import '../../domain/usecases/create_appointment_usecase.dart';
 import '../../domain/usecases/doctor_schedule_usecases.dart';
@@ -86,10 +85,6 @@ GetDoctorScheduleUseCase getDoctorScheduleUseCase(Ref ref) =>
 @riverpod
 UpdateDoctorScheduleUseCase updateDoctorScheduleUseCase(Ref ref) =>
     UpdateDoctorScheduleUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-ChangePasswordUseCase changePasswordUseCase(Ref ref) =>
-    ChangePasswordUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
 UploadAvatarUseCase uploadAvatarUseCase(Ref ref) =>

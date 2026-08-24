@@ -73,7 +73,17 @@
     "have_account_prompt": "Already have an account?",
     "login_link_cta": "Log in",
     "invalid_credentials": "Incorrect phone number or password",
-    "account_not_found": "No account found for this number. Please sign up."
+    "account_not_found": "No account found for this number. Please sign up.",
+    "forgot_password_link_cta": "Forgot password?",
+    "forgot_password_title": "Reset your password",
+    "forgot_password_subtitle": "Enter your mobile number and we'll send you a code to reset your password",
+    "forgot_password_cta": "Send reset code",
+    "verify_reset_code_title": "Verify code",
+    "verify_reset_code_subtitle": "Enter the code sent to your number to continue resetting your password",
+    "reset_password_title": "Reset password",
+    "reset_password_subtitle": "Choose a new password for your account",
+    "reset_password_cta": "Reset password",
+    "reset_password_success": "Password reset successfully. Please log in with your new password."
   },
   "onboarding": {
     "title": "Complete your profile",

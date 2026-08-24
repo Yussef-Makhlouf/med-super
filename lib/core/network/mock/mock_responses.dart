@@ -144,11 +144,13 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   });
 
   interceptor.register('POST', ApiPaths.passwordSet, (options) {
+    // Real endpoint takes {password} only — the caller is identified by the
+    // JWT already stored from OTP-verify, not by a phone in the body — and
+    // returns 204/no token body. Mirror both here.
     final body = _body(options);
-    final phone = body?['phone'] as String?;
     final password = body?['password'] as String?;
 
-    if (phone == null || password == null || password.length < 8) {
+    if (password == null || password.length < 8) {
       return _error(
         422,
         'VALIDATION_ERROR',
@@ -156,26 +158,28 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       );
     }
 
+    final phone = _mockAuth.phone;
+    if (phone == null) {
+      return _error(401, 'UNAUTHENTICATED', 'No active session');
+    }
+
     _passwordsByPhone[phone] = password;
 
-    final access = _mockAuth.accessToken ?? 'dev_patient_$phone';
-    final refresh = _mockAuth.refreshToken ?? 'dev_refresh_$phone';
-    _mockAuth
-      ..phone = phone
-      ..accessToken = access
-      ..refreshToken = refresh;
-
-    return {
-      'statusCode': 200,
-      'data': {'access_token': access, 'refresh_token': refresh},
-    };
+    return {'statusCode': 200, 'data': {'ok': true}};
   });
 
   interceptor.register('POST', ApiPaths.passwordLogin, (options) {
     final body = _body(options);
     final phone = body?['phone'] as String?;
     final password = body?['password'] as String?;
-    final role = (body?['role'] as String?)?.toUpperCase() ?? 'PATIENT';
+    // Real backend body is {phone, password} only — role isn't part of the
+    // wire contract there. The datasource sends it as a query param purely
+    // for this mock to honor the role-toggle UI in dev; a real backend
+    // would ignore an unbound query param on a POST it only reads @Body()
+    // from, so this has no effect outside mock mode.
+    final role =
+        (options.uri.queryParameters['role'] as String?)?.toUpperCase() ??
+        'PATIENT';
 
     if (phone == null || password == null) {
       return _error(422, 'VALIDATION_ERROR', 'phone and password are required');
@@ -209,6 +213,90 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     return {
       'statusCode': 200,
       'data': {'access_token': access, 'refresh_token': refresh},
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.passwordForgot, (options) {
+    final body = _body(options);
+    final phone = body?['phone'] as String?;
+    if (phone == null || phone.isEmpty) {
+      return _error(422, 'VALIDATION_ERROR', 'phone is required');
+    }
+    // Remembered so the passwordReset mock below (which only gets
+    // requestId/code/newPassword, no phone, matching the real endpoint)
+    // knows which phone's password to update. Deliberately doesn't check
+    // whether an account exists for this phone — same as a real
+    // forgot-password endpoint shouldn't leak account existence via its
+    // response.
+    _mockAuth.phone = phone;
+    return {
+      'statusCode': 200,
+      'data': {'request_id': 'pwd-reset-req-001', 'expires_in': 60},
+    };
+  });
+
+  // Must be registered before ApiPaths.passwordReset below — its path
+  // ('/v1/auth/password/reset/verify-code') contains passwordReset's path
+  // ('/v1/auth/password/reset') as a substring, and MockInterceptor matches
+  // first-registered-wins substring containment (mock_interceptor.dart:58-69).
+  interceptor.register('POST', ApiPaths.passwordResetVerifyCode, (options) {
+    final body = _body(options);
+    final requestId = body?['requestId'] as String?;
+    final code = body?['code'] as String?;
+
+    if (requestId == null || requestId.isEmpty || code == null) {
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'requestId and code are required',
+      );
+    }
+    if (code != kMockOtpCode) {
+      return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
+    }
+
+    // Checks-only — no side effects, no tokens, unlike passwordReset below.
+    return {
+      'statusCode': 200,
+      'data': <String, dynamic>{},
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.passwordReset, (options) {
+    final body = _body(options);
+    final requestId = body?['requestId'] as String?;
+    final code = body?['code'] as String?;
+    final newPassword = body?['newPassword'] as String?;
+
+    if (requestId == null || requestId.isEmpty || code == null) {
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'requestId and code are required',
+      );
+    }
+    if (code != kMockOtpCode) {
+      return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
+    }
+    if (newPassword == null || newPassword.length < 8) {
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'Password must be at least 8 characters',
+      );
+    }
+
+    // Real endpoint has no notion of "which phone" beyond requestId — the
+    // mock store only keys passwords by phone, so fall back to whichever
+    // phone last went through forgot-password/OTP in this session.
+    final phone = _mockAuth.phone ?? kMockDemoPhoneNormalized;
+    _passwordsByPhone[phone] = newPassword;
+
+    // No tokens in the response — matches the real backend, and keeps this
+    // flow from silently logging the user in.
+    return {
+      'statusCode': 200,
+      'data': <String, dynamic>{},
     };
   });
 

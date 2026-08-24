@@ -46,11 +46,6 @@ abstract class ProviderDashboardRemoteDatasource {
 
   Future<DoctorScheduleDto> updateDoctorSchedule(DoctorScheduleDto schedule);
 
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  });
-
   Future<DoctorAccountProfileDto> uploadAvatar(String filePath);
 }
 
@@ -220,17 +215,6 @@ class ProviderDashboardRemoteDatasourceImpl
     );
     return DoctorScheduleDto.fromJson(
       response.data ?? const <String, dynamic>{},
-    );
-  }
-
-  @override
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    await _dio.post<Map<String, dynamic>>(
-      '/v1/provider/change-password',
-      data: {'current_password': currentPassword, 'new_password': newPassword},
     );
   }
 

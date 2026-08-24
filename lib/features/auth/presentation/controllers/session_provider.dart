@@ -4,7 +4,9 @@ import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/auth/domain/entities/user.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
+import 'package:med_super/features/auth/domain/entities/otp_request_result.dart';
 import 'package:med_super/features/auth/presentation/controllers/auth_providers.dart';
+import 'package:med_super/features/auth/presentation/controllers/forgot_password_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_provider.g.dart';
@@ -173,7 +175,7 @@ class SessionController extends _$SessionController {
 
     final result = await ref
         .read(setPasswordUseCaseProvider)
-        .call(phone: current.user.phone, password: password);
+        .call(password: password);
     switch (result) {
       case Err(:final failure):
         return Result.err(failure);
@@ -183,6 +185,39 @@ class SessionController extends _$SessionController {
         state = AsyncData(session);
         return Result.ok(session);
     }
+  }
+
+  /// Starts the forgot-password flow — no session state changes, since the
+  /// caller isn't logged in yet at this point.
+  Future<Result<OtpRequestResult>> forgotPassword({
+    required String phone,
+  }) async {
+    return ref.read(forgotPasswordUseCaseProvider).call(phone: phone);
+  }
+
+  /// Checks-only verification of a forgot-password code — no session state
+  /// changes, no side effects server-side, just a pass/fail so the UI can
+  /// gate the password-entry step behind a real backend check.
+  Future<Result<void>> verifyResetCode({
+    required String requestId,
+    required String code,
+  }) async {
+    return ref
+        .read(verifyResetCodeUseCaseProvider)
+        .call(requestId: requestId, code: code);
+  }
+
+  /// Completes the forgot-password flow. Does NOT update session state or
+  /// log the user in — the real endpoint returns no tokens, so the caller
+  /// must route back to the phone+password login screen on success.
+  Future<Result<void>> resetPassword({
+    required String requestId,
+    required String code,
+    required String newPassword,
+  }) async {
+    return ref
+        .read(resetPasswordUseCaseProvider)
+        .call(requestId: requestId, code: code, newPassword: newPassword);
   }
 
   Future<Result<Session>> loginWithPassword({

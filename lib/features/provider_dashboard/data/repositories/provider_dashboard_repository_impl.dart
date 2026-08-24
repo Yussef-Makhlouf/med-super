@@ -185,22 +185,6 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
   }
 
   @override
-  Future<Result<void>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    try {
-      await _remote.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-      return const Result.ok(null);
-    } catch (e, st) {
-      return Result.err(mapDioToFailure(e, st));
-    }
-  }
-
-  @override
   Future<Result<DoctorAccountProfile>> uploadAvatar(String filePath) async {
     try {
       final dto = await _remote.uploadAvatar(filePath);

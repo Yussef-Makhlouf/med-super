@@ -25,6 +25,10 @@ class PatientHomeScreen extends ConsumerWidget {
       backgroundColor: _pageBg,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       floatingActionButton: FloatingActionButton(
+        // Explicit heroTag — otherwise this collides with any other FAB
+        // using Flutter's shared default tag (e.g. provider_home_screen.dart's)
+        // during a route transition that has both on screen at once.
+        heroTag: 'patient_home_fab',
         onPressed: () {},
         backgroundColor: const Color(0xFFE11D48),
         child: const Icon(Icons.emergency, color: Colors.white),

@@ -7,7 +7,14 @@ abstract final class ApiPaths {
   static const me = '/v1/auth/me';
   static const logout = '/v1/auth/logout';
   static const passwordSet = '/v1/auth/password/set';
-  static const passwordLogin = '/v1/auth/login';
+  static const passwordLogin = '/v1/auth/password/login';
+  static const passwordForgot = '/v1/auth/password/forgot';
+  // Must be registered as a mock BEFORE `passwordReset` below — this path
+  // contains `passwordReset`'s path as a substring, and MockInterceptor
+  // matches first-registered-wins substring containment (see the ordering
+  // comment on registerFoundationMocks' passwordReset mock).
+  static const passwordResetVerifyCode = '/v1/auth/password/reset/verify-code';
+  static const passwordReset = '/v1/auth/password/reset';
 
   // Provider directory
   // Real backend route is GET /v1/doctors/search (provider-directory module) —

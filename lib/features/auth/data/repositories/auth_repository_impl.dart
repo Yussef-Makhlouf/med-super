@@ -58,18 +58,58 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<AuthTokens>> setPassword({
+  Future<Result<void>> setPassword({required String password}) async {
+    try {
+      // No tokens come back (204/no body) — the JWT saved during the
+      // preceding OTP-verify step is already the session's token, so there's
+      // nothing to re-save here.
+      await _remote.setPassword(password: password);
+      return const Result.ok(null);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<OtpRequestResult>> forgotPassword({
     required String phone,
-    required String password,
   }) async {
     try {
-      final tokens = await _remote.setPassword(phone: phone, password: password);
-      final entity = tokens.toEntity();
-      await _storage.saveTokens(
-        accessToken: entity.accessToken,
-        refreshToken: entity.refreshToken,
+      final result = await _remote.forgotPassword(phone: phone);
+      return Result.ok(result);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<void>> verifyResetCode({
+    required String requestId,
+    required String code,
+  }) async {
+    try {
+      await _remote.verifyResetCode(requestId: requestId, code: code);
+      return const Result.ok(null);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<void>> resetPassword({
+    required String requestId,
+    required String code,
+    required String newPassword,
+  }) async {
+    try {
+      // No tokens come back — the caller must send the user back to
+      // /account-login to sign in with the new password.
+      await _remote.resetPassword(
+        requestId: requestId,
+        code: code,
+        newPassword: newPassword,
       );
-      return Result.ok(entity);
+      return const Result.ok(null);
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));
     }
