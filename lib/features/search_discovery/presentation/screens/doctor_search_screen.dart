@@ -13,9 +13,21 @@ import 'package:med_super/features/search_discovery/presentation/widgets/doctor_
 
 /// Doctor search results — matches Figma RTL search screen.
 class DoctorSearchScreen extends ConsumerStatefulWidget {
-  const DoctorSearchScreen({this.initialSpecialty, this.titleKey, super.key});
+  const DoctorSearchScreen({
+    this.initialSpecialty,
+    this.initialSpecialtyName,
+    this.titleKey,
+    super.key,
+  });
 
   final String? initialSpecialty;
+
+  /// Display name for [initialSpecialty], passed straight from the caller
+  /// (e.g. the home screen's specialties row, using the real
+  /// `GET /v1/specialties` name) — the specialty code is an opaque backend
+  /// id and can no longer be reliably mapped back to a translation key like
+  /// the old hardcoded 5-specialty catalog did.
+  final String? initialSpecialtyName;
   final String? titleKey;
 
   @override
@@ -63,9 +75,9 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
   String get _title {
     final key = widget.titleKey;
     if (key != null && key.isNotEmpty) return key.tr();
-    final specialty = widget.initialSpecialty;
-    if (specialty != null && specialty.isNotEmpty) {
-      return 'specialties.$specialty'.tr();
+    final specialtyName = widget.initialSpecialtyName;
+    if (specialtyName != null && specialtyName.isNotEmpty) {
+      return specialtyName;
     }
     return 'search.title'.tr();
   }

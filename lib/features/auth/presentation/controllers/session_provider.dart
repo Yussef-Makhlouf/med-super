@@ -260,24 +260,24 @@ class SessionController extends _$SessionController {
     }
   }
 
-  Future<Result<Session>> completeOnboarding({String? displayName}) async {
+  Future<Result<Session>> completeOnboarding({
+    required String displayName,
+    required String email,
+  }) async {
     final current = state.asData?.value;
     if (current == null) {
       return const Result.err(Failure.auth());
     }
 
     var user = current.user;
-    final name = displayName?.trim();
-    if (name != null && name.isNotEmpty) {
-      final result = await ref
-          .read(authRepositoryProvider)
-          .updateProfile(displayName: name);
-      switch (result) {
-        case Err(:final failure):
-          return Result.err(failure);
-        case Ok(:final value):
-          user = value;
-      }
+    final result = await ref
+        .read(authRepositoryProvider)
+        .updateProfile(displayName: displayName.trim(), email: email.trim());
+    switch (result) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok(:final value):
+        user = value;
     }
 
     await _writeOnboardingComplete(true);

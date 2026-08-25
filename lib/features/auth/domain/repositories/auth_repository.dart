@@ -56,7 +56,10 @@ abstract class AuthRepository {
 
   Future<Result<User>> getCurrentUser();
 
-  Future<Result<User>> updateProfile({required String displayName});
+  Future<Result<User>> updateProfile({
+    required String displayName,
+    String? email,
+  });
 
   Future<Result<void>> logout();
 }

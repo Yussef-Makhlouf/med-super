@@ -53,11 +53,16 @@ Dio buildDioClient({required SecureStorageService storage}) {
   if (config.isMock) {
     final mock = MockInterceptor();
     registerFoundationMocks(mock);
+    registerSpecialtiesMocks(mock);
     // Before registerSearchMocks: its doctor-detail handler matches any
     // '/v1/doctors/...' path by prefix, which would otherwise swallow
     // '/v1/doctors/{id}/slots' too (see registerAvailabilityMocks' docstring).
     registerAvailabilityMocks(mock);
     registerSearchMocks(mock);
+    registerClinicMocks(mock);
+    registerClinicBranchMocks(mock);
+    registerPharmacyProfileMocks(mock);
+    registerPharmacyBranchMocks(mock);
     registerLabBookingMocks(mock);
     registerProviderRegistrationMocks(mock);
     registerProviderDashboardMocks(mock);

@@ -216,11 +216,24 @@ class _HeaderCard extends StatelessWidget {
                   args: ['${profile.experienceYears}'],
                 ),
               ),
-              _InfoChip(
-                icon: Icons.local_hospital_outlined,
-                label: profile.clinicName,
-                iconColor: brandBlue,
-              ),
+              if (profile.clinicBranchId != null)
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => context.push(
+                    '/patient/clinic-branches/${profile.clinicBranchId}',
+                  ),
+                  child: _InfoChip(
+                    icon: Icons.local_hospital_outlined,
+                    label: profile.clinicName,
+                    iconColor: brandBlue,
+                  ),
+                )
+              else
+                _InfoChip(
+                  icon: Icons.local_hospital_outlined,
+                  label: profile.clinicName,
+                  iconColor: brandBlue,
+                ),
               _InfoChip(
                 icon: Icons.star,
                 iconColor: const Color(0xFFF59E0B),
@@ -246,6 +259,14 @@ class _AboutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasBio = profile.bio.trim().isNotEmpty;
+    final hasCredentials =
+        profile.qualifications.isNotEmpty || profile.fellowships.isNotEmpty;
+    // Nothing to show yet (seeded/demo doctors often have no bio or
+    // credentials filled in) — an empty card with just a header reads as
+    // broken, so skip rendering it entirely rather than show blank space.
+    if (!hasBio && !hasCredentials) return const SizedBox.shrink();
+
     final textTheme = Theme.of(context).textTheme;
     return _Card(
       child: Column(
@@ -264,17 +285,23 @@ class _AboutCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            profile.bio,
-            style: textTheme.bodyMedium?.copyWith(
-              color: _ink.withValues(alpha: 0.8),
-              height: 1.5,
+          if (hasBio) ...[
+            const SizedBox(height: 10),
+            Text(
+              profile.bio,
+              style: textTheme.bodyMedium?.copyWith(
+                color: _ink.withValues(alpha: 0.8),
+                height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 14),
+          ],
+          if (hasBio && hasCredentials) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+          ] else if (hasCredentials) ...[
+            const SizedBox(height: 14),
+          ],
           ...profile.qualifications.map(
             (q) => Padding(
               padding: const EdgeInsets.only(bottom: 10),

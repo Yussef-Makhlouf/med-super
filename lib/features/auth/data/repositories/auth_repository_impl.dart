@@ -153,9 +153,15 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<User>> updateProfile({required String displayName}) async {
+  Future<Result<User>> updateProfile({
+    required String displayName,
+    String? email,
+  }) async {
     try {
-      final dto = await _remote.updateProfile(displayName: displayName);
+      final dto = await _remote.updateProfile(
+        displayName: displayName,
+        email: email,
+      );
       return Result.ok(dto.toEntity());
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));

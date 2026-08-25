@@ -13,7 +13,20 @@ an artificial `Future.delayed`.
 **Before going further:** either wire this through `MockInterceptor` like
 every other feature (for consistency and so `dio_client.dart`'s interceptor
 chain is actually exercised), or clearly mark the UI as a static prototype.
-Do not connect this to a real backend endpoint — none exists.
+Do not connect the pharmacy *search/select* flow to a real backend endpoint
+— Pharmacy Fulfillment (Phase 7) still doesn't exist, so there is still no
+`GET /v1/pharmacies/search`-equivalent to call.
+
+**Partial exception, added 2026-08-25:** `PharmacySelectScreen`'s cards now
+have an optional drill-down — tapping a pharmacy's name/address (not the
+"اختر" CTA) opens `provider_profile`'s real `PharmacyDetailsScreen`
+(`GET /v1/pharmacies/:id`, **Provider Directory / Phase 2**, a different,
+already-complete backend module — not Pharmacy Fulfillment/Phase 7), with a
+"select and continue" action wired back into this flow via the route's
+`extra`. This only works because `mockPharmacies`' 3 entries were given
+fixed real UUIDs matching demo pharmacies seeded in `clinic-reservations`'
+`db/seed.ts` — the list itself is still 100% hardcoded, just pointing at
+real ids instead of placeholder strings like `'ph1'`.
 
 ## Not affected by ADR-006
 

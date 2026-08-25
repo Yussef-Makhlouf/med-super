@@ -53,4 +53,13 @@ abstract final class AppFormatters {
     }
     return e164;
   }
+
+  /// Wraps an LTR-only string (phone numbers, IDs, ...) in Unicode
+  /// directional-isolate marks (U+2066/U+2069) so it renders left-to-right
+  /// in place even inside an RTL (Arabic) layout — without forcing an entire
+  /// widget subtree's `Directionality`, which would also flip any
+  /// surrounding Arabic text. Without this, a string like "+20 123 456 7890"
+  /// gets bidi-reordered into something like "0987 654 321 02+" when it sits
+  /// inside RTL text.
+  static String ltrIsolate(String value) => '⁦$value⁩';
 }

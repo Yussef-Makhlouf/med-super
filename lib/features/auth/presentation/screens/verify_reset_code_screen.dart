@@ -11,6 +11,7 @@ import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/network/mock/mock_responses.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
 /// Verify-reset-code screen — the forgot-password flow's dedicated OTP-verify
@@ -93,10 +94,12 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
       final local = digits.length > 11
           ? digits.substring(digits.length - 11)
           : digits;
-      return '+20 ${local[0]}X ${local.substring(2, 5)} '
-          '${local.substring(5, 8)} ${local.substring(8)}';
+      return AppFormatters.ltrIsolate(
+        '+20 ${local.substring(0, 2)} ${local.substring(2, 5)} '
+        '${local.substring(5, 8)} ${local.substring(8)}',
+      );
     }
-    return '+20 ${widget.phone}';
+    return AppFormatters.ltrIsolate('+20 ${widget.phone}');
   }
 
   Future<void> _verify() async {

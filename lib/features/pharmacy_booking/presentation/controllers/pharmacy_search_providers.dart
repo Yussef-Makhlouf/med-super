@@ -6,14 +6,16 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_sta
 
 /// Hand-rolled (no `@riverpod` codegen — see the feature's build notes)
 /// mock data source for step 2 of the pharmacy booking flow. There is no
-/// backend endpoint for this yet, so a short simulated delay stands in for
-/// the network round trip a real `FutureProvider` would await, which keeps
-/// the loading-skeleton state exercised the same way it would be for real
-/// data.
+/// backend search/list endpoint for pharmacies yet (only `GET
+/// /v1/pharmacies/:id` exists), so this list itself stays hardcoded — but
+/// each `id` below is a real, fixed-UUID pharmacy seeded on the backend
+/// (`db/seed.ts`'s `demoPharmacies`), so tapping through to the real detail
+/// screen (`PharmacyDetailsScreen`, `GET /v1/pharmacies/:id`) actually
+/// resolves instead of 404ing on a placeholder id like the old `'ph1'`.
 @visibleForTesting
 const mockPharmacies = <Pharmacy>[
   Pharmacy(
-    id: 'ph1',
+    id: '00000000-0000-0000-0000-000000000101',
     name: 'صيدلية النهدي',
     address: 'شارع التحلية، الرياض',
     distanceKm: 1.2,
@@ -24,7 +26,7 @@ const mockPharmacies = <Pharmacy>[
     status: PharmacyStatus(state: PharmacyOpenState.open24h),
   ),
   Pharmacy(
-    id: 'ph2',
+    id: '00000000-0000-0000-0000-000000000102',
     name: 'صيدلية الدواء',
     address: 'طريق الملك فهد، الرياض',
     distanceKm: 2.5,
@@ -35,7 +37,7 @@ const mockPharmacies = <Pharmacy>[
     status: PharmacyStatus(state: PharmacyOpenState.openUntil, time: '11:30 م'),
   ),
   Pharmacy(
-    id: 'ph3',
+    id: '00000000-0000-0000-0000-000000000103',
     name: 'صيدلية المجتمع',
     address: 'حي العليا، الرياض',
     distanceKm: 3.8,

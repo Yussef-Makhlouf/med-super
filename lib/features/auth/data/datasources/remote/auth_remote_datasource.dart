@@ -137,10 +137,16 @@ class AuthRemoteDatasource {
     return UserDto.fromJson(response.data ?? const <String, dynamic>{});
   }
 
-  Future<UserDto> updateProfile({required String displayName}) async {
+  Future<UserDto> updateProfile({
+    required String displayName,
+    String? email,
+  }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       ApiPaths.me,
-      data: {'display_name': displayName},
+      data: {
+        'display_name': displayName,
+        if (email != null) 'email': email,
+      },
     );
     return UserDto.fromJson(response.data ?? const <String, dynamic>{});
   }

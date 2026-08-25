@@ -18,6 +18,14 @@ class DoctorResultCard extends StatelessWidget {
   static const _ink = Color(0xFF1A2B4A);
   static const _muted = Color(0xFF8A94A6);
 
+  // Small semantic accent set — one color per meta-row kind instead of a
+  // single flat gray, so the card reads as a modern dashboard row rather
+  // than plain muted text. Kept local (not AppColors) per this file's own
+  // established palette, matching every other Sprint 0/1/2 screen.
+  static const _amber = Color(0xFFF59E0B);
+  static const _teal = Color(0xFF0F766E);
+  static const _green = Color(0xFF16A34A);
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -31,17 +39,11 @@ class DoctorResultCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,19 +113,21 @@ class DoctorResultCard extends StatelessWidget {
               const SizedBox(height: 12),
               _MetaRow(
                 icon: Icons.star,
-                iconColor: const Color(0xFFF59E0B),
+                iconColor: _amber,
                 text:
                     '${doctor.rating.toStringAsFixed(1)} (${doctor.reviewCount})',
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               _MetaRow(
                 icon: Icons.place_outlined,
+                iconColor: _teal,
                 text:
                     '${doctor.locationLabel} (${doctor.distanceKm.toStringAsFixed(1)} كم)',
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               _MetaRow(
                 icon: Icons.payments_outlined,
+                iconColor: _green,
                 text: 'search.consultation_fee'.tr(args: [feeLabel]),
               ),
               const SizedBox(height: 14),
@@ -167,13 +171,23 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: 6),
+        Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: DoctorResultCard._ink.withValues(alpha: 0.75),
+              color: DoctorResultCard._ink.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -194,7 +208,13 @@ class _Avatar extends StatelessWidget {
       child: Container(
         width: 64,
         height: 64,
-        color: const Color(0xFFDCE8FF),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFDCE8FF), Color(0xFFB8CFFC)],
+          ),
+        ),
         child: photoUrl != null
             ? Image.network(photoUrl!, fit: BoxFit.cover)
             : const Icon(Icons.person, color: brandBlue, size: 32),

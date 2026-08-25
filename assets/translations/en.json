@@ -87,11 +87,15 @@
   },
   "onboarding": {
     "title": "Complete your profile",
-    "subtitle": "Optional — you can skip and finish later from Profile.",
+    "subtitle": "We need a couple of details before you continue.",
     "name_label": "Display name",
     "name_hint": "Your name",
-    "continue": "Continue",
-    "skip": "Skip for now"
+    "name_required": "Please enter your name",
+    "email_label": "Email",
+    "email_hint": "you@example.com",
+    "email_required": "Please enter your email",
+    "email_invalid": "Please enter a valid email address",
+    "continue": "Continue"
   },
   "nav": {
     "home": "Home",
@@ -120,12 +124,8 @@
     "book_labs": "Book labs",
     "book_labs_sub": "Nearest accredited labs",
     "specialties": "Medical specialties",
-    "nearby_doctors": "Doctors near you",
-    "view_map": "View map",
-    "book": "Book",
-    "doctors_count": "{} doctors",
-    "available_today": "Available today - {}",
-    "available_tomorrow": "Available tomorrow - {}",
+    "featured_doctors": "Featured doctors",
+    "specialties_empty": "No specialties available right now",
     "patient": {
       "title": "MedSuper",
       "upcoming": "Upcoming appointments",
@@ -143,6 +143,35 @@
     "dermatology": "Dermatology",
     "dental": "Dental",
     "ophthalmology": "Ophthalmology"
+  },
+  "clinic_profile": {
+    "title": "Clinic details",
+    "no_branches": "No branches listed for this clinic",
+    "branch_count": "{} branch(es)",
+    "branch": "Branch"
+  },
+  "clinic_branch": {
+    "title": "Clinic Branch",
+    "address": "Address",
+    "contact": "Contact",
+    "status_verified": "Verified",
+    "status_pending": "Pending",
+    "status_suspended": "Suspended"
+  },
+  "pharmacy_profile": {
+    "title": "Pharmacy",
+    "no_branches": "No branches available",
+    "branch": "Branch",
+    "branch_count": "{} branches",
+    "delivery_capable": "Delivery available"
+  },
+  "pharmacy_branch": {
+    "title": "Pharmacy branch",
+    "contact": "Contact",
+    "address": "Address",
+    "delivery_available": "Delivery available",
+    "order_cta": "Order medicine",
+    "order_soon": "Ordering comes in a later sprint"
   },
   "appointments": {
     "title": "Appointments",

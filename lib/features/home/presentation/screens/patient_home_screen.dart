@@ -2,8 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/specialties/domain/entities/specialty.dart';
+import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
+import 'package:med_super/core/specialties/presentation/utils/specialty_visuals.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/home/presentation/controllers/featured_doctors_provider.dart';
+import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
 import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
 /// Patient home — matches Figma light dashboard.
@@ -64,22 +70,13 @@ class PatientHomeScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _SectionHeader(
-                  title: 'home.nearby_doctors'.tr(),
-                  actionLabel: 'home.view_map'.tr(),
-                  onAction: () => context.push('/patient/search'),
-                ),
+                child: _SectionHeader(title: 'home.featured_doctors'.tr()),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 12)),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList.separated(
-                itemCount: _mockDoctors.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) =>
-                    _DoctorCard(doctor: _mockDoctors[index]),
-              ),
+              sliver: const SliverToBoxAdapter(child: _FeaturedDoctorsList()),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 88)),
           ],
@@ -397,34 +394,35 @@ class _QuickActionCard extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.actionLabel,
-    required this.onAction,
-  });
+  const _SectionHeader({required this.title, this.actionLabel, this.onAction})
+    : assert(
+        (actionLabel == null) == (onAction == null),
+        'actionLabel and onAction must both be set or both be omitted',
+      );
 
   final String title;
-  final String actionLabel;
-  final VoidCallback onAction;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        TextButton(
-          onPressed: onAction,
-          style: TextButton.styleFrom(
-            foregroundColor: brandBlue,
-            padding: EdgeInsets.zero,
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        if (actionLabel != null)
+          TextButton(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              foregroundColor: brandBlue,
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              actionLabel!,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
-          child: Text(
-            actionLabel,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ),
         const Spacer(),
         Text(
           title,
@@ -438,99 +436,47 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SpecialtiesRow extends StatelessWidget {
+/// Real `GET /v1/specialties` list (public, no auth) — replaces the
+/// previously hardcoded 5-item catalog. Icons/colors are still client-side
+/// (the backend carries no visual metadata for a specialty), resolved via
+/// [specialtyVisualForCode]; the display name and the code used to filter
+/// search now come straight from the API response.
+class _SpecialtiesRow extends ConsumerWidget {
   const _SpecialtiesRow();
 
-  static final _items = <({IconData icon, Color color, String key, int count})>[
-    (
-      icon: Icons.favorite,
-      color: const Color(0xFFEF4444),
-      key: 'specialties.cardio',
-      count: 120,
-    ),
-    (
-      icon: Icons.child_care,
-      color: const Color(0xFF06B6D4),
-      key: 'specialties.pediatrics',
-      count: 85,
-    ),
-    (
-      icon: Icons.spa_outlined,
-      color: const Color(0xFF14B8A6),
-      key: 'specialties.dermatology',
-      count: 64,
-    ),
-    (
-      icon: Icons.medical_services_outlined,
-      color: brandBlue,
-      key: 'specialties.dental',
-      count: 98,
-    ),
-    (
-      icon: Icons.visibility_outlined,
-      color: const Color(0xFFF97316),
-      key: 'specialties.ophthalmology',
-      count: 42,
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final specialties = ref.watch(specialtiesProvider);
     return SizedBox(
       height: 118,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final item = _items[index];
-          return SizedBox(
-            width: 78,
-            child: InkWell(
-              onTap: () => context.push(
-                '/patient/search?specialty=${item.key.split('.').last}',
+      child: AsyncValueView(
+        value: specialties,
+        onRetry: () => ref.invalidate(specialtiesProvider),
+        loadingWidget: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+        data: (items) {
+          if (items.isEmpty) {
+            return Center(
+              child: Text(
+                'home.specialties_empty'.tr(),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: PatientHomeScreen._muted),
               ),
-              borderRadius: BorderRadius.circular(12),
-              child: Column(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(item.icon, color: item.color, size: 28),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.key.tr(),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.labelMedium?.copyWith(
-                      color: PatientHomeScreen._ink,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    'home.doctors_count'.tr(args: ['${item.count}']),
-                    style: textTheme.labelSmall?.copyWith(
-                      color: PatientHomeScreen._muted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            );
+          }
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, index) =>
+                _SpecialtyItem(specialty: items[index]),
           );
         },
       ),
@@ -538,238 +484,86 @@ class _SpecialtiesRow extends StatelessWidget {
   }
 }
 
-class _DoctorCard extends StatelessWidget {
-  const _DoctorCard({required this.doctor});
+class _SpecialtyItem extends StatelessWidget {
+  const _SpecialtyItem({required this.specialty});
 
-  final _Doctor doctor;
+  final Specialty specialty;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final availabilityColor = doctor.today
-        ? const Color(0xFF16A34A)
-        : brandBlue;
-
-    return Material(
-      color: Colors.white,
-      elevation: 0,
-      borderRadius: BorderRadius.circular(18),
-      shadowColor: Colors.black12,
+    final visual = specialtyVisualForCode(specialty.code);
+    final name = specialty.localizedName(context.locale.languageCode);
+    return SizedBox(
+      width: 78,
       child: InkWell(
-        onTap: () => context.push('/patient/doctors/${doctor.id}'),
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          doctor.rating.toStringAsFixed(1),
-                          style: textTheme.labelMedium?.copyWith(
-                            color: const Color(0xFFEA580C),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        const Icon(
-                          Icons.star,
-                          size: 14,
-                          color: Color(0xFFF59E0B),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () =>
-                        context.push('/patient/doctors/${doctor.id}'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: brandBlue,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(72, 36),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: Text(
-                      'home.book'.tr(),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
+        onTap: () => context.push(
+          '/patient/search'
+          '?specialty=${Uri.encodeComponent(specialty.code)}'
+          '&title=${Uri.encodeComponent(name)}',
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      doctor.name,
-                      style: textTheme.titleSmall?.copyWith(
-                        color: PatientHomeScreen._ink,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      doctor.specialty,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF16A34A),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${doctor.price} LE',
-                          style: textTheme.labelMedium?.copyWith(
-                            color: PatientHomeScreen._muted,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.payments_outlined,
-                          size: 14,
-                          color: PatientHomeScreen._muted,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${doctor.distanceKm} km',
-                          style: textTheme.labelMedium?.copyWith(
-                            color: PatientHomeScreen._muted,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.place_outlined,
-                          size: 14,
-                          color: PatientHomeScreen._muted,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: availabilityColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        doctor.today
-                            ? 'home.available_today'.tr(
-                                args: [doctor.timeLabel],
-                              )
-                            : 'home.available_tomorrow'.tr(
-                                args: [doctor.timeLabel],
-                              ),
-                        style: textTheme.labelSmall?.copyWith(
-                          color: availabilityColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              child: Icon(visual.icon, color: visual.color, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.labelMedium?.copyWith(
+                color: PatientHomeScreen._ink,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 12),
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: doctor.avatarColor,
-                child: Text(
-                  doctor.initials,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Doctor {
-  const _Doctor({
-    required this.id,
-    required this.name,
-    required this.specialty,
-    required this.distanceKm,
-    required this.price,
-    required this.rating,
-    required this.timeLabel,
-    required this.today,
-    required this.initials,
-    required this.avatarColor,
-  });
+class _FeaturedDoctorsList extends ConsumerWidget {
+  const _FeaturedDoctorsList();
 
-  final String id;
-  final String name;
-  final String specialty;
-  final double distanceKm;
-  final int price;
-  final double rating;
-  final String timeLabel;
-  final bool today;
-  final String initials;
-  final Color avatarColor;
+  void _openDoctor(BuildContext context, String doctorId) =>
+      context.push('/patient/doctors/$doctorId');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final doctors = ref.watch(featuredDoctorsProvider);
+    return AsyncValueView(
+      value: doctors,
+      onRetry: () => ref.invalidate(featuredDoctorsProvider),
+      data: (list) => Column(
+        children: [
+          for (final doctor in list) ...[
+            DoctorResultCard(
+              doctor: doctor,
+              onTap: () => _openDoctor(context, doctor.id),
+              onBook: () => _openDoctor(context, doctor.id),
+            ),
+            if (doctor != list.last) const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
-const _mockDoctors = [
-  _Doctor(
-    id: 'doc-sara',
-    name: 'د. سارة المنصور',
-    specialty: 'استشاري طب الأطفال',
-    distanceKm: 2.5,
-    price: 300,
-    rating: 4.8,
-    timeLabel: '06:00 م',
-    today: true,
-    initials: 'س',
-    avatarColor: Color(0xFF7C3AED),
-  ),
-  _Doctor(
-    id: 'doc-mahmoud',
-    name: 'د. محمود حامد',
-    specialty: 'استشاري جراحة القلب',
-    distanceKm: 4.2,
-    price: 500,
-    rating: 4.9,
-    timeLabel: '10:00 ص',
-    today: false,
-    initials: 'م',
-    avatarColor: Color(0xFF0EA5E9),
-  ),
-];

@@ -23,7 +23,14 @@ abstract final class ApiPaths {
   // backend/frontend parity audit (med-super/docs/backend_frontend_parity_matrix.md).
   static const doctors = '/v1/doctors';
   static const clinics = '/v1/clinics';
+  static const clinicBranches = '/v1/clinic-branches';
+  static const pharmacies = '/v1/pharmacies';
+  static const pharmacyBranches = '/v1/pharmacy-branches';
   static const searchDoctors = '/v1/doctors/search';
+  // Static seed data (provider-directory module's SpecialtiesController) —
+  // public, no auth, GET only. Returns a raw `Specialty[]` array as the
+  // envelope's `data` field (no `{items:[...]}` wrapper).
+  static const specialties = '/v1/specialties';
 
   // Appointments
   static const appointments = '/v1/appointments';

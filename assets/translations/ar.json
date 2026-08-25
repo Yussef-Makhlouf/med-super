@@ -87,11 +87,15 @@
   },
   "onboarding": {
     "title": "أكمل ملفك الشخصي",
-    "subtitle": "اختياري — يمكنك التخطي وإكماله لاحقاً من الحساب.",
+    "subtitle": "محتاجين بعض البيانات قبل ما تكمل.",
     "name_label": "الاسم المعروض",
     "name_hint": "اسمك",
-    "continue": "متابعة",
-    "skip": "تخطي الآن"
+    "name_required": "من فضلك أدخل اسمك",
+    "email_label": "البريد الإلكتروني",
+    "email_hint": "you@example.com",
+    "email_required": "من فضلك أدخل بريدك الإلكتروني",
+    "email_invalid": "من فضلك أدخل بريد إلكتروني صحيح",
+    "continue": "متابعة"
   },
   "nav": {
     "home": "الرئيسية",
@@ -120,12 +124,8 @@
     "book_labs": "حجز تحاليل",
     "book_labs_sub": "أقرب المعامل المعتمدة",
     "specialties": "التخصصات الطبية",
-    "nearby_doctors": "أطباء بالقرب منك",
-    "view_map": "مشاهدة الخريطة",
-    "book": "احجز",
-    "doctors_count": "{} طبيب",
-    "available_today": "متاح اليوم - {}",
-    "available_tomorrow": "متاح غداً - {}",
+    "featured_doctors": "أطباء مميزون",
+    "specialties_empty": "لا توجد تخصصات متاحة حاليًا",
     "patient": {
       "title": "ميدسوبر",
       "upcoming": "المواعيد القادمة",
@@ -143,6 +143,35 @@
     "dermatology": "جلدية",
     "dental": "أسنان",
     "ophthalmology": "عيون"
+  },
+  "clinic_profile": {
+    "title": "تفاصيل العيادة",
+    "no_branches": "لا توجد فروع مسجلة لهذه العيادة",
+    "branch_count": "{} فرع",
+    "branch": "فرع"
+  },
+  "clinic_branch": {
+    "title": "فرع العيادة",
+    "address": "العنوان",
+    "contact": "التواصل",
+    "status_verified": "موثّق",
+    "status_pending": "قيد المراجعة",
+    "status_suspended": "موقوف"
+  },
+  "pharmacy_profile": {
+    "title": "الصيدلية",
+    "no_branches": "لا توجد فروع متاحة",
+    "branch": "فرع",
+    "branch_count": "{} فروع",
+    "delivery_capable": "التوصيل متاح"
+  },
+  "pharmacy_branch": {
+    "title": "فرع الصيدلية",
+    "contact": "التواصل",
+    "address": "العنوان",
+    "delivery_available": "التوصيل متاح",
+    "order_cta": "اطلب دواء",
+    "order_soon": "خاصية الطلب قادمة في مرحلة لاحقة"
   },
   "appointments": {
     "title": "مواعيدي",

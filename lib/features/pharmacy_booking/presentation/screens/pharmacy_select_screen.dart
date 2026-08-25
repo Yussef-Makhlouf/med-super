@@ -61,6 +61,21 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     context.push('/patient/pharmacy/review');
   }
 
+  /// Opens the pharmacy's full profile (the same real screen wired to
+  /// `GET /v1/pharmacies/:id`) with a "select and continue" action baked in
+  /// via the route's `extra` — so choosing can happen either straight from
+  /// this compact card (`_select` above, unchanged) or after reading the
+  /// full profile first.
+  void _viewDetails(String pharmacyId) {
+    context.push(
+      '/patient/pharmacies/$pharmacyId',
+      extra: () {
+        _select(pharmacyId);
+        _next();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pharmaciesAsync = ref.watch(filteredPharmaciesProvider);
@@ -154,6 +169,7 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
                                 pharmacy: pharmacy,
                                 isSelected: pharmacy.id == selectedId,
                                 onSelect: () => _select(pharmacy.id),
+                                onViewDetails: () => _viewDetails(pharmacy.id),
                               ),
                             ),
                           )

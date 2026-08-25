@@ -13,8 +13,8 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pha
 
 /// Step 1 of the pharmacy booking flow — attach a photo of the prescription
 /// and choose how the medication should be received. Mirrors the structure
-/// of `LabRequestUploadScreen` (lab_booking) but with a plain-text header
-/// (no back arrow) and side-by-side delivery-method cards per the mockup.
+/// of `LabRequestUploadScreen` (lab_booking), including its back-button
+/// header, with side-by-side delivery-method cards per the mockup.
 class PharmacyPrescriptionUploadScreen extends ConsumerStatefulWidget {
   const PharmacyPrescriptionUploadScreen({super.key});
 
@@ -145,14 +145,27 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          'pharmacy_booking.upload.title'.tr(),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink900,
-          ),
+        child: Row(
+          children: [
+            // Balances the trailing back button's width so the title stays
+            // visually centered — mirrors LabRequestUploadScreen's header.
+            const SizedBox(width: 48),
+            Expanded(
+              child: Text(
+                'pharmacy_booking.upload.title'.tr(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink900,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => context.pop(),
+              icon: const Icon(Icons.arrow_forward),
+            ),
+          ],
         ),
       ),
     );

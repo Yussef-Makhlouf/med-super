@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/simple_success_screen.dart';
@@ -137,7 +138,7 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                     ),
                     ReviewRow(
                       'provider_registration.review.phone_row'.tr(),
-                      phone,
+                      AppFormatters.ltrIsolate(phone),
                     ),
                     if (draft.email.trim().isNotEmpty)
                       ReviewRow(

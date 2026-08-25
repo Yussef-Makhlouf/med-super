@@ -14,12 +14,20 @@ class PharmacyCard extends StatelessWidget {
     required this.pharmacy,
     required this.isSelected,
     required this.onSelect,
+    this.onViewDetails,
     super.key,
   });
 
   final Pharmacy pharmacy;
   final bool isSelected;
   final VoidCallback onSelect;
+
+  /// Tapping the pharmacy's name/address (as opposed to the trailing "اختر"
+  /// CTA) opens its full profile first — an optional drill-down, so the
+  /// patient can either commit straight from this compact card (unchanged
+  /// behavior) or read more before deciding. Null hides no UI; it just makes
+  /// that area non-interactive, same as before this was added.
+  final VoidCallback? onViewDetails;
 
   static const _openDot = Color(0xFF22C55E);
 
@@ -50,48 +58,57 @@ class PharmacyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
+          InkWell(
+            onTap: onViewDetails,
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: const Icon(
+                    Icons.local_pharmacy,
+                    color: Color(0xFF15803D),
+                    size: 22,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.local_pharmacy,
-                  color: Color(0xFF15803D),
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pharmacy.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink900,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pharmacy.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pharmacy.address,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.mutedText2,
+                      const SizedBox(height: 2),
+                      Text(
+                        pharmacy.address,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.mutedText2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                if (onViewDetails != null)
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.mutedText2,
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           Row(

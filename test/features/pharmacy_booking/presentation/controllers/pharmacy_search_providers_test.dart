@@ -3,6 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_sort_option.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 
+// Matches `mockPharmacies`' fixed-UUID ids (kept in sync with the real
+// backend's seeded demo pharmacies — see that list's own doc comment).
+const _ph1 = '00000000-0000-0000-0000-000000000101';
+const _ph2 = '00000000-0000-0000-0000-000000000102';
+const _ph3 = '00000000-0000-0000-0000-000000000103';
+
 void main() {
   late ProviderContainer container;
 
@@ -16,7 +22,7 @@ void main() {
       final result = await container.read(pharmaciesProvider.future);
 
       expect(result, hasLength(3));
-      expect(result.map((p) => p.id), ['ph1', 'ph2', 'ph3']);
+      expect(result.map((p) => p.id), [_ph1, _ph2, _ph3]);
     });
   });
 
@@ -26,8 +32,8 @@ void main() {
     });
 
     test('select stores the chosen pharmacy id', () {
-      container.read(selectedPharmacyProvider.notifier).select('ph2');
-      expect(container.read(selectedPharmacyProvider), 'ph2');
+      container.read(selectedPharmacyProvider.notifier).select(_ph2);
+      expect(container.read(selectedPharmacyProvider), _ph2);
     });
   });
 
@@ -69,7 +75,7 @@ void main() {
   group('filteredPharmaciesProvider', () {
     test('defaults to nearest-first order', () async {
       final result = await container.read(filteredPharmaciesProvider.future);
-      expect(result.map((p) => p.id), ['ph1', 'ph2', 'ph3']);
+      expect(result.map((p) => p.id), [_ph1, _ph2, _ph3]);
     });
 
     test('sorts by rating descending when topRated is selected', () async {
@@ -78,28 +84,28 @@ void main() {
           .select(PharmacySortOption.topRated);
 
       final result = await container.read(filteredPharmaciesProvider.future);
-      expect(result.map((p) => p.id), ['ph1', 'ph2', 'ph3']);
+      expect(result.map((p) => p.id), [_ph1, _ph2, _ph3]);
     });
 
     test('filters out closed pharmacies when openNowOnly is true', () async {
       container.read(pharmacyOpenNowOnlyFilterProvider.notifier).toggle();
 
       final result = await container.read(filteredPharmaciesProvider.future);
-      expect(result.map((p) => p.id), ['ph1', 'ph2']);
+      expect(result.map((p) => p.id), [_ph1, _ph2]);
     });
 
     test('filters by name matching the search query', () async {
       container.read(pharmacySearchQueryProvider.notifier).setQuery('الدواء');
 
       final result = await container.read(filteredPharmaciesProvider.future);
-      expect(result.map((p) => p.id), ['ph2']);
+      expect(result.map((p) => p.id), [_ph2]);
     });
 
     test('filters by address matching the search query', () async {
       container.read(pharmacySearchQueryProvider.notifier).setQuery('العليا');
 
       final result = await container.read(filteredPharmaciesProvider.future);
-      expect(result.map((p) => p.id), ['ph3']);
+      expect(result.map((p) => p.id), [_ph3]);
     });
 
     test('returns an empty list when nothing matches the query', () async {
