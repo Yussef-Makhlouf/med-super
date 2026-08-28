@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,15 +24,27 @@ class ProviderProfileScreen extends ConsumerWidget {
     final doctorAccountAsync = ref.watch(doctorAccountProvider);
     final session = ref.watch(sessionControllerProvider).asData?.value;
 
-    final doctorName = doctorAccountAsync.maybeWhen(
-      data: (acc) => acc.name,
-      orElse: () => session?.user.displayName ?? 'د. أحمد علي',
-    );
+    // Assistants see a stripped-down profile: only personal info + logout.
+    final isAssistant = session?.user.isAssistant ?? false;
 
-    final hospitalName = doctorAccountAsync.maybeWhen(
-      data: (acc) => '${acc.hospitalName} • ${acc.specialty}',
-      orElse: () => 'مستشفى الملك فيصل التخصصي',
-    );
+    // For assistants: name comes from session (their own display name),
+    // subtitle shows a generic "مساعد طبي" — they have no hospital/specialty.
+    // For doctors: name comes from doctorAccountProvider, subtitle = hospital + specialty.
+    final displayName = isAssistant
+        ? (session?.user.displayName ?? 'المساعد')
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => acc.name,
+            orElse: () => session?.user.displayName ?? 'د. أحمد علي',
+          );
+
+    final doctorName = displayName;
+
+    final hospitalName = isAssistant
+        ? 'مساعد طبي'
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => '${acc.hospitalName} • ${acc.specialty}',
+            orElse: () => 'مستشفى الملك فيصل التخصصي',
+          );
 
     final avatarUrl = doctorAccountAsync.maybeWhen(
       data: (acc) => acc.avatarUrl,
@@ -122,55 +135,68 @@ class ProviderProfileScreen extends ConsumerWidget {
                     iconBg: brandBlue.withValues(alpha: 0.1),
                     iconColor: brandBlue,
                     title: 'المعلومات الشخصية',
-                    subtitle: 'الاسم، التخصص، سنوات الخبرة',
+                    subtitle: isAssistant ? 'الاسم والصورة الشخصية' : 'الاسم، التخصص، سنوات الخبرة',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ProviderEditProfileScreen(),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  _buildNavTile(
-                    icon: Icons.domain_outlined,
-                    iconBg: const Color(0xFFECFDF5),
-                    iconColor: const Color(0xFF10B981),
-                    title: 'إعدادات العيادة',
-                    subtitle: 'العنوان، معلومات الاتصال',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProviderClinicSettingsScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildNavTile(
-                    icon: Icons.calendar_today_outlined,
-                    iconBg: const Color(0xFFF3E8FF),
-                    iconColor: const Color(0xFFA855F7),
-                    title: 'جدول المواعيد',
-                    subtitle: 'ساعات العمل والحضور',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProviderScheduleEditorScreen(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _buildNavTile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    iconBg: const Color(0xFFEFF6FF),
-                    iconColor: brandBlue,
-                    title: 'المحفظة',
-                    subtitle: 'الرصيد والمعاملات المالية',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        settings: const RouteSettings(
-                          name: WalletDashboardScreen.routeName,
+                  // Doctor-only tiles — hidden from assistants
+                  if (!isAssistant) ...[
+                    const SizedBox(height: 14),
+                    _buildNavTile(
+                      icon: Icons.domain_outlined,
+                      iconBg: const Color(0xFFECFDF5),
+                      iconColor: const Color(0xFF10B981),
+                      title: 'إعدادات العيادة',
+                      subtitle: 'العنوان، معلومات الاتصال',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderClinicSettingsScreen(),
                         ),
-                        builder: (_) => const WalletDashboardScreen(),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 14),
+                    _buildNavTile(
+                      icon: Icons.calendar_today_outlined,
+                      iconBg: const Color(0xFFF3E8FF),
+                      iconColor: const Color(0xFFA855F7),
+                      title: 'جدول المواعيد',
+                      subtitle: 'ساعات العمل والحضور',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderScheduleEditorScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildNavTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      iconBg: const Color(0xFFEFF6FF),
+                      iconColor: brandBlue,
+                      title: 'المحفظة',
+                      subtitle: 'الرصيد والمعاملات المالية',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(
+                            name: WalletDashboardScreen.routeName,
+                          ),
+                          builder: (_) => const WalletDashboardScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    // Doctor-only: manage clinic assistants
+                    _buildNavTile(
+                      icon: Icons.badge_outlined,
+                      iconBg: const Color(0xFFFFF7ED),
+                      iconColor: const Color(0xFFF97316),
+                      title: 'assistants.title'.tr(),
+                      subtitle: 'assistants.manage_subtitle'.tr(),
+                      onTap: () => context.push('/provider/assistants'),
+                    ),
+                  ],
                   const SizedBox(height: 36),
                   // Logout button — AppButton.outlined, same as every other
                   // action button across the provider dashboard screens.

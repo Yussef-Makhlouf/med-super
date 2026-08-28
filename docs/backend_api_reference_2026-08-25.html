@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<title>MedSuper API Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f7f7;
+    --surface: #ffffff;
+    --surface-2: #eaf1f1;
+    --border: #d9e3e3;
+    --border-soft: #e6eeee;
+    --ink: #132326;
+    --ink-2: #2b3d40;
+    --muted: #5c7276;
+    --muted-2: #7c8f92;
+    --accent: #0d7d87;
+    --accent-ink: #ffffff;
+    --accent-wash: #e2f2f2;
+    --code-bg: #eef4f4;
+    --code-ink: #10373b;
+
+    --get: #1f7a4d;    --get-bg: #e6f3ec;
+    --post: #1c5fa8;   --post-bg: #e7eefb;
+    --patch: #a3690f;  --patch-bg: #f8ecdb;
+    --delete: #ab3b3b; --delete-bg: #f7e6e6;
+
+    --shadow: 0 1px 2px rgba(19,35,38,0.04), 0 6px 20px -8px rgba(19,35,38,0.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1416;
+      --surface: #131c1f;
+      --surface-2: #172225;
+      --border: #223032;
+      --border-soft: #1c282a;
+      --ink: #e7eff0;
+      --ink-2: #cddadc;
+      --muted: #93a8ac;
+      --muted-2: #7c9195;
+      --accent: #3fc0c9;
+      --accent-ink: #06181a;
+      --accent-wash: #12292b;
+      --code-bg: #101a1c;
+      --code-ink: #bfe9ec;
+
+      --get: #57c98d;    --get-bg: #10281c;
+      --post: #6fa9e6;   --post-bg: #101f30;
+      --patch: #e3a655;  --patch-bg: #2c2213;
+      --delete: #e28080; --delete-bg: #2c1414;
+
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -12px rgba(0,0,0,0.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0d1416;
+    --surface: #131c1f;
+    --surface-2: #172225;
+    --border: #223032;
+    --border-soft: #1c282a;
+    --ink: #e7eff0;
+    --ink-2: #cddadc;
+    --muted: #93a8ac;
+    --muted-2: #7c9195;
+    --accent: #3fc0c9;
+    --accent-ink: #06181a;
+    --accent-wash: #12292b;
+    --code-bg: #101a1c;
+    --code-ink: #bfe9ec;
+
+    --get: #57c98d;    --get-bg: #10281c;
+    --post: #6fa9e6;   --post-bg: #101f30;
+    --patch: #e3a655;  --patch-bg: #2c2213;
+    --delete: #e28080; --delete-bg: #2c1414;
+
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px -12px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  code, .mono, .path, .field-type, .badge, pre, .cursor-key {
+    font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  a { color: var(--accent); }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 288px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--surface-2);
+    padding: 24px 18px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 4px;
+  }
+  .brand .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+  }
+  .brand .mark .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-wash);
+    flex: none;
+  }
+  .brand .sub {
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+
+  .search-wrap { position: relative; padding: 0 4px; }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 9px 12px 9px 30px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+  }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted-2); }
+  .search-wrap .count-live {
+    font-size: 11.5px; color: var(--muted); padding: 6px 4px 0; display: block;
+  }
+
+  .nav-group { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted-2); padding: 8px 8px 4px; font-weight: 600;
+  }
+  .nav-phase {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 7px 8px; border-radius: 7px; text-decoration: none;
+    color: var(--ink-2); font-size: 13.5px; font-weight: 500;
+  }
+  .nav-phase:hover { background: var(--surface); }
+  .nav-phase .n { color: var(--muted); font-weight: 600; }
+  .nav-phase .name { flex: 1; }
+  .nav-phase .count {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 1px 7px;
+  }
+  .nav-phase[data-built="false"] { opacity: 0.5; }
+
+  .legend {
+    padding: 12px 10px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); display: flex; flex-direction: column; gap: 7px;
+  }
+  .legend-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-2); font-weight: 600; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .legend-row .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- Main ---------- */
+  main { padding: 40px 48px 120px; max-width: 980px; }
+
+  .doc-head { margin-bottom: 36px; }
+  .doc-head .eyebrow {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent);
+    font-weight: 600; margin-bottom: 10px;
+  }
+  .doc-head h1 {
+    font-size: clamp(28px, 3.6vw, 38px); line-height: 1.12; margin: 0 0 12px; font-weight: 700;
+    text-wrap: balance; letter-spacing: -0.01em;
+  }
+  .doc-head p.lede {
+    color: var(--muted); max-width: 62ch; margin: 0; font-size: 15px;
+  }
+
+  .envelope-card {
+    margin-top: 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden;
+  }
+  .envelope-card .ev-panel { background: var(--surface); padding: 16px 18px; }
+  .envelope-card .ev-panel h3 {
+    margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .envelope-card .ev-panel.ok h3 { color: var(--get); }
+  .envelope-card .ev-panel.err h3 { color: var(--delete); }
+  .envelope-card pre { margin: 0; font-size: 12.5px; color: var(--code-ink); background: transparent; }
+
+  .phase-section { margin-top: 56px; scroll-margin-top: 24px; }
+  .phase-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 6px; flex-wrap: wrap; }
+  .phase-head .phase-n {
+    font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent); font-weight: 600;
+    border: 1px solid var(--border); background: var(--accent-wash); border-radius: 20px; padding: 2px 10px;
+  }
+  .phase-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.005em; }
+  .phase-status {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 9px; border-radius: 20px;
+  }
+  .phase-status.done { color: var(--get); background: var(--get-bg); }
+  .phase-status.partial { color: var(--patch); background: var(--patch-bg); }
+  .phase-desc { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; max-width: 68ch; }
+
+  .module-block { margin-top: 30px; }
+  .module-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border-soft);
+  }
+  .module-head h3 {
+    margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-2);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .module-head .module-note { font-size: 12px; color: var(--muted); }
+
+  .endpoint {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .endpoint > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .endpoint > summary::-webkit-details-marker { display: none; }
+  .endpoint > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .endpoint .chev {
+    color: var(--muted-2); flex: none; transition: transform 0.15s ease;
+    width: 14px; height: 14px;
+  }
+  .endpoint[open] > summary .chev { transform: rotate(90deg); }
+
+  .badge {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+    padding: 3px 8px; border-radius: 6px; flex: none; min-width: 52px; text-align: center;
+  }
+  .badge.get { color: var(--get); background: var(--get-bg); }
+  .badge.post { color: var(--post); background: var(--post-bg); }
+  .badge.patch { color: var(--patch); background: var(--patch-bg); }
+  .badge.delete { color: var(--delete); background: var(--delete-bg); }
+
+  .endpoint .path { font-size: 13.5px; font-weight: 500; color: var(--ink); flex: 1; word-break: break-all; }
+  .endpoint .path .param { color: var(--accent); }
+
+  .auth-pill {
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px;
+    flex: none; white-space: nowrap;
+  }
+  .auth-pill.public { color: var(--get); border-color: var(--get-bg); }
+  .auth-pill.optional { color: var(--patch); border-color: var(--patch-bg); }
+
+  .status-chip {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600;
+    color: var(--muted); flex: none;
+  }
+
+  .integ-badge {
+    display: inline-flex; align-items: center; gap: 5px; flex: none;
+    font-size: 11px; font-weight: 600; padding: 3px 9px 3px 7px; border-radius: 20px;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .integ-badge .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .integ-badge.ok { color: var(--get); background: var(--get-bg); }
+  .integ-badge.ok .dot { background: var(--get); }
+  .integ-badge.mismatch { color: var(--patch); background: var(--patch-bg); }
+  .integ-badge.mismatch .dot { background: var(--patch); }
+  .integ-badge.none { color: var(--muted); background: transparent; border-color: var(--border); }
+  .integ-badge.none .dot { background: var(--muted-2); }
+  .integ-badge.admin { color: var(--muted-2); background: transparent; border-color: var(--border-soft); }
+  .integ-badge.admin .dot { background: var(--muted-2); }
+  .integ-badge.fixed { color: var(--post); background: var(--post-bg); }
+  .integ-badge.fixed .dot { background: var(--post); }
+
+  .integ-note {
+    margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; line-height: 1.5;
+    border: 1px solid var(--border-soft); display: flex; gap: 8px; align-items: flex-start;
+  }
+  .integ-note.ok { color: var(--get); background: var(--get-bg); border-color: transparent; }
+  .integ-note.mismatch { color: var(--patch); background: var(--patch-bg); border-color: transparent; }
+  .integ-note.none { color: var(--ink-2); background: var(--surface-2); }
+  .integ-note.admin { color: var(--muted); background: var(--surface-2); }
+  .integ-note.fixed { color: var(--post); background: var(--post-bg); border-color: transparent; }
+  .integ-note b { font-weight: 700; }
+
+  .endpoint .body-wrap { padding: 4px 16px 18px; border-top: 1px solid var(--border-soft); }
+  .endpoint .desc { color: var(--muted); font-size: 13.5px; margin: 12px 0 16px; max-width: 70ch; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } .shell { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; } }
+
+  .block-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
+    color: var(--muted-2); margin-bottom: 8px; display: block;
+  }
+
+  table.fields { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.fields th {
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted-2); font-weight: 600; padding: 0 8px 6px 0; border-bottom: 1px solid var(--border-soft);
+  }
+  table.fields td {
+    padding: 7px 8px 7px 0; border-bottom: 1px solid var(--border-soft); vertical-align: top;
+  }
+  table.fields tr:last-child td { border-bottom: none; }
+  table.fields .fname { font-family: "IBM Plex Mono", monospace; color: var(--code-ink); white-space: nowrap; }
+  table.fields .fname .opt { color: var(--muted-2); }
+  table.fields .ftype { font-family: "IBM Plex Mono", monospace; color: var(--accent); white-space: nowrap; }
+  table.fields .fnote { color: var(--muted); }
+  .no-body { color: var(--muted); font-size: 12.5px; font-style: italic; }
+
+  pre.shape {
+    background: var(--code-bg); color: var(--code-ink); border: 1px solid var(--border-soft);
+    border-radius: 8px; padding: 12px 14px; font-size: 12.5px; overflow-x: auto; margin: 0;
+    line-height: 1.6;
+  }
+  .shape .k { color: var(--ink-2); }
+  .shape .t { color: var(--accent); }
+  .shape .c { color: var(--muted-2); font-style: italic; }
+
+  .notes-list { margin: 14px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .notes-list li {
+    font-size: 12.5px; color: var(--ink-2); padding-left: 16px; position: relative;
+  }
+  .notes-list li::before {
+    content: "→"; position: absolute; left: 0; color: var(--accent); font-family: "IBM Plex Mono", monospace;
+  }
+  .notes-list code { background: var(--code-bg); color: var(--code-ink); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+
+  .empty-state {
+    display: none; text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-state.show { display: block; }
+
+  footer.doc-foot {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--border);
+    color: var(--muted-2); font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark"><span class="dot"></span> MedSuper API</span>
+      <span class="sub">clinic-reservations · branch <code style="font-size:11.5px">understanding</code></span>
+    </div>
+
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Filter by path, method, module…" autocomplete="off">
+      <span class="count-live" id="live-count"></span>
+    </div>
+
+    <nav class="nav-group" id="nav-phases"></nav>
+
+    <div class="legend">
+      <span class="legend-title">HTTP methods</span>
+      <div class="legend-row"><span class="swatch" style="background:var(--get)"></span> GET — read</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--post)"></span> POST — create / act</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--patch)"></span> PATCH — update</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--delete)"></span> DELETE — remove</div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-title">Flutter app wiring</span>
+      <div class="legend-row"><span class="swatch" style="background:var(--get)"></span> Wired &amp; verified</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--patch)"></span> Wired, but mismatched</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--muted-2)"></span> Not wired yet</div>
+      <div class="legend-row"><span class="swatch" style="background:var(--border)"></span> Admin-only, no client</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="doc-head">
+      <div class="eyebrow">Backend reference · generated from source</div>
+      <h1>Every endpoint MedSuper's backend has shipped, sorted by build phase</h1>
+      <p class="lede">Pulled directly from the NestJS controllers, DTOs and use-case return types on <code>main</code> (2026‑08‑24, includes the password-auth merge) — Phases 0–6 are implemented; Phases 7–9 remain schema‑only. Every route is nested under a global <code>/v1</code> prefix. Each card is also checked against the <code>med-super</code> Flutter client (branch <code>feature/password-auth</code>) — see the wiring badge next to each endpoint. All 6 confirmed mismatches were fixed and verified 2026‑08‑25: provider-registration on clinic-reservations' <code>feature/persist-self-registration-fields</code> (migrations applied to a real Postgres, <code>tsc --noEmit</code> clean, 54/54 unit tests pass), and the 4 auth bugs plus the doctor-detail response gap on med-super's <code>api-contract-mismatches</code> (<code>flutter analyze</code> clean, 0 issues from the changed code). Note: the <code>auth</code> feature has zero widget/unit tests in this repo, so verification there is static (analyze + manual code review), not a live app run.</p>
+
+      <div class="envelope-card">
+        <div class="ev-panel ok">
+          <h3>Success envelope</h3>
+          <pre class="shape">{
+  <span class="k">success</span>: <span class="t">true</span>,
+  <span class="k">data</span>: <span class="t">&lt;T&gt;</span>,
+  <span class="k">requestId</span>: <span class="t">string</span>,
+  <span class="k">correlationId</span>: <span class="t">string | null</span>
+}</pre>
+        </div>
+        <div class="ev-panel err">
+          <h3>Error envelope</h3>
+          <pre class="shape">{
+  <span class="k">success</span>: <span class="t">false</span>,
+  <span class="k">error</span>: {
+    <span class="k">code</span>: <span class="t">string</span>,
+    <span class="k">message</span>: <span class="t">string</span>,
+    <span class="k">details</span>: <span class="t">object</span>,
+    <span class="k">requestId</span>: <span class="t">string</span>,
+    <span class="k">correlationId</span>: <span class="t">string | null</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div id="phases-root"></div>
+
+    <div class="empty-state" id="empty-state">No endpoints match “<span id="empty-term"></span>”.</div>
+
+    <footer class="doc-foot">
+      60 endpoints across 6 built phases · 204/void responses carry no <code>data</code> key · <code>ParseUUIDPipe</code> guards every UUID path param and rejects non-UUIDs with <code>400</code>. Wiring badges audited against <code>med-super</code> on 2026‑08‑24; all 6 confirmed mismatches fixed and verified 2026‑08‑25.
+    </footer>
+  </main>
+</div>
+
+<script>
+(function () {
+  var T = { S: 'str', N: 'num', B: 'bool' };
+
+  var PHASES = [
+    { n: 0, name: 'Foundation', status: 'done', desc: 'NestJS app/worker scaffold, shared core (auth, outbox, errors) — no product endpoints of its own.', modules: [] },
+    {
+      n: 1, name: 'Identity & Auth', status: 'done',
+      desc: 'OTP request/verify, JWT access + rotating refresh tokens, logout.',
+      modules: [{
+        name: 'identity-auth', prefix: '/v1/auth', endpoints: [
+          {
+            method: 'POST', path: '/v1/auth/otp/request', auth: 'public', status: 201,
+            desc: 'Request an OTP be sent to a phone number — unified login/signup, phone‑based rate limiting applies.',
+            request: [{ f: 'phone', t: 'string', n: 'E.164 format, e.g. +201001234567' }],
+            response: `{
+  <span class="k">requestId</span>: <span class="t">string</span>,
+  <span class="k">expiresInSeconds</span>: <span class="t">number</span>
+}`,
+            notes: []
+          },
+          {
+            method: 'POST', path: '/v1/auth/otp/verify', auth: 'public', status: 201,
+            desc: 'Verify a 6‑digit code against a requestId — auto‑registers new users, ensures a PATIENT role membership, issues tokens.',
+            request: [
+              { f: 'requestId', t: 'string (uuid)', n: '' },
+              { f: 'code', t: 'string', n: '6‑digit numeric string' }
+            ],
+            response: `{
+  <span class="k">accessToken</span>: <span class="t">string</span>,
+  <span class="k">refreshToken</span>: <span class="t">string</span>,
+  <span class="k">expiresIn</span>: <span class="t">number</span>,
+  <span class="k">userId</span>: <span class="t">string</span>,
+  <span class="k">isNewUser</span>: <span class="t">boolean</span>
+}`,
+            notes: ['Errors: <code>400 INVALID_CODE</code> · <code>410 CODE_EXPIRED</code> · <code>423 TOO_MANY_ATTEMPTS</code>']
+          },
+          {
+            method: 'POST', path: '/v1/auth/token/refresh', auth: 'public', status: 201,
+            desc: 'Rotate a refresh token — detects reuse/replay and revokes the whole token family if the token was already used.',
+            request: [{ f: 'refreshToken', t: 'string', n: 'min length 20' }],
+            response: `{
+  <span class="k">accessToken</span>: <span class="t">string</span>,
+  <span class="k">refreshToken</span>: <span class="t">string</span>,
+  <span class="k">expiresIn</span>: <span class="t">number</span>
+}`,
+            notes: ['Errors: <code>401 INVALID_REFRESH_TOKEN</code> · <code>401 TOKEN_FAMILY_REVOKED</code> (theft signal)']
+          },
+          {
+            method: 'POST', path: '/v1/auth/logout', auth: 'public', status: 204,
+            desc: 'Revoke a refresh token, or every active token for the user when allDevices is true. An unknown token is a silent no‑op success.',
+            request: [
+              { f: 'refreshToken', t: 'string', n: 'min length 20' },
+              { f: 'allDevices', t: 'boolean', n: 'optional, default false' }
+            ],
+            response: null,
+            notes: ['204 responses carry no body — the interceptor returns nothing, not an empty envelope.']
+          },
+          {
+            method: 'GET', path: '/v1/auth/me', auth: 'jwt', status: 200,
+            desc: 'Current authenticated user profile plus roles and the role active on this access token.',
+            request: null,
+            response: `{
+  <span class="k">id</span>: <span class="t">string</span>,
+  <span class="k">phone</span>: <span class="t">string</span>,
+  <span class="k">roles</span>: <span class="t">string[]</span>,
+  <span class="k">activeRole</span>: <span class="t">string</span>,
+  <span class="k">displayName</span>: <span class="t">string | null</span>
+}`,
+            notes: ['<code>404</code> if the user record is missing.']
+          },
+          {
+            method: 'PATCH', path: '/v1/auth/me', auth: 'jwt', status: 200,
+            desc: 'Update the caller\'s own display name and/or email; returns the same shape as GET /v1/auth/me. Added 2026-08-25 — did not exist before (frontend was already calling it).',
+            request: [
+              { f: 'display_name', t: 'string', n: 'optional, snake_case — split into first/last name on the first whitespace' },
+              { f: 'email', t: 'string', n: 'optional, snake_case, unique — a conflicting email is silently dropped' }
+            ],
+            response: `{
+  <span class="k">id</span>: <span class="t">string</span>,
+  <span class="k">phone</span>: <span class="t">string</span>,
+  <span class="k">roles</span>: <span class="t">string[]</span>,
+  <span class="k">activeRole</span>: <span class="t">string</span>,
+  <span class="k">displayName</span>: <span class="t">string | null</span>
+}`,
+            notes: ['Backed by the existing (already cross-module-exported) <code>UpdateUserProfileUseCase</code> — no new persistence logic, just a controller route + a thin orchestrating use-case that re-reads via <code>GetCurrentUserUseCase</code>.']
+          },
+          {
+            method: 'POST', path: '/v1/auth/password/set', auth: 'jwt', status: 204,
+            desc: 'Set a password for an OTP-verified account (argon2-hashed).',
+            request: [{ f: 'password', t: 'string', n: '8–64 chars, needs upper, lower, digit and symbol' }],
+            response: null, notes: []
+          },
+          {
+            method: 'POST', path: '/v1/auth/password/login', auth: 'public', status: 200,
+            desc: 'Authenticate with phone + password.',
+            request: [
+              { f: 'phone', t: 'string', n: 'E.164 format' },
+              { f: 'password', t: 'string', n: '' }
+            ],
+            response: `{
+  <span class="k">accessToken</span>: <span class="t">string</span>,
+  <span class="k">refreshToken</span>: <span class="t">string</span>,
+  <span class="k">expiresIn</span>: <span class="t">number</span>,
+  <span class="k">userId</span>: <span class="t">string</span>
+}`,
+            notes: ['<code>429 RATE_LIMITED</code> after 5 attempts/10min. <code>401 UNAUTHENTICATED</code> is identical for unknown phone, no password set, or wrong password — deliberately indistinguishable.']
+          },
+          {
+            method: 'POST', path: '/v1/auth/password/forgot', auth: 'public', status: 200,
+            desc: 'Request an OTP-based password reset code.',
+            request: [{ f: 'phone', t: 'string', n: 'E.164 format' }],
+            response: `{
+  <span class="k">requestId</span>: <span class="t">string</span>,
+  <span class="k">expiresInSeconds</span>: <span class="t">number</span>
+}`,
+            notes: []
+          },
+          {
+            method: 'POST', path: '/v1/auth/password/reset/verify-code', auth: 'public', status: 200,
+            desc: 'Read-only check of a reset code before showing the "set new password" step — does not consume the code.',
+            request: [
+              { f: 'requestId', t: 'string (uuid)', n: '' },
+              { f: 'code', t: 'string', n: '6-digit numeric string' }
+            ],
+            response: `{ <span class="k">valid</span>: <span class="t">true</span> }`,
+            notes: ['<code>400 INVALID_CODE</code> · <code>410 CODE_EXPIRED</code> · <code>423 TOO_MANY_ATTEMPTS</code>']
+          },
+          {
+            method: 'POST', path: '/v1/auth/password/reset', auth: 'public', status: 204,
+            desc: 'Reset password using a verified reset code — revokes every active refresh token for the user (logs out all devices).',
+            request: [
+              { f: 'requestId', t: 'string (uuid)', n: '' },
+              { f: 'code', t: 'string', n: '6-digit numeric string' },
+              { f: 'newPassword', t: 'string', n: '8–64 chars, needs upper, lower, digit and symbol' }
+            ],
+            response: null, notes: []
+          }
+        ]
+      }]
+    },
+    {
+      n: 2, name: 'Provider Directory', status: 'done',
+      desc: 'Directory CRUD for clinics/pharmacies/doctors + branches, manual verification workflow, public search, self‑registration intake.',
+      modules: [
+        {
+          name: 'affiliations', prefix: '/v1/affiliations', note: 'Admin‑only', endpoints: [
+            {
+              method: 'PATCH', path: '/v1/affiliations/:affiliationId', auth: 'ADMIN', status: 200,
+              desc: 'Pause/reactivate an affiliation, or change its consult fee.',
+              request: [
+                { f: 'status', t: "'ACTIVE'|'PAUSED'", n: 'optional' },
+                { f: 'consultFee', t: 'string', n: 'optional, decimal(0,2)' },
+                { f: 'currency', t: 'string', n: 'optional, length 3' }
+              ],
+              response: null,
+              notes: ['<code>404</code> if the affiliation does not exist. Writes an audit log entry.']
+            }
+          ]
+        },
+        {
+          name: 'clinic-branches', prefix: '/v1/clinic-branches', endpoints: [
+            {
+              method: 'GET', path: '/v1/clinic-branches/:branchId', auth: 'optional', status: 200,
+              desc: 'Branch detail — VERIFIED‑only unless the caller is an Admin.',
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">clinic_id</span>, <span class="k">address_id</span>: <span class="t">string</span>,
+  <span class="k">phone</span>, <span class="k">iana_timezone</span>: <span class="t">string</span>,
+  <span class="k">status</span>: <span class="t">'PENDING'|'VERIFIED'|'SUSPENDED'</span>,
+  <span class="k">created_at</span>, <span class="k">updated_at</span>: <span class="t">DateTime</span>, <span class="k">version</span>: <span class="t">number</span>,
+  <span class="k">address</span>: <span class="t">Address</span>,
+  <span class="k">clinic</span>: <span class="t">Clinic</span>
+}`,
+              notes: ['<code>404</code> if not found, or not visible to a non‑admin caller.']
+            },
+            {
+              method: 'PATCH', path: '/v1/clinic-branches/:branchId', auth: 'ADMIN', status: 200,
+              desc: 'Update phone / timezone / address on a branch.',
+              request: [
+                { f: 'phone', t: 'string', n: 'optional' },
+                { f: 'ianaTimezone', t: 'string', n: 'optional' },
+                { f: 'address', t: 'Partial<Address>', n: 'optional, nested' }
+              ],
+              response: null, notes: ['<code>404</code> if branch missing.']
+            },
+            { method: 'POST', path: '/v1/clinic-branches/:branchId/verify', auth: 'ADMIN', status: 204, desc: 'Direct status toggle to VERIFIED — no document requirement.', request: null, response: null, notes: [] },
+            { method: 'POST', path: '/v1/clinic-branches/:branchId/suspend', auth: 'ADMIN', status: 204, desc: 'Status → SUSPENDED.', request: null, response: null, notes: [] }
+          ]
+        },
+        {
+          name: 'clinics', prefix: '/v1/clinics', endpoints: [
+            {
+              method: 'GET', path: '/v1/clinics/:clinicId', auth: 'optional', status: 200,
+              desc: 'Clinic detail with branches — VERIFIED‑only unless caller is Admin.',
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">legal_name</span>, <span class="k">brand_name</span>: <span class="t">string</span>,
+  <span class="k">tax_id</span>, <span class="k">region_code</span>: <span class="t">string | null</span>,
+  <span class="k">status</span>: <span class="t">ProviderStatus</span>, <span class="k">verified_at</span>: <span class="t">DateTime | null</span>,
+  <span class="k">branches</span>: <span class="t">(ClinicBranch & { address: Address })[]</span> <span class="c">// admin sees all; others VERIFIED‑only</span>
+}`,
+              notes: []
+            },
+            {
+              method: 'POST', path: '/v1/clinics', auth: 'ADMIN', status: 201,
+              desc: 'Onboard a clinic — starts status PENDING.',
+              request: [
+                { f: 'legalName', t: 'string', n: '' }, { f: 'brandName', t: 'string', n: '' },
+                { f: 'taxId', t: 'string', n: 'optional' }, { f: 'regionCode', t: 'string', n: 'optional' }
+              ],
+              response: `Clinic <span class="c">// raw Prisma row: id, legal_name, brand_name, tax_id, region_code, status: 'PENDING', verified_at: null, created_at, updated_at, version: 1</span>`,
+              notes: []
+            },
+            {
+              method: 'PATCH', path: '/v1/clinics/:clinicId', auth: 'ADMIN', status: 200,
+              desc: 'Update clinic fields.',
+              request: [
+                { f: 'legalName', t: 'string', n: 'optional' }, { f: 'brandName', t: 'string', n: 'optional' },
+                { f: 'taxId', t: 'string', n: 'optional' }, { f: 'regionCode', t: 'string', n: 'optional' }
+              ], response: null, notes: ['<code>404</code> if missing.']
+            },
+            { method: 'POST', path: '/v1/clinics/:clinicId/verify', auth: 'ADMIN', status: 204, desc: 'Sets VERIFIED + verified_at, emits outbox ProviderVerified.', request: null, response: null, notes: [] },
+            { method: 'POST', path: '/v1/clinics/:clinicId/suspend', auth: 'ADMIN', status: 204, desc: 'Status → SUSPENDED.', request: null, response: null, notes: [] },
+            {
+              method: 'POST', path: '/v1/clinics/:clinicId/branches', auth: 'ADMIN', status: 201,
+              desc: 'Add a physical branch to a clinic — starts status PENDING.',
+              request: [
+                { f: 'address', t: 'AddressDto', n: 'required, nested (line1, city, regionCode, countryCode, geoLat?, geoLng?)' },
+                { f: 'phone', t: 'string', n: '' }, { f: 'ianaTimezone', t: 'string', n: '' }
+              ],
+              response: `ClinicBranch <span class="c">// id, clinic_id, address_id, phone, iana_timezone, status: 'PENDING', version: 1</span>`,
+              notes: ['<code>404</code> if the parent clinic does not exist.']
+            }
+          ]
+        },
+        {
+          name: 'doctors', prefix: '/v1/doctors', endpoints: [
+            {
+              method: 'GET', path: '/v1/doctors/search', auth: 'optional', status: 200,
+              desc: 'Public search — specialty / free‑text / geo‑radius / sort, cursor‑paginated.',
+              request: [
+                { f: 'specialty', t: 'string', n: 'optional' }, { f: 'q', t: 'string', n: 'optional, free text' },
+                { f: 'lat, lng', t: 'number', n: 'optional' }, { f: 'radiusKm', t: 'number', n: 'optional, default 15, max 200' },
+                { f: 'date', t: 'string (ISO)', n: 'accepted, not yet honored' },
+                { f: 'sort', t: "'distance:asc'|'rating:desc'|'price:asc'", n: 'optional' },
+                { f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }
+              ],
+              response: `{
+  <span class="k">items</span>: {
+    <span class="k">doctorId</span>, <span class="k">name</span>, <span class="k">specialty</span>, <span class="k">clinicBranchId</span>, <span class="k">clinicName</span>: <span class="t">string</span>,
+    <span class="k">distanceKm</span>: <span class="t">number | null</span>, <span class="k">rating</span>: <span class="t">number</span>, <span class="k">reviewCount</span>: <span class="t">number</span>,
+    <span class="k">consultFee</span>, <span class="k">currency</span>: <span class="t">string</span>,
+    <span class="k">nextAvailableSlot</span>: <span class="t">string | null</span> <span class="c">// always null pre‑Phase‑3 dependency, kept for parity</span>
+  }[],
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`,
+              notes: []
+            },
+            {
+              method: 'GET', path: '/v1/doctors/:doctorId', auth: 'optional', status: 200,
+              desc: 'Public doctor profile — VERIFIED‑only unless caller is Admin.',
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">name</span>, <span class="k">specialty</span>, <span class="k">specialtyKey</span>: <span class="t">string</span>,
+  <span class="k">rating</span>: <span class="t">number</span>, <span class="k">reviewCount</span>: <span class="t">number</span>, <span class="k">photoUrl</span>: <span class="t">string | null</span>,
+  <span class="k">isVerified</span>: <span class="t">boolean</span>,
+  <span class="k">bio</span>, <span class="k">degree</span>: <span class="t">string | null</span>, <span class="c">// added ADR-005 Part 34.2</span>
+  <span class="k">experienceYears</span>: <span class="t">number | null</span>, <span class="c">// added ADR-005 Part 34.2</span>
+  <span class="k">clinicBranchId</span>, <span class="k">clinicName</span>, <span class="k">consultationFee</span>, <span class="k">currency</span>, <span class="k">ianaTimezone</span>: <span class="t">string | null</span>,
+  <span class="k">affiliations</span>: <span class="t">{ clinicBranchId, clinicName, consultationFee, currency, ianaTimezone }[]</span>
+}`,
+              notes: ['Non‑admins only see ACTIVE affiliations whose branch + clinic are both VERIFIED.', '<code>bio</code>/<code>degree</code>/<code>experienceYears</code> come from the same <code>Doctor</code> columns the self-registration flow now writes — still <code>null</code> for doctors created via the Admin-only <code>POST /v1/doctors</code> path, which doesn\'t collect them.']
+            },
+            {
+              method: 'POST', path: '/v1/doctors', auth: 'ADMIN', status: 201,
+              desc: 'Onboard a doctor directory record — starts status PENDING.',
+              request: [
+                { f: 'userId', t: 'string (uuid)', n: 'must reference an existing User' },
+                { f: 'specialtyCode', t: 'string', n: '' }, { f: 'licenseNumber', t: 'string', n: '' },
+                { f: 'regionCode', t: 'string', n: 'optional' }, { f: 'photoUrl', t: 'string (url)', n: 'optional' }
+              ],
+              response: `Doctor <span class="c">// id, user_id, specialty_code, license_number, status: 'PENDING', rating_avg: 0, rating_count: 0, version: 1</span>`,
+              notes: ['<code>409 DOCTOR_ALREADY_EXISTS</code> if the user already has a doctor profile.']
+            },
+            {
+              method: 'PATCH', path: '/v1/doctors/:doctorId', auth: 'ADMIN', status: 200,
+              desc: 'Update doctor directory fields.',
+              request: [
+                { f: 'specialtyCode', t: 'string', n: 'optional' }, { f: 'licenseNumber', t: 'string', n: 'optional' },
+                { f: 'regionCode', t: 'string', n: 'optional' }, { f: 'photoUrl', t: 'string (url)', n: 'optional' }
+              ], response: null, notes: []
+            },
+            { method: 'POST', path: '/v1/doctors/:doctorId/verify', auth: 'ADMIN', status: 204, desc: 'Status → VERIFIED, emits ProviderVerified. Re‑verifying is a no‑op.', request: null, response: null, notes: [] },
+            { method: 'POST', path: '/v1/doctors/:doctorId/suspend', auth: 'ADMIN', status: 204, desc: 'Status → SUSPENDED — doctor becomes invisible again.', request: null, response: null, notes: [] },
+            {
+              method: 'POST', path: '/v1/doctors/:doctorId/affiliations', auth: 'ADMIN', status: 201,
+              desc: 'Affiliate a doctor with a clinic branch.',
+              request: [
+                { f: 'clinicBranchId', t: 'string (uuid)', n: '' },
+                { f: 'consultFee', t: 'string', n: 'decimal(0,2)' }, { f: 'currency', t: 'string', n: 'length 3' }
+              ],
+              response: `DoctorClinicAffiliation <span class="c">// id, doctor_id, clinic_branch_id, consult_fee, currency, status: 'ACTIVE', version: 1</span>`,
+              notes: ['<code>409 AFFILIATION_ALREADY_EXISTS</code> if the (doctor, branch) pair already exists.']
+            }
+          ]
+        },
+        {
+          name: 'pharmacies', prefix: '/v1/pharmacies', note: 'mirrors clinics', endpoints: [
+            {
+              method: 'GET', path: '/v1/pharmacies/:pharmacyId', auth: 'optional', status: 200,
+              desc: 'Pharmacy detail with branches — VERIFIED‑only unless caller is Admin.',
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">legal_name</span>, <span class="k">brand_name</span>, <span class="k">tax_id</span>, <span class="k">region_code</span>: <span class="t">string | null</span>,
+  <span class="k">status</span>: <span class="t">ProviderStatus</span>, <span class="k">verified_at</span>: <span class="t">DateTime | null</span>,
+  <span class="k">branches</span>: <span class="t">{ id, pharmacy_id, address_id, phone, iana_timezone, delivery_capable, status, address }[]</span>
+}`, notes: []
+            },
+            {
+              method: 'POST', path: '/v1/pharmacies', auth: 'ADMIN', status: 201,
+              desc: 'Onboard a pharmacy — starts status PENDING.',
+              request: [
+                { f: 'legalName', t: 'string', n: '' }, { f: 'brandName', t: 'string', n: '' },
+                { f: 'taxId', t: 'string', n: 'optional' }, { f: 'regionCode', t: 'string', n: 'optional' }
+              ], response: `Pharmacy <span class="c">// same shape pattern as Clinic</span>`, notes: []
+            },
+            {
+              method: 'PATCH', path: '/v1/pharmacies/:pharmacyId', auth: 'ADMIN', status: 200,
+              desc: 'Update pharmacy fields.',
+              request: [
+                { f: 'legalName', t: 'string', n: 'optional' }, { f: 'brandName', t: 'string', n: 'optional' },
+                { f: 'taxId', t: 'string', n: 'optional' }, { f: 'regionCode', t: 'string', n: 'optional' }
+              ], response: null, notes: []
+            },
+            { method: 'POST', path: '/v1/pharmacies/:pharmacyId/verify', auth: 'ADMIN', status: 204, desc: 'Status → VERIFIED, sets verified_at, emits ProviderVerified.', request: null, response: null, notes: [] },
+            { method: 'POST', path: '/v1/pharmacies/:pharmacyId/suspend', auth: 'ADMIN', status: 204, desc: 'Status → SUSPENDED.', request: null, response: null, notes: [] },
+            {
+              method: 'POST', path: '/v1/pharmacies/:pharmacyId/branches', auth: 'ADMIN', status: 201,
+              desc: 'Add a physical branch to a pharmacy — starts status PENDING.',
+              request: [
+                { f: 'address', t: 'AddressDto', n: 'required, nested' }, { f: 'phone', t: 'string', n: '' },
+                { f: 'ianaTimezone', t: 'string', n: '' }, { f: 'deliveryCapable', t: 'boolean', n: 'optional, default false' }
+              ],
+              response: `PharmacyBranch <span class="c">// id, pharmacy_id, address_id, phone, iana_timezone, delivery_capable, status: 'PENDING', version: 1</span>`,
+              notes: ['<code>404</code> if the parent pharmacy does not exist.']
+            }
+          ]
+        },
+        {
+          name: 'pharmacy-branches', prefix: '/v1/pharmacy-branches', note: 'mirrors clinic-branches', endpoints: [
+            {
+              method: 'GET', path: '/v1/pharmacy-branches/:branchId', auth: 'optional', status: 200,
+              desc: 'Branch detail — VERIFIED‑only unless caller is Admin.',
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">pharmacy_id</span>, <span class="k">address_id</span>, <span class="k">phone</span>, <span class="k">iana_timezone</span>, <span class="k">delivery_capable</span>, <span class="k">status</span>,
+  <span class="k">address</span>: <span class="t">Address</span>, <span class="k">pharmacy</span>: <span class="t">Pharmacy</span>
+}`, notes: []
+            },
+            {
+              method: 'PATCH', path: '/v1/pharmacy-branches/:branchId', auth: 'ADMIN', status: 200,
+              desc: 'Update phone / timezone / delivery flag / address.',
+              request: [
+                { f: 'phone', t: 'string', n: 'optional' }, { f: 'ianaTimezone', t: 'string', n: 'optional' },
+                { f: 'deliveryCapable', t: 'boolean', n: 'optional' }, { f: 'address', t: 'Partial<Address>', n: 'optional' }
+              ], response: null, notes: []
+            },
+            { method: 'POST', path: '/v1/pharmacy-branches/:branchId/verify', auth: 'ADMIN', status: 204, desc: 'Direct toggle to VERIFIED.', request: null, response: null, notes: [] },
+            { method: 'POST', path: '/v1/pharmacy-branches/:branchId/suspend', auth: 'ADMIN', status: 204, desc: 'Status → SUSPENDED.', request: null, response: null, notes: [] }
+          ]
+        },
+        {
+          name: 'provider-registration', prefix: '/v1/provider/registration', note: 'any authenticated role', endpoints: [
+            {
+              method: 'GET', path: '/v1/provider/registration/lookups', auth: 'jwt', status: 200,
+              desc: 'Form dropdown data for the self‑registration flow.',
+              request: null,
+              response: `{
+  <span class="k">specialties</span>: <span class="t">{ id: string; label: string }[]</span>,
+  <span class="k">cities</span>: <span class="t">[]</span> <span class="c">// always empty — no cities table exists yet</span>
+}`, notes: []
+            },
+            {
+              method: 'POST', path: '/v1/provider/registration', auth: 'jwt', status: 201,
+              desc: 'Submit a provider application (Doctor + Clinic + Address + Branch + Affiliation, all PENDING). Snake_case body — a deliberate exception matching the existing Flutter payload.',
+              request: [
+                { f: 'specialty', t: 'string', n: '' }, { f: 'license_number', t: 'string', n: '' },
+                { f: 'region_code', t: 'string', n: '' }, { f: 'clinic_name', t: 'string', n: '' },
+                { f: 'clinic_address', t: 'string', n: '' }, { f: 'city', t: 'string', n: '' },
+                { f: 'phone', t: 'string', n: '' }, { f: 'consultation_fee', t: 'number', n: '' },
+                { f: 'full_name, email, degree, bio, …', t: 'various', n: 'optional — accepted but not persisted (see response)' }
+              ],
+              response: `{
+  <span class="k">doctorId</span>, <span class="k">clinicId</span>, <span class="k">clinicBranchId</span>, <span class="k">affiliationId</span>: <span class="t">string</span>,
+  <span class="k">status</span>: <span class="t">string</span>, <span class="c">// doctor.status, 'PENDING'</span>
+  <span class="k">notPersisted</span>: <span class="t">string[]</span> <span class="c">// echoes which optional fields were dropped</span>
+}`,
+              notes: ['Still requires a separate Admin <code>verify</code> call before the doctor becomes publicly visible.']
+            }
+          ]
+        },
+        {
+          name: 'specialties', prefix: '/v1/specialties', note: 'public, cacheable 24h', endpoints: [
+            {
+              method: 'GET', path: '/v1/specialties', auth: 'public', status: 200,
+              desc: 'Static seed list of all specialties.',
+              request: null,
+              response: `{ <span class="k">code</span>, <span class="k">name_en</span>, <span class="k">name_ar</span>: <span class="t">string</span>, <span class="k">parent_code</span>: <span class="t">string | null</span> }[]`,
+              notes: []
+            }
+          ]
+        },
+        {
+          name: 'provider-verification-documents', prefix: '/v1/provider-verification-documents', note: 'Admin‑only, no public/provider read', endpoints: [
+            {
+              method: 'GET', path: '/v1/provider-verification-documents', auth: 'ADMIN', status: 200,
+              desc: 'Review queue — filterable, cursor‑paginated.',
+              request: [
+                { f: 'providerType', t: "'DOCTOR'|'CLINIC'|'PHARMACY'|'LAB'", n: 'optional' },
+                { f: 'providerId', t: 'string (uuid)', n: 'optional' },
+                { f: 'status', t: "'PENDING'|'APPROVED'|'REJECTED'", n: 'optional' },
+                { f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }
+              ],
+              response: `{
+  <span class="k">items</span>: { <span class="k">id</span>, <span class="k">provider_type</span>, <span class="k">provider_id</span>, <span class="k">doc_type</span>, <span class="k">file_url</span>, <span class="k">status</span>, <span class="k">reviewed_by</span>: <span class="t">string | null</span>, <span class="k">reviewed_at</span>: <span class="t">DateTime | null</span> }[],
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`, notes: []
+            },
+            {
+              method: 'POST', path: '/v1/provider-verification-documents', auth: 'ADMIN', status: 201,
+              desc: 'Attach a verification document (fileUrl is pre‑hosted — no upload flow yet).',
+              request: [
+                { f: 'providerType', t: "'DOCTOR'|'CLINIC'|'PHARMACY'|'LAB'", n: '' },
+                { f: 'providerId', t: 'string (uuid)', n: '' }, { f: 'docType', t: 'string', n: '' }, { f: 'fileUrl', t: 'string (url)', n: '' }
+              ],
+              response: `ProviderVerificationDocument <span class="c">// status starts 'PENDING'</span>`,
+              notes: ['<code>LAB</code> is always rejected — Laboratory is a postponed module.']
+            },
+            { method: 'POST', path: '/v1/provider-verification-documents/:documentId/approve', auth: 'ADMIN', status: 204, desc: 'Approve a document (does not itself verify the provider).', request: null, response: null, notes: [] },
+            {
+              method: 'POST', path: '/v1/provider-verification-documents/:documentId/reject', auth: 'ADMIN', status: 204,
+              desc: 'Reject a document.',
+              request: [{ f: 'reasonCode', t: 'string', n: 'required, min length 1' }],
+              response: null, notes: []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      n: 3, name: 'Availability', status: 'done',
+      desc: 'Schedule templates (Admin CRUD) and the rolling‑window slot generation job.',
+      modules: [
+        {
+          name: 'schedule-templates', prefix: '/v1/schedule-templates', note: 'Admin‑only', endpoints: [
+            {
+              method: 'POST', path: '/v1/schedule-templates', auth: 'ADMIN', status: 201,
+              desc: 'Create a weekday + time‑range availability template for an affiliation.',
+              request: [
+                { f: 'doctorClinicAffiliationId', t: 'string (uuid)', n: '' },
+                { f: 'weekday', t: 'number', n: '1–7, ISO‑8601 (1 = Monday)' },
+                { f: 'startTime, endTime', t: "string 'HH:mm'", n: 'local to branch timezone' },
+                { f: 'slotDurationMinutes', t: 'number', n: '5–240' },
+                { f: 'bufferMinutes', t: 'number', n: 'optional, 0–120, default 0' }
+              ],
+              response: `ScheduleTemplate <span class="c">// id, doctor_clinic_affiliation_id, weekday, start_time, end_time, slot_duration_minutes, buffer_minutes, version</span>`,
+              notes: ['<code>422 INVALID_SCHEDULE_WINDOW</code> if end ≤ start.']
+            },
+            {
+              method: 'GET', path: '/v1/schedule-templates', auth: 'ADMIN', status: 200,
+              desc: 'List all templates for one affiliation.',
+              request: [{ f: 'affiliationId', t: 'string (uuid)', n: 'required' }],
+              response: `ScheduleTemplate[]`, notes: []
+            },
+            {
+              method: 'PATCH', path: '/v1/schedule-templates/:scheduleTemplateId', auth: 'ADMIN', status: 200,
+              desc: 'Update a template — not retroactive to already‑generated slots.',
+              request: [
+                { f: 'weekday', t: 'number', n: 'optional, 1–7' }, { f: 'startTime, endTime', t: "string 'HH:mm'", n: 'optional' },
+                { f: 'slotDurationMinutes', t: 'number', n: 'optional, 5–240' }, { f: 'bufferMinutes', t: 'number', n: 'optional, 0–120' }
+              ],
+              response: null,
+              notes: ['Handler returns <code>void</code> with no <code>@HttpCode</code> override — actual runtime status is Nest\'s PATCH default <code>200</code>, not 204.']
+            },
+            {
+              method: 'DELETE', path: '/v1/schedule-templates/:scheduleTemplateId', auth: 'ADMIN', status: 204,
+              desc: 'Delete a template — stops future generation only, existing slots are untouched.',
+              request: null, response: null, notes: []
+            }
+          ]
+        },
+        {
+          name: 'doctor-slots', prefix: '/v1/doctors', endpoints: [
+            {
+              method: 'GET', path: '/v1/doctors/:doctorId/slots', auth: 'optional', status: 200,
+              desc: 'OPEN appointment slots for a doctor at one clinic branch, UTC, max 14‑day window.',
+              request: [
+                { f: 'clinicBranchId', t: 'string (uuid)', n: 'required' },
+                { f: 'from', t: 'string (ISO)', n: 'optional, defaults to today (UTC)' },
+                { f: 'to', t: 'string (ISO)', n: 'optional, defaults to from + 14 days' }
+              ],
+              response: `{
+  <span class="k">slots</span>: { <span class="k">slotId</span>: <span class="t">string</span>, <span class="k">startAt</span>, <span class="k">endAt</span>: <span class="t">string (ISO)</span>, <span class="k">status</span>: <span class="t">'OPEN'</span> }[]
+}`,
+              notes: ['<code>400 INVALID_DATE_RANGE</code> if the span exceeds 14 days or to ≤ from.']
+            }
+          ]
+        }
+      ]
+    },
+    {
+      n: 4, name: 'Appointments', status: 'done',
+      desc: 'Hold → confirm → cancel / reschedule, with concurrency‑safe slot claiming and pay‑at‑clinic capture wired in.',
+      modules: [{
+        name: 'appointments', prefix: '/v1/appointments', note: 'PATIENT‑only in this increment', endpoints: [
+          {
+            method: 'POST', path: '/v1/appointments/hold', auth: 'PATIENT', status: 201,
+            desc: 'Hold an OPEN slot for 5 minutes.',
+            request: [
+              { f: 'doctorClinicAffiliationId', t: 'string (uuid)', n: '' },
+              { f: 'slotId', t: 'string (uuid)', n: '' },
+              { f: 'patientId', t: 'string (uuid)', n: 'must equal the authenticated caller' }
+            ],
+            response: `{
+  <span class="k">holdId</span>, <span class="k">slotId</span>: <span class="t">string</span>,
+  <span class="k">expiresAt</span>: <span class="t">Date</span>,
+  <span class="k">status</span>: <span class="t">'HELD'</span>
+}`,
+            notes: ['<code>409 SLOT_ALREADY_BOOKED</code> / <code>409 SLOT_ALREADY_HELD</code> on a lost race. Emits <code>AppointmentHeld</code>.']
+          },
+          {
+            method: 'POST', path: '/v1/appointments/:holdId/confirm', auth: 'PATIENT', status: 200,
+            desc: 'Confirm a hold into a CONFIRMED appointment — pay‑at‑clinic only for now.',
+            request: [
+              { f: 'paymentMethod', t: "'PAY_AT_CLINIC'|'ONLINE'", n: "'ONLINE' is accepted by validation but rejected by the use‑case" },
+              { f: 'paymentIntentId', t: 'string (uuid)', n: 'optional' }
+            ],
+            response: `{
+  <span class="k">appointmentId</span>: <span class="t">string</span>,
+  <span class="k">status</span>: <span class="t">'CONFIRMED'</span>
+}`,
+            notes: ['<code>410 HOLD_EXPIRED</code> on optimistic‑lock conflict. Captures payment + emits <code>AppointmentConfirmed</code> in one transaction (15s timeout).']
+          },
+          {
+            method: 'POST', path: '/v1/appointments/:appointmentId/cancel', auth: 'PATIENT', status: 201,
+            desc: 'Cancel a confirmed appointment.',
+            request: [
+              { f: 'reason', t: "'PATIENT_REQUEST'|'PROVIDER_REQUEST'|'OTHER'", n: '' },
+              { f: 'note', t: 'string', n: 'optional, max 500 chars' }
+            ],
+            response: `{
+  <span class="k">status</span>: <span class="t">'CANCELLED'</span>,
+  <span class="k">refundAmount</span>: <span class="t">number</span>,
+  <span class="k">feeApplied</span>: <span class="t">number</span>
+}`,
+            notes: ['<code>422 APPOINTMENT_NOT_CANCELLABLE</code> unless CONFIRMED. Refund computed against the CANCELLATION_TIER policy; fee waived entirely for PROVIDER_REQUEST.']
+          },
+          {
+            method: 'POST', path: '/v1/appointments/:appointmentId/reschedule', auth: 'PATIENT', status: 201,
+            desc: 'Release the old slot, hold a new one — still requires a separate /confirm call.',
+            request: [{ f: 'newSlotId', t: 'string (uuid)', n: 'must belong to the same affiliation' }],
+            response: `{
+  <span class="k">holdId</span>, <span class="k">slotId</span>: <span class="t">string</span>,
+  <span class="k">expiresAt</span>: <span class="t">Date</span>,
+  <span class="k">status</span>: <span class="t">'HELD'</span>,
+  <span class="k">previousAppointmentId</span>: <span class="t">string</span>
+}`,
+            notes: ['<code>422 APPOINTMENT_NOT_RESCHEDULABLE</code> unless old appointment is CONFIRMED.']
+          },
+          {
+            method: 'GET', path: '/v1/appointments', auth: 'PATIENT', status: 200,
+            desc: 'Cursor‑paginated list of the caller\'s own appointments, sorted by slot start time.',
+            request: [
+              { f: 'status', t: 'AppointmentStatus', n: 'optional' },
+              { f: 'from, to', t: 'string (ISO)', n: 'optional — filters on slot start time' },
+              { f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }
+            ],
+            response: `{
+  <span class="k">items</span>: { <span class="k">appointmentId</span>, <span class="k">slotId</span>, <span class="k">doctorClinicAffiliationId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">AppointmentStatus</span>, <span class="k">startAt</span>, <span class="k">endAt</span>: <span class="t">Date</span>, <span class="k">cancelledReason</span>: <span class="t">string | null</span>, <span class="k">rescheduledFromAppointmentId</span>: <span class="t">string | null</span> }[],
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`, notes: []
+          },
+          {
+            method: 'GET', path: '/v1/appointments/:appointmentId', auth: 'PATIENT', status: 200,
+            desc: 'Appointment detail.',
+            request: null,
+            response: `AppointmentSummary <span class="c">// same shape as the list endpoint's items[]</span>`,
+            notes: ['<code>404</code> if not found or not owned by the caller.']
+          }
+        ]
+      }]
+    },
+    { n: 5, name: 'Payments', status: 'done', desc: 'Pay‑at‑clinic ledger mechanics (commission split, cancellation refunds) — wired internally into Appointment confirm/cancel above. No gateway, and no controller/HTTP surface of its own yet.', modules: [] },
+    {
+      n: 6, name: 'Prescriptions', status: 'done',
+      desc: 'Patient‑uploaded prescriptions (URL‑based, not multipart), quality‑check gate, pharmacist review with a controlled‑substance confirmation guard.',
+      modules: [{
+        name: 'prescriptions', prefix: '/v1/prescriptions', endpoints: [
+          {
+            method: 'POST', path: '/v1/prescriptions/upload', auth: 'PATIENT', status: 201,
+            desc: 'Upload a prescription photo/PDF as pre‑hosted URLs; runs quality‑check + OCR synchronously.',
+            request: [
+              { f: 'fileUrls', t: 'string[]', n: '1–5 URLs' },
+              { f: 'notes', t: 'string', n: 'optional, max 500 chars' }
+            ],
+            response: `{
+  <span class="k">prescriptionId</span>: <span class="t">string</span>,
+  <span class="k">status</span>: <span class="t">'QUALITY_CHECK_PASSED' | 'QUALITY_CHECK_FAILED'</span>
+}`, notes: []
+          },
+          {
+            method: 'GET', path: '/v1/prescriptions/:prescriptionId', auth: 'PATIENT · PHARMACY_STAFF · ADMIN', status: 200,
+            desc: 'Prescription detail — images, items, review history.',
+            request: null,
+            response: `{
+  <span class="k">prescriptionId</span>, <span class="k">status</span>, <span class="k">source</span>: <span class="t">string</span>,
+  <span class="k">images</span>: { <span class="k">id</span>, <span class="k">fileUrl</span>, <span class="k">qualityCheckStatus</span>: <span class="t">string</span> }[],
+  <span class="k">items</span>: { <span class="k">id</span>: <span class="t">string</span>, <span class="k">drugCode</span>, <span class="k">drugNameFreeText</span>, <span class="k">dose</span>, <span class="k">frequency</span>: <span class="t">string | null</span> }[],
+  <span class="k">reviews</span>: { <span class="k">id</span>, <span class="k">decision</span>: <span class="t">string</span>, <span class="k">reasonCode</span>: <span class="t">string | null</span>, <span class="k">reviewedAt</span>: <span class="t">string (ISO)</span> }[]
+}`,
+            notes: ['<code>404</code> hides existence from callers who are neither the owning patient nor staff/admin.']
+          },
+          {
+            method: 'GET', path: '/v1/prescriptions', auth: 'PHARMACY_STAFF', status: 200,
+            desc: 'Review queue — always scoped to QUALITY_CHECK_PASSED, oldest first. Not branch‑scoped yet (Phase 7 dependency).',
+            request: [{ f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }],
+            response: `{
+  <span class="k">items</span>: <span class="t">Prescription[]</span> <span class="c">// raw Prisma rows, snake_case — unlike the other two endpoints</span>,
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`, notes: []
+          },
+          {
+            method: 'POST', path: '/v1/prescriptions/:prescriptionId/review', auth: 'PHARMACY_STAFF', status: 201,
+            desc: 'Pharmacist review decision, with optional drug‑code corrections.',
+            request: [
+              { f: 'decision', t: "'ACCEPTED'|'REJECTED'|'NEEDS_CLARIFICATION'", n: '' },
+              { f: 'reasonCode', t: 'string', n: 'optional, max 500 chars' },
+              { f: 'controlledSubstanceConfirmed', t: 'boolean', n: 'optional — must be true if any correction is a controlled substance' },
+              { f: 'itemCorrections', t: '{ prescriptionItemId, drugCode }[]', n: 'optional, max 20' }
+            ],
+            response: `{ <span class="k">status</span>: <span class="t">string</span> }`,
+            notes: ['<code>422 CONTROLLED_SUBSTANCE_CONFIRMATION_REQUIRED</code> if a correction resolves to a controlled substance without confirmation.']
+          }
+        ]
+      }]
+    }
+  ];
+
+  var METHOD_LABEL = { GET: 'get', POST: 'post', PATCH: 'patch', DELETE: 'delete' };
+
+  // Audited 2026-08-24 against med-super (Flutter), branch feature/password-auth.
+  var INTEGRATION = {
+    'POST /v1/auth/otp/request': { status: 'ok', note: 'Was confirmed-breaking (extra <code>role</code> body field, rejected 400 by <code>forbidNonWhitelisted</code>). Fixed on med-super branch <code>api-contract-mismatches</code>: <code>role</code> now travels as a query param (mirrors <code>loginWithPassword</code>); <code>MockInterceptor</code> updated to read it from there too. <b>Verified 2026‑08‑25</b>: <code>flutter analyze</code> on the changed files is clean (0 errors — only 2 pre-existing style infos elsewhere). No dedicated widget/unit test exists for this call (the whole <code>auth</code> feature has zero tests per this repo\'s own CLAUDE.md) — not run against a live/mock app session yet.' },
+    'POST /v1/auth/otp/verify': { status: 'ok', note: 'Was confirmed-breaking (extra <code>phone</code>/<code>role</code> body fields, rejected 400). Fixed on <code>api-contract-mismatches</code>: body is now exactly <code>{requestId, code}</code>; <code>phone</code>/<code>role</code> moved to query params for the mock to still read. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
+    'POST /v1/auth/token/refresh': { status: 'ok', note: 'Was a confirmed bug (snake_case <code>refresh_token</code>/<code>access_token</code> vs. the backend\'s camelCase). Fixed on <code>api-contract-mismatches</code>: <code>auth_interceptor.dart</code> now sends/reads <code>refreshToken</code>/<code>accessToken</code>; <code>MockInterceptor</code>\'s refresh handler updated to match. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
+    'POST /v1/auth/logout': { status: 'ok', note: 'Was a confirmed bug (no body sent; required <code>refreshToken</code> missing). Fixed on <code>api-contract-mismatches</code>: the repository now reads the stored refresh token and the datasource sends <code>{refreshToken, allDevices}</code>. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
+    'GET /v1/auth/me': { status: 'ok', note: 'Path and all 5 response fields match exactly.' },
+    'PATCH /v1/auth/me': { status: 'ok', note: 'Was: the frontend\'s onboarding screen already called this route, but it did not exist on the backend at all (only GET was mapped) — every call 404\'d. Fixed on <code>clinic-reservations</code> branch <code>feature/patch-auth-me</code>: added <code>UpdateCurrentUserUseCase</code> + a <code>PATCH</code> route wired to the existing <code>UpdateUserProfileUseCase</code>. Onboarding was also changed to require both <code>display_name</code> and <code>email</code> (no more skip button). <b>Verified 2026-08-25</b> against a real local backend (Postgres via docker-compose, migrations applied) — clean round-trip, no test suite exists for this feature yet to run (`auth` has zero tests per the Flutter CLAUDE.md).' },
+    'POST /v1/auth/password/set': { status: 'ok', note: 'Request field and auth header match exactly.' },
+    'POST /v1/auth/password/login': { status: 'ok', note: 'Verified harmless: the app sends <code>role</code> as a query parameter, and this route has no <code>@Query()</code> DTO at all (only <code>@Body()</code>) — NestJS never validates or rejects it, so it doesn\'t collide with <code>forbidNonWhitelisted</code>. Request/response fields that matter (<code>phone</code>, <code>password</code>, tokens) all match; <code>userId</code> in the response is simply unused, not mis-parsed.' },
+    'POST /v1/auth/password/forgot': { status: 'ok', note: 'Request/response fields match exactly.' },
+    'POST /v1/auth/password/reset/verify-code': { status: 'ok', note: 'Request fields match; endpoint is treated as void as expected.' },
+    'POST /v1/auth/password/reset': { status: 'ok', note: 'All 3 request fields match exactly.' },
+
+    'PATCH /v1/affiliations/:affiliationId': { status: 'admin', note: 'Admin-only — this app has no admin surface.' },
+    'GET /v1/clinic-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new clinic-branch detail screen consumes the raw snake_case Prisma shape directly (<code>ClinicBranchDto</code>), plus mock handler and route (<code>/patient/clinic-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> (not just the mock) — fixed a <code>retry: null</code> no-op bug in this screen\'s provider (riverpod 3.3.2 treats it as unset, falling through to a ~34s default retry backoff instead of failing fast) and added tap-through navigation to/from the parent clinic (via <code>context.pushReplacement</code>, not <code>push</code>, to avoid an unbounded clinic↔branch navigation stack).' },
+    'PATCH /v1/clinic-branches/:branchId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/clinic-branches/:branchId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/clinic-branches/:branchId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/clinics/:clinicId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new clinic detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>ClinicWithBranches</code> shape, plus mock handler and route (<code>/patient/clinics/:clinicId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> — same <code>retry: null</code> fix as the branch screen, plus branch cards now tap through via <code>context.pushReplacement</code>.' },
+    'POST /v1/clinics': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'PATCH /v1/clinics/:clinicId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/clinics/:clinicId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/clinics/:clinicId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/clinics/:clinicId/branches': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/doctors/search': { status: 'ok', note: 'Path, query params and response fields all match (minor: <code>nextAvailableSlot</code> is parsed nowhere but that\'s harmless).' },
+    'GET /v1/doctors/:doctorId': { status: 'ok', note: 'Was: DTO read fields the real response never returned (<code>bio</code>, <code>qualifications</code>, <code>languages</code>, <code>isOnline</code>) and never parsed <code>affiliations</code> at all. Fixed and verified on med-super branch <code>api-contract-mismatches</code> (2026‑08‑25, clean <code>flutter analyze</code>): backend now exposes <code>bio</code>/<code>degree</code>/<code>experienceYears</code> too (ADR-005 Part 34.2 added the columns — see provider-registration below), so the app reads real <code>bio</code>/<code>experienceYears</code>, folds <code>degree</code> into the <code>qualifications</code> list, and now parses the full <code>affiliations</code> array into a new <code>DoctorAffiliation</code> entity instead of dropping it. <code>fellowships</code>/<code>languages</code>/<code>isOnline</code> still have no backend column at all — those remain genuine gaps, not something the frontend can fix on its own.' },
+    'POST /v1/doctors': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'PATCH /v1/doctors/:doctorId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/doctors/:doctorId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/doctors/:doctorId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/doctors/:doctorId/affiliations': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/pharmacies/:pharmacyId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new pharmacy detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>PharmacyWithBranches</code> shape, plus mock handler and route (<code>/patient/pharmacies/:pharmacyId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b>, incl. 3 real fixed-UUID demo pharmacies added to <code>clinic-reservations</code>\' <code>db/seed.ts</code> — same <code>retry: null</code> fix as the clinic screens, plus <code>pharmacy_booking</code>\'s (still fully mock) pharmacy-select cards now drill into this real screen (its 3 mock ids were pointed at these same seeded UUIDs instead of placeholder strings) with a "select and continue" action wired back via the route\'s <code>extra</code>.' },
+    'POST /v1/pharmacies': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'PATCH /v1/pharmacies/:pharmacyId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/pharmacies/:pharmacyId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/pharmacies/:pharmacyId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/pharmacies/:pharmacyId/branches': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/pharmacy-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new pharmacy-branch detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>PharmacyBranchWithRelations</code> shape (incl. <code>delivery_capable</code>), plus mock handler and route (<code>/patient/pharmacy-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> — same <code>retry: null</code> fix, plus tap-through to/from the parent pharmacy via <code>context.pushReplacement</code>.' },
+    'PATCH /v1/pharmacy-branches/:branchId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/pharmacy-branches/:branchId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/pharmacy-branches/:branchId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/provider/registration/lookups': { status: 'ok', note: 'Path and <code>{id,label}</code> shape match exactly.' },
+    'POST /v1/provider/registration': { status: 'ok', note: 'Was: backend accepted <code>full_name</code>/<code>degree</code>/<code>email</code>/<code>experience_years</code>/<code>bio</code> and silently discarded all five. Fixed and verified on clinic-reservations branch <code>feature/persist-self-registration-fields</code>: added <code>Doctor.degree</code>/<code>bio</code>/<code>experience_years</code> columns and a cross-module <code>UpdateUserProfileUseCase</code> that splits <code>full_name</code> into <code>User.first_name</code>/<code>last_name</code> and sets <code>User.email</code> (best-effort — a conflicting email is swallowed, not fatal). <b>Verified 2026-08-25</b>: two new Prisma migrations applied cleanly to a real Postgres instance, <code>tsc --noEmit</code> clean, and 54/54 identity-auth + self-registration unit tests pass. <code>photo_data_uri</code>/<code>documents</code> stay unpersisted (no object storage exists yet); <code>working_days</code> stays admin-only on purpose (ADR-005 Part 33.1) — not changed. The Flutter side still discards the response body (<code>status</code>/<code>notPersisted</code> unread) — that\'s unchanged and no longer hides real data loss now that the backend actually saves it.' },
+    'GET /v1/specialties': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: shared <code>lib/core/specialties/</code> providers replace the hardcoded home-screen specialty row and now feed <code>search_discovery</code>\'s specialty filter (via a new <code>title</code>/<code>initialSpecialtyName</code> param, since the filter previously matched an arbitrary backend <code>code</code> against a fixed 5-key translation catalog). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code>, unit tests pass. <b>Re-verified same day against a real local backend</b> — fixed the same <code>retry: null</code> no-op bug in this provider. Separately, the home screen also gained a real "featured doctors" row via <code>GET /v1/doctors/search</code> (<code>search_discovery</code>\'s existing <code>SearchDoctorsUseCase</code>, not this endpoint), replacing that screen\'s old hardcoded doctor list.' },
+    'GET /v1/provider-verification-documents': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/provider-verification-documents': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/provider-verification-documents/:documentId/approve': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/provider-verification-documents/:documentId/reject': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+
+    'POST /v1/schedule-templates': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/schedule-templates': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'PATCH /v1/schedule-templates/:scheduleTemplateId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'DELETE /v1/schedule-templates/:scheduleTemplateId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'GET /v1/doctors/:doctorId/slots': { status: 'ok', note: 'Path, query params, and response fields all match exactly.' },
+
+    'POST /v1/appointments/hold': { status: 'none', note: 'The "Book Now" button is a no-op snackbar — no call is ever made.' },
+    'POST /v1/appointments/:holdId/confirm': { status: 'none', note: 'No hold flow exists to produce a holdId, so this is never reached.' },
+    'POST /v1/appointments/:appointmentId/cancel': { status: 'none', note: 'The "Cancel" button on the appointments screen is a no-op — nothing is called.' },
+    'POST /v1/appointments/:appointmentId/reschedule': { status: 'none', note: 'No reschedule action exists anywhere in the app.' },
+    'GET /v1/appointments': { status: 'none', note: 'The Appointments tab is a static, hardcoded list — no network call at all.' },
+    'GET /v1/appointments/:appointmentId': { status: 'none', note: 'No appointment-detail screen exists on the patient side.' },
+
+    'POST /v1/prescriptions/upload': { status: 'none', note: 'No network layer exists yet — picked prescription images stay local and are never uploaded.' },
+    'GET /v1/prescriptions/:prescriptionId': { status: 'none', note: 'No screen fetches a prescription by id from the backend.' },
+    'GET /v1/prescriptions': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review queue lives in a separate web app.' },
+    'POST /v1/prescriptions/:prescriptionId/review': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review action lives in a separate web app.' }
+  };
+  var INTEG_LABEL = { ok: 'Wired · verified', mismatch: 'Wired · mismatch', none: 'Not wired yet', admin: 'Admin-only · no client', fixed: 'Fixed · needs testing' };
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function pathHtml(path) {
+    return esc(path).replace(/:([a-zA-Z]+)/g, '<span class="param">:$1</span>');
+  }
+
+  function fieldsTable(fields) {
+    if (!fields) return '<span class="no-body">No request body.</span>';
+    var rows = fields.map(function (f) {
+      return '<tr><td class="fname">' + esc(f.f) + '</td><td class="ftype">' + esc(f.t) + '</td><td class="fnote">' + esc(f.n || '') + '</td></tr>';
+    }).join('');
+    return '<table class="fields"><thead><tr><th>Field</th><th>Type</th><th>Notes</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function authPillHtml(auth) {
+    var cls = 'auth-pill';
+    var label = auth;
+    if (auth === 'public') { cls += ' public'; label = 'Public'; }
+    else if (auth === 'optional') { cls += ' optional'; label = 'Optional auth'; }
+    else if (auth === 'jwt') { label = 'JWT'; }
+    else { label = auth; }
+    return '<span class="' + cls + '">' + esc(label) + '</span>';
+  }
+
+  function integBadgeHtml(integ) {
+    return '<span class="integ-badge ' + integ.status + '"><span class="dot"></span>' + INTEG_LABEL[integ.status] + '</span>';
+  }
+
+  function endpointHtml(ep) {
+    var m = METHOD_LABEL[ep.method] || 'get';
+    var respBlock = ep.response
+      ? '<pre class="shape">' + ep.response + '</pre>'
+      : '<span class="no-body">' + (ep.status === 204 ? 'No content (204).' : 'No response body.') + '</span>';
+    var notesHtml = (ep.notes && ep.notes.length)
+      ? '<ul class="notes-list">' + ep.notes.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ul>'
+      : '';
+    var integ = INTEGRATION[ep.method + ' ' + ep.path] || { status: 'none', note: 'Not audited yet.' };
+    var integNoteHtml = '<div class="integ-note ' + integ.status + '">' +
+      '<span>' + integBadgeIconOnly(integ.status) + '</span>' +
+      '<span><b>' + INTEG_LABEL[integ.status] + ' in med-super.</b> ' + integ.note + '</span>' +
+    '</div>';
+    var searchBlob = (ep.method + ' ' + ep.path + ' ' + ep.desc + ' ' + ep.auth + ' ' + integ.status).toLowerCase();
+    return (
+      '<details class="endpoint" data-search="' + esc(searchBlob) + '">' +
+        '<summary>' +
+          '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>' +
+          '<span class="badge ' + m + '">' + ep.method + '</span>' +
+          '<span class="path">' + pathHtml(ep.path) + '</span>' +
+          authPillHtml(ep.auth) +
+          integBadgeHtml(integ) +
+          '<span class="status-chip">' + ep.status + '</span>' +
+        '</summary>' +
+        '<div class="body-wrap">' +
+          '<p class="desc">' + esc(ep.desc) + '</p>' +
+          '<div class="grid-2">' +
+            '<div><span class="block-label">Request</span>' + fieldsTable(ep.request) + '</div>' +
+            '<div><span class="block-label">Response</span>' + respBlock + '</div>' +
+          '</div>' +
+          notesHtml +
+          integNoteHtml +
+        '</div>' +
+      '</details>'
+    );
+  }
+
+  function integBadgeIconOnly(status) {
+    if (status === 'ok') return '✓';
+    if (status === 'fixed') return '⟳';
+    if (status === 'mismatch') return '⚠';
+    if (status === 'admin') return '—';
+    return '○';
+  }
+
+  function moduleHtml(mod) {
+    var head = '<div class="module-head"><h3>' + esc(mod.prefix) + '</h3>' + (mod.note ? '<span class="module-note">' + esc(mod.note) + '</span>' : '') + '</div>';
+    return '<div class="module-block">' + head + mod.endpoints.map(endpointHtml).join('') + '</div>';
+  }
+
+  function phaseHtml(phase) {
+    var countEndpoints = phase.modules.reduce(function (acc, m) { return acc + m.endpoints.length; }, 0);
+    var statusLabel = phase.status === 'done' ? 'Complete' : 'Partial';
+    var head =
+      '<div class="phase-head">' +
+        '<span class="phase-n">Phase ' + phase.n + '</span>' +
+        '<h2>' + esc(phase.name) + '</h2>' +
+        '<span class="phase-status ' + phase.status + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<p class="phase-desc">' + esc(phase.desc) + '</p>';
+    var body = countEndpoints
+      ? phase.modules.map(moduleHtml).join('')
+      : '';
+    return '<section class="phase-section" id="phase-' + phase.n + '">' + head + body + '</section>';
+  }
+
+  function navHtml() {
+    return PHASES.map(function (phase) {
+      var count = phase.modules.reduce(function (acc, m) { return acc + m.endpoints.length; }, 0);
+      var built = count > 0 || phase.name === 'Foundation' || phase.name === 'Payments';
+      return (
+        '<a class="nav-phase" href="#phase-' + phase.n + '" data-built="' + built + '">' +
+          '<span class="n">P' + phase.n + '</span>' +
+          '<span class="name">' + esc(phase.name) + '</span>' +
+          (count ? '<span class="count">' + count + '</span>' : '') +
+        '</a>'
+      );
+    }).join('');
+  }
+
+  document.getElementById('nav-phases').innerHTML =
+    '<span class="nav-label">Build phases</span>' + navHtml();
+
+  document.getElementById('phases-root').innerHTML = PHASES.map(phaseHtml).join('');
+
+  var totalEndpoints = PHASES.reduce(function (acc, p) { return acc + p.modules.reduce(function (a, m) { return a + m.endpoints.length; }, 0); }, 0);
+
+  // --- search / filter ---
+  var searchInput = document.getElementById('search');
+  var liveCount = document.getElementById('live-count');
+  var emptyState = document.getElementById('empty-state');
+  var emptyTerm = document.getElementById('empty-term');
+  var allEndpointEls = Array.prototype.slice.call(document.querySelectorAll('.endpoint'));
+  var allModuleEls = Array.prototype.slice.call(document.querySelectorAll('.module-block'));
+  var allPhaseEls = Array.prototype.slice.call(document.querySelectorAll('.phase-section'));
+
+  liveCount.textContent = totalEndpoints + ' endpoints indexed';
+
+  function applyFilter() {
+    var term = searchInput.value.trim().toLowerCase();
+    var visibleCount = 0;
+
+    if (!term) {
+      allEndpointEls.forEach(function (el) { el.style.display = ''; el.open = false; });
+      allModuleEls.forEach(function (el) { el.style.display = ''; });
+      allPhaseEls.forEach(function (el) { el.style.display = ''; });
+      emptyState.classList.remove('show');
+      liveCount.textContent = totalEndpoints + ' endpoints indexed';
+      return;
+    }
+
+    allEndpointEls.forEach(function (el) {
+      var match = el.getAttribute('data-search').indexOf(term) !== -1;
+      el.style.display = match ? '' : 'none';
+      if (match) { el.open = true; visibleCount++; }
+    });
+
+    allModuleEls.forEach(function (modEl) {
+      var anyVisible = Array.prototype.some.call(modEl.querySelectorAll('.endpoint'), function (e) { return e.style.display !== 'none'; });
+      modEl.style.display = anyVisible ? '' : 'none';
+    });
+
+    allPhaseEls.forEach(function (phaseEl) {
+      var anyVisible = Array.prototype.some.call(phaseEl.querySelectorAll('.endpoint'), function (e) { return e.style.display !== 'none'; });
+      phaseEl.style.display = anyVisible ? '' : 'none';
+    });
+
+    emptyTerm.textContent = searchInput.value.trim();
+    emptyState.classList.toggle('show', visibleCount === 0);
+    liveCount.textContent = visibleCount + ' of ' + totalEndpoints + ' match';
+  }
+
+  searchInput.addEventListener('input', applyFilter);
+})();
+</script>
+
+</body></html>

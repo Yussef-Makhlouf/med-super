@@ -52,7 +52,7 @@ GoRouter appRouter(Ref ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/account-login',
     refreshListenable: refresh,
     observers: [routeObserver],
     redirect: (context, state) async {
@@ -68,7 +68,7 @@ GoRouter appRouter(Ref ref) {
       final isRoot = path == '/';
 
       if (session == null && !isAuthRoute) {
-        return '/login';
+        return '/account-login';
       }
 
       if (session != null) {
@@ -95,6 +95,22 @@ GoRouter appRouter(Ref ref) {
           }
 
           final isRegistrationRoute = _isProviderRegistrationRoute(path);
+
+          // Clinic assistants (CLINIC_STAFF) must not access the assistant
+          // management screen — that is Doctor-only. Redirect to home.
+          if (session.user.isAssistant && path == '/provider/assistants') {
+            return '/provider/home';
+          }
+
+          // Assistants skip the registration gate entirely — they have no
+          // registration flow and registrationSubmitted will always be false
+          // for their session. Route them straight to the provider dashboard.
+          if (session.user.isAssistant) {
+            if (isAuthRoute || isOnboarding || isSetPassword || isRoot) {
+              return '/provider/home';
+            }
+            return null;
+          }
 
           if (isAuthRoute || isOnboarding || isSetPassword || isRoot) {
             return registrationSubmitted
