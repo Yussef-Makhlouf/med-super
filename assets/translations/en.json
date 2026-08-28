@@ -13,10 +13,7 @@
     "sign_in_again": "Please sign in again.",
     "coming_soon": "Coming soon",
     "or": "or",
-    "view_all": "View all",
-    "edit": "Edit",
-    "delete": "Delete",
-    "cancel": "Cancel"
+    "view_all": "View all"
   },
   "auth": {
     "welcome_intro": "Welcome to MedSuper!",
@@ -621,38 +618,5 @@
     "status_approved": "Approved",
     "status_transferred": "Transferred",
     "contact_support": "Contact Support"
-  },
-  "assistants": {
-    "title": "Assistants",
-    "add_fab": "Add assistant",
-    "empty_title": "No assistants yet",
-    "empty_subtitle": "Add an assistant to help you manage appointments and record data",
-    "add_new": "Add new assistant",
-    "manage_subtitle": "Manage assistant accounts",
-    "status_active": "Active",
-    "status_suspended": "Suspended",
-    "create_failed": "Failed to create the account. Please try again.",
-    "add_sheet_subtitle": "A new account will be created and the login details will be sent to the assistant",
-    "name_hint": "e.g. Sara Ahmed",
-    "name_required": "Name is required",
-    "name_too_short": "Name is too short",
-    "phone_label": "Phone number",
-    "phone_required": "Phone number is required",
-    "phone_invalid": "Invalid Egyptian phone number",
-    "create_cta": "Create account",
-    "created_title": "Account created successfully",
-    "password_warning": "Save the password now — it won't be shown again after closing this window.",
-    "copied_phone": "Phone number copied",
-    "password_label": "Password",
-    "copied_password": "Password copied",
-    "done_cta": "Done, I've informed the assistant",
-    "update_failed": "Failed to save changes. Please try again.",
-    "edit_title": "Edit assistant details",
-    "name_hint_edit": "Assistant name",
-    "status_label": "Account status",
-    "delete_failed": "Failed to delete the assistant. Please try again.",
-    "delete_title": "Delete assistant",
-    "delete_confirm_prefix": "Are you sure you want to delete the assistant ",
-    "delete_confirm_suffix": "? Access will be revoked immediately and this cannot be undone."
   }
 }

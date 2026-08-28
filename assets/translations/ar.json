@@ -13,10 +13,7 @@
     "sign_in_again": "يرجى تسجيل الدخول مرة أخرى.",
     "coming_soon": "قريباً",
     "or": "أو",
-    "view_all": "عرض الكل",
-    "edit": "تعديل",
-    "delete": "حذف",
-    "cancel": "إلغاء"
+    "view_all": "عرض الكل"
   },
   "auth": {
     "welcome_intro": "أهلاً بيك في ميدسوبر!",
@@ -621,38 +618,5 @@
     "status_approved": "تمت الموافقة",
     "status_transferred": "تم تحويل المبلغ",
     "contact_support": "التواصل مع الدعم"
-  },
-  "assistants": {
-    "title": "المساعدون",
-    "add_fab": "إضافة مساعد",
-    "empty_title": "لا يوجد مساعدون بعد",
-    "empty_subtitle": "أضف مساعداً لمساعدتك في إدارة المواعيد وتسجيل البيانات",
-    "add_new": "إضافة مساعد جديد",
-    "manage_subtitle": "إدارة حسابات المساعدين",
-    "status_active": "نشط",
-    "status_suspended": "موقوف",
-    "create_failed": "فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.",
-    "add_sheet_subtitle": "سيتم إنشاء حساب جديد وإرسال بيانات الدخول للمساعد",
-    "name_hint": "مثال: سارة أحمد",
-    "name_required": "الاسم مطلوب",
-    "name_too_short": "الاسم قصير جداً",
-    "phone_label": "رقم الهاتف",
-    "phone_required": "رقم الهاتف مطلوب",
-    "phone_invalid": "رقم هاتف مصري غير صحيح",
-    "create_cta": "إنشاء الحساب",
-    "created_title": "تم إنشاء الحساب بنجاح",
-    "password_warning": "احفظ كلمة المرور الآن — لن تظهر مرة أخرى بعد إغلاق هذه النافذة.",
-    "copied_phone": "تم نسخ رقم الهاتف",
-    "password_label": "كلمة المرور",
-    "copied_password": "تم نسخ كلمة المرور",
-    "done_cta": "تم، أخبرت المساعد",
-    "update_failed": "فشل حفظ التغييرات. يرجى المحاولة مرة أخرى.",
-    "edit_title": "تعديل بيانات المساعد",
-    "name_hint_edit": "اسم المساعد",
-    "status_label": "حالة الحساب",
-    "delete_failed": "فشل حذف المساعد. يرجى المحاولة مرة أخرى.",
-    "delete_title": "حذف المساعد",
-    "delete_confirm_prefix": "هل أنت متأكد من حذف المساعد ",
-    "delete_confirm_suffix": "؟ سيتم إلغاء صلاحيات الدخول فوراً ولا يمكن التراجع."
   }
 }

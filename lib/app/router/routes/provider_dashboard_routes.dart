@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointments_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_home_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_notifications_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_patients_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_profile_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_shell_screen.dart';
-import 'package:med_super/features/provider_dashboard/presentation/screens/assistant/assistant_list_screen.dart';
 
 /// One navigator key per branch — exposed so [ProviderShellScreen] can pop an
 /// imperatively-pushed screen (e.g. a profile sub-screen reached via
@@ -44,7 +42,7 @@ final providerDashboardRoutes = <RouteBase>[
           GoRoute(
             path: '/provider/appointments',
             name: 'providerAppointments',
-            builder: (context, state) => const ProviderAppointmentsScreen(),
+            builder: (context, state) => const ProviderHomeScreen(),
           ),
         ],
       ),
@@ -74,10 +72,5 @@ final providerDashboardRoutes = <RouteBase>[
     path: '/provider/notifications',
     name: 'providerNotifications',
     builder: (context, state) => const ProviderNotificationsScreen(),
-  ),
-  GoRoute(
-    path: '/provider/assistants',
-    name: 'providerAssistants',
-    builder: (context, state) => const AssistantListScreen(),
   ),
 ];

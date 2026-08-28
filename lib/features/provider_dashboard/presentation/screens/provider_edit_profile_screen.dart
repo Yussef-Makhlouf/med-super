@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -10,7 +10,6 @@ import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import '../controllers/provider_dashboard_providers.dart';
 
 class ProviderEditProfileScreen extends ConsumerStatefulWidget {
@@ -30,8 +29,13 @@ class _ProviderEditProfileScreenState
   late final TextEditingController _bioController;
   bool _isSaving = false;
   bool _isDirty = false;
+  // True until the initial values are filled in from the loaded account —
+  // suppresses the dirty-tracking listeners during that one-time fill.
   bool _suppressDirtyTracking = true;
 
+  // Avatar change is staged locally and only persisted on "حفظ التغييرات",
+  // per explicit user request — picking/deleting a photo must not save by
+  // itself.
   PlatformFile? _pendingAvatarFile;
   Uint8List? _pendingAvatarPreviewBytes;
   bool _avatarRemoved = false;
@@ -76,7 +80,7 @@ class _ProviderEditProfileScreenState
 
     final files = picked?.files ?? const <PlatformFile>[];
     final file = files.isEmpty ? null : files.first;
-    if (file == null || file.bytes == null) return;
+    if (file == null || file.bytes == null) return; // user cancelled.
 
     setState(() {
       _pendingAvatarFile = file;
@@ -95,11 +99,15 @@ class _ProviderEditProfileScreenState
     });
   }
 
-  Future<void> _submit({required bool isAssistant}) async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
     if (_pendingAvatarFile != null || _avatarRemoved) {
+      // Send the actually-picked bytes as a base64 data URI — there's no
+      // real backend/storage to host the file, and a fake stock-photo URL
+      // would show the same generic image on every upload regardless of
+      // what was picked, which reads as "the old photo didn't change".
       final avatarPayload = _pendingAvatarPreviewBytes != null
           ? 'data:image/jpeg;base64,${base64Encode(_pendingAvatarPreviewBytes!)}'
           : '';
@@ -121,11 +129,9 @@ class _ProviderEditProfileScreenState
     final useCase = ref.read(updateDoctorAccountUseCaseProvider);
     final result = await useCase.call(
       name: _nameController.text.trim(),
-      // Assistants don't edit specialty/experience/bio — preserve existing
-      // values so the update call does not blank them out on the server.
-      specialty: _specialtyController.text,
-      yearsOfExperience: int.tryParse(_experienceController.text) ?? 0,
-      bio: _bioController.text,
+      specialty: _specialtyController.text.trim(),
+      yearsOfExperience: int.tryParse(_experienceController.text.trim()) ?? 0,
+      bio: _bioController.text.trim(),
     );
 
     if (!mounted) return;
@@ -150,8 +156,6 @@ class _ProviderEditProfileScreenState
   @override
   Widget build(BuildContext context) {
     final accountAsync = ref.watch(doctorAccountProvider);
-    final session = ref.watch(sessionControllerProvider).asData?.value;
-    final isAssistant = session?.user.isAssistant ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -166,21 +170,20 @@ class _ProviderEditProfileScreenState
         onRetry: () => ref.invalidate(doctorAccountProvider),
         data: (account) {
           if (_nameController.text.isEmpty && !_isSaving) {
-            _nameController.text = isAssistant
-                ? (session?.user.displayName ?? account.name)
-                : account.name;
+            _nameController.text = account.name;
             _specialtyController.text = account.specialty;
             _experienceController.text = '${account.yearsOfExperience}';
             _bioController.text = account.bio;
             _suppressDirtyTracking = false;
           }
 
-          final ImageProvider? previewImage =
-              _pendingAvatarPreviewBytes != null
-                  ? MemoryImage(_pendingAvatarPreviewBytes!)
-                  : (!_avatarRemoved && account.avatarUrl != null)
-                  ? resolveAvatarImage(account.avatarUrl!)
-                  : null;
+          // Preview precedence: freshly-picked photo > pending removal
+          // (show placeholder) > the account's currently saved photo.
+          final ImageProvider? previewImage = _pendingAvatarPreviewBytes != null
+              ? MemoryImage(_pendingAvatarPreviewBytes!)
+              : (!_avatarRemoved && account.avatarUrl != null)
+              ? resolveAvatarImage(account.avatarUrl!)
+              : null;
           final hasPhotoToClear =
               _pendingAvatarPreviewBytes != null ||
               (!_avatarRemoved && account.avatarUrl != null);
@@ -192,7 +195,6 @@ class _ProviderEditProfileScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Avatar
                   Center(
                     child: Stack(
                       clipBehavior: Clip.none,
@@ -209,6 +211,9 @@ class _ProviderEditProfileScreenState
                                 )
                               : null,
                         ),
+                        // Edit/upload badge — always shown, lets the doctor
+                        // pick a replacement photo (or the first one). Only
+                        // staged locally until "حفظ التغييرات" is pressed.
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -232,6 +237,8 @@ class _ProviderEditProfileScreenState
                             ),
                           ),
                         ),
+                        // Delete badge — only when there's a photo (existing
+                        // or freshly picked) to clear.
                         if (hasPhotoToClear)
                           Positioned(
                             top: 0,
@@ -260,8 +267,6 @@ class _ProviderEditProfileScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Form fields
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -275,28 +280,25 @@ class _ProviderEditProfileScreenState
                           label: 'الاسم الكامل',
                           controller: _nameController,
                         ),
-                        if (!isAssistant) ...[
-                          const SizedBox(height: 16),
-                          AppTextField(
-                            label: 'التخصص الطبي',
-                            controller: _specialtyController,
-                          ),
-                          const SizedBox(height: 16),
-                          AppTextField(
-                            label: 'سنوات الخبرة',
-                            controller: _experienceController,
-                            keyboardType: TextInputType.number,
-                          ),
-                          const SizedBox(height: 16),
-                          AppTextField(
-                            label: 'نبذة عن الطبيب',
-                            controller: _bioController,
-                          ),
-                        ],
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'التخصص الطبي',
+                          controller: _specialtyController,
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'سنوات الخبرة',
+                          controller: _experienceController,
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'نبذة عن الطبيب',
+                          controller: _bioController,
+                        ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
                   AppButton.filled(
                     label: 'حفظ التغييرات',
@@ -304,8 +306,7 @@ class _ProviderEditProfileScreenState
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
                     fullWidth: true,
-                    onPressed:
-                        _isDirty ? () => _submit(isAssistant: isAssistant) : null,
+                    onPressed: _isDirty ? _submit : null,
                   ),
                 ],
               ),

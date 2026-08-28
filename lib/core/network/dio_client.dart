@@ -67,7 +67,6 @@ Dio buildDioClient({required SecureStorageService storage}) {
     registerProviderRegistrationMocks(mock);
     registerProviderDashboardMocks(mock);
     registerWalletMocks(mock);
-    registerAssistantMocks(mock);
     dio.interceptors.add(mock);
   }
 
@@ -82,3 +81,4 @@ Dio buildDioClient({required SecureStorageService storage}) {
 
   return dio;
 }
+

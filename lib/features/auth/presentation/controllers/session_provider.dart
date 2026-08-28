@@ -250,7 +250,6 @@ class SessionController extends _$SessionController {
         await ref.read(secureStorageProvider).clearTokens();
         return Result.err(failure);
       case Ok(:final value):
-        await _writePasswordComplete(true);
         final session = Session(
           user: value,
           onboardingComplete: _readOnboardingComplete(),
@@ -317,7 +316,6 @@ class SessionController extends _$SessionController {
   Future<void> logout() async {
     await ref.read(logoutUseCaseProvider).call();
     await _writeOnboardingComplete(false);
-    await _writePasswordComplete(false);
     state = const AsyncData(null);
   }
 }

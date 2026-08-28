@@ -1,517 +1,631 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
-import 'package:med_super/features/provider_dashboard/domain/entities/schedule_slot.dart';
-import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_calendar_providers.dart';
+import 'package:med_super/core/widgets/skeleton_loader.dart';
+import 'package:med_super/features/provider_dashboard/domain/entities/appointment.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
-import 'package:med_super/features/provider_dashboard/presentation/widgets/book_slot_bottom_sheet.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/add_appointment_bottom_sheet.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
-import 'package:med_super/features/provider_dashboard/presentation/widgets/slot_detail_bottom_sheet.dart';
 
-/// Provider home — a calendar of the day's schedule, showing open and
-/// booked slots. Mock data only for now; no backend contract exists yet
-/// for per-date bookable slots (see provider_calendar_providers.dart).
-class ProviderHomeScreen extends ConsumerWidget {
+/// Provider Dashboard / Appointments Queue Screen matching `dashboard_header.png`.
+class ProviderHomeScreen extends ConsumerStatefulWidget {
   const ProviderHomeScreen({super.key});
 
-  DateTime _weekStart(DateTime d) {
-    var diff = d.weekday - DateTime.saturday;
-    if (diff < 0) diff += 7;
-    return dateOnly(d.subtract(Duration(days: diff)));
-  }
+  @override
+  ConsumerState<ProviderHomeScreen> createState() => _ProviderHomeScreenState();
+}
 
-  static const _dayAbbrev = {
-    DateTime.saturday: 'سبت',
-    DateTime.sunday: 'أحد',
-    DateTime.monday: 'إثنين',
-    DateTime.tuesday: 'ثلاثاء',
-    DateTime.wednesday: 'أربعاء',
-    DateTime.thursday: 'خميس',
-    DateTime.friday: 'جمعة',
-  };
+class _ProviderHomeScreenState extends ConsumerState<ProviderHomeScreen> {
+  int _selectedDayIndex = 1; // Default selected: Today
+  int _selectedSegment = 2; // Default: القادمة (Upcoming)
+
+  late final List<DateTime> _dates;
+  static const _segments = ['الملغاة', 'المنتهية', 'القادمة'];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedDate = ref.watch(selectedCalendarDateProvider);
-    final today = dateOnly(DateTime.now());
-    final weekStart = _weekStart(selectedDate);
-    final weekDays = List.generate(7, (i) => weekStart.add(Duration(days: i)));
-    final slots = ref.watch(scheduleSlotsForDateProvider(selectedDate));
-    final bookedCount = slots.where((s) => s.status == ScheduleSlotStatus.booked).length;
-    final unreadNotifsCount = ref
-        .watch(doctorNotificationsProvider)
-        .maybeWhen(data: (list) => list.where((n) => n.isUnread).length, orElse: () => 0);
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _dates = [
+      now.subtract(const Duration(days: 1)),
+      now,
+      now.add(const Duration(days: 1)),
+      now.add(const Duration(days: 2)),
+      now.add(const Duration(days: 3)),
+    ];
+  }
 
-    return Scaffold(
-      backgroundColor: AppColors.surfaceApp,
-      body: Column(
-        children: [
-          ProviderPageHeader(title: 'الجدول', unreadNotificationsCount: unreadNotifsCount),
-          Expanded(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                _MonthHeader(
-                  selectedDate: selectedDate,
-                  onPrevWeek: () => ref
-                      .read(selectedCalendarDateProvider.notifier)
-                      .select(selectedDate.subtract(const Duration(days: 7))),
-                  onNextWeek: () => ref
-                      .read(selectedCalendarDateProvider.notifier)
-                      .select(selectedDate.add(const Duration(days: 7))),
-                  onToday: dateOnly(selectedDate) == today
-                      ? null
-                      : () => ref.read(selectedCalendarDateProvider.notifier).select(today),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  height: 72,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: weekDays.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final day = weekDays[index];
-                      return _DayTile(
-                        key: Key('providerCalendarDayTile-$index'),
-                        date: day,
-                        isSelected: dateOnly(day) == dateOnly(selectedDate),
-                        isToday: dateOnly(day) == today,
-                        dayLabel: _dayAbbrev[day.weekday] ?? '',
-                        onTap: () =>
-                            ref.read(selectedCalendarDateProvider.notifier).select(day),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _Legend(bookedCount: bookedCount, totalCount: slots.length),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: slots.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40),
-                          child: EmptyState(
-                            title: 'يوم إجازة',
-                            subtitle: 'لا توجد مواعيد متاحة يوم الجمعة.',
-                            icon: Icons.weekend_outlined,
-                          ),
-                        )
-                      : _DayTimeline(slots: slots, date: selectedDate),
-                ),
-              ],
-            ),
+  String _getStatusParam() {
+    return switch (_selectedSegment) {
+      0 => 'cancelled',
+      1 => 'completed',
+      _ => 'pending,confirmed',
+    };
+  }
+
+  String _getDayName(DateTime date) {
+    const dayNames = [
+      'الإثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    return dayNames[date.weekday - 1];
+  }
+
+  void _onAccept(Appointment appointment) async {
+    final useCase = ref.read(acceptAppointmentUseCaseProvider);
+    final result = await useCase.call(appointment.id);
+    if (!mounted) return;
+    result.when(
+      ok: (_) {
+        ref.invalidate(appointmentsProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم قبول موعد ${appointment.patientName}'),
+            backgroundColor: const Color(0xFF10B981),
           ),
-        ],
-      ),
+        );
+      },
+      err: (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.toString())));
+      },
     );
   }
-}
 
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({
-    required this.selectedDate,
-    required this.onPrevWeek,
-    required this.onNextWeek,
-    required this.onToday,
-  });
-
-  final DateTime selectedDate;
-  final VoidCallback onPrevWeek;
-  final VoidCallback onNextWeek;
-  final VoidCallback? onToday;
-
-  @override
-  Widget build(BuildContext context) {
-    final monthLabel = DateFormat('MMMM yyyy', 'ar').format(selectedDate);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          _NavCircleButton(icon: Icons.chevron_left, onTap: onNextWeek),
-          Expanded(
-            child: Center(
-              child: Text(
-                monthLabel,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink900,
-                ),
-              ),
-            ),
-          ),
-          _NavCircleButton(icon: Icons.chevron_right, onTap: onPrevWeek),
-          if (onToday != null) ...[
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onToday,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: brandBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'اليوم',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: brandBlue),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _NavCircleButton extends StatelessWidget {
-  const _NavCircleButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFF1F5F9)),
-        ),
-        child: Icon(icon, size: 20, color: AppColors.mutedText2),
-      ),
-    );
-  }
-}
-
-class _DayTile extends StatelessWidget {
-  const _DayTile({
-    required this.date,
-    required this.isSelected,
-    required this.isToday,
-    required this.dayLabel,
-    required this.onTap,
-    super.key,
-  });
-
-  final DateTime date;
-  final bool isSelected;
-  final bool isToday;
-  final String dayLabel;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final daySlots = ref.watch(scheduleSlotsForDateProvider(date));
-        final hasBookings = daySlots.any((s) => s.status == ScheduleSlotStatus.booked);
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 56,
-            decoration: BoxDecoration(
-              color: isSelected ? brandBlue : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? brandBlue
-                    : (isToday ? brandBlue.withValues(alpha: 0.4) : const Color(0xFFF1F5F9)),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  dayLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.mutedText2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  date.day.toString(),
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? Colors.white : AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: hasBookings
-                        ? (isSelected ? Colors.white : brandBlue)
-                        : Colors.transparent,
-                  ),
-                ),
-              ],
+  void _onReject(Appointment appointment) async {
+    final useCase = ref.read(rejectAppointmentUseCaseProvider);
+    final result = await useCase.call(appointment.id);
+    if (!mounted) return;
+    result.when(
+      ok: (_) {
+        ref.invalidate(appointmentsProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم رفض موعد ${appointment.patientName}'),
+            action: SnackBarAction(
+              label: 'تراجع',
+              textColor: Colors.white,
+              onPressed: () => _onAccept(appointment),
             ),
           ),
         );
       },
+      err: (failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.toString())));
+      },
     );
   }
-}
 
-class _Legend extends StatelessWidget {
-  const _Legend({required this.bookedCount, required this.totalCount});
-
-  final int bookedCount;
-  final int totalCount;
+  void _openAddAppointment() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => AddAppointmentBottomSheet(
+        onAdd: (patientName, startTime, endTime) async {
+          final useCase = ref.read(createAppointmentUseCaseProvider);
+          final result = await useCase.call(
+            patientName: patientName,
+            scheduledStart: startTime,
+            scheduledEnd: endTime,
+          );
+          if (!mounted) return;
+          result.when(
+            ok: (_) {
+              ref.invalidate(appointmentsProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('تمت إضافة الموعد بنجاح'),
+                  backgroundColor: Color(0xFF10B981),
+                ),
+              );
+            },
+            err: (failure) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(failure.toString())));
+            },
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+    final textTheme = Theme.of(context).textTheme;
+    final selectedDate = _dates[_selectedDayIndex];
+    final statusParam = _getStatusParam();
+
+    final appointmentsAsync = ref.watch(
+      appointmentsProvider(date: selectedDate, status: statusParam),
+    );
+    final unreadNotifsCount = ref
+        .watch(doctorNotificationsProvider)
+        .maybeWhen(
+          data: (list) => list.where((n) => n.isUnread).length,
+          orElse: () => 0,
+        );
+
+    return Scaffold(
+      backgroundColor: AppColors.surfaceApp,
+      floatingActionButton: FloatingActionButton(
+        // Explicit heroTag — otherwise this collides with any other FAB
+        // using Flutter's shared default tag (e.g. patient_home_screen.dart's)
+        // during a route transition that has both on screen at once.
+        heroTag: 'provider_home_fab',
+        onPressed: _openAddAppointment,
+        backgroundColor: brandBlue,
+        elevation: 4,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      body: Column(
         children: [
-          _LegendDot(color: brandBlue.withValues(alpha: 0.5), label: 'متاح'),
-          const SizedBox(width: 14),
-          _LegendDot(color: brandBlue, label: 'محجوز'),
-          const Spacer(),
-          if (totalCount > 0)
-            Text(
-              '$bookedCount من $totalCount محجوز',
-              style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+          ProviderPageHeader(
+            title: 'لوحة التحكم',
+            unreadNotificationsCount: unreadNotifsCount,
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                // Today's Appointments Summary Tile
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'مواعيد اليوم',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          appointmentsAsync.maybeWhen(
+                            data: (list) => Text(
+                              'لديك ${list.length} مواعيد مجدولة',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: AppColors.mutedText2,
+                              ),
+                            ),
+                            orElse: () => Text(
+                              'لديك مواعيد مجدولة اليوم',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: AppColors.mutedText2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: brandBlue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              appointmentsAsync.maybeWhen(
+                                data: (list) =>
+                                    list.length.toString().padLeft(2, '0'),
+                                orElse: () => '--',
+                              ),
+                              style: const TextStyle(
+                                color: brandBlue,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                                height: 1.1,
+                              ),
+                            ),
+                            const Text(
+                              'إجمالي',
+                              style: TextStyle(
+                                color: brandBlue,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Horizontally Scrollable Day Picker
+                SizedBox(
+                  height: 76,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _dates.length,
+                    itemBuilder: (context, index) {
+                      final date = _dates[index];
+                      final selected = _selectedDayIndex == index;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedDayIndex = index),
+                        child: Container(
+                          width: 62,
+                          margin: const EdgeInsets.only(left: 10),
+                          decoration: BoxDecoration(
+                            color: selected ? brandBlue : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: selected
+                                  ? brandBlue
+                                  : const Color(0xFFF1F5F9),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                _getDayName(date),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: selected
+                                      ? Colors.white.withValues(alpha: 0.9)
+                                      : AppColors.mutedText2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                date.day.toString(),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.ink900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // 3-Way Segmented Tab Row
+                Container(
+                  height: 48,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: List.generate(_segments.length, (index) {
+                      final selected = _selectedSegment == index;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedSegment = index),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: selected ? brandBlue : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: Text(
+                                _segments[index],
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.mutedText2,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Dynamic Appointments List via AsyncValueView
+                AsyncValueView<List<Appointment>>(
+                  value: appointmentsAsync,
+                  loadingWidget: const CardSkeletonList(count: 2),
+                  onRetry: () => ref.invalidate(appointmentsProvider),
+                  data: (items) {
+                    if (items.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: EmptyState(
+                          title: 'لا توجد مواعيد',
+                          subtitle: 'لا توجد مواعيد مجدولة لهذا التحديد.',
+                          icon: Icons.calendar_today_outlined,
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: items.map((appointment) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _buildAppointmentCard(
+                            context: context,
+                            appointment: appointment,
+                            onAccept: () => _onAccept(appointment),
+                            onReject: () => _onReject(appointment),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.color, required this.label});
+  Widget _buildAppointmentCard({
+    required BuildContext context,
+    required Appointment appointment,
+    required VoidCallback onAccept,
+    required VoidCallback onReject,
+  }) {
+    final statusText = switch (appointment.status) {
+      AppointmentStatus.confirmed => 'تم التأكيد',
+      AppointmentStatus.cancelled => 'ملغى',
+      AppointmentStatus.completed => 'مكتمل',
+      AppointmentStatus.pending => 'في الانتظار',
+    };
 
-  final Color color;
-  final String label;
+    final statusColor = switch (appointment.status) {
+      AppointmentStatus.confirmed => brandBlue,
+      AppointmentStatus.cancelled => AppColors.errorRed,
+      AppointmentStatus.completed => const Color(0xFF10B981),
+      AppointmentStatus.pending => Colors.orange,
+    };
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.mutedText2)),
-      ],
-    );
-  }
-}
-
-/// Google Calendar-style day view — an hour-gridded axis with slot blocks
-/// positioned/sized by their actual time and duration, instead of a plain
-/// uniform list.
-class _DayTimeline extends StatelessWidget {
-  const _DayTimeline({required this.slots, required this.date});
-
-  final List<ScheduleSlot> slots;
-  final DateTime date;
-
-  static const _startHour = 9;
-  static const _endHour = 17;
-  static const _hourHeight = 96.0;
-  static const _gutter = 46.0;
-
-  double _offsetFor(DateTime t) =>
-      (t.hour - _startHour) * _hourHeight + (t.minute / 60) * _hourHeight;
-
-  String _hourLabel(int h) {
-    final period = h >= 12 ? 'م' : 'ص';
-    final hour12 = h % 12 == 0 ? 12 : h % 12;
-    return '$hour12:00 $period';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final totalHeight = (_endHour - _startHour) * _hourHeight;
-    final now = DateTime.now();
-    final isToday = dateOnly(date) == dateOnly(now);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-      child: SizedBox(
-        height: totalHeight,
-        child: Stack(
-          children: [
-            for (var h = _startHour; h <= _endHour; h++)
-              Positioned(
-                top: (h - _startHour) * _hourHeight,
-                left: 0,
-                right: 0,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: _gutter,
-                      child: Text(
-                        _hourLabel(h),
-                        style: const TextStyle(fontSize: 10.5, color: AppColors.mutedText2),
-                      ),
-                    ),
-                    const Expanded(child: Divider(height: 1, color: Color(0xFFF1F5F9))),
-                  ],
-                ),
-              ),
-            if (isToday && now.hour >= _startHour && now.hour < _endHour)
-              Positioned(
-                top: _offsetFor(now),
-                left: _gutter + 6,
-                right: 0,
-                child: Container(height: 2, color: AppColors.errorRed),
-              ),
-            for (final slot in slots)
-              Positioned(
-                top: _offsetFor(slot.start) + 2,
-                left: _gutter + 6,
-                right: 0,
-                height:
-                    _hourHeight * (slot.end.difference(slot.start).inMinutes / 60) - 4,
-                child: _SlotBlock(slot: slot),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SlotBlock extends ConsumerWidget {
-  const _SlotBlock({required this.slot});
-
-  final ScheduleSlot slot;
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.characters.take(2).toString().toUpperCase();
-    return '${parts.first.characters.first}${parts[1].characters.first}'.toUpperCase();
-  }
-
-  void _openBookSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => BookSlotBottomSheet(
-        slot: slot,
-        onConfirm: (patientName, note) => ref
-            .read(scheduleOverridesProvider.notifier)
-            .book(slot, patientName: patientName, note: note),
-      ),
-    );
-  }
-
-  void _openDetailSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SlotDetailBottomSheet(
-        slot: slot,
-        onCancel: () => ref.read(scheduleOverridesProvider.notifier).cancel(slot),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isBooked = slot.status == ScheduleSlotStatus.booked;
-    // A past, never-booked slot can't be booked retroactively — the visit
-    // window is already gone. Booked past slots stay tappable (read-only
-    // detail view), just without the cancel action — see SlotDetailBottomSheet.
-    final isPastUnbooked = !isBooked && slot.start.isBefore(DateTime.now());
+    final timeRange =
+        '${_formatTime(appointment.scheduledStart)} - ${_formatTime(appointment.scheduledEnd)}';
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: isPastUnbooked
-            ? null
-            : () => isBooked ? _openDetailSheet(context, ref) : _openBookSheet(context, ref),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isPastUnbooked
-                ? AppColors.surfaceCard
-                : (isBooked ? Colors.white : brandBlue.withValues(alpha: 0.06)),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isPastUnbooked
-                  ? const Color(0xFFF1F5F9)
-                  : (isBooked ? const Color(0xFFF1F5F9) : brandBlue.withValues(alpha: 0.25)),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) =>
+                  ProviderAppointmentDetailScreen(appointment: appointment),
             ),
+          );
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
           ),
-          child: isBooked
-              ? Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 13,
-                      backgroundColor: brandBlue.withValues(alpha: 0.12),
-                      child: Text(
-                        _initials(slot.patientName ?? '?'),
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                          color: brandBlue,
-                        ),
-                      ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        slot.patientName ?? '',
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          appointment.locationStatus,
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        appointment.patientName,
                         style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
                           color: AppColors.ink900,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 13,
+                            color: AppColors.mutedText2,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            timeRange,
+                            style: const TextStyle(
+                              color: AppColors.mutedText2,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppColors.surfaceCard,
+                    backgroundImage: appointment.patientAvatarUrl != null
+                        ? NetworkImage(appointment.patientAvatarUrl!)
+                        : null,
+                    child: appointment.patientAvatarUrl == null
+                        ? const Icon(Icons.person, color: AppColors.mutedText2)
+                        : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMiniField(
+                      'الرقم الطبي',
+                      '#${appointment.medId}',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildMiniField(
+                      'الحالة',
+                      statusText,
+                      statusColor: statusColor,
+                    ),
+                  ),
+                ],
+              ),
+              if (appointment.status == AppointmentStatus.pending) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: onAccept,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: brandBlue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'قبول',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Icon(
-                      isPastUnbooked ? Icons.history_toggle_off : Icons.add_circle_outline,
-                      size: 14,
-                      color: isPastUnbooked
-                          ? AppColors.mutedText
-                          : brandBlue.withValues(alpha: 0.8),
-                    ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        isPastUnbooked ? 'انتهى الوقت' : 'متاح',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: isPastUnbooked
-                              ? AppColors.mutedText
-                              : brandBlue.withValues(alpha: 0.8),
+                      flex: 1,
+                      child: SizedBox(
+                        height: 44,
+                        child: OutlinedButton(
+                          onPressed: onReject,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF8FAFC),
+                            foregroundColor: AppColors.ink900,
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'رفض',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
+              ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  static Widget _buildMiniField(
+    String label,
+    String value, {
+    Color? statusColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: statusColor ?? AppColors.ink900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'م' : 'ص';
+    return '${hour.toString().padLeft(2, '0')}:$minute $period';
   }
 }

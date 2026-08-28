@@ -47,5 +47,6 @@ abstract class ProviderDashboardRepository {
     List<ClinicWorkingDay> workingDays,
   );
 
+
   Future<Result<DoctorAccountProfile>> uploadAvatar(String filePath);
 }
