@@ -61,4 +61,8 @@ abstract final class ApiPaths {
   static const providerPatients = '/v1/provider/patients';
   static const providerNotifications = '/v1/provider/notifications';
   static const providerMe = '/v1/provider/me';
+  // Doctor-only: manage clinic assistants (CLINIC_STAFF accounts).
+  // Backend endpoint: POST/GET /v1/provider/assistants,
+  // PATCH/DELETE /v1/provider/assistants/:id
+  static const providerAssistants = '/v1/provider/assistants';
 }

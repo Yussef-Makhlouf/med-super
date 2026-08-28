@@ -83,13 +83,31 @@ String? _bearer(RequestOptions options) {
   return raw;
 }
 
-Map<String, dynamic> _userPayload() => {
-  'id': 'user-001',
-  'phone': _mockAuth.phone ?? kMockDemoPhoneNormalized,
-  'roles': [_mockAuth.role ?? 'PATIENT'],
-  'active_role': _mockAuth.role ?? 'PATIENT',
-  'display_name': _mockAuth.displayName,
-};
+Map<String, dynamic> _userPayload() {
+  final role = _mockAuth.role ?? 'PATIENT';
+  final phone = _mockAuth.phone ?? kMockDemoPhoneNormalized;
+  // Resolve display_name: for CLINIC_STAFF sessions use the assistant record's
+  // name if available, otherwise fall back to the stored display_name.
+  String? displayName = _mockAuth.displayName;
+  if (role == 'CLINIC_STAFF' && displayName == null) {
+    for (final asst in _mockAssistants.values) {
+      if (asst['phone'] == phone) {
+        displayName = asst['display_name'] as String?;
+        break;
+      }
+    }
+    displayName ??= kMockAssistantDisplayName;
+  }
+  return {
+    'id': role == 'CLINIC_STAFF'
+        ? 'user-asst-${phone.hashCode.abs()}'
+        : 'user-001',
+    'phone': phone,
+    'roles': [role],
+    'active_role': role,
+    'display_name': displayName,
+  };
+}
 
 /// Registers foundation + Sprint 1 auth mock responses on [interceptor].
 void registerFoundationMocks(MockInterceptor interceptor) {
@@ -176,7 +194,10 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
     _passwordsByPhone[phone] = password;
 
-    return {'statusCode': 200, 'data': {'ok': true}};
+    return {
+      'statusCode': 200,
+      'data': {'ok': true},
+    };
   });
 
   interceptor.register('POST', ApiPaths.passwordLogin, (options) {
@@ -189,8 +210,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     // would ignore an unbound query param on a POST it only reads @Body()
     // from, so this has no effect outside mock mode.
     final role =
-        (options.uri.queryParameters['role'] as String?)?.toUpperCase() ??
-        'PATIENT';
+        options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
 
     if (phone == null || password == null) {
       return _error(422, 'VALIDATION_ERROR', 'phone and password are required');
@@ -212,12 +232,33 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       );
     }
 
-    final isProvider = role != 'PATIENT';
+    // Determine role: CLINIC_STAFF if this phone belongs to a known, active
+    // assistant, otherwise honour the role toggle (DOCTOR/PATIENT). A
+    // suspended assistant's password still matches (still in
+    // _passwordsByPhone above), but login must be rejected — mirrors the
+    // real backend's expected behaviour.
+    Map<String, dynamic>? assistantRecord;
+    for (final a in _mockAssistants.values) {
+      if (a['phone'] == phone) {
+        assistantRecord = a;
+        break;
+      }
+    }
+    if (assistantRecord != null && assistantRecord['status'] == 'SUSPENDED') {
+      return _error(
+        403,
+        'ACCOUNT_SUSPENDED',
+        'This assistant account has been suspended.',
+      );
+    }
+    final resolvedRole = assistantRecord != null ? 'CLINIC_STAFF' : role;
+
+    final isProvider = resolvedRole != 'PATIENT';
     final access = isProvider ? 'dev_provider_$phone' : 'dev_patient_$phone';
     final refresh = 'dev_refresh_$phone';
     _mockAuth
       ..phone = phone
-      ..role = role
+      ..role = resolvedRole
       ..accessToken = access
       ..refreshToken = refresh;
 
@@ -256,21 +297,14 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final code = body?['code'] as String?;
 
     if (requestId == null || requestId.isEmpty || code == null) {
-      return _error(
-        422,
-        'VALIDATION_ERROR',
-        'requestId and code are required',
-      );
+      return _error(422, 'VALIDATION_ERROR', 'requestId and code are required');
     }
     if (code != kMockOtpCode) {
       return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
     }
 
     // Checks-only — no side effects, no tokens, unlike passwordReset below.
-    return {
-      'statusCode': 200,
-      'data': <String, dynamic>{},
-    };
+    return {'statusCode': 200, 'data': <String, dynamic>{}};
   });
 
   interceptor.register('POST', ApiPaths.passwordReset, (options) {
@@ -280,11 +314,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final newPassword = body?['newPassword'] as String?;
 
     if (requestId == null || requestId.isEmpty || code == null) {
-      return _error(
-        422,
-        'VALIDATION_ERROR',
-        'requestId and code are required',
-      );
+      return _error(422, 'VALIDATION_ERROR', 'requestId and code are required');
     }
     if (code != kMockOtpCode) {
       return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
@@ -305,10 +335,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
     // No tokens in the response — matches the real backend, and keeps this
     // flow from silently logging the user in.
-    return {
-      'statusCode': 200,
-      'data': <String, dynamic>{},
-    };
+    return {'statusCode': 200, 'data': <String, dynamic>{}};
   });
 
   interceptor.register('POST', ApiPaths.refresh, (options) {
@@ -325,7 +352,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final access = _mockAuth.accessToken ?? 'dev_patient_refreshed';
     return {
       'statusCode': 200,
-      'data': {'accessToken': access, 'refreshToken': refresh, 'expiresIn': 900},
+      'data': {
+        'accessToken': access,
+        'refreshToken': refresh,
+        'expiresIn': 900,
+      },
     };
   });
 
@@ -786,7 +817,8 @@ void registerClinicBranchMocks(MockInterceptor interceptor) {
       }
     }
 
-    final clinicName = doctor?['clinic_name'] as String? ?? 'Nile Medical Center';
+    final clinicName =
+        doctor?['clinic_name'] as String? ?? 'Nile Medical Center';
     final clinicId = 'clinic-${doctorId ?? branchId}';
 
     return {
@@ -2043,11 +2075,15 @@ void registerWalletMocks(MockInterceptor interceptor) {
   });
 
   interceptor.register('GET', '/v1/wallet/transactions', (_) {
-    final mapped = _mockWalletStore.transactions.map((tx) => {
-      ...tx,
-      'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
-      'fee': tx['fees'],
-    }).toList();
+    final mapped = _mockWalletStore.transactions
+        .map(
+          (tx) => {
+            ...tx,
+            'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
+            'fee': tx['fees'],
+          },
+        )
+        .toList();
     return {
       'statusCode': 200,
       'data': {'items': mapped},
@@ -2074,10 +2110,7 @@ void registerWalletMocks(MockInterceptor interceptor) {
       'payment_method': body['payment_method_id'] ?? 'بطاقة ائتمانية',
     };
     _mockWalletStore.transactions.insert(0, newTx);
-    return {
-      'statusCode': 200,
-      'data': newTx,
-    };
+    return {'statusCode': 200, 'data': newTx};
   });
 
   interceptor.register('POST', '/v1/wallet/transfers', (options) {
@@ -2103,29 +2136,25 @@ void registerWalletMocks(MockInterceptor interceptor) {
       'payment_method': destinationLabel,
     };
     _mockWalletStore.transactions.insert(0, newTx);
-    return {
-      'statusCode': 200,
-      'data': newTx,
-    };
+    return {'statusCode': 200, 'data': newTx};
   });
 
   interceptor.register('GET', '/v1/wallet/refunds/', (options) {
     final pathParts = options.path.split('/');
     final id = pathParts.isNotEmpty ? pathParts.last : 'ref-201';
-    final refundObj = _mockWalletStore.refunds[id] ?? {
-      'id': id.isEmpty ? 'ref-201' : id,
-      'transaction_id': 'tx-101',
-      'reason': 'إلغاء الموعد قبل 24 ساعة',
-      'details': 'تم إلغاء الجلسة بسبب عدم تناسب الموعد',
-      'status': 'under_review',
-      'created_at': '2026-08-19T10:00:00Z',
-      'amount': 450.0,
-    };
+    final refundObj =
+        _mockWalletStore.refunds[id] ??
+        {
+          'id': id.isEmpty ? 'ref-201' : id,
+          'transaction_id': 'tx-101',
+          'reason': 'إلغاء الموعد قبل 24 ساعة',
+          'details': 'تم إلغاء الجلسة بسبب عدم تناسب الموعد',
+          'status': 'under_review',
+          'created_at': '2026-08-19T10:00:00Z',
+          'amount': 450.0,
+        };
 
-    return {
-      'statusCode': 200,
-      'data': refundObj,
-    };
+    return {'statusCode': 200, 'data': refundObj};
   });
 
   interceptor.register('POST', '/v1/wallet/refunds', (options) {
@@ -2147,11 +2176,140 @@ void registerWalletMocks(MockInterceptor interceptor) {
 
     _mockWalletStore.refunds[refundId] = refundObj;
 
-    return {
-      'statusCode': 200,
-      'data': refundObj,
-    };
+    return {'statusCode': 200, 'data': refundObj};
   });
 }
 
+// ─── Clinic Assistant mocks ──────────────────────────────────────────────────
+//
+// Pre-seeded assistant demo account so the phone+password login screen works
+// standalone without first running the full Doctor create-assistant flow.
+// Phone: 01100000001 — role: CLINIC_STAFF.
+const kMockAssistantPhone = '01100000001';
+const kMockAssistantPhoneNormalized = '+201100000001';
+const kMockAssistantPassword = 'Assist1234';
+const kMockAssistantDisplayName = 'سارة المساعدة';
 
+/// In-memory store for assistant records keyed by id.
+final Map<String, Map<String, dynamic>> _mockAssistants = {
+  'asst-001': {
+    'id': 'asst-001',
+    'phone': '+201100000001',
+    'display_name': 'سارة المساعدة',
+    'status': 'ACTIVE',
+    'created_at': '2026-08-01T09:00:00.000Z',
+  },
+  'asst-002': {
+    'id': 'asst-002',
+    'phone': '+201200000002',
+    'display_name': 'محمد المساعد',
+    'status': 'ACTIVE',
+    'created_at': '2026-08-10T11:30:00.000Z',
+  },
+};
+
+/// Registers all assistant-related mock endpoints on [interceptor].
+/// Must be called AFTER [registerFoundationMocks] so the demo assistant
+/// phone+password are already present in [_passwordsByPhone].
+void registerAssistantMocks(MockInterceptor interceptor) {
+  // Seed demo assistant account into the shared password store so the
+  // /account-login screen can authenticate with it.
+  _passwordsByPhone[kMockAssistantPhoneNormalized] = kMockAssistantPassword;
+
+  // GET /v1/provider/assistants — list
+  interceptor.register('GET', '/v1/provider/assistants', (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+    }
+    return {
+      'statusCode': 200,
+      'data': {'items': _mockAssistants.values.toList()},
+    };
+  });
+
+  // POST /v1/provider/assistants — create
+  interceptor.register('POST', '/v1/provider/assistants', (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+    }
+    final body = _body(options);
+    final phone = body?['phone'] as String?;
+    final displayName =
+        (body?['display_name'] ?? body?['displayName']) as String?;
+
+    if (phone == null || phone.isEmpty) {
+      return _error(422, 'VALIDATION_ERROR', 'phone is required');
+    }
+    if (displayName == null || displayName.isEmpty) {
+      return _error(422, 'VALIDATION_ERROR', 'display_name is required');
+    }
+
+    final id = 'asst-${DateTime.now().millisecondsSinceEpoch}';
+    // Normalise phone to E.164 using the same logic the real backend applies.
+    final normalized = phone.startsWith('+') ? phone : '+2$phone';
+    // Generate a deterministic mock password for this new assistant.
+    const generatedPassword = 'MedS@2026!';
+    _passwordsByPhone[normalized] = generatedPassword;
+
+    final record = {
+      'id': id,
+      'phone': normalized,
+      'display_name': displayName,
+      'status': 'ACTIVE',
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    _mockAssistants[id] = record;
+
+    return {
+      'statusCode': 200,
+      'data': {...record, 'generated_password': generatedPassword},
+    };
+  });
+
+  // PATCH /v1/provider/assistants/:id — update display_name and/or status.
+  // MockInterceptor matches by substring containment — the more-specific
+  // POST handler above is registered first so it takes precedence for exact
+  // '/v1/provider/assistants' (no trailing slash), while this pattern
+  // '/v1/provider/assistants/' matches paths with an ID segment appended.
+  interceptor.register('PATCH', '/v1/provider/assistants/', (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+    }
+    final segments = options.path.split('/');
+    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
+    final record = _mockAssistants[id];
+    if (record == null) {
+      return _error(404, 'NOT_FOUND', 'Assistant not found');
+    }
+
+    final body = _body(options);
+    if (body?['display_name'] != null) {
+      record['display_name'] = body!['display_name'];
+    }
+    if (body?['status'] != null) {
+      record['status'] = (body!['status'] as String).toUpperCase();
+    }
+    record['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    _mockAssistants[id] = record;
+
+    return {'statusCode': 200, 'data': record};
+  });
+
+  // DELETE /v1/provider/assistants/:id — soft-deactivate
+  interceptor.register('DELETE', '/v1/provider/assistants/', (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+    }
+    final segments = options.path.split('/');
+    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
+    if (!_mockAssistants.containsKey(id)) {
+      return _error(404, 'NOT_FOUND', 'Assistant not found');
+    }
+    _mockAssistants.remove(id);
+    return {'statusCode': 200, 'data': <String, dynamic>{}};
+  });
+}
