@@ -1,6 +1,5 @@
 import 'package:go_router/go_router.dart';
 import 'package:med_super/features/provider_profile/presentation/screens/clinic_branch_details_screen.dart';
-import 'package:med_super/features/provider_profile/presentation/screens/clinic_details_screen.dart';
 import 'package:med_super/features/provider_profile/presentation/screens/doctor_details_screen.dart';
 import 'package:med_super/features/search_discovery/presentation/screens/doctor_search_screen.dart';
 
@@ -33,14 +32,6 @@ final searchRoutes = <RouteBase>[
     builder: (context, state) {
       final branchId = state.pathParameters['branchId'] ?? '';
       return ClinicBranchDetailsScreen(branchId: branchId);
-    },
-  ),
-  GoRoute(
-    path: '/patient/clinics/:clinicId',
-    name: 'patientClinicDetails',
-    builder: (context, state) {
-      final clinicId = state.pathParameters['clinicId'] ?? '';
-      return ClinicDetailsScreen(clinicId: clinicId);
     },
   ),
 ];

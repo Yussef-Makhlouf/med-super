@@ -743,55 +743,6 @@ void registerSearchMocks(MockInterceptor interceptor) {
 // not load-bearing under MockInterceptor's first-registered-wins
 // substring-containment rule.
 
-const _mockClinicsCatalog = [
-  {
-    'id': 'clinic-1',
-    'legal_name': 'Nile Medical Group LLC',
-    'brand_name': 'Nile Clinic',
-    'tax_id': 'TAX-123',
-    'region_code': 'CAI',
-    'status': 'VERIFIED',
-    'branches': [
-      {
-        'id': 'branch-clinic-1',
-        'clinic_id': 'clinic-1',
-        'address_id': 'addr-1',
-        'phone': '+201234567890',
-        'iana_timezone': 'Africa/Cairo',
-        'status': 'VERIFIED',
-        'address': {
-          'id': 'addr-1',
-          'line1': '12 Tahrir St',
-          'city': 'Cairo',
-          'region_code': 'CAI',
-          'country_code': 'EG',
-          'geo_lat': '30.044420',
-          'geo_lng': '31.235712',
-        },
-      },
-    ],
-  },
-];
-
-/// Registers the clinic-detail mock for `GET /v1/clinics/{clinicId}`.
-void registerClinicMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', '${ApiPaths.clinics}/', (options) {
-    final segments = options.path.split('/');
-    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
-    Map<String, dynamic>? clinic;
-    for (final c in _mockClinicsCatalog) {
-      if (c['id'] == id) {
-        clinic = c;
-        break;
-      }
-    }
-    if (clinic == null) {
-      return _error(404, 'NOT_FOUND', 'Clinic not found');
-    }
-    return {'statusCode': 200, 'data': clinic};
-  });
-}
-
 /// Registers `GET /v1/clinic-branches/:branchId` — the clinic branch detail
 /// screen. Mirrors clinic-reservations' `GetClinicBranchUseCase` response
 /// shape: the raw Prisma `ClinicBranch` row plus its `address`/`clinic`
@@ -855,150 +806,15 @@ void registerClinicBranchMocks(MockInterceptor interceptor) {
   });
 }
 
-// ─── Pharmacy / Pharmacy Branch mocks ──────────────────────────────────────
+// ─── Pharmacy Branch mocks ──────────────────────────────────────────────────
 //
-// `/v1/pharmacies` and `/v1/pharmacy-branches` are likewise non-overlapping
-// substring-wise (`/v1/pharmacies/` vs `/v1/pharmacy-branches/`), so ordering
-// between the two groups is not load-bearing either.
+// A branch is the unit browsed/detailed end to end — there is no parent
+// "pharmacy chain" mock/screen to keep in sync with this catalog.
 
-// Ids match the real backend's fixed-UUID demo pharmacies (`db/seed.ts`'s
-// `demoPharmacies`) and pharmacy_booking's own `mockPharmacies` list — so a
-// card tap resolves the same way whether the app is pointed at
-// MockInterceptor or the real backend.
-List<Map<String, dynamic>> get _mockPharmaciesCatalog => [
-  {
-    'id': '00000000-0000-0000-0000-000000000101',
-    'legal_name': 'Nile Pharma LLC (Seed)',
-    'brand_name': 'Nile Pharmacy',
-    'tax_id': null,
-    'region_code': 'EG',
-    'status': 'VERIFIED',
-    'verified_at': '2024-01-01T00:00:00.000Z',
-    'deleted_at': null,
-    'created_at': '2023-01-01T00:00:00.000Z',
-    'updated_at': '2023-06-01T00:00:00.000Z',
-    'version': 1,
-    'branches': [
-      {
-        'id': '00000000-0000-0000-0000-000000000111',
-        'pharmacy_id': '00000000-0000-0000-0000-000000000101',
-        'address_id': '00000000-0000-0000-0000-000000000121',
-        'phone': '+20221230001',
-        'iana_timezone': 'Africa/Cairo',
-        'delivery_capable': true,
-        'status': 'VERIFIED',
-        'created_at': '2023-01-01T00:00:00.000Z',
-        'updated_at': '2023-06-01T00:00:00.000Z',
-        'version': 1,
-        'address': {
-          'id': '00000000-0000-0000-0000-000000000121',
-          'line1': '5 Zamalek Ave',
-          'city': 'Cairo',
-          'region_code': 'EG',
-          'country_code': 'EG',
-          'geo_lat': '30.044420',
-          'geo_lng': '31.235712',
-        },
-      },
-    ],
-  },
-  {
-    'id': '00000000-0000-0000-0000-000000000102',
-    'legal_name': 'Al Ezaby Pharmaceuticals Co. (Seed)',
-    'brand_name': 'Al Ezaby Pharmacy',
-    'tax_id': null,
-    'region_code': 'EG',
-    'status': 'VERIFIED',
-    'verified_at': '2024-01-01T00:00:00.000Z',
-    'deleted_at': null,
-    'created_at': '2023-01-01T00:00:00.000Z',
-    'updated_at': '2023-06-01T00:00:00.000Z',
-    'version': 1,
-    'branches': [
-      {
-        'id': '00000000-0000-0000-0000-000000000112',
-        'pharmacy_id': '00000000-0000-0000-0000-000000000102',
-        'address_id': '00000000-0000-0000-0000-000000000122',
-        'phone': '+20221230002',
-        'iana_timezone': 'Africa/Cairo',
-        'delivery_capable': true,
-        'status': 'VERIFIED',
-        'created_at': '2023-01-01T00:00:00.000Z',
-        'updated_at': '2023-06-01T00:00:00.000Z',
-        'version': 1,
-        'address': {
-          'id': '00000000-0000-0000-0000-000000000122',
-          'line1': '18 King Fahd Rd',
-          'city': 'Cairo',
-          'region_code': 'EG',
-          'country_code': 'EG',
-          'geo_lat': '30.05',
-          'geo_lng': '31.23',
-        },
-      },
-    ],
-  },
-  {
-    'id': '00000000-0000-0000-0000-000000000103',
-    'legal_name': 'Community Pharma Group (Seed)',
-    'brand_name': 'Community Pharmacy',
-    'tax_id': null,
-    'region_code': 'EG',
-    'status': 'VERIFIED',
-    'verified_at': '2024-01-01T00:00:00.000Z',
-    'deleted_at': null,
-    'created_at': '2023-01-01T00:00:00.000Z',
-    'updated_at': '2023-06-01T00:00:00.000Z',
-    'version': 1,
-    'branches': [
-      {
-        'id': '00000000-0000-0000-0000-000000000113',
-        'pharmacy_id': '00000000-0000-0000-0000-000000000103',
-        'address_id': '00000000-0000-0000-0000-000000000123',
-        'phone': '+20221230003',
-        'iana_timezone': 'Africa/Cairo',
-        'delivery_capable': false,
-        'status': 'VERIFIED',
-        'created_at': '2023-01-01T00:00:00.000Z',
-        'updated_at': '2023-06-01T00:00:00.000Z',
-        'version': 1,
-        'address': {
-          'id': '00000000-0000-0000-0000-000000000123',
-          'line1': '40 Al Olaya St',
-          'city': 'Cairo',
-          'region_code': 'EG',
-          'country_code': 'EG',
-          'geo_lat': '30.06',
-          'geo_lng': '31.22',
-        },
-      },
-    ],
-  },
-];
-
-/// Registers the pharmacy-detail mock for `GET /v1/pharmacies/{pharmacyId}`.
-void registerPharmacyProfileMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', '${ApiPaths.pharmacies}/', (options) {
-    final segments = options.path.split('/');
-    final id = segments.isNotEmpty ? segments.last.split('?').first : '';
-    Map<String, dynamic>? pharmacy;
-    for (final p in _mockPharmaciesCatalog) {
-      if (p['id'] == id) {
-        pharmacy = p;
-        break;
-      }
-    }
-    if (pharmacy == null) {
-      return _error(404, 'NOT_FOUND', 'Pharmacy not found');
-    }
-    return {'statusCode': 200, 'data': pharmacy};
-  });
-}
-
-// Each branch matches the corresponding pharmacy in `_mockPharmaciesCatalog`
-// above (same fixed UUIDs as the real backend's seeded demo pharmacies), so
-// navigating pharmacy-detail's branch card <-> pharmacy-branch-detail's
-// "view pharmacy" link resolves both ways in mock mode.
+// Ids match the real backend's fixed-UUID demo pharmacy branches
+// (`db/seed.ts`'s `demoPharmacies[].branchId`) and pharmacy_booking's own
+// `mockPharmacies` list — so a card tap resolves the same way whether the
+// app is pointed at MockInterceptor or the real backend.
 const _mockPharmacyBranchesCatalog = [
   {
     'id': '00000000-0000-0000-0000-000000000111',
@@ -1070,6 +886,71 @@ const _mockPharmacyBranchesCatalog = [
     },
   },
 ];
+
+/// Registers `GET /v1/pharmacy-branches/search` (`clinic-reservations` File
+/// 12 Part 37) — must be registered **before** [registerPharmacyBranchMocks]
+/// (same ordering requirement `registerSearchMocks`/`registerAvailabilityMocks`
+/// already document): `/v1/pharmacy-branches/search` is a substring match
+/// under the detail handler's `/v1/pharmacy-branches/` pattern too, and
+/// `MockInterceptor` is first-registered-wins.
+///
+/// Response shape is the dedicated camelCase `SearchPharmacyBranchItem`
+/// contract (not the branch-detail endpoint's raw Prisma passthrough) —
+/// built from the same `_mockPharmacyBranchesCatalog` rows so ids/names stay
+/// in sync with the detail mock and the real seeded demo branches.
+void registerPharmacyBranchSearchMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', '${ApiPaths.pharmacyBranches}/search', (
+    options,
+  ) {
+    final q = (options.queryParameters['q'] as String?)?.toLowerCase();
+    final hasLocation =
+        options.queryParameters['lat'] != null &&
+        options.queryParameters['lng'] != null;
+
+    final items = _mockPharmacyBranchesCatalog
+        .where((b) {
+          if (q == null || q.isEmpty) return true;
+          final brandName =
+              (b['pharmacy'] as Map<String, dynamic>)['brand_name']
+                  as String?;
+          return brandName?.toLowerCase().contains(q) ?? false;
+        })
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+          final b = entry.value;
+          final pharmacy = b['pharmacy'] as Map<String, dynamic>;
+          final address = b['address'] as Map<String, dynamic>;
+          return {
+            'branchId': b['id'],
+            'pharmacyId': pharmacy['id'],
+            'brandName': pharmacy['brand_name'],
+            'legalName': pharmacy['legal_name'],
+            'phone': b['phone'],
+            'ianaTimezone': b['iana_timezone'],
+            'deliveryCapable': b['delivery_capable'],
+            'address': {
+              'line1': address['line1'],
+              'city': address['city'],
+              'regionCode': address['region_code'],
+              'countryCode': address['country_code'],
+              'geoLat': address['geo_lat'],
+              'geoLng': address['geo_lng'],
+            },
+            // Fixed mock increments, not a real geo calculation — only
+            // meaningful to demonstrate nearest-first ordering in mock mode.
+            'distanceKm': hasLocation ? (entry.key + 1) * 1.2 : null,
+          };
+        })
+        .toList();
+
+    return {
+      'statusCode': 200,
+      'data': {'items': items, 'nextCursor': null},
+    };
+  });
+}
 
 /// Registers the Pharmacy Branch detail mock — `GET /v1/pharmacy-branches/{branchId}`.
 void registerPharmacyBranchMocks(MockInterceptor interceptor) {

@@ -1,9 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart' show FlutterMap;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_status.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
 
 import '../../../../helpers/fake_tile_provider.dart';
@@ -44,22 +44,18 @@ void main() {
       name: 'Alpha Pharmacy',
       address: '1 Tahrir St, Cairo',
       distanceKm: 1,
-      rating: 4.5,
-      ratingCount: 10,
       latitude: 24.71,
       longitude: 46.67,
-      status: PharmacyStatus(state: PharmacyOpenState.open24h),
+      deliveryCapable: true,
     ),
     Pharmacy(
       id: 'ph2',
       name: 'Beta Pharmacy',
       address: '2 Nile St, Cairo',
       distanceKm: 2,
-      rating: 4.2,
-      ratingCount: 5,
       latitude: 24.72,
       longitude: 46.68,
-      status: PharmacyStatus(state: PharmacyOpenState.open24h),
+      deliveryCapable: false,
     ),
   ];
 
@@ -133,7 +129,14 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('32'), findsOneWidget);
+    expect(
+      find.text(
+        'pharmacy_booking.select_pharmacy.nearby_count'.tr(
+          args: ['${pharmacies.length}'],
+        ),
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

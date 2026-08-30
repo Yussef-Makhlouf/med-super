@@ -8,11 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_status.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_select_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
-import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_filter_chip_bar.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
 import 'package:riverpod/misc.dart' show Override;
@@ -132,25 +130,18 @@ void main() {
       name: 'Alpha Pharmacy',
       address: '1 Tahrir St, Cairo',
       distanceKm: 1.2,
-      rating: 4.8,
-      ratingCount: 120,
       latitude: 24.71,
       longitude: 46.67,
-      status: PharmacyStatus(state: PharmacyOpenState.open24h),
+      deliveryCapable: true,
     ),
     Pharmacy(
       id: 'ph2',
       name: 'Beta Pharmacy',
       address: '2 Nile St, Cairo',
       distanceKm: 3.4,
-      rating: 4.2,
-      ratingCount: 40,
       latitude: 24.72,
       longitude: 46.68,
-      status: PharmacyStatus(
-        state: PharmacyOpenState.closedUntilTomorrow,
-        time: '8:00 ص',
-      ),
+      deliveryCapable: false,
     ),
   ];
 
@@ -159,7 +150,7 @@ void main() {
   ];
 
   testWidgets(
-    'renders header, stepper, map, filter chips and a card per pharmacy',
+    'renders header, stepper, map and a card per pharmacy',
     (tester) async {
       await pumpLocalizedWidget(
         tester,
@@ -176,7 +167,6 @@ void main() {
       expect(find.byType(StepProgressHeader), findsOneWidget);
 
       expect(find.byType(PharmacyMapView), findsOneWidget);
-      expect(find.byType(PharmacyFilterChipBar), findsOneWidget);
       expect(find.byType(PharmacyCard), findsNWidgets(pharmacies.length));
       expect(find.text('Alpha Pharmacy'), findsWidgets);
       expect(find.text('Beta Pharmacy'), findsOneWidget);
@@ -339,28 +329,6 @@ void main() {
     expect(find.byType(PharmacyCard), findsOneWidget);
     expect(find.text('Beta Pharmacy'), findsOneWidget);
     expect(find.text('Alpha Pharmacy'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('toggling the open-now filter chip hides the closed pharmacy', (
-    tester,
-  ) async {
-    await pumpLocalizedWidget(
-      tester,
-      PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
-      overrides: overrides(),
-    );
-    await _settle(tester);
-
-    expect(find.byType(PharmacyCard), findsNWidgets(2));
-
-    tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).first.onSelected!(
-      true,
-    );
-    await _settle(tester);
-
-    expect(find.byType(PharmacyCard), findsOneWidget);
-    expect(find.text('Alpha Pharmacy'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

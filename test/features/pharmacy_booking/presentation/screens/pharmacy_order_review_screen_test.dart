@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_status.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
@@ -39,11 +38,9 @@ const _pharmacy = Pharmacy(
   name: 'صيدلية النهدي',
   address: 'شارع التحلية، الرياض',
   distanceKm: 1.2,
-  rating: 4.8,
-  ratingCount: 1200,
   latitude: 24.7136,
   longitude: 46.6753,
-  status: PharmacyStatus(state: PharmacyOpenState.open24h),
+  deliveryCapable: true,
 );
 
 List<Override> _overrides({

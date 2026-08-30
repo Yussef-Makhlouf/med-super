@@ -1,72 +1,48 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/di/core_providers.dart';
+import 'package:med_super/features/pharmacy_booking/data/datasources/remote/pharmacy_branch_search_remote_datasource.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_sort_option.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_status.dart';
+import 'package:med_super/features/provider_registration/presentation/controllers/clinic_location_provider.dart';
 
-/// Hand-rolled (no `@riverpod` codegen — see the feature's build notes)
-/// mock data source for step 2 of the pharmacy booking flow. There is no
-/// backend search/list endpoint for pharmacies yet (only `GET
-/// /v1/pharmacies/:id` exists), so this list itself stays hardcoded — but
-/// each `id` below is a real, fixed-UUID pharmacy seeded on the backend
-/// (`db/seed.ts`'s `demoPharmacies`), so tapping through to the real detail
-/// screen (`PharmacyDetailsScreen`, `GET /v1/pharmacies/:id`) actually
-/// resolves instead of 404ing on a placeholder id like the old `'ph1'`.
-@visibleForTesting
-const mockPharmacies = <Pharmacy>[
-  Pharmacy(
-    id: '00000000-0000-0000-0000-000000000101',
-    name: 'صيدلية النهدي',
-    address: 'شارع التحلية، الرياض',
-    distanceKm: 1.2,
-    rating: 4.8,
-    ratingCount: 1200,
-    latitude: 24.7136,
-    longitude: 46.6753,
-    status: PharmacyStatus(state: PharmacyOpenState.open24h),
-  ),
-  Pharmacy(
-    id: '00000000-0000-0000-0000-000000000102',
-    name: 'صيدلية الدواء',
-    address: 'طريق الملك فهد، الرياض',
-    distanceKm: 2.5,
-    rating: 4.5,
-    ratingCount: 850,
-    latitude: 24.7255,
-    longitude: 46.6851,
-    status: PharmacyStatus(state: PharmacyOpenState.openUntil, time: '11:30 م'),
-  ),
-  Pharmacy(
-    id: '00000000-0000-0000-0000-000000000103',
-    name: 'صيدلية المجتمع',
-    address: 'حي العليا، الرياض',
-    distanceKm: 3.8,
-    rating: 4.2,
-    ratingCount: 320,
-    latitude: 24.6944,
-    longitude: 46.6892,
-    status: PharmacyStatus(
-      state: PharmacyOpenState.closedUntilTomorrow,
-      time: '8:00 ص',
-    ),
-  ),
-];
+/// Plain (non-codegen) Riverpod providers — deliberately not `@riverpod`,
+/// mirroring `provider_profile/presentation/controllers/pharmacy_branch_providers.dart`'s
+/// build-runner-free style.
+final pharmacyBranchSearchRemoteDatasourceProvider =
+    Provider<PharmacyBranchSearchRemoteDatasource>(
+      (ref) => PharmacyBranchSearchRemoteDatasource(ref.watch(dioProvider)),
+    );
 
-/// All candidate pharmacies for the current prescription — a mock
-/// FutureProvider standing in for a real backend call (see [mockPharmacies]).
+/// Reuses the geolocator wrapper already built for provider registration
+/// (`ClinicLocationService`) rather than duplicating the platform-permission
+/// dance — same reuse `PharmacyMapView`'s "locate me" button already makes.
+final pharmacyLocationServiceProvider = Provider(
+  (ref) => const ClinicLocationService(),
+);
+
+/// All candidate pharmacy branches for the current prescription —
+/// `GET /v1/pharmacy-branches/search` (`clinic-reservations` File 12 Part
+/// 37). Best-effort device location: if permission is denied/unavailable,
+/// the search still runs without `lat`/`lng` (server sorts by name instead
+/// of distance, and every result's `distanceKm` comes back null — the card
+/// hides its distance row in that case rather than showing a fabricated
+/// number).
 final pharmaciesProvider = FutureProvider<List<Pharmacy>>((ref) async {
-  await Future<void>.delayed(const Duration(milliseconds: 600));
-  return mockPharmacies;
+  final position = await ref
+      .watch(pharmacyLocationServiceProvider)
+      .getCurrentPosition();
+  return ref
+      .watch(pharmacyBranchSearchRemoteDatasourceProvider)
+      .search(latitude: position?.latitude, longitude: position?.longitude);
 });
 
-/// Explicitly chosen pharmacy id — null means "not chosen yet, default to
-/// the first result", matching the Figma state where the top card is
+/// Explicitly chosen branch id — null means "not chosen yet, default to the
+/// first result", matching the Figma state where the top card is
 /// pre-selected without any tap.
 class SelectedPharmacy extends Notifier<String?> {
   @override
   String? build() => null;
 
-  void select(String pharmacyId) => state = pharmacyId;
+  void select(String branchId) => state = branchId;
 }
 
 final selectedPharmacyProvider = NotifierProvider<SelectedPharmacy, String?>(
@@ -84,54 +60,28 @@ class PharmacySearchQuery extends Notifier<String> {
 final pharmacySearchQueryProvider =
     NotifierProvider<PharmacySearchQuery, String>(PharmacySearchQuery.new);
 
-/// "مفتوح الآن" filter chip — when true, only currently-open pharmacies show.
-class PharmacyOpenNowOnlyFilter extends Notifier<bool> {
-  @override
-  bool build() => false;
-
-  void toggle() => state = !state;
-}
-
-final pharmacyOpenNowOnlyFilterProvider =
-    NotifierProvider<PharmacyOpenNowOnlyFilter, bool>(
-      PharmacyOpenNowOnlyFilter.new,
-    );
-
-/// Sort order for the pharmacy list — defaults to "الأقرب إليك" (nearest)
-/// per the mockup, where that chip is selected out of the box.
-class PharmacySort extends Notifier<PharmacySortOption> {
-  @override
-  PharmacySortOption build() => PharmacySortOption.nearest;
-
-  void select(PharmacySortOption sort) => state = sort;
-}
-
-final pharmacySortProvider = NotifierProvider<PharmacySort, PharmacySortOption>(
-  PharmacySort.new,
-);
-
-/// [pharmaciesProvider] narrowed by the search query and the "مفتوح الآن"
-/// filter, then ordered by the selected sort option — all client-side since
-/// there is no backend for this mock data.
+/// [pharmaciesProvider] narrowed by the search query, sorted by distance
+/// (nearest first, unknown-distance results last) — client-side, since the
+/// query box re-filters the same already-fetched page rather than re-hitting
+/// the network per keystroke.
 final filteredPharmaciesProvider = FutureProvider<List<Pharmacy>>((ref) async {
   final pharmacies = await ref.watch(pharmaciesProvider.future);
   final query = ref.watch(pharmacySearchQueryProvider).trim().toLowerCase();
-  final openNowOnly = ref.watch(pharmacyOpenNowOnlyFilterProvider);
-  final sort = ref.watch(pharmacySortProvider);
 
-  var result = pharmacies.where((pharmacy) {
-    if (openNowOnly && !pharmacy.status.state.isOpen) return false;
+  final result = pharmacies.where((pharmacy) {
     if (query.isEmpty) return true;
     return pharmacy.name.toLowerCase().contains(query) ||
         pharmacy.address.toLowerCase().contains(query);
   }).toList();
 
-  result.sort(
-    (a, b) => switch (sort) {
-      PharmacySortOption.topRated => b.rating.compareTo(a.rating),
-      PharmacySortOption.nearest => a.distanceKm.compareTo(b.distanceKm),
-    },
-  );
+  result.sort((a, b) {
+    final da = a.distanceKm;
+    final db = b.distanceKm;
+    if (da == null && db == null) return 0;
+    if (da == null) return 1;
+    if (db == null) return -1;
+    return da.compareTo(db);
+  });
 
   return result;
 });

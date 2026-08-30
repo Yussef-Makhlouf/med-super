@@ -1,37 +1,26 @@
 # Feature status: pharmacy_booking
 
-**Label:** `DESIGN_ONLY`
+**Label:** `PARTIAL` (list + drill-down: `BACKEND_READY`; order review/confirmation/upload: still mocked, Phase 7 doesn't exist)
 
-Backend Pharmacy Fulfillment (Phase 7) is `NOT STARTED`. The Flutter
-feature map allows this: *"Pharmacy fulfillment | 7 | Not built | Design
-ahead only."* This feature is within that allowance — but its execution is
-sloppier than `lab_booking`'s: there is **no data layer at all** (no
-`data/` directory), no `MockInterceptor` registration, and no network calls
-of any kind. All "pharmacies" shown are a hardcoded in-memory list behind
-an artificial `Future.delayed`.
+Backend Pharmacy Fulfillment (Phase 7 — order broadcast/accept/fulfillment) is still `NOT STARTED`. What changed 2026-08-29: the pharmacy-*selection* half of this flow no longer needs Phase 7 at all — it was never really a Pharmacy Fulfillment concern, it's Provider Directory's own "which branch is this" question, and Provider Directory (Phase 2) already has a real, complete backend. **Do not** read this as Phase 7 progress; the order-review/confirmation/upload screens downstream of selection are still 100% mocked, and stay that way until Phase 7 exists.
 
-**Before going further:** either wire this through `MockInterceptor` like
-every other feature (for consistency and so `dio_client.dart`'s interceptor
-chain is actually exercised), or clearly mark the UI as a static prototype.
-Do not connect the pharmacy *search/select* flow to a real backend endpoint
-— Pharmacy Fulfillment (Phase 7) still doesn't exist, so there is still no
-`GET /v1/pharmacies/search`-equivalent to call.
+## Branch list (`GET /v1/pharmacy-branches/search`), added 2026-08-29
 
-**Partial exception, added 2026-08-25:** `PharmacySelectScreen`'s cards now
-have an optional drill-down — tapping a pharmacy's name/address (not the
-"اختر" CTA) opens `provider_profile`'s real `PharmacyDetailsScreen`
-(`GET /v1/pharmacies/:id`, **Provider Directory / Phase 2**, a different,
-already-complete backend module — not Pharmacy Fulfillment/Phase 7), with a
-"select and continue" action wired back into this flow via the route's
-`extra`. This only works because `mockPharmacies`' 3 entries were given
-fixed real UUIDs matching demo pharmacies seeded in `clinic-reservations`'
-`db/seed.ts` — the list itself is still 100% hardcoded, just pointing at
-real ids instead of placeholder strings like `'ph1'`.
+`clinic-reservations` had no pharmacy-search endpoint at all until File 12 Part 37 added one on `PharmacyBranchesController` — same gap-filling process Part 32 used for `GET /v1/doctors/search`. `pharmaciesProvider` (`pharmacy_search_providers.dart`) now calls it for real via a new `data/` layer (`PharmacyBranchSearchRemoteDatasource`/`PharmacyBranchSearchItemDto`) — this feature finally has a data layer and a `MockInterceptor` registration (`registerPharmacyBranchSearchMocks`), closing the gap this file used to flag.
+
+Consequences of wiring real data, all deliberate:
+- **`rating`/`ratingCount`/live open-closed status were removed from `Pharmacy` and `PharmacyCard` entirely** (2026-08-29) — `pharmacy_branches`/`pharmacies` have no reviews table and no operating-hours column, so there is nothing to back those fields with. Showing them anyway would mean fabricating data, which this codebase avoids elsewhere too (see `clinic-reservations`' own "never invent a business constant" rule, File 12 Part 12) — removed rather than faked.
+- **The filter chip bar (`PharmacyFilterChipBar`, "مفتوح الآن"/"الأعلى تقييماً") was deleted along with it** — both chips filtered/sorted on the now-removed fields; the third ("الأقرب إليك") is now the only dimension and no longer needs a chip UI to select between alternatives.
+- **`distanceKm` is real now**, sourced from the endpoint's PostGIS `ST_Distance` calculation — `pharmaciesProvider` best-effort reads the device's location via `ClinicLocationService` (reused from `provider_registration`, the same wrapper `PharmacyMapView`'s "locate me" button already uses) and passes `lat`/`lng` to the search call. If location is denied/unavailable, the search still runs (no `lat`/`lng`), every result's `distanceKm` comes back null, and `PharmacyCard` hides its distance row rather than showing a stale/fabricated number. The list still sorts nearest-first, unknown-distance results last.
+- Each list entry is a *branch*, not a pharmacy chain — the same chain can have more than one branch, and only a branch has an address/phone to fulfil an order against. Tapping a card's name/address (not the "اختر" CTA) opens `provider_profile`'s `PharmacyBranchDetailsScreen` directly (`GET /v1/pharmacy-branches/:id`), no intermediate "pharmacy" page (that parent screen/route was removed 2026-08-28, see `provider_profile/STATUS.md`), with a "select and continue" action wired back via the route's `extra`.
+
+**Still out of scope / unchanged:** everything past selection (`pharmacy_order_review_screen.dart` onward) — no network layer, no `MockInterceptor` registration, Phase 7-gated as before.
 
 ## Not affected by ADR-006
 
 `ADR-006-PROVIDER-SURFACE-SPLIT.md` (2026-08-14) routes future **pharmacy
 dashboard** (pharmacy *staff* operations) work to a separate Next.js web
 app. This feature is the *patient-facing* booking flow, a different
-surface — unaffected either way. It stays gated on backend Phase 7
-(Pharmacy Fulfillment), not on any Flutter-vs-Next.js question.
+surface — unaffected either way. Its order/fulfillment half stays gated on
+backend Phase 7 (Pharmacy Fulfillment), not on any Flutter-vs-Next.js
+question.

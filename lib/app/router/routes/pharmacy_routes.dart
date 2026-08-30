@@ -6,31 +6,24 @@ import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmac
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_prescription_upload_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_select_screen.dart';
 import 'package:med_super/features/provider_profile/presentation/screens/pharmacy_branch_details_screen.dart';
-import 'package:med_super/features/provider_profile/presentation/screens/pharmacy_details_screen.dart';
 
 final pharmacyRoutes = <RouteBase>[
-  GoRoute(
-    path: '/patient/pharmacies/:pharmacyId',
-    name: 'patientPharmacyDetails',
-    builder: (context, state) {
-      final pharmacyId = state.pathParameters['pharmacyId'] ?? '';
-      // `extra` is how the pharmacy_booking select-step screen threads its
-      // own "choose this one and continue" action through — see
-      // PharmacySelectScreen's card onTap. Any other caller (a plain "view
-      // clinic" link, a search result, ...) leaves `extra` unset, so the
-      // screen renders with no select action, same as before.
-      return PharmacyDetailsScreen(
-        pharmacyId: pharmacyId,
-        onSelect: state.extra as VoidCallback?,
-      );
-    },
-  ),
   GoRoute(
     path: '/patient/pharmacy-branches/:branchId',
     name: 'patientPharmacyBranchDetails',
     builder: (context, state) {
       final branchId = state.pathParameters['branchId'] ?? '';
-      return PharmacyBranchDetailsScreen(branchId: branchId);
+      // `extra` is how the pharmacy_booking select-step screen threads its
+      // own "choose this one and continue" action through — see
+      // PharmacySelectScreen's card onTap. Any other caller (a plain "view
+      // branch" link, a search result, ...) leaves `extra` unset, so the
+      // screen renders with no select action, same as before. A branch is
+      // the unit patients choose here — there is no separate "pharmacy
+      // chain" route to drill through first.
+      return PharmacyBranchDetailsScreen(
+        branchId: branchId,
+        onSelect: state.extra as VoidCallback?,
+      );
     },
   ),
   GoRoute(

@@ -13,6 +13,10 @@ const _muted = Color(0xFF8A94A6);
 
 /// Clinic branch detail — mirrors `doctor_details_screen.dart`'s
 /// card/section design language for the same feature family.
+///
+/// A branch is the unit a patient browses and picks — there is no "clinic"
+/// parent page to drill through first (a clinic name alone has no
+/// address/phone to act on), so this screen never links back up to one.
 class ClinicBranchDetailsScreen extends ConsumerWidget {
   const ClinicBranchDetailsScreen({required this.branchId, super.key});
 
@@ -82,62 +86,52 @@ class _HeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            // pushReplacement (not push) — see the matching comment on
-            // ClinicDetailsScreen's branch-card onTap: avoids an
-            // ever-growing clinic→branch→clinic→branch stack.
-            onTap: () => context.pushReplacement(
-              '/patient/clinics/${branch.clinicId}',
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Color(0xFFDCE8FF),
-                  child: Icon(
-                    Icons.local_hospital_outlined,
-                    color: brandBlue,
-                    size: 28,
-                  ),
+          Row(
+            children: [
+              const CircleAvatar(
+                radius: 28,
+                backgroundColor: Color(0xFFDCE8FF),
+                child: Icon(
+                  Icons.local_hospital_outlined,
+                  color: brandBlue,
+                  size: 28,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              branch.clinic.brandName,
-                              style: textTheme.titleLarge?.copyWith(
-                                color: brandBlue,
-                                fontWeight: FontWeight.w800,
-                              ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            branch.clinic.brandName,
+                            style: textTheme.titleLarge?.copyWith(
+                              color: brandBlue,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          if (branch.status == ClinicBranchStatus.verified) ...[
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.verified,
-                              color: brandBlue,
-                              size: 20,
-                            ),
-                          ],
+                        ),
+                        if (branch.status == ClinicBranchStatus.verified) ...[
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.verified,
+                            color: brandBlue,
+                            size: 20,
+                          ),
                         ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        branch.clinic.legalName,
-                        style: textTheme.bodyMedium?.copyWith(color: _muted),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      branch.clinic.legalName,
+                      style: textTheme.bodyMedium?.copyWith(color: _muted),
+                    ),
+                  ],
                 ),
-                const Icon(Icons.chevron_right, color: _muted),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
           _StatusChip(status: branch.status),

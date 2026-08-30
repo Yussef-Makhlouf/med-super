@@ -5,10 +5,14 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 
-/// A single pharmacy card in the step-2 selection list: logo + name/address,
-/// a distance/rating meta row, a live-status row, then a trailing "اختر"
-/// CTA — filled for the currently-selected pharmacy, outlined/muted for the
-/// rest, and visually disabled for a pharmacy that is currently closed.
+/// A single pharmacy branch card in the step-2 selection list: logo +
+/// name/address, a distance row (hidden when the device's location isn't
+/// known), then a trailing "اختر" CTA — filled for the currently-selected
+/// branch, outlined for the rest.
+///
+/// Rating and live open/closed status were dropped 2026-08-29 along with
+/// the same fields on [Pharmacy] — no rating or operating-hours data exists
+/// on the real `pharmacy_branches`/`pharmacies` tables to back them.
 class PharmacyCard extends StatelessWidget {
   const PharmacyCard({
     required this.pharmacy,
@@ -29,22 +33,8 @@ class PharmacyCard extends StatelessWidget {
   /// that area non-interactive, same as before this was added.
   final VoidCallback? onViewDetails;
 
-  static const _openDot = Color(0xFF22C55E);
-
-  /// Formats the review count the way the mockup shows it — abbreviated to
-  /// one decimal + "k" once it reaches four digits (e.g. `1200` -> `1.2k`),
-  /// otherwise the plain integer.
-  String _formatRatingCount(int count) {
-    if (count >= 1000) {
-      return '${(count / 1000).toStringAsFixed(1)}k';
-    }
-    return '$count';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isClosed = !pharmacy.status.state.isOpen;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -110,91 +100,38 @@ class PharmacyCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.directions_car,
-                size: 14,
-                color: AppColors.mutedText2,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'pharmacy_booking.select_pharmacy.distance_km'.tr(
-                  args: [pharmacy.distanceKm.toStringAsFixed(1)],
-                ),
-                style: const TextStyle(
-                  fontSize: 12,
+          if (pharmacy.distanceKm != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.directions_car,
+                  size: 14,
                   color: AppColors.mutedText2,
                 ),
-              ),
-              const SizedBox(width: 16),
-              const Icon(Icons.star, size: 14, color: AppColors.ratingAmber),
-              const SizedBox(width: 4),
-              Text(
-                '${pharmacy.rating}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.ink700,
+                const SizedBox(width: 4),
+                Text(
+                  'pharmacy_booking.select_pharmacy.distance_km'.tr(
+                    args: [pharmacy.distanceKm!.toStringAsFixed(1)],
+                  ),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.mutedText2,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'pharmacy_booking.select_pharmacy.rating_count'.tr(
-                  args: [_formatRatingCount(pharmacy.ratingCount)],
-                ),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.mutedText2,
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.borderLight),
           const SizedBox(height: 12),
-          // Status text takes the remaining space (and ellipsizes), pushing
-          // the CTA — a compact pill, not full-width — to the row's end
-          // (the left edge, in RTL), matching the mockup exactly.
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isClosed ? AppColors.errorRed : _openDot,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        pharmacy.status.time == null
-                            ? pharmacy.status.state.labelKey.tr()
-                            : pharmacy.status.state.labelKey.tr(
-                                args: [pharmacy.status.time!],
-                              ),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isClosed ? AppColors.errorRed : _openDot,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              _CtaButton(
-                isSelected: isSelected,
-                isClosed: isClosed,
-                onSelect: onSelect,
-              ),
+              pharmacy.deliveryCapable
+                  ? const _DeliveryBadge()
+                  : const SizedBox.shrink(),
+              _CtaButton(isSelected: isSelected, onSelect: onSelect),
             ],
           ),
         ],
@@ -203,36 +140,60 @@ class PharmacyCard extends StatelessWidget {
   }
 }
 
+/// `pharmacy_branches.delivery_capable` — real backend data. Fills the
+/// space next to the "اختر" CTA that used to hold the (now-removed)
+/// open/closed status text; hidden entirely for a non-delivering branch
+/// rather than showing a "no delivery" negative badge.
+class _DeliveryBadge extends StatelessWidget {
+  const _DeliveryBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.tealBg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.delivery_dining_outlined,
+            size: 16,
+            color: AppColors.tealAccent,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'pharmacy_booking.select_pharmacy.delivery_available'.tr(),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.tealAccent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CtaButton extends StatelessWidget {
-  const _CtaButton({
-    required this.isSelected,
-    required this.isClosed,
-    required this.onSelect,
-  });
+  const _CtaButton({required this.isSelected, required this.onSelect});
 
   final bool isSelected;
-  final bool isClosed;
   final VoidCallback onSelect;
 
   @override
   Widget build(BuildContext context) {
     final label = 'pharmacy_booking.select_pharmacy.choose_cta'.tr();
 
-    // A compact pill, not a full-width button — the mockup pairs it with
-    // the status text on the same row, so it must only take as much width
-    // as its label needs.
-    final button = isClosed
-        // A closed pharmacy can't fulfil the order right now, so its CTA
-        // reads visually disabled (per the mockup's muted 3rd card) — it's
-        // still a real button rather than fully inert, in case the patient
-        // wants to queue the request anyway.
-        ? AppButton.outlined(
-            label: label,
-            onPressed: onSelect,
-            foregroundColor: AppColors.mutedText2,
-            borderRadius: AppRadii.pill,
-          )
-        : isSelected
+    // A compact pill, not a full-width button — matches the mockup's card
+    // layout, which pairs it with a leading status/distance row.
+    final button = isSelected
         ? AppButton.filled(
             label: label,
             onPressed: onSelect,

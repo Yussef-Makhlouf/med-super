@@ -139,12 +139,13 @@ class _PharmacyMapViewState extends State<PharmacyMapView> {
                       ],
                     ),
                     child: Text(
-                      // Static "32" per the mockup — a stand-in nearby-radius
-                      // count, distinct from `pharmacies.length` (the list
-                      // below is the filtered/sorted candidate set, not
-                      // every pharmacy within the map's visible radius).
+                      // Real result count from `GET /v1/pharmacy-branches/search`
+                      // (`widget.pharmacies`), which the backend already
+                      // scopes to `radiusKm` when the device location is
+                      // known (File 12 Part 37) — no longer a fabricated
+                      // placeholder.
                       'pharmacy_booking.select_pharmacy.nearby_count'.tr(
-                        args: ['32'],
+                        args: ['${widget.pharmacies.length}'],
                       ),
                       style: const TextStyle(
                         fontSize: 12,

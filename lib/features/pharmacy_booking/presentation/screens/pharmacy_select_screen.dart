@@ -10,7 +10,6 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
-import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_filter_chip_bar.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
 
@@ -53,24 +52,26 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     super.dispose();
   }
 
-  void _select(String pharmacyId) {
-    ref.read(selectedPharmacyProvider.notifier).select(pharmacyId);
+  void _select(String branchId) {
+    ref.read(selectedPharmacyProvider.notifier).select(branchId);
   }
 
   void _next() {
     context.push('/patient/pharmacy/review');
   }
 
-  /// Opens the pharmacy's full profile (the same real screen wired to
-  /// `GET /v1/pharmacies/:id`) with a "select and continue" action baked in
-  /// via the route's `extra` — so choosing can happen either straight from
-  /// this compact card (`_select` above, unchanged) or after reading the
-  /// full profile first.
-  void _viewDetails(String pharmacyId) {
+  /// Opens the branch's full profile (the same real screen wired to
+  /// `GET /v1/pharmacy-branches/:id`) with a "select and continue" action
+  /// baked in via the route's `extra` — so choosing can happen either
+  /// straight from this compact card (`_select` above, unchanged) or after
+  /// reading the full branch profile first. There is no intermediate
+  /// "pharmacy chain" page to pass through — a branch is the unit a patient
+  /// picks, since that's what has an address/phone to fulfil against.
+  void _viewDetails(String branchId) {
     context.push(
-      '/patient/pharmacies/$pharmacyId',
+      '/patient/pharmacy-branches/$branchId',
       extra: () {
-        _select(pharmacyId);
+        _select(branchId);
         _next();
       },
     );
@@ -79,8 +80,6 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
   @override
   Widget build(BuildContext context) {
     final pharmaciesAsync = ref.watch(filteredPharmaciesProvider);
-    final openNowOnly = ref.watch(pharmacyOpenNowOnlyFilterProvider);
-    final selectedSort = ref.watch(pharmacySortProvider);
     final explicitSelectedId = ref.watch(selectedPharmacyProvider);
     // The search bar, filter chips and map render immediately regardless of
     // loading state — only the card list below waits on the async result
@@ -136,16 +135,6 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  PharmacyFilterChipBar(
-                    openNowOnly: openNowOnly,
-                    onToggleOpenNow: () => ref
-                        .read(pharmacyOpenNowOnlyFilterProvider.notifier)
-                        .toggle(),
-                    selectedSort: selectedSort,
-                    onSelectSort: (sort) =>
-                        ref.read(pharmacySortProvider.notifier).select(sort),
                   ),
                   const SizedBox(height: 16),
                   PharmacyMapView(
@@ -226,7 +215,10 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
+          // Balances the back button on the other side so the title stays
+          // centered — there's already a real search TextField in the body,
+          // so this side doesn't need its own (previously no-op) icon.
+          const SizedBox(width: 48),
           Expanded(
             child: Text(
               'pharmacy_booking.select_pharmacy.title'.tr(),

@@ -379,16 +379,10 @@
     "select_pharmacy": {
       "title": "Choose Pharmacy",
       "search_hint": "Search for a pharmacy by name or location...",
-      "filter_open_now": "Open now",
-      "filter_top_rated": "Top rated",
-      "filter_nearest": "Nearest to you",
       "nearby_count": "{} nearby pharmacies",
       "edit_location": "Edit location",
       "distance_km": "{} km",
-      "rating_count": "({})",
-      "status_open_24h": "Open now - 24 hours",
-      "status_open_until": "Open now - closes {}",
-      "status_closed_tomorrow": "Closed now - opens tomorrow {}",
+      "delivery_available": "Delivery available",
       "choose_cta": "Choose",
       "next_cta": "Next"
     },

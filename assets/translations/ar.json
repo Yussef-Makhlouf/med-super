@@ -379,16 +379,10 @@
     "select_pharmacy": {
       "title": "اختر الصيدلية",
       "search_hint": "ابحث عن صيدلية بالاسم أو الموقع...",
-      "filter_open_now": "مفتوح الآن",
-      "filter_top_rated": "الأعلى تقييماً",
-      "filter_nearest": "الأقرب إليك",
       "nearby_count": "{} صيدلية قريبة",
       "edit_location": "تعديل الموقع",
       "distance_km": "{} كم",
-      "rating_count": "({})",
-      "status_open_24h": "مفتوح الآن - على مدار 24 ساعة",
-      "status_open_until": "مفتوح الآن - يغلق {}",
-      "status_closed_tomorrow": "مغلق الآن - يفتح غداً {}",
+      "delivery_available": "التوصيل متاح",
       "choose_cta": "اختر",
       "next_cta": "التالي"
     },

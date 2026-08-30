@@ -14,10 +14,28 @@ import 'package:med_super/features/provider_profile/presentation/controllers/pha
 /// `provider_profile/presentation/screens/doctor_details_screen.dart`, but
 /// using the shared `AppColors`/`AppButton` design-system pieces (this
 /// feature has no bespoke local color palette of its own).
+///
+/// A branch is the unit a patient browses and picks — there is no
+/// "pharmacy chain" parent page to drill through first (a chain name alone
+/// has no address/phone to act on), so this screen never links back up to
+/// one.
 class PharmacyBranchDetailsScreen extends ConsumerWidget {
-  const PharmacyBranchDetailsScreen({required this.branchId, super.key});
+  const PharmacyBranchDetailsScreen({
+    required this.branchId,
+    this.onSelect,
+    super.key,
+  });
 
   final String branchId;
+
+  /// Set only when reached from `pharmacy_booking`'s select-a-branch step
+  /// (via the route's `extra`) — shows a bottom "اختر والمتابعة" bar that
+  /// marks this branch as chosen and advances the booking flow, so a
+  /// patient can drill into the full profile before committing instead of
+  /// only ever choosing from the compact list card. Null everywhere else
+  /// (a plain "view branch" link), which renders the stub order CTA
+  /// instead.
+  final VoidCallback? onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,16 +63,41 @@ class PharmacyBranchDetailsScreen extends ConsumerWidget {
       body: AsyncValueView(
         value: asyncBranch,
         onRetry: () => ref.invalidate(pharmacyBranchProvider(branchId)),
-        data: (branch) => _BranchBody(branch: branch),
+        data: (branch) => _BranchBody(branch: branch, showOrderCta: onSelect == null),
       ),
+      bottomNavigationBar: onSelect == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: onSelect,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.patientPrimary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'pharmacy_booking.select_pharmacy.choose_cta'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }
 
 class _BranchBody extends StatelessWidget {
-  const _BranchBody({required this.branch});
+  const _BranchBody({required this.branch, required this.showOrderCta});
 
   final PharmacyBranch branch;
+  final bool showOrderCta;
 
   @override
   Widget build(BuildContext context) {
@@ -66,18 +109,20 @@ class _BranchBody extends StatelessWidget {
         _ContactCard(branch: branch),
         const SizedBox(height: 12),
         _AddressCard(branch: branch),
-        const SizedBox(height: 20),
-        AppButton.filled(
-          label: 'pharmacy_branch.order_cta'.tr(),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('pharmacy_branch.order_soon'.tr())),
-            );
-          },
-          fullWidth: true,
-          backgroundColor: AppColors.patientPrimary,
-          borderRadius: 14,
-        ),
+        if (showOrderCta) ...[
+          const SizedBox(height: 20),
+          AppButton.filled(
+            label: 'pharmacy_branch.order_cta'.tr(),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('pharmacy_branch.order_soon'.tr())),
+              );
+            },
+            fullWidth: true,
+            backgroundColor: AppColors.patientPrimary,
+            borderRadius: 14,
+          ),
+        ],
       ],
     );
   }
@@ -94,57 +139,42 @@ class _HeaderCard extends StatelessWidget {
     return _Card(
       child: Column(
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            // pushReplacement (not push) — see the matching comment on
-            // ClinicDetailsScreen's branch-card onTap: avoids an
-            // ever-growing pharmacy→branch→pharmacy→branch stack.
-            onTap: () => context.pushReplacement(
-              '/patient/pharmacies/${branch.pharmacyId}',
-            ),
-            child: Column(
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: AppColors.surfaceMuted,
-                  child: Icon(
-                    Icons.local_pharmacy_outlined,
-                    size: 40,
-                    color: AppColors.patientPrimary,
-                  ),
+          Column(
+            children: [
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: AppColors.surfaceMuted,
+                child: Icon(
+                  Icons.local_pharmacy_outlined,
+                  size: 40,
+                  color: AppColors.patientPrimary,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        branch.pharmacyName,
-                        textAlign: TextAlign.center,
-                        style: textTheme.titleLarge?.copyWith(
-                          color: AppColors.patientPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      branch.pharmacyName,
+                      textAlign: TextAlign.center,
+                      style: textTheme.titleLarge?.copyWith(
+                        color: AppColors.patientPrimary,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    if (branch.isVerified) ...[
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.verified,
-                        color: AppColors.patientPrimary,
-                        size: 20,
-                      ),
-                    ],
-                    const SizedBox(width: 2),
+                  ),
+                  if (branch.isVerified) ...[
+                    const SizedBox(width: 4),
                     const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.mutedText2,
+                      Icons.verified,
+                      color: AppColors.patientPrimary,
                       size: 20,
                     ),
                   ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
           if (branch.deliveryCapable) ...[
             const SizedBox(height: 10),

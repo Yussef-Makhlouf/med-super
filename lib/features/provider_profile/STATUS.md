@@ -23,14 +23,13 @@ wire format; availability: `BACKEND_READY`)
   mock-only fields (`branch-{doctorId}` / `'Africa/Cairo'`) standing in for
   what the real doctor-detail response should expose once its wire format
   is confirmed.
-- Clinic detail (`GET /v1/clinics/{clinicId}`) — added 2026-08-25
-  (`clinic_profile.dart` / `clinic_profile_dto.dart` /
-  `clinic_repository*.dart` / `clinic_providers.dart` /
-  `clinic_details_screen.dart`). Mirrors `GetClinicUseCase`'s raw-Prisma
-  passthrough shape (`legal_name`/`brand_name`/`tax_id`/`region_code`/
-  `status`/`branches[].address`), no dedicated backend response DTO. Route:
-  `/patient/clinics/:clinicId` (`patientClinicDetails`), wired in
-  `search_routes.dart`. Mock handler: `registerClinicMocks`.
+- Clinic detail (`GET /v1/clinics/{clinicId}`) — the parent/chain-level
+  screen (`clinic_profile.dart` / `clinic_details_screen.dart` /
+  `patientClinicDetails` route) was **removed 2026-08-28**: a clinic chain
+  name alone has no address/phone to act on, so a patient never drills into
+  it to "find the branches" — the branch itself is the unit browsed and
+  detailed. The backend endpoint still exists (admin/back-office use), just
+  nothing in this app calls it anymore.
 - Clinic branch detail (`GET /v1/clinic-branches/{branchId}`) — added
   2026-08-25 (`clinic_branch.dart` / `clinic_branch_dto.dart` /
   `clinic_branch_repository*.dart` / `get_clinic_branch_usecase.dart` /
@@ -39,14 +38,14 @@ wire format; availability: `BACKEND_READY`)
   (branch + `address` + parent `clinic`). Route:
   `/patient/clinic-branches/:branchId` (`patientClinicBranchDetails`),
   wired in `search_routes.dart`. Mock handler: `registerClinicBranchMocks`.
-- Pharmacy detail (`GET /v1/pharmacies/{pharmacyId}`) — added 2026-08-25
-  (`pharmacy_profile.dart` / `pharmacy_profile_dto.dart` /
-  `pharmacy_repository*.dart` / `pharmacy_providers.dart` /
-  `pharmacy_details_screen.dart`), file-for-file mirror of the clinic-detail
-  slice. Matches `GetPharmacyUseCase`'s raw Prisma passthrough shape
-  (near-identical to `Clinic`, plus `branches[].delivery_capable`). Route:
-  `/patient/pharmacies/:pharmacyId` (`patientPharmacyDetails`), wired in
-  `pharmacy_routes.dart`. Mock handler: `registerPharmacyProfileMocks`.
+- Pharmacy detail (`GET /v1/pharmacies/{pharmacyId}`) — the parent/chain-level
+  screen (`pharmacy_profile.dart` / `pharmacy_details_screen.dart` /
+  `patientPharmacyDetails` route) was **removed 2026-08-28**, same reasoning
+  as the clinic-detail removal above: the branch is the unit patients
+  browse/pick/order against, not the chain. `pharmacy_booking`'s select-a-
+  branch step now pushes straight to `PharmacyBranchDetailsScreen`, which
+  gained the `onSelect` "choose and continue" bottom bar this parent screen
+  used to own. The backend endpoint still exists (admin/back-office use).
 - Pharmacy branch detail (`GET /v1/pharmacy-branches/{branchId}`) — added
   2026-08-25 (`pharmacy_branch.dart` / `pharmacy_branch_dto.dart` /
   `pharmacy_branch_repository*.dart` / `get_pharmacy_branch_usecase.dart` /
@@ -62,7 +61,11 @@ wire format; availability: `BACKEND_READY`)
   wired in `pharmacy_routes.dart`. Mock handler:
   `registerPharmacyBranchMocks`. Read-only screen with a stub "order
   medicine" CTA (actual ordering flow is `pharmacy_booking`, out of scope
-  here).
+  here). Added 2026-08-29: this screen now also accepts an optional
+  `onSelect` callback (mirrors the old `PharmacyDetailsScreen`'s "select and
+  continue" bar) — see `pharmacy_booking/STATUS.md` for the new
+  `GET /v1/pharmacy-branches/search` (`clinic-reservations` File 12 Part 37)
+  that now drives `pharmacy_booking`'s branch list end to end.
 
 All five of the above endpoints are `@OptionalAuth()` on the real backend
 and 404 non-admin callers for non-`VERIFIED`/deleted rows — none of this
@@ -88,12 +91,12 @@ against a real running `clinic-reservations` (local Postgres via
   explicit `null` as *unset* and falls through to the default ~34s/10-retry
   backoff, so a genuine fetch failure took 30s+ to surface as an error
   instead of immediately. Fixed to `retry: (retryCount, error) => null`.
-- Navigation wiring added: `ClinicDetailsScreen`/`PharmacyDetailsScreen`'s
-  branch cards now push to their branch-detail screen; the branch-detail
-  screens' header (clinic/pharmacy name) links back up to the parent via
-  `clinicId`/`pharmacyId`. Both directions use `context.pushReplacement`,
-  not `context.push` — a plain push would let clinic→branch→clinic→branch
-  taps grow the navigation stack without bound.
+- Navigation wiring added (2026-08-25): `ClinicDetailsScreen`/
+  `PharmacyDetailsScreen`'s branch cards pushed to their branch-detail
+  screen, whose header linked back up to the parent. **Removed 2026-08-28**
+  along with the parent screens themselves (see above) — a branch is now
+  the sole unit browsed and detailed, with no parent page to round-trip
+  through.
 - `DoctorDetailsScreen`'s "about" card now hides entirely when a doctor has
   no `bio` and no qualifications/fellowships (seeded/demo doctors commonly
   have none) instead of rendering a header with visibly empty content.

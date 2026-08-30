@@ -59,9 +59,8 @@ Dio buildDioClient({required SecureStorageService storage}) {
     // '/v1/doctors/{id}/slots' too (see registerAvailabilityMocks' docstring).
     registerAvailabilityMocks(mock);
     registerSearchMocks(mock);
-    registerClinicMocks(mock);
     registerClinicBranchMocks(mock);
-    registerPharmacyProfileMocks(mock);
+    registerPharmacyBranchSearchMocks(mock);
     registerPharmacyBranchMocks(mock);
     registerLabBookingMocks(mock);
     registerProviderRegistrationMocks(mock);

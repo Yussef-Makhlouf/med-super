@@ -453,7 +453,7 @@
     <div class="empty-state" id="empty-state">No endpoints match “<span id="empty-term"></span>”.</div>
 
     <footer class="doc-foot">
-      60 endpoints across 6 built phases · 204/void responses carry no <code>data</code> key · <code>ParseUUIDPipe</code> guards every UUID path param and rejects non-UUIDs with <code>400</code>. Wiring badges audited against <code>med-super</code> on 2026‑08‑24; all 6 confirmed mismatches fixed and verified 2026‑08‑25.
+      61 endpoints across 6 built phases (60 as generated 2026‑08‑25, +1 added 2026‑08‑29: <code>GET /v1/pharmacy-branches/search</code>, File 12 Part 37) · 204/void responses carry no <code>data</code> key · <code>ParseUUIDPipe</code> guards every UUID path param and rejects non-UUIDs with <code>400</code>. Wiring badges audited against <code>med-super</code> on 2026‑08‑24; all 6 confirmed mismatches fixed and verified 2026‑08‑25.
     </footer>
   </main>
 </div>
@@ -810,6 +810,29 @@
         {
           name: 'pharmacy-branches', prefix: '/v1/pharmacy-branches', note: 'mirrors clinic-branches', endpoints: [
             {
+              method: 'GET', path: '/v1/pharmacy-branches/search', auth: 'optional', status: 200,
+              desc: 'Public branch search (File 12 Part 37, added 2026-08-29) — text/location/delivery filter, cursor-paginated. The branch, not the pharmacy chain, is the searchable unit (only a branch has an address/phone).',
+              request: [
+                { f: 'q', t: 'string', n: 'optional — brand-name pg_trgm match' },
+                { f: 'lat, lng', t: 'number', n: 'optional — required together for distance sort/radius filter' },
+                { f: 'radiusKm', t: 'number', n: 'optional, default 15, max 200' },
+                { f: 'deliveryCapable', t: 'boolean', n: 'optional filter' },
+                { f: 'sort', t: "'distance:asc' | 'name:asc'", n: "optional — defaults to distance:asc if lat/lng given, else name:asc" },
+                { f: 'cursor', t: 'string', n: 'optional, opaque' },
+                { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }
+              ],
+              response: `{
+  <span class="k">items</span>: <span class="t">{
+    branchId, pharmacyId, brandName, legalName, phone, ianaTimezone: string,
+    deliveryCapable: boolean,
+    address: { line1, city, regionCode, countryCode: string, geoLat, geoLng: number | null },
+    distanceKm: number | null
+  }[]</span>,
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`,
+              notes: ['No source doc defines a pharmacy-search contract — this fills the same gap Part 32 closed for <code>GET /v1/doctors/search</code>, dropping <code>specialty</code>/<code>date</code> and <code>rating</code>/<code>price</code> sorts (no such columns on <code>pharmacy_branches</code>/<code>pharmacies</code>) and adding <code>deliveryCapable</code> instead.']
+            },
+            {
               method: 'GET', path: '/v1/pharmacy-branches/:branchId', auth: 'optional', status: 200,
               desc: 'Branch detail — VERIFIED‑only unless caller is Admin.',
               request: null,
@@ -1124,11 +1147,11 @@
     'POST /v1/auth/password/reset': { status: 'ok', note: 'All 3 request fields match exactly.' },
 
     'PATCH /v1/affiliations/:affiliationId': { status: 'admin', note: 'Admin-only — this app has no admin surface.' },
-    'GET /v1/clinic-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new clinic-branch detail screen consumes the raw snake_case Prisma shape directly (<code>ClinicBranchDto</code>), plus mock handler and route (<code>/patient/clinic-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> (not just the mock) — fixed a <code>retry: null</code> no-op bug in this screen\'s provider (riverpod 3.3.2 treats it as unset, falling through to a ~34s default retry backoff instead of failing fast) and added tap-through navigation to/from the parent clinic (via <code>context.pushReplacement</code>, not <code>push</code>, to avoid an unbounded clinic↔branch navigation stack).' },
+    'GET /v1/clinic-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: clinic-branch detail screen consumes the raw snake_case Prisma shape directly (<code>ClinicBranchDto</code>), plus mock handler and route (<code>/patient/clinic-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass; re-verified same day against a real local backend (fixed a <code>retry: null</code> no-op bug — riverpod 3.3.2 treats it as unset, falling through to a ~34s default retry backoff instead of failing fast). <b>Revised 2026-08-28</b>: the tap-through to the parent <code>GET /v1/clinics/:clinicId</code> screen was removed (that screen no longer exists — see its own entry above); the branch is now the sole unit browsed/detailed, with no parent to round-trip through.' },
     'PATCH /v1/clinic-branches/:branchId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/clinic-branches/:branchId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/clinic-branches/:branchId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
-    'GET /v1/clinics/:clinicId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new clinic detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>ClinicWithBranches</code> shape, plus mock handler and route (<code>/patient/clinics/:clinicId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> — same <code>retry: null</code> fix as the branch screen, plus branch cards now tap through via <code>context.pushReplacement</code>.' },
+    'GET /v1/clinics/:clinicId': { status: 'none', note: 'Was wired 2026-08-25 (<code>ClinicDetailsScreen</code>, <code>/patient/clinics/:clinicId</code>) as a parent/chain-level detail screen you drilled into from a branch to "find the other branches." <b>Removed 2026-08-28</b>: a clinic chain name alone has no address/phone to act on, so the branch is the sole unit a patient browses/details — <code>ClinicBranchDetailsScreen</code> (<code>GET /v1/clinic-branches/:branchId</code>, still wired) no longer links back up to this parent. The backend endpoint itself is untouched (still real, still usable by an admin surface) — nothing in this app calls it anymore.' },
     'POST /v1/clinics': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'PATCH /v1/clinics/:clinicId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/clinics/:clinicId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
@@ -1141,13 +1164,14 @@
     'POST /v1/doctors/:doctorId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/doctors/:doctorId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/doctors/:doctorId/affiliations': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
-    'GET /v1/pharmacies/:pharmacyId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new pharmacy detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>PharmacyWithBranches</code> shape, plus mock handler and route (<code>/patient/pharmacies/:pharmacyId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b>, incl. 3 real fixed-UUID demo pharmacies added to <code>clinic-reservations</code>\' <code>db/seed.ts</code> — same <code>retry: null</code> fix as the clinic screens, plus <code>pharmacy_booking</code>\'s (still fully mock) pharmacy-select cards now drill into this real screen (its 3 mock ids were pointed at these same seeded UUIDs instead of placeholder strings) with a "select and continue" action wired back via the route\'s <code>extra</code>.' },
+    'GET /v1/pharmacies/:pharmacyId': { status: 'none', note: 'Was wired 2026-08-25 (<code>PharmacyDetailsScreen</code>, <code>/patient/pharmacies/:pharmacyId</code>) as a parent/chain-level detail screen, incl. <code>pharmacy_booking</code>\'s select-a-pharmacy step drilling into it with a "select and continue" action via the route\'s <code>extra</code>. <b>Removed 2026-08-28</b>: a pharmacy chain name alone has no address/phone to fulfil an order against, so the branch is the sole unit patients browse/pick/order — <code>pharmacy_booking</code>\'s select step now pushes straight to <code>PharmacyBranchDetailsScreen</code> (<code>GET /v1/pharmacy-branches/:branchId</code>, still wired), which inherited the "select and continue" bottom bar. The backend endpoint itself is untouched (still real, still usable by an admin surface) — nothing in this app calls it anymore.' },
     'POST /v1/pharmacies': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'PATCH /v1/pharmacies/:pharmacyId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacies/:pharmacyId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacies/:pharmacyId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacies/:pharmacyId/branches': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
-    'GET /v1/pharmacy-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: new pharmacy-branch detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>PharmacyBranchWithRelations</code> shape (incl. <code>delivery_capable</code>), plus mock handler and route (<code>/patient/pharmacy-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass. <b>Re-verified same day against a real local backend</b> — same <code>retry: null</code> fix, plus tap-through to/from the parent pharmacy via <code>context.pushReplacement</code>.' },
+    'GET /v1/pharmacy-branches/search': { status: 'ok', note: 'Added 2026-08-29 (File 12 Part 37) and wired the same day: <code>pharmacy_booking</code>\'s select-a-branch step (<code>pharmaciesProvider</code>) now calls this for real via a new <code>data/</code> layer (<code>PharmacyBranchSearchRemoteDatasource</code>/<code>PharmacyBranchSearchItemDto</code>), replacing the old 100%-hardcoded <code>mockPharmacies</code> list. Mock handler: <code>registerPharmacyBranchSearchMocks</code> (registered before the detail handler below — same first-registered-wins substring-containment ordering requirement doctor search/detail already documents). Device location is read best-effort via the existing <code>ClinicLocationService</code> (<code>provider_registration</code>) and passed as <code>lat</code>/<code>lng</code>; <code>rating</code>/<code>ratingCount</code>/live open-closed status were removed from the Flutter <code>Pharmacy</code> entity and card entirely rather than faked, since no such columns exist on the real tables. The map\'s "nearby count" pill and each card\'s "delivery available" badge are both sourced from this response now too (previously a static placeholder / entirely absent, respectively).' },
+    'GET /v1/pharmacy-branches/:branchId': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: pharmacy-branch detail screen (<code>lib/features/provider_profile/</code>) consumes the raw snake_case <code>PharmacyBranchWithRelations</code> shape (incl. <code>delivery_capable</code>), plus mock handler and route (<code>/patient/pharmacy-branches/:branchId</code>). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code> on the new files, widget/unit tests pass; re-verified same day against a real local backend (<code>retry: null</code> fix). <b>Revised 2026-08-28</b>: the tap-through to the parent <code>GET /v1/pharmacies/:pharmacyId</code> screen was removed (that screen no longer exists — see its own entry above); this screen instead gained the "select and continue" bottom bar, since <code>pharmacy_booking</code>\'s select step now pushes straight here, branch ids and all (<code>mockPharmacies</code> updated to the seeded demo <em>branch</em> UUIDs, not the parent pharmacy UUIDs).' },
     'PATCH /v1/pharmacy-branches/:branchId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacy-branches/:branchId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacy-branches/:branchId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
