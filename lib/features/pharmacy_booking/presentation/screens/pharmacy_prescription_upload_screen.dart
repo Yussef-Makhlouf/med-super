@@ -10,6 +10,7 @@ import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 
 /// Step 1 of the pharmacy booking flow — attach a photo of the prescription
 /// and choose how the medication should be received. Mirrors the structure
@@ -58,13 +59,41 @@ class _PharmacyPrescriptionUploadScreenState
     }
     final files = result?.files ?? const <PlatformFile>[];
     if (files.isEmpty) return;
-    ref
+    final added = ref
         .read(uploadedPrescriptionImagesProvider.notifier)
         .addImages(
           files.map(
             (file) => (path: file.path ?? file.name, bytes: file.bytes),
           ),
         );
+    if (!mounted || added >= files.length) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'pharmacy_booking.upload.max_images_reached'.tr(
+            args: ['$maxPrescriptionImages'],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    final images = ref.read(uploadedPrescriptionImagesProvider);
+    final notes = _notesController.text.trim();
+    await ref
+        .read(prescriptionUploadControllerProvider.notifier)
+        .submit(images: images, notes: notes.isEmpty ? null : notes);
+    if (!mounted) return;
+    final result = ref.read(prescriptionUploadControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('pharmacy_booking.upload.submit_error'.tr())),
+      );
+      return;
+    }
+    if (!mounted) return;
+    context.push('/patient/pharmacy/select');
   }
 
   @override
@@ -72,6 +101,7 @@ class _PharmacyPrescriptionUploadScreenState
     final images = ref.watch(uploadedPrescriptionImagesProvider);
     final selectedMethod = ref.watch(selectedDeliveryMethodProvider);
     final canSubmit = ref.watch(canSubmitPrescriptionUploadProvider);
+    final isSubmitting = ref.watch(prescriptionUploadControllerProvider).isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -123,9 +153,8 @@ class _PharmacyPrescriptionUploadScreenState
                 backgroundColor: AppColors.patientPrimary,
                 foregroundColor: Colors.white,
                 borderRadius: AppRadii.xl,
-                onPressed: canSubmit
-                    ? () => context.push('/patient/pharmacy/select')
-                    : null,
+                isLoading: isSubmitting,
+                onPressed: (canSubmit && !isSubmitting) ? _submit : null,
               ),
             ),
           ],
@@ -519,6 +548,9 @@ class _NotesField extends StatelessWidget {
           controller: controller,
           minLines: 3,
           maxLines: 4,
+          // Backend caps `notes` at 500 chars (`UploadPrescriptionDto`,
+          // File 12 Part 37.2) — enforced client-side too.
+          maxLength: 500,
           decoration: InputDecoration(
             hintText: 'pharmacy_booking.upload.notes_hint'.tr(),
             hintStyle: const TextStyle(color: AppColors.mutedText),

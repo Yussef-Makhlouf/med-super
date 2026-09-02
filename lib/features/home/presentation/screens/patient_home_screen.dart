@@ -96,10 +96,13 @@ class _HomeHeader extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 22,
-          backgroundColor: Color(0xFFDCE8FF),
-          child: Icon(Icons.person, color: brandBlue),
+        GestureDetector(
+          onTap: () => context.go('/patient/profile'),
+          child: const CircleAvatar(
+            radius: 22,
+            backgroundColor: Color(0xFFDCE8FF),
+            child: Icon(Icons.person, color: brandBlue),
+          ),
         ),
         const SizedBox(width: 10),
         Column(
@@ -122,11 +125,7 @@ class _HomeHeader extends StatelessWidget {
         ),
         const Spacer(),
         IconButton(
-          onPressed: () => context.push('/patient/search'),
-          icon: const Icon(Icons.search, color: PatientHomeScreen._ink),
-        ),
-        IconButton(
-          onPressed: () {},
+          onPressed: () => context.go('/patient/notifications'),
           icon: const Badge(
             smallSize: 8,
             backgroundColor: Colors.red,

@@ -8,6 +8,7 @@ class User {
     required this.roles,
     required this.activeRole,
     this.displayName,
+    this.email,
   });
 
   final String id;
@@ -15,6 +16,7 @@ class User {
   final List<UserRole> roles;
   final UserRole activeRole;
   final String? displayName;
+  final String? email;
 
   bool get profileComplete =>
       displayName != null && displayName!.trim().isNotEmpty;
@@ -45,11 +47,13 @@ class User {
     List<UserRole>? roles,
     UserRole? activeRole,
     String? displayName,
+    String? email,
   }) => User(
     id: id ?? this.id,
     phone: phone ?? this.phone,
     roles: roles ?? this.roles,
     activeRole: activeRole ?? this.activeRole,
     displayName: displayName ?? this.displayName,
+    email: email ?? this.email,
   );
 }

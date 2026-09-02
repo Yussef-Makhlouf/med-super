@@ -8,16 +8,14 @@ class UpdateDoctorAccountUseCase {
   final ProviderDashboardRepository _repository;
 
   Future<Result<DoctorAccountProfile>> call({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   }) {
     return _repository.updateDoctorAccount(
-      name: name,
-      specialty: specialty,
-      yearsOfExperience: yearsOfExperience,
       bio: bio,
+      degree: degree,
+      yearsOfExperience: yearsOfExperience,
     );
   }
 }

@@ -12,8 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// works. The initial route is a placeholder with a recognizable label; the
 /// confirmation screen is pushed on top of it (the screen itself has no
 /// back button — there's nothing to go back and redo once the order has
-/// been sent). Two more placeholder routes stand in for `/patient/orders`
-/// and `/patient/home` so navigation there can be asserted the same way.
+/// been sent). Two more placeholder routes stand in for
+/// `/patient/orders/:orderId` and `/patient/home` so navigation
+/// there can be asserted the same way.
 Future<GoRouter> pumpConfirmationScreen(
   WidgetTester tester,
   PharmacyOrderConfirmation confirmation, {
@@ -40,9 +41,10 @@ Future<GoRouter> pumpConfirmationScreen(
             PharmacyOrderConfirmationScreen(confirmation: confirmation),
       ),
       GoRoute(
-        path: '/patient/orders',
-        builder: (context, state) =>
-            const Scaffold(body: Text('orders-placeholder')),
+        path: '/patient/orders/:orderId',
+        builder: (context, state) => Scaffold(
+          body: Text('order-detail-placeholder:${state.pathParameters['orderId']}'),
+        ),
       ),
       GoRoute(
         path: '/patient/home',
@@ -243,17 +245,21 @@ void main() {
     },
   );
 
-  testWidgets('tapping the primary CTA navigates to /patient/orders', (
-    tester,
-  ) async {
-    await pumpConfirmationScreen(tester, confirmation);
+  testWidgets(
+    'tapping the primary CTA navigates to the order\'s real detail route',
+    (tester) async {
+      await pumpConfirmationScreen(tester, confirmation);
 
-    await tester.tap(find.byType(FilledButton));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
 
-    expect(find.text('orders-placeholder'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(
+        find.text('order-detail-placeholder:${confirmation.orderNumber}'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('tapping "go home" navigates to /patient/home', (tester) async {
     await pumpConfirmationScreen(tester, confirmation);

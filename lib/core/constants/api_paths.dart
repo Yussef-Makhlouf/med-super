@@ -56,11 +56,20 @@ abstract final class ApiPaths {
   static const providerRegistrationLookups =
       '/v1/provider/registration/lookups';
 
+  // Prescriptions (Phase 6)
+  static const prescriptions = '/v1/prescriptions';
+
+  // Pharmacy Fulfillment (Phase 7)
+  static const pharmacyOrders = '/v1/pharmacy-orders';
+
   // Provider dashboard
   static const providerAppointments = '/v1/provider/appointments';
   static const providerPatients = '/v1/provider/patients';
   static const providerNotifications = '/v1/provider/notifications';
-  static const providerMe = '/v1/provider/me';
+  // Real backend route, replacing the invented `/v1/provider/me` (which
+  // never existed anywhere in clinic-reservations) — a DOCTOR-role-only
+  // self-profile read/edit (File 12 Part 45).
+  static const doctorMe = '/v1/doctors/me';
   // Doctor-only: manage clinic assistants (CLINIC_STAFF accounts).
   // Backend endpoint: POST/GET /v1/provider/assistants,
   // PATCH/DELETE /v1/provider/assistants/:id

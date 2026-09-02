@@ -8,6 +8,7 @@ class UserDto {
     required this.roles,
     this.displayName,
     this.activeRole,
+    this.email,
   });
 
   final String id;
@@ -15,6 +16,7 @@ class UserDto {
   final List<String> roles;
   final String? displayName;
   final String? activeRole;
+  final String? email;
 
   factory UserDto.fromJson(Map<String, dynamic> json) => UserDto(
     id: json['id'] as String,
@@ -24,6 +26,7 @@ class UserDto {
         .toList(),
     displayName: (json['displayName'] ?? json['display_name']) as String?,
     activeRole: (json['activeRole'] ?? json['active_role']) as String?,
+    email: json['email'] as String?,
   );
 
   User toEntity() {
@@ -41,6 +44,7 @@ class UserDto {
       roles: rolesOrDefault,
       activeRole: active,
       displayName: displayName,
+      email: email,
     );
   }
 }

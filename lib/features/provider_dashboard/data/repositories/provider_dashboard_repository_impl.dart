@@ -112,17 +112,15 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
 
   @override
   Future<Result<DoctorAccountProfile>> updateDoctorAccount({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   }) async {
     try {
       final dto = await _remote.updateDoctorAccount(
-        name: name,
-        specialty: specialty,
-        yearsOfExperience: yearsOfExperience,
         bio: bio,
+        degree: degree,
+        yearsOfExperience: yearsOfExperience,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {

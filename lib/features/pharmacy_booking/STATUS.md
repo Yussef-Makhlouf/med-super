@@ -1,8 +1,6 @@
 # Feature status: pharmacy_booking
 
-**Label:** `PARTIAL` (list + drill-down: `BACKEND_READY`; order review/confirmation/upload: still mocked, Phase 7 doesn't exist)
-
-Backend Pharmacy Fulfillment (Phase 7 — order broadcast/accept/fulfillment) is still `NOT STARTED`. What changed 2026-08-29: the pharmacy-*selection* half of this flow no longer needs Phase 7 at all — it was never really a Pharmacy Fulfillment concern, it's Provider Directory's own "which branch is this" question, and Provider Directory (Phase 2) already has a real, complete backend. **Do not** read this as Phase 7 progress; the order-review/confirmation/upload screens downstream of selection are still 100% mocked, and stay that way until Phase 7 exists.
+**Label:** `PARTIAL` (upload, branch list/drill-down, order creation/confirm, and order tracking/approve-and-pay: `BACKEND_READY` — the whole flow runs end-to-end against a real backend; the quote/accept/fulfillment steps a real branch performs are `PHARMACY_STAFF`-only, out of scope for this app — see "Phase 7" below)
 
 ## Branch list (`GET /v1/pharmacy-branches/search`), added 2026-08-29
 
@@ -14,13 +12,26 @@ Consequences of wiring real data, all deliberate:
 - **`distanceKm` is real now**, sourced from the endpoint's PostGIS `ST_Distance` calculation — `pharmaciesProvider` best-effort reads the device's location via `ClinicLocationService` (reused from `provider_registration`, the same wrapper `PharmacyMapView`'s "locate me" button already uses) and passes `lat`/`lng` to the search call. If location is denied/unavailable, the search still runs (no `lat`/`lng`), every result's `distanceKm` comes back null, and `PharmacyCard` hides its distance row rather than showing a stale/fabricated number. The list still sorts nearest-first, unknown-distance results last.
 - Each list entry is a *branch*, not a pharmacy chain — the same chain can have more than one branch, and only a branch has an address/phone to fulfil an order against. Tapping a card's name/address (not the "اختر" CTA) opens `provider_profile`'s `PharmacyBranchDetailsScreen` directly (`GET /v1/pharmacy-branches/:id`), no intermediate "pharmacy" page (that parent screen/route was removed 2026-08-28, see `provider_profile/STATUS.md`), with a "select and continue" action wired back via the route's `extra`.
 
-**Still out of scope / unchanged:** everything past selection (`pharmacy_order_review_screen.dart` onward) — no network layer, no `MockInterceptor` registration, Phase 7-gated as before.
+## Prescription upload wired to the real backend, added 2026-08-29
+
+`PharmacyPrescriptionUploadScreen`'s submit CTA (step 1) calls the real, complete `POST /v1/prescriptions/upload` (**Prescriptions / Phase 6**) via `PrescriptionUploadController`/`PrescriptionRemoteDatasource`. `notes` now round-trips for real (`clinic-reservations` File 12 Part 44 added the column it was silently missing before). One remaining caveat: the endpoint's `fileUrls` are pre-hosted-URL-only by design (object storage is `DEC-009`, still an open/deferred decision — same gap as `ProviderVerificationDocument.file_url`), so no real image bytes are actually uploaded anywhere yet. Each attached image is sent as a distinct placeholder URL (`https://placeholder.medsuper.local/prescriptions/<id>.jpg`) purely so the real quality-check/OCR pipeline runs end-to-end — swap this for a real upload step once object storage is decided. The picker is capped at 5 images and the notes field at 500 chars, matching the backend's own `UploadPrescriptionDto` limits.
+
+## Phase 7 (Pharmacy Fulfillment): order creation wired 2026-08-31
+
+`clinic-reservations` merged the whole module 2026-08-31 (PR #8), complete. Investigating it for `pharmacy_order_review_screen.dart` surfaced two blockers, both now fixed on the backend (`clinic-reservations` File 12 Part 44):
+
+1. **Branch selection now reaches the backend for real.** `POST /v1/pharmacy-orders` originally took only `lat`/`lng` and broadcast to every nearby verified branch, with no way to express "this specific branch the patient picked." An optional `pharmacyBranchId` was added — when sent, the order broadcasts to that one branch alone (still has to `accept` it, same mechanism as any broadcast). `pharmacy_order_review_screen.dart`'s `_confirm` calls this for real via `PharmacyOrderController`/`PharmacyOrderRemoteDatasource`, using the `prescriptionId` from step 1's already-uploaded prescription, the branch chosen in step 2, and the device's location (`ClinicLocationService`, required here — unlike the branch-search endpoint's best-effort one, so a denied/unavailable location surfaces as an error instead of silently proceeding). `PharmacyOrderConfirmation`'s `orderNumber` is the real `pharmacyOrderId`, not a client-generated placeholder.
+2. **The `ACCEPTED`-prescription requirement was a dead-end, not a guarded workflow — removed.** `POST /v1/pharmacy-orders` used to require the prescription to already be `ACCEPTED`, which only happens via a `PHARMACY_STAFF`-only `POST /v1/prescriptions/:id/review`. Checked `medsuper-pharmacy-dashboard`'s own API client directly: it never calls that endpoint anywhere — the dashboard's actual approval step is the *order's* flat-total `quote`, reviewed straight off the prescription image (no per-item drug-code review at all). Requiring prescription-level `ACCEPTED` made every order permanently uncreateable in the current ecosystem, not a real safeguard. The backend now also accepts `QUALITY_CHECK_PASSED` (what every upload reaches automatically today), so an order created here genuinely succeeds — it starts `RECEIVED`, exactly as this screen's "awaiting approval, we'll notify you" copy always promised.
+
+## Order tracking + approve-and-pay wired 2026-08-31, folded into the real "orders" tab 2026-09-01
+
+The confirmation screen's "تتبع الطلب" button, and the orders-tab pharmacy list, both use the real `pharmacyOrderId`:
+
+- **`PatientOrdersScreen`** (`home` feature, `/patient/orders`) — the bottom-nav "طلبات" tab. Two top tabs: **الصيدلية** (default — real `GET /v1/pharmacy-orders` list, restored/adapted from the original mock screen's card design rather than a different look) and **المعمل** (still mock — `lab_booking` is `BLOCKED`, nothing real to wire it to). The standalone `PharmacyOrdersListScreen` this used to be is gone; its real-data logic now lives in this screen's pharmacy tab.
+- **`PharmacyOrderDetailScreen`** (nested `/patient/orders/:orderId` route, bottom tab bar stays visible) — `GET /v1/pharmacy-orders/:id`, showing the quote (once a branch has priced it) or rejection reason, plus a "موافقة ودفع" button (`POST /v1/pharmacy-orders/:id/approve`, shown only once `status == 'ACCEPTED'` and a quote exists, mirroring the backend's own `APPROVABLE_STATUS` guard).
+
+`accept`/`decline`/`quote`/`reject`/`fulfill`/`complete`/`GET /v1/pharmacy-audit` are `PHARMACY_STAFF`-only and stay entirely out of scope for this app (ADR-006) — a real branch has to act on the order through `medsuper-pharmacy-dashboard` before it progresses past `RECEIVED` or shows a quote here.
 
 ## Not affected by ADR-006
 
-`ADR-006-PROVIDER-SURFACE-SPLIT.md` (2026-08-14) routes future **pharmacy
-dashboard** (pharmacy *staff* operations) work to a separate Next.js web
-app. This feature is the *patient-facing* booking flow, a different
-surface — unaffected either way. Its order/fulfillment half stays gated on
-backend Phase 7 (Pharmacy Fulfillment), not on any Flutter-vs-Next.js
-question.
+`ADR-006-PROVIDER-SURFACE-SPLIT.md` (2026-08-14) routes future **pharmacy dashboard** (pharmacy *staff* operations) work to a separate Next.js web app. This feature is the *patient-facing* booking flow, a different surface — unaffected either way.

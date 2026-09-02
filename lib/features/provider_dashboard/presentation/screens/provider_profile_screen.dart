@@ -39,11 +39,14 @@ class ProviderProfileScreen extends ConsumerWidget {
 
     final doctorName = displayName;
 
-    final hospitalName = isAssistant
+    // No clinic-affiliation join exists on `GET /v1/doctors/me`
+    // (`clinic-reservations` File 12 Part 45) — showing a hospital name here
+    // would mean fabricating data, so this line is specialty-only now.
+    final subtitle = isAssistant
         ? 'مساعد طبي'
         : doctorAccountAsync.maybeWhen(
-            data: (acc) => '${acc.hospitalName} • ${acc.specialty}',
-            orElse: () => 'مستشفى الملك فيصل التخصصي',
+            data: (acc) => acc.specialty,
+            orElse: () => '',
           );
 
     final avatarUrl = doctorAccountAsync.maybeWhen(
@@ -123,7 +126,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    hospitalName,
+                    subtitle,
                     style: textTheme.bodyMedium?.copyWith(
                       color: AppColors.mutedText2,
                     ),
@@ -135,7 +138,9 @@ class ProviderProfileScreen extends ConsumerWidget {
                     iconBg: brandBlue.withValues(alpha: 0.1),
                     iconColor: brandBlue,
                     title: 'المعلومات الشخصية',
-                    subtitle: isAssistant ? 'الاسم والصورة الشخصية' : 'الاسم، التخصص، سنوات الخبرة',
+                    subtitle: isAssistant
+                        ? 'الاسم والصورة الشخصية'
+                        : 'البريد الإلكتروني، نبذة، المؤهل العلمي، سنوات الخبرة',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const ProviderEditProfileScreen(),
@@ -207,8 +212,11 @@ class ProviderProfileScreen extends ConsumerWidget {
                     borderRadius: 16,
                     fullWidth: true,
                     onPressed: () {
+                      // '/account-login' (phone+password), not '/login'
+                      // (OTP first-time signup) — same reasoning as the
+                      // patient profile's logout button.
                       ref.read(sessionControllerProvider.notifier).logout();
-                      context.go('/login');
+                      context.go('/account-login');
                     },
                   ),
                   const SizedBox(height: 24),

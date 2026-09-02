@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_select_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
@@ -99,6 +101,15 @@ Future<void> _settle(WidgetTester tester) => tester.runAsync(() async {
   }
 });
 
+class _FixedDeliveryMethod extends SelectedDeliveryMethod {
+  _FixedDeliveryMethod(this._value);
+
+  final DeliveryMethod _value;
+
+  @override
+  DeliveryMethod build() => _value;
+}
+
 void main() {
   // Same path_provider stub as pharmacy_map_view_test.dart — this screen
   // renders a PharmacyMapView (FlutterMap) whose tile disk cache asks
@@ -145,8 +156,12 @@ void main() {
     ),
   ];
 
-  List<Override> overrides() => [
+  List<Override> overrides({DeliveryMethod? deliveryMethod}) => [
     pharmaciesProvider.overrideWith((ref) async => pharmacies),
+    if (deliveryMethod != null)
+      selectedDeliveryMethodProvider.overrideWith(
+        () => _FixedDeliveryMethod(deliveryMethod),
+      ),
   ];
 
   testWidgets(
@@ -199,22 +214,27 @@ void main() {
   });
 
   testWidgets(
-    'defaults the first pharmacy as selected when none chosen explicitly',
+    'no pharmacy is pre-selected on entry — the patient must explicitly '
+    'choose one, and "التالي" starts disabled',
     (tester) async {
-      await pumpLocalizedWidget(
+      await pumpWithRouter(
         tester,
         PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
-        overrides: overrides(),
+        overrides: overrides(deliveryMethod: DeliveryMethod.pickup),
       );
       await _settle(tester);
 
       final cards = tester
           .widgetList<PharmacyCard>(find.byType(PharmacyCard))
           .toList();
-      expect(cards[0].pharmacy.id, 'ph1');
-      expect(cards[0].isSelected, isTrue);
+      expect(cards[0].isSelected, isFalse);
       expect(cards[1].isSelected, isFalse);
 
+      final nextButton = find.widgetWithText(
+        ElevatedButton,
+        'pharmacy_booking.select_pharmacy.next_cta'.tr(),
+      );
+      expect(tester.widget<ElevatedButton>(nextButton).onPressed, isNull);
       expect(tester.takeException(), isNull);
     },
   );
@@ -226,7 +246,9 @@ void main() {
       await pumpWithRouter(
         tester,
         PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
-        overrides: overrides(),
+        // PICKUP, not the homeDelivery default — ph2 isn't delivery-capable
+        // and this test isn't about that, just about tap-to-select.
+        overrides: overrides(deliveryMethod: DeliveryMethod.pickup),
       );
       await _settle(tester);
 
@@ -252,28 +274,62 @@ void main() {
     },
   );
 
-  testWidgets('tapping the bottom "التالي" bar navigates to the review route', (
-    tester,
-  ) async {
-    await pumpWithRouter(
-      tester,
-      PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
-      overrides: overrides(),
-    );
-    await _settle(tester);
+  testWidgets(
+    'a non-delivery-capable card is disabled and unselectable when the '
+    'patient chose home delivery on step 1',
+    (tester) async {
+      await pumpWithRouter(
+        tester,
+        PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
+        overrides: overrides(deliveryMethod: DeliveryMethod.homeDelivery),
+      );
+      await _settle(tester);
 
-    final nextButton = find.widgetWithText(
-      ElevatedButton,
-      'pharmacy_booking.select_pharmacy.next_cta'.tr(),
-    );
-    expect(nextButton, findsOneWidget);
-    tester.widget<ElevatedButton>(nextButton).onPressed!();
-    await tester.pumpAndSettle();
+      final cards = tester
+          .widgetList<PharmacyCard>(find.byType(PharmacyCard))
+          .toList();
+      expect(cards[0].disabled, isFalse); // ph1: deliveryCapable
+      expect(cards[1].disabled, isTrue); // ph2: !deliveryCapable
 
-    expect(find.text('review-screen'), findsOneWidget);
-    expect(find.text('start-placeholder'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
+      final secondCardChoose = find.descendant(
+        of: find.byType(PharmacyCard).at(1),
+        matching: find.byType(OutlinedButton),
+      );
+      expect(tester.widget<OutlinedButton>(secondCardChoose).onPressed, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'tapping a card then the bottom "التالي" bar navigates to the review route',
+    (tester) async {
+      await pumpWithRouter(
+        tester,
+        PharmacySelectScreen(mapTileProvider: FakeTileProvider()),
+        overrides: overrides(deliveryMethod: DeliveryMethod.pickup),
+      );
+      await _settle(tester);
+
+      final firstCardChoose = find.descendant(
+        of: find.byType(PharmacyCard).at(0),
+        matching: find.byType(OutlinedButton),
+      );
+      tester.widget<OutlinedButton>(firstCardChoose).onPressed!();
+      await tester.pumpAndSettle();
+
+      final nextButton = find.widgetWithText(
+        ElevatedButton,
+        'pharmacy_booking.select_pharmacy.next_cta'.tr(),
+      );
+      expect(nextButton, findsOneWidget);
+      tester.widget<ElevatedButton>(nextButton).onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('review-screen'), findsOneWidget);
+      expect(find.text('start-placeholder'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('tapping the back button pops the screen', (tester) async {
     await pumpWithRouter(

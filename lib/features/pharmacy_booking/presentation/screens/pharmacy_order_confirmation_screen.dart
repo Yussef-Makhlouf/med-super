@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
+import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
 
 /// Step 3 result — pharmacy order "submitted" screen (not a confirmed order:
 /// the pharmacy still has to review the uploaded prescription image and
@@ -90,7 +91,7 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                '#${confirmation.orderNumber}',
+                                '#${shortOrderId(confirmation.orderNumber)}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.patientPrimary,
@@ -140,7 +141,15 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: () => context.go('/patient/orders'),
+                        // `orderNumber` is the real `pharmacyOrderId` this
+                        // screen was given — `/patient/orders` is the real
+                        // pharmacy-orders tab now (the old mock screen it
+                        // used to point past is gone), so this lands the
+                        // patient on that exact order's detail inside it,
+                        // bottom tab bar included.
+                        onPressed: () => context.go(
+                          '/patient/orders/${confirmation.orderNumber}',
+                        ),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.patientPrimary,
                           minimumSize: const Size.fromHeight(52),

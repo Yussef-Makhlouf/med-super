@@ -7,6 +7,10 @@ import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/domain/entities/otp_request_result.dart';
 import 'package:med_super/features/auth/presentation/controllers/auth_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/forgot_password_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_provider.g.dart';
@@ -108,7 +112,7 @@ class SessionController extends _$SessionController {
     return switch (result) {
       Ok(:final value) => Session(
         user: value,
-        onboardingComplete: _readOnboardingComplete(),
+        onboardingComplete: value.profileComplete || _readOnboardingComplete(),
         passwordComplete: _readPasswordComplete(),
       ),
       Err() => null,
@@ -167,7 +171,7 @@ class SessionController extends _$SessionController {
       case Ok(:final value):
         final session = Session(
           user: value,
-          onboardingComplete: _readOnboardingComplete(),
+          onboardingComplete: value.profileComplete || _readOnboardingComplete(),
           passwordComplete: _readPasswordComplete(),
         );
         state = AsyncData(session);
@@ -253,7 +257,7 @@ class SessionController extends _$SessionController {
         await _writePasswordComplete(true);
         final session = Session(
           user: value,
-          onboardingComplete: _readOnboardingComplete(),
+          onboardingComplete: value.profileComplete || _readOnboardingComplete(),
           passwordComplete: true,
         );
         state = AsyncData(session);
@@ -287,8 +291,15 @@ class SessionController extends _$SessionController {
     return Result.ok(session);
   }
 
-  /// Persists display name via `PATCH /v1/auth/me` and refreshes session.
-  Future<Result<Session>> updateDisplayName(String displayName) async {
+  /// Persists display name (and optionally email) via `PATCH /v1/auth/me`
+  /// and refreshes session. `email` is write-only server-side (`GET
+  /// /v1/auth/me` does return it as of File 12 Part 45, so it round-trips
+  /// back into `session.user.email` after this call) — an empty/unchanged
+  /// value is simply omitted from the request.
+  Future<Result<Session>> updateDisplayName(
+    String displayName, {
+    String? email,
+  }) async {
     final current = state.asData?.value;
     if (current == null) {
       return const Result.err(Failure.auth());
@@ -300,10 +311,16 @@ class SessionController extends _$SessionController {
         Failure.validation({'display_name': 'profile.full_name_required'}),
       );
     }
+    final trimmedEmail = email?.trim();
 
     final result = await ref
         .read(authRepositoryProvider)
-        .updateProfile(displayName: name);
+        .updateProfile(
+          displayName: name,
+          email: (trimmedEmail == null || trimmedEmail.isEmpty)
+              ? null
+              : trimmedEmail,
+        );
     switch (result) {
       case Err(:final failure):
         return Result.err(failure);
@@ -319,6 +336,24 @@ class SessionController extends _$SessionController {
     await _writeOnboardingComplete(false);
     await _writePasswordComplete(false);
     state = const AsyncData(null);
+    _resetEphemeralFlowState();
+  }
+
+  /// None of these providers are per-session by construction — they're
+  /// plain (non-`autoDispose`) `Notifier`/`FutureProvider`s that live for
+  /// the whole app process, so whatever a patient typed/picked mid-flow
+  /// (an attached prescription photo, a chosen pharmacy, an in-flight
+  /// order submission) would otherwise still be sitting there for the next
+  /// person who logs into this same browser tab/app instance. Logout is the
+  /// one guaranteed "this session is over" boundary, so it resets them.
+  void _resetEphemeralFlowState() {
+    ref.invalidate(uploadedPrescriptionImagesProvider);
+    ref.invalidate(selectedDeliveryMethodProvider);
+    ref.invalidate(selectedPharmacyProvider);
+    ref.invalidate(pharmacySearchQueryProvider);
+    ref.invalidate(pharmacySearchProvider);
+    ref.invalidate(pharmacyOrderControllerProvider);
+    ref.invalidate(prescriptionUploadControllerProvider);
   }
 }
 

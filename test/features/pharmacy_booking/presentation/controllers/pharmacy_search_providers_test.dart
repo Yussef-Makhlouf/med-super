@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:med_super/features/pharmacy_booking/data/datasources/remote/pharmacy_branch_search_remote_datasource.dart';
+import 'package:med_super/features/pharmacy_booking/data/datasources/remote/pharmacy_branch_search_remote_datasource.dart'
+    show
+        PharmacyBranchSearchPage,
+        PharmacyBranchSearchRemoteDatasource;
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/clinic_location_provider.dart';
@@ -61,8 +64,12 @@ void main() {
         latitude: any(named: 'latitude'),
         longitude: any(named: 'longitude'),
         radiusKm: any(named: 'radiusKm'),
+        cursor: any(named: 'cursor'),
       ),
-    ).thenAnswer((_) async => _branches);
+    ).thenAnswer(
+      (_) async =>
+          const PharmacyBranchSearchPage(items: _branches, nextCursor: null),
+    );
 
     container = ProviderContainer(
       overrides: [
@@ -106,6 +113,7 @@ void main() {
           latitude: 30.04,
           longitude: 31.23,
           radiusKm: any(named: 'radiusKm'),
+          cursor: any(named: 'cursor'),
         ),
       ).called(1);
     });
@@ -119,6 +127,7 @@ void main() {
           latitude: null,
           longitude: null,
           radiusKm: any(named: 'radiusKm'),
+          cursor: any(named: 'cursor'),
         ),
       ).called(1);
     });

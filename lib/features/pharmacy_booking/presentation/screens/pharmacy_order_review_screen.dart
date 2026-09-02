@@ -9,8 +9,10 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_met
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 
 /// Step 3 (final) of the pharmacy booking flow — review the uploaded
 /// prescription, the chosen pharmacy and delivery method, see an
@@ -34,31 +36,38 @@ class _PharmacyOrderReviewScreenState
   Future<void> _confirm({
     required Pharmacy? pharmacy,
     required List<PrescriptionImage> images,
+    required DeliveryMethod deliveryMethod,
   }) async {
     if (pharmacy == null || images.isEmpty) return;
+    final prescriptionId = ref
+        .read(prescriptionUploadControllerProvider)
+        .value
+        ?.prescriptionId;
+    if (prescriptionId == null) return;
 
     setState(() => _confirming = true);
-    try {
-      // No real backend for this mock flow yet — simulate the network
-      // round trip the same way `pharmaciesProvider` does, then build a
-      // mock confirmation locally.
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      final confirmation = PharmacyOrderConfirmation(
-        orderNumber: 'ORD-${DateTime.now().millisecondsSinceEpoch % 100000}',
-        pharmacyName: pharmacy.name,
-      );
-      if (!mounted) return;
-      setState(() => _confirming = false);
-      context.push('/patient/pharmacy/confirmation', extra: confirmation);
-    } catch (_) {
-      // Defensive branch only — nothing above can actually throw today,
-      // there is no real backend call yet to fail.
-      if (!mounted) return;
-      setState(() => _confirming = false);
+    await ref
+        .read(pharmacyOrderControllerProvider.notifier)
+        .submit(
+          prescriptionId: prescriptionId,
+          fulfillmentType: deliveryMethod.apiValue,
+          pharmacyBranchId: pharmacy.id,
+        );
+    if (!mounted) return;
+    setState(() => _confirming = false);
+
+    final result = ref.read(pharmacyOrderControllerProvider);
+    if (result.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('pharmacy_booking.review.confirm_error'.tr())),
       );
+      return;
     }
+    final confirmation = PharmacyOrderConfirmation(
+      orderNumber: result.value!.pharmacyOrderId,
+      pharmacyName: pharmacy.name,
+    );
+    context.push('/patient/pharmacy/confirmation', extra: confirmation);
   }
 
   @override
@@ -115,7 +124,11 @@ class _PharmacyOrderReviewScreenState
             ),
             _SubmitBar(
               isSubmitting: _confirming,
-              onConfirm: () => _confirm(pharmacy: pharmacy, images: images),
+              onConfirm: () => _confirm(
+                pharmacy: pharmacy,
+                images: images,
+                deliveryMethod: deliveryMethod,
+              ),
             ),
           ],
         ),

@@ -10,9 +10,13 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_create_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_review_screen.dart';
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,7 +66,50 @@ List<Override> _overrides({
     selectedDeliveryMethodProvider.overrideWith(
       () => _FixedSelectedDeliveryMethod(deliveryMethod),
     ),
+    // The real submit call needs an already-uploaded prescription id (step
+    // 1) and hits the network/device location (step 3's confirm) — both
+    // faked here so this screen's own tests never depend on geolocator or a
+    // real HTTP round trip.
+    prescriptionUploadControllerProvider.overrideWith(
+      () => _FixedPrescriptionUpload(),
+    ),
+    pharmacyOrderControllerProvider.overrideWith(() => _FakePharmacyOrder()),
   ];
+}
+
+class _FixedPrescriptionUpload extends PrescriptionUploadController {
+  @override
+  AsyncValue<PrescriptionUploadResult?> build() => const AsyncData(
+    PrescriptionUploadResult(
+      prescriptionId: 'presc-1',
+      status: 'QUALITY_CHECK_PASSED',
+    ),
+  );
+}
+
+/// Fakes the network round trip with a short delay (so the loading-state
+/// assertion below has a frame to catch it) instead of a real datasource
+/// call or device location read.
+class _FakePharmacyOrder extends PharmacyOrderController {
+  @override
+  AsyncValue<PharmacyOrderCreateResult?> build() => const AsyncData(null);
+
+  @override
+  Future<void> submit({
+    required String prescriptionId,
+    required String fulfillmentType,
+    String? pharmacyBranchId,
+  }) async {
+    state = const AsyncLoading();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    state = const AsyncData(
+      PharmacyOrderCreateResult(
+        pharmacyOrderId: 'order-1',
+        status: 'RECEIVED',
+        broadcastedBranchIds: ['ph1'],
+      ),
+    );
+  }
 }
 
 class _FixedSelectedPharmacy extends SelectedPharmacy {

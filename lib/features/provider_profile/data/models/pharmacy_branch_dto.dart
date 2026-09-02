@@ -64,9 +64,19 @@ class PharmacyBranchDto {
       addressCity: address['city'] as String? ?? '',
       addressRegionCode: address['region_code'] as String? ?? '',
       addressCountryCode: address['country_code'] as String? ?? '',
-      geoLat: (address['geo_lat'] as num?)?.toDouble(),
-      geoLng: (address['geo_lng'] as num?)?.toDouble(),
+      // `geo_lat`/`geo_lng` come through as a JSON string here (Prisma
+      // `Decimal` serializes to string by default), unlike the search
+      // endpoint's explicit `float8` cast — accept either shape.
+      geoLat: _parseDouble(address['geo_lat']),
+      geoLng: _parseDouble(address['geo_lng']),
     );
+  }
+
+  static double? _parseDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   PharmacyBranch toEntity() => PharmacyBranch(

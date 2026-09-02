@@ -86,7 +86,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     color: const Color(0xFF8A94A6),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+                const _OnboardingAvatar(),
+                const SizedBox(height: 20),
                 if (session != null)
                   Text(
                     AppFormatters.ltrIsolate(session.user.phone),
@@ -188,6 +190,79 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Photo upload is not real yet — same `DEC-009` object-storage gap as
+/// prescription/doctor-profile photos elsewhere in this app. Tapping just
+/// surfaces the same "coming soon" message `EditProfileScreen`'s own avatar
+/// already uses, rather than pretending to upload anything.
+class _OnboardingAvatar extends StatelessWidget {
+  const _OnboardingAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        children: [
+          SizedBox(
+            width: 88,
+            height: 88,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFDCE8FF),
+                  ),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: 48,
+                    color: brandBlue,
+                  ),
+                ),
+                PositionedDirectional(
+                  end: 0,
+                  bottom: 0,
+                  child: Material(
+                    color: brandBlue,
+                    shape: const CircleBorder(),
+                    elevation: 2,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('profile.photo_soon'.tr())),
+                        );
+                      },
+                      child: const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'profile.change_photo'.tr(),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF8A94A6)),
+          ),
+        ],
       ),
     );
   }

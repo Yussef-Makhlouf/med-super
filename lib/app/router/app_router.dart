@@ -13,8 +13,9 @@ import 'package:med_super/app/router/routes/search_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
-import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/notifications_placeholder_screen.dart';
+import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_detail_screen.dart';
 import 'package:med_super/features/profile_settings/presentation/screens/edit_profile_screen.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -184,7 +185,23 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/orders',
             name: 'patientOrders',
+            // `PatientOrdersScreen` now has two top tabs — الصيدلية (real
+            // `GET /v1/pharmacy-orders`, default) and المعمل (mock,
+            // lab_booking is BLOCKED) — restoring the original header/
+            // search-bar/card design instead of dropping it. Nested
+            // `:orderId` keeps the shell's bottom tab bar visible on the
+            // detail screen too, same pattern `/patient/home`'s
+            // `appointmentRoutes` already uses.
             builder: (context, state) => const PatientOrdersScreen(),
+            routes: [
+              GoRoute(
+                path: ':orderId',
+                name: 'patientOrderDetail',
+                builder: (context, state) => PharmacyOrderDetailScreen(
+                  orderId: state.pathParameters['orderId'] ?? '',
+                ),
+              ),
+            ],
           ),
         ],
       ),

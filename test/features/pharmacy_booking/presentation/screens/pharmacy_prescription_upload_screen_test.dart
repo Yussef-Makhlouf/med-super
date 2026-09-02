@@ -82,8 +82,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // No back arrow / icons in this header, unlike lab_booking's.
-      expect(find.byIcon(Icons.arrow_forward), findsNothing);
+      // A single back-arrow IconButton (`context.pop()`), balanced by a
+      // same-width leading SizedBox so the title stays centered.
+      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
       expect(find.text('pharmacy_booking.upload.title'.tr()), findsOneWidget);
 
       final stepper = tester.widget<StepProgressHeader>(

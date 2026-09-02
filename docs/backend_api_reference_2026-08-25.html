@@ -420,7 +420,12 @@
     <div class="doc-head">
       <div class="eyebrow">Backend reference · generated from source</div>
       <h1>Every endpoint MedSuper's backend has shipped, sorted by build phase</h1>
-      <p class="lede">Pulled directly from the NestJS controllers, DTOs and use-case return types on <code>main</code> (2026‑08‑24, includes the password-auth merge) — Phases 0–6 are implemented; Phases 7–9 remain schema‑only. Every route is nested under a global <code>/v1</code> prefix. Each card is also checked against the <code>med-super</code> Flutter client (branch <code>feature/password-auth</code>) — see the wiring badge next to each endpoint. All 6 confirmed mismatches were fixed and verified 2026‑08‑25: provider-registration on clinic-reservations' <code>feature/persist-self-registration-fields</code> (migrations applied to a real Postgres, <code>tsc --noEmit</code> clean, 54/54 unit tests pass), and the 4 auth bugs plus the doctor-detail response gap on med-super's <code>api-contract-mismatches</code> (<code>flutter analyze</code> clean, 0 issues from the changed code). Note: the <code>auth</code> feature has zero widget/unit tests in this repo, so verification there is static (analyze + manual code review), not a live app run.</p>
+      <p class="lede">Pulled directly from the NestJS controllers, DTOs and use-case return types on <code>main</code>, every route under a global <code>/v1</code> prefix. Phases 0–7 are implemented; Phases 8–9 remain schema‑only. Each endpoint's wiring badge shows whether <code>med-super</code> actually calls it.</p>
+      <ul class="notes-list">
+        <li>Audited 2026‑08‑24 against <code>med-super</code> branch <code>feature/password-auth</code>; the 6 mismatches found were fixed and verified 2026‑08‑25 (per‑endpoint detail in each card's wiring note).</li>
+        <li><code>auth</code> has zero tests in this repo, so its verification is static (analyze + review), not a live run.</li>
+        <li>Two gaps this audit missed — Phase 7 and <code>GET /v1/pharmacy-branches/search</code> — were added later; see their own cards below.</li>
+      </ul>
 
       <div class="envelope-card">
         <div class="ev-panel ok">
@@ -453,7 +458,7 @@
     <div class="empty-state" id="empty-state">No endpoints match “<span id="empty-term"></span>”.</div>
 
     <footer class="doc-foot">
-      61 endpoints across 6 built phases (60 as generated 2026‑08‑25, +1 added 2026‑08‑29: <code>GET /v1/pharmacy-branches/search</code>, File 12 Part 37) · 204/void responses carry no <code>data</code> key · <code>ParseUUIDPipe</code> guards every UUID path param and rejects non-UUIDs with <code>400</code>. Wiring badges audited against <code>med-super</code> on 2026‑08‑24; all 6 confirmed mismatches fixed and verified 2026‑08‑25.
+      75 endpoints across 7 built phases (+2, 2026‑08‑31: <code>GET</code>/<code>PATCH /v1/doctors/me</code>, File 12 Part 45) · 204/void responses carry no <code>data</code> key · <code>ParseUUIDPipe</code> guards every UUID path param and rejects non-UUIDs with <code>400</code>.
     </footer>
   </main>
 </div>
@@ -525,7 +530,9 @@
   <span class="k">phone</span>: <span class="t">string</span>,
   <span class="k">roles</span>: <span class="t">string[]</span>,
   <span class="k">activeRole</span>: <span class="t">string</span>,
-  <span class="k">displayName</span>: <span class="t">string | null</span>
+  <span class="k">displayName</span>: <span class="t">string | null</span>,
+  <span class="k">email</span>: <span class="t">string | null</span>, <span class="c">// added 2026-08-31, File 12 Part 45</span>
+  <span class="k">contextId</span>: <span class="t">string | null</span> <span class="c">// added 2026-08-29 — the active membership's own scope id, e.g. a branch id</span>
 }`,
             notes: ['<code>404</code> if the user record is missing.']
           },
@@ -541,7 +548,9 @@
   <span class="k">phone</span>: <span class="t">string</span>,
   <span class="k">roles</span>: <span class="t">string[]</span>,
   <span class="k">activeRole</span>: <span class="t">string</span>,
-  <span class="k">displayName</span>: <span class="t">string | null</span>
+  <span class="k">displayName</span>: <span class="t">string | null</span>,
+  <span class="k">email</span>: <span class="t">string | null</span>, <span class="c">// added 2026-08-31, File 12 Part 45</span>
+  <span class="k">contextId</span>: <span class="t">string | null</span> <span class="c">// added 2026-08-29 — the active membership's own scope id, e.g. a branch id</span>
 }`,
             notes: ['Backed by the existing (already cross-module-exported) <code>UpdateUserProfileUseCase</code> — no new persistence logic, just a controller route + a thin orchestrating use-case that re-reads via <code>GetCurrentUserUseCase</code>.']
           },
@@ -716,6 +725,28 @@
   <span class="k">nextCursor</span>: <span class="t">string | null</span>
 }`,
               notes: []
+            },
+            {
+              method: 'GET', path: '/v1/doctors/me', auth: 'DOCTOR', status: 200,
+              desc: "A doctor's own directory record — includes licenseNumber, which the public detail route below omits.",
+              request: null,
+              response: `{
+  <span class="k">id</span>, <span class="k">displayName</span>, <span class="k">email</span>, <span class="k">phone</span>, <span class="k">specialty</span>, <span class="k">specialtyKey</span>, <span class="k">licenseNumber</span>: <span class="t">string</span>,
+  <span class="k">bio</span>, <span class="k">degree</span>: <span class="t">string | null</span>, <span class="k">experienceYears</span>: <span class="t">number | null</span>,
+  <span class="k">photoUrl</span>: <span class="t">string | null</span>, <span class="k">isVerified</span>: <span class="t">boolean</span>
+}`,
+              notes: ['File 12 Part 45 — resolves the caller\'s own <code>Doctor</code> row via <code>user_id</code>, not a path param, same convention <code>PHARMACY_STAFF</code>\'s branch-scoped endpoints already use.']
+            },
+            {
+              method: 'PATCH', path: '/v1/doctors/me', auth: 'DOCTOR', status: 200,
+              desc: "A doctor's own self-edit — narrower than the Admin PATCH below.",
+              request: [
+                { f: 'bio', t: 'string', n: 'optional, max 2000 chars' },
+                { f: 'degree', t: 'string', n: 'optional, max 200 chars' },
+                { f: 'experienceYears', t: 'number', n: 'optional, 0–80' }
+              ],
+              response: `Same shape as <span class="c">GET /v1/doctors/me</span> above`,
+              notes: ['<code>specialtyCode</code>/<code>licenseNumber</code>/<code>regionCode</code>/<code>photoUrl</code> stay Admin-only (the PATCH below) — a doctor can\'t re-specialize, re-license, or set their own photo through this route. No object-storage decision exists yet for doctor photos (<code>DEC-009</code>), so <code>photoUrl</code> is deliberately not even accepted-and-dropped here.']
             },
             {
               method: 'GET', path: '/v1/doctors/:doctorId', auth: 'optional', status: 200,
@@ -1127,6 +1158,144 @@
           }
         ]
       }]
+    },
+    {
+      n: 7, name: 'Pharmacy Fulfillment', status: 'done',
+      desc: 'Order lifecycle from an ACCEPTED prescription through payment and pickup/delivery close‑out: creation + branch broadcast, accept/decline, flat‑total quote, reject, approve‑and‑pay, fulfill, complete — plus a pharmacy‑staff audit trail. Missed by this catalog\'s original audit (see the lede above).',
+      modules: [{
+        name: 'pharmacy-orders', prefix: '/v1/pharmacy-orders',
+        note: 'accept/decline/quote/reject/fulfill/complete resolve the caller\'s own pharmacy branch server‑side from their role membership — never a request parameter',
+        endpoints: [
+          {
+            method: 'GET', path: '/v1/pharmacy-orders', auth: 'PATIENT · PHARMACY_STAFF', status: 200,
+            desc: "The caller's own orders (PATIENT), or their branch's queue — claimed orders plus incoming unanswered broadcasts (PHARMACY_STAFF).",
+            request: [
+              { f: 'status', t: 'PharmacyOrderStatus', n: 'optional' },
+              { f: 'sort', t: "'createdAt:asc'|'createdAt:desc'", n: 'optional, default desc' },
+              { f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 20, max 50' }
+            ],
+            response: `{
+  <span class="k">orders</span>: <span class="t">PharmacyOrderDetail[]</span> <span class="c">// same shape as the detail endpoint below</span>,
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>
+}`,
+            notes: ['2026‑08‑29 addition — File 12 Part 39 item 11 named this queue listing but never built it until this pass.']
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders', auth: 'PATIENT', status: 201,
+            desc: 'Create an order from a quality-checked prescription and broadcast it to nearby verified branches, or to one chosen branch.',
+            request: [
+              { f: 'prescriptionId', t: 'string (uuid)', n: '' },
+              { f: 'fulfillmentType', t: "'PICKUP'|'DELIVERY'", n: '' },
+              { f: 'lat, lng', t: 'number', n: 'required — no stored patient address to fall back on' },
+              { f: 'pharmacyBranchId', t: 'string (uuid)', n: 'optional (File 12 Part 44) — when given, broadcasts to this branch alone instead of the nearest verified branches' }
+            ],
+            response: `{
+  <span class="k">pharmacyOrderId</span>: <span class="t">string</span>,
+  <span class="k">status</span>: <span class="t">string</span>,
+  <span class="k">broadcastedBranchIds</span>: <span class="t">string[]</span>
+}`, notes: []
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/accept', auth: 'PHARMACY_STAFF', status: 201,
+            desc: "Accept a broadcast on behalf of the caller's own branch — first‑accept‑wins.",
+            request: null,
+            response: `{ <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">'UNDER_REVIEW'</span> }`,
+            notes: ["Losing the race leaves this branch's broadcast row untouched (not DECLINED) — File 11 line 456: the losing pharmacy simply sees the order disappear from its queue."]
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/decline', auth: 'PHARMACY_STAFF', status: 201,
+            desc: "Decline a broadcast on behalf of the caller's own branch.",
+            request: null,
+            response: `{ <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">response</span>: <span class="t">'DECLINED'</span> }`,
+            notes: []
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/quote', auth: 'PHARMACY_STAFF', status: 201,
+            desc: 'Submit a flat total/ETA/note — no per‑item pricing. Claims an unclaimed RECEIVED order first if needed.',
+            request: [
+              { f: 'totalPrice', t: 'string (decimal)', n: "e.g. '225.00'" },
+              { f: 'estimatedReadyMinutes', t: 'number', n: '' },
+              { f: 'note', t: 'string', n: 'optional, max 1000 chars' },
+              { f: 'controlledSubstanceConfirmed', t: 'boolean', n: 'optional — required true if the prescription includes a controlled substance' }
+            ],
+            response: `{
+  <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">'ACCEPTED'</span>,
+  <span class="k">totalPrice</span>, <span class="k">currency</span>: <span class="t">string</span>
+}`,
+            notes: ['2026‑08‑29 rewrite — supersedes File 10\'s original item‑by‑item <code>items[]</code> contract; no drug data enters this dashboard or this request body at all.']
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/reject', auth: 'PATIENT · PHARMACY_STAFF', status: 201,
+            desc: 'PHARMACY_STAFF: declines an unresponded broadcast, or rejects the whole claimed order if already UNDER_REVIEW. PATIENT: rejects a proposed substitution (no body — practically unreachable now that quoting can\'t produce one).',
+            request: [
+              { f: 'reason', t: "'OUT_OF_STOCK'|'CANNOT_FULFILL'|'OTHER'", n: 'optional at the DTO layer; required in practice for the PHARMACY_STAFF path' },
+              { f: 'note', t: 'string', n: 'optional, max 1000 chars' }
+            ],
+            response: `{ <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">PharmacyOrderStatus</span> } <span class="c">// or {pharmacyOrderId, status: 'REJECTED'} on the PATIENT path</span>`,
+            notes: ['Declining an unclaimed broadcast leaves the order row at RECEIVED (still open to other branches) — there is no DECLINED member on PharmacyOrderStatus, only the per‑branch broadcast response changes.']
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/approve', auth: 'PATIENT', status: 201,
+            desc: 'Approve and pay — the same moment, not decoupled (File 10 Part 8.1). Reuses the pay‑at‑clinic capture use‑case as‑is.',
+            request: null,
+            response: `{
+  <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">'PAID'</span>,
+  <span class="k">paymentIntentId</span>, <span class="k">totalAmount</span>, <span class="k">currency</span>: <span class="t">string</span>
+}`, notes: []
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/fulfill', auth: 'PHARMACY_STAFF', status: 201,
+            desc: "PAID → READY_FOR_PICKUP or OUT_FOR_DELIVERY, by the order's own fulfillment type.",
+            request: [{ f: 'note', t: 'string', n: 'optional, max 1000 chars — accepted but not currently persisted anywhere' }],
+            response: `{ <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY'</span> }`,
+            notes: ['2026‑08‑29 addition — pure lifecycle transition, no real courier assignment/tracking (that\'s Phase 9, Delivery, still not built).']
+          },
+          {
+            method: 'POST', path: '/v1/pharmacy-orders/:pharmacyOrderId/complete', auth: 'PHARMACY_STAFF', status: 201,
+            desc: 'READY_FOR_PICKUP or OUT_FOR_DELIVERY → FULFILLED, the terminal close.',
+            request: [{ f: 'note', t: 'string', n: 'optional, max 1000 chars — accepted but not currently persisted anywhere' }],
+            response: `{ <span class="k">pharmacyOrderId</span>: <span class="t">string</span>, <span class="k">status</span>: <span class="t">'FULFILLED'</span> }`,
+            notes: ['2026‑08‑29 addition — deliberately no DELIVERED intermediate step.']
+          },
+          {
+            method: 'GET', path: '/v1/pharmacy-orders/:pharmacyOrderId', auth: 'PATIENT · PHARMACY_STAFF', status: 200,
+            desc: 'Order detail — owning patient or the assigned branch staff only (no Admin bypass).',
+            request: null,
+            response: `{
+  <span class="k">id</span>, <span class="k">status</span>, <span class="k">fulfillmentType</span>, <span class="k">createdAt</span>, <span class="k">updatedAt</span>: <span class="t">string</span>,
+  <span class="k">patient</span>: { <span class="k">id</span>, <span class="k">firstName</span>, <span class="k">lastName</span>: <span class="t">string | null</span>, <span class="k">phoneMasked</span>: <span class="t">string</span> },
+  <span class="k">prescription</span>: { <span class="k">id</span>, <span class="k">source</span>, <span class="k">status</span>: <span class="t">string</span>, <span class="k">expiresAt</span>: <span class="t">string | null</span>, <span class="k">doctorName</span>: <span class="t">string | null</span>, <span class="k">images</span>: <span class="t">{id, fileUrl, qualityCheckStatus}[]</span> },
+  <span class="k">quote</span>: <span class="t">{totalPrice, currency, estimatedReadyMinutes, note, quotedAt} | null</span>,
+  <span class="k">patientNote</span>: <span class="t">null</span>, <span class="c">// not persisted anywhere yet — always null</span>
+  <span class="k">staffNote</span>: <span class="t">string | null</span>,
+  <span class="k">rejection</span>: <span class="t">{reason, note, at} | null</span>
+}`,
+            notes: ['2026‑08‑29 reshape — matches <code>medsuper-pharmacy-dashboard</code>\'s <code>PharmacyOrder</code> type exactly instead of the original items[]/substitutions[] shape, which stopped being meaningful once quoting went flat.', '404 for anyone neither the owning patient nor the assigned branch\'s staff (hides existence).']
+          }
+        ]
+      }, {
+        name: 'pharmacy-audit', prefix: '/v1/pharmacy-audit',
+        note: 'sibling resource to pharmacy-orders, not nested under it — PHARMACY_STAFF only, this console has no patient‑facing surface (ADR-006)',
+        endpoints: [
+          {
+            method: 'GET', path: '/v1/pharmacy-audit', auth: 'PHARMACY_STAFF', status: 200,
+            desc: "Every mapped lifecycle action across every order the caller's branch has owned, newest first — read‑only.",
+            request: [
+              { f: 'search', t: 'string', n: 'optional — free text over patient name / detail / derived order code, matched in memory' },
+              { f: 'action', t: 'string', n: "optional — one of this console's own audit-action vocabulary, not a raw audit_logs.action string" },
+              { f: 'cursor', t: 'string', n: 'optional' }, { f: 'limit', t: 'number', n: 'optional, default 40, max 100' }
+            ],
+            response: `{
+  <span class="k">entries</span>: {
+    <span class="k">id</span>, <span class="k">at</span>: <span class="t">string</span>, <span class="k">action</span>: <span class="t">string</span>, <span class="k">actorName</span>: <span class="t">string | null</span>,
+    <span class="k">orderId</span>, <span class="k">patientName</span>: <span class="t">string</span>, <span class="k">detail</span>: <span class="t">string | null</span>, <span class="k">recorded</span>: <span class="t">true</span>
+  }[],
+  <span class="k">nextCursor</span>: <span class="t">string | null</span>, <span class="k">total</span>: <span class="t">number</span>
+}`,
+            notes: ['Broadcast accept/decline, the patient\'s payment approve, and the (practically unreachable) substitution‑reject aren\'t part of this console\'s audit vocabulary — filtered out, not mapped.']
+          }
+        ]
+      }]
     }
   ];
 
@@ -1138,8 +1307,8 @@
     'POST /v1/auth/otp/verify': { status: 'ok', note: 'Was confirmed-breaking (extra <code>phone</code>/<code>role</code> body fields, rejected 400). Fixed on <code>api-contract-mismatches</code>: body is now exactly <code>{requestId, code}</code>; <code>phone</code>/<code>role</code> moved to query params for the mock to still read. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
     'POST /v1/auth/token/refresh': { status: 'ok', note: 'Was a confirmed bug (snake_case <code>refresh_token</code>/<code>access_token</code> vs. the backend\'s camelCase). Fixed on <code>api-contract-mismatches</code>: <code>auth_interceptor.dart</code> now sends/reads <code>refreshToken</code>/<code>accessToken</code>; <code>MockInterceptor</code>\'s refresh handler updated to match. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
     'POST /v1/auth/logout': { status: 'ok', note: 'Was a confirmed bug (no body sent; required <code>refreshToken</code> missing). Fixed on <code>api-contract-mismatches</code>: the repository now reads the stored refresh token and the datasource sends <code>{refreshToken, allDevices}</code>. <b>Verified 2026‑08‑25</b> via clean <code>flutter analyze</code> — same test-coverage caveat as otp/request.' },
-    'GET /v1/auth/me': { status: 'ok', note: 'Path and all 5 response fields match exactly.' },
-    'PATCH /v1/auth/me': { status: 'ok', note: 'Was: the frontend\'s onboarding screen already called this route, but it did not exist on the backend at all (only GET was mapped) — every call 404\'d. Fixed on <code>clinic-reservations</code> branch <code>feature/patch-auth-me</code>: added <code>UpdateCurrentUserUseCase</code> + a <code>PATCH</code> route wired to the existing <code>UpdateUserProfileUseCase</code>. Onboarding was also changed to require both <code>display_name</code> and <code>email</code> (no more skip button). <b>Verified 2026-08-25</b> against a real local backend (Postgres via docker-compose, migrations applied) — clean round-trip, no test suite exists for this feature yet to run (`auth` has zero tests per the Flutter CLAUDE.md).' },
+    'GET /v1/auth/me': { status: 'ok', note: 'Path and response fields match exactly. <code>email</code> added 2026-08-31 (File 12 Part 45) — was accepted by <code>PATCH</code> but never returned by <code>GET</code> before; <code>EditProfileScreen</code> now prefills it like every other real field.' },
+    'PATCH /v1/auth/me': { status: 'ok', note: 'Was: the frontend\'s onboarding screen already called this route, but it did not exist on the backend at all (only GET was mapped) — every call 404\'d. Fixed on <code>clinic-reservations</code> branch <code>feature/patch-auth-me</code>: added <code>UpdateCurrentUserUseCase</code> + a <code>PATCH</code> route wired to the existing <code>UpdateUserProfileUseCase</code>. Onboarding was also changed to require both <code>display_name</code> and <code>email</code> (no more skip button). <b>Verified 2026-08-25</b> against a real local backend (Postgres via docker-compose, migrations applied) — clean round-trip, no test suite exists for this feature yet to run (`auth` has zero tests per the Flutter CLAUDE.md). <b>Audited 2026-08-31</b>: <code>EditProfileScreen</code> now also sends <code>email</code> (previously silently dropped on save); date of birth, gender, and address were removed from that screen entirely — none of them has a backing `User` column. Also now the doctor side\'s own email edit: <code>ProviderEditProfileScreen</code> sends it here too (a doctor\'s <code>email</code> lives on <code>User</code>, not <code>Doctor</code> — not part of <code>PATCH /v1/doctors/me</code> below).' },
     'POST /v1/auth/password/set': { status: 'ok', note: 'Request field and auth header match exactly.' },
     'POST /v1/auth/password/login': { status: 'ok', note: 'Verified harmless: the app sends <code>role</code> as a query parameter, and this route has no <code>@Query()</code> DTO at all (only <code>@Body()</code>) — NestJS never validates or rejects it, so it doesn\'t collide with <code>forbidNonWhitelisted</code>. Request/response fields that matter (<code>phone</code>, <code>password</code>, tokens) all match; <code>userId</code> in the response is simply unused, not mis-parsed.' },
     'POST /v1/auth/password/forgot': { status: 'ok', note: 'Request/response fields match exactly.' },
@@ -1158,6 +1327,8 @@
     'POST /v1/clinics/:clinicId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/clinics/:clinicId/branches': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'GET /v1/doctors/search': { status: 'ok', note: 'Path, query params and response fields all match (minor: <code>nextAvailableSlot</code> is parsed nowhere but that\'s harmless).' },
+    'GET /v1/doctors/me': { status: 'ok', note: 'Wired 2026-08-31 on <code>ProviderProfileScreen</code>/<code>ProviderEditProfileScreen</code> (<code>getDoctorAccount</code>), replacing the invented <code>/v1/provider/me</code>. Audited field-by-field against <code>Prisma.Doctor</code>: <code>phone</code>/<code>email</code> now shown too (phone read-only, email editable via <code>PATCH /v1/auth/me</code> — see that endpoint\'s own note); <code>hospitalName</code> was dropped from <code>DoctorAccountProfile</code> (no clinic-affiliation join in the real response, nothing to back it with).' },
+    'PATCH /v1/doctors/me': { status: 'ok', note: 'Wired 2026-08-31 (<code>updateDoctorAccount</code>) — only sends <code>bio</code>/<code>degree</code>/<code>experienceYears</code> now. <code>name</code>/<code>specialty</code> were removed from the update call entirely: a doctor\'s name lives on <code>User</code> (edited via the shared <code>PATCH /v1/auth/me</code> instead, same call the assistant/patient side uses), and <code>specialty</code>/<code>licenseNumber</code> are Admin-only — both are now shown read-only on the edit screen.' },
     'GET /v1/doctors/:doctorId': { status: 'ok', note: 'Was: DTO read fields the real response never returned (<code>bio</code>, <code>qualifications</code>, <code>languages</code>, <code>isOnline</code>) and never parsed <code>affiliations</code> at all. Fixed and verified on med-super branch <code>api-contract-mismatches</code> (2026‑08‑25, clean <code>flutter analyze</code>): backend now exposes <code>bio</code>/<code>degree</code>/<code>experienceYears</code> too (ADR-005 Part 34.2 added the columns — see provider-registration below), so the app reads real <code>bio</code>/<code>experienceYears</code>, folds <code>degree</code> into the <code>qualifications</code> list, and now parses the full <code>affiliations</code> array into a new <code>DoctorAffiliation</code> entity instead of dropping it. <code>fellowships</code>/<code>languages</code>/<code>isOnline</code> still have no backend column at all — those remain genuine gaps, not something the frontend can fix on its own.' },
     'POST /v1/doctors': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'PATCH /v1/doctors/:doctorId': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
@@ -1196,10 +1367,22 @@
     'GET /v1/appointments': { status: 'none', note: 'The Appointments tab is a static, hardcoded list — no network call at all.' },
     'GET /v1/appointments/:appointmentId': { status: 'none', note: 'No appointment-detail screen exists on the patient side.' },
 
-    'POST /v1/prescriptions/upload': { status: 'none', note: 'No network layer exists yet — picked prescription images stay local and are never uploaded.' },
+    'POST /v1/prescriptions/upload': { status: 'ok', note: 'Wired 2026‑08‑29 via <code>PrescriptionUploadController</code>/<code>PrescriptionRemoteDatasource</code> on <code>PharmacyPrescriptionUploadScreen</code>\'s submit CTA. Request/response fields match exactly; the image picker and notes field are capped client‑side at the backend\'s own 5‑image/500‑char limits. One caveat: <code>fileUrls</code> is pre‑hosted‑URL‑only by backend design (object storage is <code>DEC-009</code>, still open/deferred) — no real image bytes are uploaded anywhere, each attached image is sent as a distinct placeholder URL just so the real quality‑check/OCR pipeline runs end‑to‑end. <strong>OPEN DECISION (2026‑09‑01, File 12 Part 46, not ratified):</strong> with no OCR vendor chosen (<code>DEC-005</code>) every upload used to persist zero <code>prescription_items</code>, which made <em>every</em> pharmacy order fail <code>NO_FULFILLABLE_ITEMS</code> — <code>NoOpOcrExtractor</code> now fabricates one placeholder free‑text item per upload purely so the order flow is testable; revert once OCR or a real manual‑entry path exists.' },
     'GET /v1/prescriptions/:prescriptionId': { status: 'none', note: 'No screen fetches a prescription by id from the backend.' },
     'GET /v1/prescriptions': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review queue lives in a separate web app.' },
-    'POST /v1/prescriptions/:prescriptionId/review': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review action lives in a separate web app.' }
+    'POST /v1/prescriptions/:prescriptionId/review': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review action lives in a separate web app.' },
+
+    'GET /v1/pharmacy-orders': { status: 'ok', note: 'Updated 2026‑09‑02: wired on the bottom‑nav "طلبات" tab\'s Pharmacy sub‑tab (<code>PatientOrdersScreen</code>, <code>/patient/orders</code>) — the standalone <code>PharmacyOrdersListScreen</code> this used to be was removed and folded into that tab, restoring the original card/header design for real data instead of leaving order tracking reachable only via the confirmation screen\'s one‑time "تتبع الطلب" link.' },
+    'POST /v1/pharmacy-orders': { status: 'ok', note: 'Wired 2026-08-31 on <code>pharmacy_order_review_screen.dart</code>\'s confirm CTA. Sends the prescription id, chosen branch (<code>pharmacyBranchId</code>), delivery method, and device location when available. Succeeds for real, not just in the mock. Updated 2026‑09‑01 (File 12 Part 46): <code>lat</code>/<code>lng</code> are only required when no <code>pharmacyBranchId</code> is chosen — a chosen branch never needed the caller\'s GPS, and requiring it anyway silently blocked every order submission whenever browser geolocation was denied/unavailable.' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/accept': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app (ADR-006).' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/decline': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app (ADR-006).' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/quote': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app (ADR-006).' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/reject': { status: 'none', note: 'Not applicable, not just unwired. The PATIENT path rejects a proposed substitution — but quoting is flat-total-only now (File 12 Part 40), so no substitution is ever proposed and this path can\'t be reached. The PHARMACY_STAFF path is out of scope (ADR-006).' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/approve': { status: 'ok', note: 'Wired on <code>PharmacyOrderDetailScreen</code>\'s "موافقة ودفع" button, shown once the order has a quote. A real order only reaches that state after a branch <code>accept</code>s + <code>quote</code>s it through <code>medsuper-pharmacy-dashboard</code> — verified reachable 2026‑09‑02 by manually setting one local test order to <code>ACCEPTED</code> with a quote (no dashboard available in this app\'s own test pass) and confirming the button calls this endpoint for real. "دفع" here is pay‑at‑clinic bookkeeping only (a <code>payment_intents</code>/<code>payment_splits</code> ledger entry, order status → <code>PAID</code>) — no real gateway charge occurs anywhere in this backend.' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/fulfill': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app (ADR-006).' },
+    'POST /v1/pharmacy-orders/:pharmacyOrderId/complete': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app (ADR-006).' },
+    'GET /v1/pharmacy-orders/:pharmacyOrderId': { status: 'ok', note: 'Wired on <code>PharmacyOrderDetailScreen</code> (nested <code>/patient/orders/:orderId</code> under the Orders tab), showing the quote/rejection once one exists. Updated 2026‑09‑02: now also displays <code>prescription.doctorName</code>, <code>staffNote</code>, <code>updatedAt</code>, and <code>prescription.images</code> — all previously parsed on the frontend (or not parsed at all, for images/staffNote/updatedAt) but never rendered.' },
+    'GET /v1/pharmacy-audit': { status: 'none', note: 'PHARMACY_STAFF-only — no pharmacy-staff surface exists in this app; that audit trail lives in the separate web dashboard (medsuper-pharmacy-dashboard).' }
   };
   var INTEG_LABEL = { ok: 'Wired · verified', mismatch: 'Wired · mismatch', none: 'Not wired yet', admin: 'Admin-only · no client', fixed: 'Fixed · needs testing' };
 

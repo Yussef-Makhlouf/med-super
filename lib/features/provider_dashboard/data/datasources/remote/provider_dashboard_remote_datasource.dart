@@ -31,11 +31,14 @@ abstract class ProviderDashboardRemoteDatasource {
 
   Future<DoctorAccountProfileDto> getDoctorAccount();
 
+  /// `name`/`specialty`/`licenseNumber` are deliberately not parameters —
+  /// `PATCH /v1/doctors/me` only accepts `bio`/`degree`/`experienceYears`
+  /// (File 12 Part 45); a doctor can't re-specialize, re-license, or
+  /// rename themselves through this endpoint.
   Future<DoctorAccountProfileDto> updateDoctorAccount({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   });
 
   Future<ClinicSettingsDto> getClinicSettings();
@@ -144,7 +147,7 @@ class ProviderDashboardRemoteDatasourceImpl
 
   @override
   Future<DoctorAccountProfileDto> getDoctorAccount() async {
-    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.providerMe);
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.doctorMe);
 
     return DoctorAccountProfileDto.fromJson(
       response.data ?? const <String, dynamic>{},
@@ -153,18 +156,16 @@ class ProviderDashboardRemoteDatasourceImpl
 
   @override
   Future<DoctorAccountProfileDto> updateDoctorAccount({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      ApiPaths.providerMe,
+      ApiPaths.doctorMe,
       data: {
-        'name': name,
-        'specialty': specialty,
-        'years_of_experience': yearsOfExperience,
-        'bio': bio,
+        if (bio != null) 'bio': bio,
+        if (degree != null) 'degree': degree,
+        if (yearsOfExperience != null) 'experienceYears': yearsOfExperience,
       },
     );
     return DoctorAccountProfileDto.fromJson(

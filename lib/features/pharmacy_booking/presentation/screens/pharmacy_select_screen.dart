@@ -8,7 +8,10 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
@@ -52,6 +55,10 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     super.dispose();
   }
 
+  // The chosen branch id is sent as `pharmacyBranchId` when the review
+  // screen confirms (`POST /v1/pharmacy-orders`, File 12 Part 44) — the
+  // order broadcasts to this one branch alone instead of the nearest
+  // verified branches the endpoint falls back to when no branch is chosen.
   void _select(String branchId) {
     ref.read(selectedPharmacyProvider.notifier).select(branchId);
   }
@@ -80,19 +87,32 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
   @override
   Widget build(BuildContext context) {
     final pharmaciesAsync = ref.watch(filteredPharmaciesProvider);
+    final searchState = ref.watch(pharmacySearchProvider).value;
     final explicitSelectedId = ref.watch(selectedPharmacyProvider);
     // The search bar, filter chips and map render immediately regardless of
     // loading state — only the card list below waits on the async result
     // (and shows the skeleton while it does), so the map is fed whatever is
     // already resolved (empty before the first load completes).
     final loadedPharmacies = pharmaciesAsync.value ?? const [];
+    // Home-delivery only ever fulfils through a `deliveryCapable` branch —
+    // chosen back on step 1 (`selectedDeliveryMethodProvider`), still in
+    // force here since nothing resets it between steps.
+    final requiresDelivery =
+        ref.watch(selectedDeliveryMethodProvider) == DeliveryMethod.homeDelivery;
+    bool isSelectable(Pharmacy p) => !requiresDelivery || p.deliveryCapable;
+
+    final selectableIds = loadedPharmacies
+        .where(isSelectable)
+        .map((p) => p.id)
+        .toSet();
+    // No card is pre-selected on entry — the patient must explicitly tap
+    // one, and that choice stops counting the moment it's no longer
+    // selectable (e.g. the current delivery method needs a delivery-capable
+    // branch and this one isn't one). "التالي" stays disabled until then.
     final selectedId =
-        explicitSelectedId ??
-        (loadedPharmacies.isEmpty ? null : loadedPharmacies.first.id);
-    // A pharmacy is "chosen" either explicitly (a card was tapped) or
-    // implicitly (the first result is pre-selected once the list loads,
-    // matching the mockup's pre-selected top card) — the "التالي" bar must
-    // treat both the same way.
+        (explicitSelectedId != null && selectableIds.contains(explicitSelectedId))
+        ? explicitSelectedId
+        : null;
     final hasSelection = selectedId != null;
 
     return Scaffold(
@@ -147,7 +167,7 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
                   const SizedBox(height: 16),
                   AsyncValueView(
                     value: pharmaciesAsync,
-                    onRetry: () => ref.invalidate(pharmaciesProvider),
+                    onRetry: () => ref.invalidate(pharmacySearchProvider),
                     loadingWidget: const PharmacySearchSkeleton(),
                     data: (pharmacies) => Column(
                       children: pharmacies
@@ -159,12 +179,42 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
                                 isSelected: pharmacy.id == selectedId,
                                 onSelect: () => _select(pharmacy.id),
                                 onViewDetails: () => _viewDetails(pharmacy.id),
+                                disabled: !isSelectable(pharmacy),
                               ),
                             ),
                           )
                           .toList(),
                     ),
                   ),
+                  // Only rendered when the backend's own `nextCursor` says
+                  // there's actually another page — never an always-on
+                  // control that does nothing once the real result count
+                  // fits on one page.
+                  if (searchState?.hasMore ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Center(
+                        child: TextButton(
+                          onPressed: searchState!.isLoadingMore
+                              ? null
+                              : () => ref
+                                    .read(pharmacySearchProvider.notifier)
+                                    .loadMore(),
+                          child: searchState.isLoadingMore
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'pharmacy_booking.select_pharmacy.load_more'
+                                      .tr(),
+                                ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

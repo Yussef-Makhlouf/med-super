@@ -19,20 +19,100 @@ final pharmacyLocationServiceProvider = Provider(
   (ref) => const ClinicLocationService(),
 );
 
-/// All candidate pharmacy branches for the current prescription —
-/// `GET /v1/pharmacy-branches/search` (`clinic-reservations` File 12 Part
-/// 37). Best-effort device location: if permission is denied/unavailable,
-/// the search still runs without `lat`/`lng` (server sorts by name instead
-/// of distance, and every result's `distanceKm` comes back null — the card
-/// hides its distance row in that case rather than showing a fabricated
-/// number).
+/// Accumulated pharmacy branches plus pagination state for the current
+/// prescription — `GET /v1/pharmacy-branches/search` (`clinic-reservations`
+/// File 12 Part 37). Best-effort device location: if permission is
+/// denied/unavailable, the search still runs without `lat`/`lng` (server
+/// sorts by name instead of distance, and every result's `distanceKm` comes
+/// back null — the card hides its distance row in that case rather than
+/// showing a fabricated number).
+class PharmacySearchState {
+  const PharmacySearchState({
+    required this.items,
+    required this.nextCursor,
+    required this.isLoadingMore,
+  });
+
+  final List<Pharmacy> items;
+  final String? nextCursor;
+  final bool isLoadingMore;
+
+  /// A "load more" affordance should only ever render when the backend
+  /// actually said there's another page — never as an always-on control the
+  /// user has to discover does nothing once the real count is under a page.
+  bool get hasMore => nextCursor != null;
+
+  PharmacySearchState copyWith({
+    List<Pharmacy>? items,
+    String? nextCursor,
+    bool clearNextCursor = false,
+    bool? isLoadingMore,
+  }) => PharmacySearchState(
+    items: items ?? this.items,
+    nextCursor: clearNextCursor ? null : (nextCursor ?? this.nextCursor),
+    isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+  );
+}
+
+class PharmacySearchNotifier extends AsyncNotifier<PharmacySearchState> {
+  @override
+  Future<PharmacySearchState> build() async {
+    final position = await ref
+        .watch(pharmacyLocationServiceProvider)
+        .getCurrentPosition();
+    final page = await ref
+        .watch(pharmacyBranchSearchRemoteDatasourceProvider)
+        .search(latitude: position?.latitude, longitude: position?.longitude);
+    return PharmacySearchState(
+      items: page.items,
+      nextCursor: page.nextCursor,
+      isLoadingMore: false,
+    );
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.hasMore || current.isLoadingMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+    try {
+      final position = await ref
+          .read(pharmacyLocationServiceProvider)
+          .getCurrentPosition();
+      final page = await ref
+          .read(pharmacyBranchSearchRemoteDatasourceProvider)
+          .search(
+            latitude: position?.latitude,
+            longitude: position?.longitude,
+            cursor: current.nextCursor,
+          );
+      state = AsyncData(
+        current.copyWith(
+          items: [...current.items, ...page.items],
+          nextCursor: page.nextCursor,
+          clearNextCursor: page.nextCursor == null,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (_) {
+      // A failed "load more" leaves the already-loaded page intact — only
+      // the trailing spinner clears, so the user doesn't lose what already
+      // rendered and can just tap the button again.
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+    }
+  }
+}
+
+final pharmacySearchProvider =
+    AsyncNotifierProvider<PharmacySearchNotifier, PharmacySearchState>(
+      PharmacySearchNotifier.new,
+    );
+
+/// Back-compat view over [pharmacySearchProvider] for callers that only
+/// need the flat item list (the map view, the search-query filter below).
 final pharmaciesProvider = FutureProvider<List<Pharmacy>>((ref) async {
-  final position = await ref
-      .watch(pharmacyLocationServiceProvider)
-      .getCurrentPosition();
-  return ref
-      .watch(pharmacyBranchSearchRemoteDatasourceProvider)
-      .search(latitude: position?.latitude, longitude: position?.longitude);
+  final state = await ref.watch(pharmacySearchProvider.future);
+  return state.items;
 });
 
 /// Explicitly chosen branch id — null means "not chosen yet, default to the

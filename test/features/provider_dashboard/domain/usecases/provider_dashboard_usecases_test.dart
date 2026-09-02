@@ -3,28 +3,38 @@ import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/clinic_settings.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_account_profile.dart';
 import 'package:med_super/features/provider_dashboard/domain/repositories/provider_dashboard_repository.dart';
-import 'package:med_super/features/provider_dashboard/domain/usecases/change_password_usecase.dart';
 import 'package:med_super/features/provider_dashboard/domain/usecases/clinic_settings_usecases.dart';
 import 'package:med_super/features/provider_dashboard/domain/usecases/update_doctor_account_usecase.dart';
 import 'package:med_super/features/provider_dashboard/domain/usecases/upload_avatar_usecase.dart';
 import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
 
+/// Renamed from `new_usecases_test.dart` (2026-09-02) — that file tested a
+/// `changePassword` repository method and `ChangePasswordUseCase` that never
+/// actually existed in `ProviderDashboardRepository`/this directory (the
+/// import didn't resolve), and constructed `DoctorAccountProfile`/
+/// `updateDoctorAccount` with a shape (`name`/`specialty`/`hospitalName`
+/// required) that predates the real `GET /v1/doctors/me` wiring
+/// (`clinic-reservations` File 12 Part 45) — `hospitalName` was dropped,
+/// `licenseNumber`/`phone` are now required, and `updateDoctorAccount` only
+/// ever touches `bio`/`degree`/`yearsOfExperience`. This file only covers
+/// the use-cases that are actually implemented.
 class MockProviderDashboardRepo implements ProviderDashboardRepository {
   @override
   Future<Result<DoctorAccountProfile>> updateDoctorAccount({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   }) async {
     return Result.ok(
       DoctorAccountProfile(
         id: 'doc-001',
-        name: name,
-        specialty: specialty,
-        hospitalName: 'Hospital',
+        name: 'د. خالد',
+        specialty: 'قلب',
+        licenseNumber: 'LIC-001',
+        phone: '+201000000000',
+        bio: bio ?? '',
+        degree: degree,
         yearsOfExperience: yearsOfExperience,
-        bio: bio,
       ),
     );
   }
@@ -61,21 +71,14 @@ class MockProviderDashboardRepo implements ProviderDashboardRepository {
   }
 
   @override
-  Future<Result<void>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    return const Result.ok(null);
-  }
-
-  @override
   Future<Result<DoctorAccountProfile>> uploadAvatar(String filePath) async {
     return const Result.ok(
       DoctorAccountProfile(
         id: 'doc-001',
         name: 'Doctor Name',
         specialty: 'Specialty',
-        hospitalName: 'Hospital',
+        licenseNumber: 'LIC-001',
+        phone: '+201000000000',
         avatarUrl: 'https://example.com/avatar.jpg',
       ),
     );
@@ -92,17 +95,20 @@ void main() {
     repo = MockProviderDashboardRepo();
   });
 
-  test('UpdateDoctorAccountUseCase updates account profile', () async {
+  test('UpdateDoctorAccountUseCase updates bio/degree/yearsOfExperience', () async {
     final useCase = UpdateDoctorAccountUseCase(repo);
     final res = await useCase.call(
-      name: 'د. خالد',
-      specialty: 'قلب',
-      yearsOfExperience: 15,
       bio: 'Bio text',
+      degree: 'MBBS',
+      yearsOfExperience: 15,
     );
     expect(res.isOk, isTrue);
     res.when(
-      ok: (val) => expect(val.name, 'د. خالد'),
+      ok: (val) {
+        expect(val.bio, 'Bio text');
+        expect(val.degree, 'MBBS');
+        expect(val.yearsOfExperience, 15);
+      },
       err: (e) => fail(e.toString()),
     );
   });
@@ -135,15 +141,6 @@ void main() {
       );
     },
   );
-
-  test('ChangePasswordUseCase succeeds', () async {
-    final useCase = ChangePasswordUseCase(repo);
-    final res = await useCase.call(
-      currentPassword: 'old',
-      newPassword: 'newpassword',
-    );
-    expect(res.isOk, isTrue);
-  });
 
   test('UploadAvatarUseCase succeeds', () async {
     final useCase = UploadAvatarUseCase(repo);

@@ -16,6 +16,12 @@ class IdempotencyKeyInterceptor extends Interceptor {
     '/appointments',
     '/payment-intents',
     '/appointments/hold',
+    // Phase 6 (Prescriptions) — POST /v1/prescriptions/upload is guarded by
+    // the backend's IdempotencyInterceptor (File 11 Part 11).
+    '/prescriptions',
+    // Phase 7 (Pharmacy Fulfillment) — POST /v1/pharmacy-orders is guarded
+    // the same way.
+    '/pharmacy-orders',
   ];
 
   @override

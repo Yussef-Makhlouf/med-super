@@ -31,10 +31,9 @@ abstract class ProviderDashboardRepository {
   Future<Result<DoctorAccountProfile>> getDoctorAccount();
 
   Future<Result<DoctorAccountProfile>> updateDoctorAccount({
-    required String name,
-    required String specialty,
-    required int yearsOfExperience,
-    required String bio,
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
   });
 
   Future<Result<ClinicSettings>> getClinicSettings();

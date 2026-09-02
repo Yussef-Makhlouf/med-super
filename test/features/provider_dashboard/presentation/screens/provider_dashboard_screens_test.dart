@@ -6,9 +6,14 @@ import 'package:med_super/core/storage/secure_storage_service.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_clinic_settings_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_edit_profile_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_schedule_editor_screen.dart';
-import 'package:med_super/features/provider_dashboard/presentation/screens/provider_security_privacy_screen.dart';
 import '../../../../helpers/pump_localized_widget.dart';
 
+/// Renamed from `new_screens_test.dart` (2026-09-02) — that file also tested
+/// `ProviderSecurityPrivacyScreen`, which was never actually built (the
+/// import didn't resolve to any file in `lib/`). No security/privacy screen
+/// exists for the provider dashboard and there's no product decision to add
+/// one, so that test case was removed rather than fabricating the screen
+/// just to make it pass — the three screens below are real.
 void main() {
   testWidgets('ProviderEditProfileScreen renders form and submits', (
     tester,
@@ -61,15 +66,5 @@ void main() {
     );
 
     expect(find.text('جدول المواعيد وساعات العمل'), findsOneWidget);
-  });
-
-  testWidgets('ProviderSecurityPrivacyScreen renders password fields', (
-    tester,
-  ) async {
-    await pumpLocalizedWidget(tester, const ProviderSecurityPrivacyScreen());
-
-    expect(find.text('الأمان والخصوصية'), findsOneWidget);
-    expect(find.text('كلمة المرور الحالية'), findsOneWidget);
-    expect(find.text('تغيير كلمة المرور'), findsOneWidget);
   });
 }

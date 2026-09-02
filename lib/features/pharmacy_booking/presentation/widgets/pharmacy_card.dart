@@ -19,12 +19,19 @@ class PharmacyCard extends StatelessWidget {
     required this.isSelected,
     required this.onSelect,
     this.onViewDetails,
+    this.disabled = false,
     super.key,
   });
 
   final Pharmacy pharmacy;
   final bool isSelected;
   final VoidCallback onSelect;
+
+  /// True when the chosen delivery method needs a delivery-capable branch
+  /// and this one isn't — shown (not hidden) so the patient can see it
+  /// exists, but greyed out and not selectable, matching how the "choose"
+  /// CTA already goes null-disabled rather than removing the button.
+  final bool disabled;
 
   /// Tapping the pharmacy's name/address (as opposed to the trailing "اختر"
   /// CTA) opens its full profile first — an optional drill-down, so the
@@ -35,7 +42,9 @@ class PharmacyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Opacity(
+      opacity: disabled ? 0.5 : 1,
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -130,11 +139,17 @@ class PharmacyCard extends StatelessWidget {
             children: [
               pharmacy.deliveryCapable
                   ? const _DeliveryBadge()
-                  : const SizedBox.shrink(),
-              _CtaButton(isSelected: isSelected, onSelect: onSelect),
+                  : (disabled
+                        ? const _NoDeliveryBadge()
+                        : const SizedBox.shrink()),
+              _CtaButton(
+                isSelected: isSelected,
+                onSelect: disabled ? null : onSelect,
+              ),
             ],
           ),
         ],
+      ),
       ),
     );
   }
@@ -181,11 +196,56 @@ class _DeliveryBadge extends StatelessWidget {
   }
 }
 
+/// Shown instead of [_DeliveryBadge] only when the card is [PharmacyCard.disabled]
+/// for lacking delivery — otherwise a non-delivering branch simply shows no
+/// badge at all (pickup flows don't care), so this stays out of the common
+/// case rather than becoming a second always-visible negative badge.
+class _NoDeliveryBadge extends StatelessWidget {
+  const _NoDeliveryBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.do_not_disturb_alt_outlined,
+            size: 14,
+            color: AppColors.mutedText2,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'pharmacy_booking.select_pharmacy.delivery_unavailable'.tr(),
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.mutedText2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CtaButton extends StatelessWidget {
   const _CtaButton({required this.isSelected, required this.onSelect});
 
   final bool isSelected;
-  final VoidCallback onSelect;
+
+  /// Null (not just a no-op) when the card is disabled, so `AppButton`
+  /// itself renders in its disabled visual state rather than looking
+  /// pressable while doing nothing.
+  final VoidCallback? onSelect;
 
   @override
   Widget build(BuildContext context) {

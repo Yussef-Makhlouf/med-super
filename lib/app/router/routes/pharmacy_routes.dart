@@ -44,8 +44,20 @@ final pharmacyRoutes = <RouteBase>[
   GoRoute(
     path: '/patient/pharmacy/confirmation',
     name: 'patientPharmacyConfirmation',
+    // `extra` only ever arrives via the in-app `context.push` right after a
+    // successful order submission — it never survives a browser
+    // back/forward navigation or a direct URL hit (web history replays the
+    // URL, not the in-memory `extra` payload), so this redirects to the
+    // orders list instead of crashing on a bad cast when that happens.
+    redirect: (context, state) =>
+        state.extra is PharmacyOrderConfirmation ? null : '/patient/orders',
     builder: (context, state) => PharmacyOrderConfirmationScreen(
       confirmation: state.extra as PharmacyOrderConfirmation,
     ),
   ),
+  // `/patient/pharmacy-orders` and its `:orderId` detail live inside the
+  // patient shell's "orders" tab branch (`app_router.dart`'s
+  // `_patientRoutes`), not here — they're real content for that bottom-nav
+  // tab, so they need the shell's bottom tab bar to stay visible, which a
+  // standalone top-level route (like the checkout flow above) never gets.
 ];

@@ -1,9 +1,6 @@
-﻿import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
@@ -13,6 +10,15 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import '../controllers/provider_dashboard_providers.dart';
 
+/// A doctor's own self-edit is deliberately narrow: `PATCH /v1/doctors/me`
+/// (`clinic-reservations` File 12 Part 45) only accepts
+/// `bio`/`degree`/`experienceYears` — `name` lives on `User`, not `Doctor`
+/// (edited via the shared `PATCH /v1/auth/me`, same call the patient side
+/// uses), and `specialty`/`licenseNumber` are Admin-only. This screen shows
+/// name/specialty/license read-only for a doctor and only submits the
+/// three real fields; an assistant's own name (a `CLINIC_STAFF` `User`, no
+/// `Doctor` row at all) goes through that same shared `/v1/auth/me` call
+/// instead of the doctor-specific one.
 class ProviderEditProfileScreen extends ConsumerStatefulWidget {
   const ProviderEditProfileScreen({super.key});
 
@@ -25,22 +31,20 @@ class _ProviderEditProfileScreenState
     extends ConsumerState<ProviderEditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _specialtyController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _degreeController;
   late final TextEditingController _experienceController;
   late final TextEditingController _bioController;
   bool _isSaving = false;
   bool _isDirty = false;
   bool _suppressDirtyTracking = true;
 
-  PlatformFile? _pendingAvatarFile;
-  Uint8List? _pendingAvatarPreviewBytes;
-  bool _avatarRemoved = false;
-
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController()..addListener(_markDirty);
-    _specialtyController = TextEditingController()..addListener(_markDirty);
+    _emailController = TextEditingController()..addListener(_markDirty);
+    _degreeController = TextEditingController()..addListener(_markDirty);
     _experienceController = TextEditingController()..addListener(_markDirty);
     _bioController = TextEditingController()..addListener(_markDirty);
   }
@@ -48,7 +52,8 @@ class _ProviderEditProfileScreenState
   @override
   void dispose() {
     _nameController.dispose();
-    _specialtyController.dispose();
+    _emailController.dispose();
+    _degreeController.dispose();
     _experienceController.dispose();
     _bioController.dispose();
     super.dispose();
@@ -59,73 +64,72 @@ class _ProviderEditProfileScreenState
     setState(() => _isDirty = true);
   }
 
-  Future<void> _pickAvatar() async {
-    FilePickerResult? picked;
-    try {
-      picked = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: true,
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر فتح معرض الصور، حاول مرة أخرى')),
-      );
-      return;
-    }
-
-    final files = picked?.files ?? const <PlatformFile>[];
-    final file = files.isEmpty ? null : files.first;
-    if (file == null || file.bytes == null) return;
-
-    setState(() {
-      _pendingAvatarFile = file;
-      _pendingAvatarPreviewBytes = file.bytes;
-      _avatarRemoved = false;
-      _isDirty = true;
-    });
-  }
-
-  void _removeAvatar() {
-    setState(() {
-      _pendingAvatarFile = null;
-      _pendingAvatarPreviewBytes = null;
-      _avatarRemoved = true;
-      _isDirty = true;
-    });
+  /// Photo upload has no real backend anywhere yet — no object-storage
+  /// decision exists for doctor photos (`DEC-009`, same gap as prescription
+  /// uploads). Surfaces the same "coming soon" message the patient side's
+  /// own avatar placeholder uses, rather than pretending to upload to the
+  /// invented `/v1/provider/avatar` this screen used to call.
+  void _showPhotoComingSoon() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('الصور قريبًا')));
   }
 
   Future<void> _submit({required bool isAssistant}) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
-    if (_pendingAvatarFile != null || _avatarRemoved) {
-      final avatarPayload = _pendingAvatarPreviewBytes != null
-          ? 'data:image/jpeg;base64,${base64Encode(_pendingAvatarPreviewBytes!)}'
-          : '';
-      final avatarUseCase = ref.read(uploadAvatarUseCaseProvider);
-      final avatarResult = await avatarUseCase.call(avatarPayload);
-
+    if (isAssistant) {
+      // Assistants are a CLINIC_STAFF `User` with no `Doctor` row — their
+      // own display name is the shared `PATCH /v1/auth/me` this same
+      // session provider already uses for the patient side.
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .updateDisplayName(_nameController.text.trim());
       if (!mounted) return;
-      if (avatarResult.isErr) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: ${avatarResult.failureOrNull.toString()}'),
-          ),
-        );
-        return;
+      setState(() => _isSaving = false);
+      switch (result) {
+        case Ok():
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تحديث البيانات الشخصية بنجاح')),
+          );
+          Navigator.of(context).pop();
+        case Err(:final failure):
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('حدث خطأ: ${failure.toString()}')));
       }
+      return;
+    }
+
+    // Email lives on `User`, not `Doctor` — same shared `PATCH /v1/auth/me`
+    // call the assistant/patient side uses, sent alongside (not instead of)
+    // the doctor-specific update below. `name` is passed through unchanged
+    // since it isn't editable on this screen for a doctor.
+    final emailResult = await ref
+        .read(sessionControllerProvider.notifier)
+        .updateDisplayName(
+          _nameController.text.trim(),
+          email: _emailController.text,
+        );
+    if (!mounted) return;
+    if (emailResult is Err) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'حدث خطأ: ${(emailResult as Err).failure.toString()}',
+          ),
+        ),
+      );
+      return;
     }
 
     final useCase = ref.read(updateDoctorAccountUseCaseProvider);
     final result = await useCase.call(
-      name: _nameController.text.trim(),
-      // Assistants don't edit specialty/experience/bio — preserve existing
-      // values so the update call does not blank them out on the server.
-      specialty: _specialtyController.text,
-      yearsOfExperience: int.tryParse(_experienceController.text) ?? 0,
       bio: _bioController.text,
+      degree: _degreeController.text,
+      yearsOfExperience: int.tryParse(_experienceController.text),
     );
 
     if (!mounted) return;
@@ -169,21 +173,18 @@ class _ProviderEditProfileScreenState
             _nameController.text = isAssistant
                 ? (session?.user.displayName ?? account.name)
                 : account.name;
-            _specialtyController.text = account.specialty;
-            _experienceController.text = '${account.yearsOfExperience}';
+            _emailController.text = account.email ?? '';
+            _degreeController.text = account.degree ?? '';
+            _experienceController.text = account.yearsOfExperience == null
+                ? ''
+                : '${account.yearsOfExperience}';
             _bioController.text = account.bio;
             _suppressDirtyTracking = false;
           }
 
-          final ImageProvider? previewImage =
-              _pendingAvatarPreviewBytes != null
-                  ? MemoryImage(_pendingAvatarPreviewBytes!)
-                  : (!_avatarRemoved && account.avatarUrl != null)
-                  ? resolveAvatarImage(account.avatarUrl!)
-                  : null;
-          final hasPhotoToClear =
-              _pendingAvatarPreviewBytes != null ||
-              (!_avatarRemoved && account.avatarUrl != null);
+          final ImageProvider? previewImage = account.avatarUrl != null
+              ? resolveAvatarImage(account.avatarUrl!)
+              : null;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -192,7 +193,7 @@ class _ProviderEditProfileScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Avatar
+                  // Avatar — placeholder only, see _showPhotoComingSoon.
                   Center(
                     child: Stack(
                       clipBehavior: Clip.none,
@@ -213,7 +214,7 @@ class _ProviderEditProfileScreenState
                           bottom: 0,
                           right: 0,
                           child: GestureDetector(
-                            onTap: _pickAvatar,
+                            onTap: _showPhotoComingSoon,
                             child: Container(
                               padding: const EdgeInsets.all(7),
                               decoration: BoxDecoration(
@@ -232,30 +233,6 @@ class _ProviderEditProfileScreenState
                             ),
                           ),
                         ),
-                        if (hasPhotoToClear)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            child: GestureDetector(
-                              onTap: _removeAvatar,
-                              child: Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: AppColors.errorRed,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.delete_outline,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -274,12 +251,45 @@ class _ProviderEditProfileScreenState
                         AppTextField(
                           label: 'الاسم الكامل',
                           controller: _nameController,
+                          // Read-only for a doctor: no self-name-edit
+                          // endpoint exists on the Doctor record itself.
+                          readOnly: !isAssistant,
                         ),
                         if (!isAssistant) ...[
                           const SizedBox(height: 16),
                           AppTextField(
-                            label: 'التخصص الطبي',
-                            controller: _specialtyController,
+                            label: 'رقم الهاتف',
+                            controller: TextEditingController(
+                              text: account.phone,
+                            ),
+                            readOnly: true,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            label: 'البريد الإلكتروني',
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            label: 'التخصص',
+                            controller: TextEditingController(
+                              text: account.specialty,
+                            ),
+                            readOnly: true,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            label: 'رقم الترخيص',
+                            controller: TextEditingController(
+                              text: account.licenseNumber,
+                            ),
+                            readOnly: true,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            label: 'المؤهل العلمي',
+                            controller: _degreeController,
                           ),
                           const SizedBox(height: 16),
                           AppTextField(

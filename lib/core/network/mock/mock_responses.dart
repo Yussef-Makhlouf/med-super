@@ -634,6 +634,39 @@ void registerAvailabilityMocks(MockInterceptor interceptor) {
   });
 }
 
+/// Registers `GET`/`PATCH /v1/doctors/me`. Must run BEFORE
+/// `registerSearchMocks` below — that function's `GET '${ApiPaths.doctors}/'`
+/// doctor-detail-by-id handler would otherwise swallow `/v1/doctors/me` too
+/// (first-registered-wins substring containment), the same reasoning the
+/// real backend's route-order comment on `DoctorsController.getMe` gives.
+void registerDoctorMeMocks(MockInterceptor interceptor) {
+  interceptor.register('GET', ApiPaths.doctorMe, (options) {
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.doctorAccount,
+    };
+  });
+
+  interceptor.register('PATCH', ApiPaths.doctorMe, (options) {
+    final body = _body(options) ?? {};
+    if (body.containsKey('bio')) {
+      _mockProviderDashboardStore.doctorAccount['bio'] = body['bio'];
+    }
+    if (body.containsKey('degree')) {
+      _mockProviderDashboardStore.doctorAccount['degree'] = body['degree'];
+    }
+    if (body.containsKey('experienceYears')) {
+      _mockProviderDashboardStore.doctorAccount['experienceYears'] =
+          body['experienceYears'];
+    }
+    _mockProviderDashboardStore.persistDoctorAccount();
+    return {
+      'statusCode': 200,
+      'data': _mockProviderDashboardStore.doctorAccount,
+    };
+  });
+}
+
 /// Registers Sprint 2 doctor search + profile mock responses.
 void registerSearchMocks(MockInterceptor interceptor) {
   // MockInterceptor matches by first-registered-wins substring containment
@@ -971,6 +1004,113 @@ void registerPharmacyBranchMocks(MockInterceptor interceptor) {
   });
 }
 
+// ─── Prescriptions mocks (Phase 6) ──────────────────────────────────────────
+
+/// Registers `POST /v1/prescriptions/upload`, mirroring the real backend's
+/// `UploadPrescriptionUseCase` response shape (`{prescriptionId, status}`) —
+/// always reports `QUALITY_CHECK_PASSED` since the mock has no real
+/// quality-checker to fail against.
+void registerPrescriptionMocks(MockInterceptor interceptor) {
+  interceptor.register('POST', '${ApiPaths.prescriptions}/upload', (options) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'prescriptionId': '11111111-1111-4111-8111-111111111111',
+        'status': 'QUALITY_CHECK_PASSED',
+      },
+    };
+  });
+}
+
+// ─── Pharmacy Fulfillment mocks (Phase 7) ───────────────────────────────────
+
+/// Registers `POST /v1/pharmacy-orders`, mirroring the real backend's
+/// `CreatePharmacyOrderResult` response shape. Broadcasts to the chosen
+/// branch alone when `pharmacyBranchId` is sent, matching File 12 Part 44.
+const _mockPharmacyOrderId = '22222222-2222-4222-8222-222222222222';
+
+/// Mirrors `PharmacyOrderDetail` (`clinic-reservations`
+/// `pharmacy-order-detail.mapper.ts`) — quoted/`ACCEPTED` so the detail
+/// screen's "موافقة ودفع" button has something to show in mock mode.
+const _mockPharmacyOrderDetailJson = {
+  'id': _mockPharmacyOrderId,
+  'status': 'ACCEPTED',
+  'fulfillmentType': 'DELIVERY',
+  'createdAt': '2026-08-31T10:00:00.000Z',
+  'updatedAt': '2026-08-31T10:05:00.000Z',
+  'patient': {
+    'id': '11111111-1111-4111-8111-111111111111',
+    'firstName': 'Sara',
+    'lastName': 'Ali',
+    'phoneMasked': '***1234',
+  },
+  'prescription': {
+    'id': '11111111-1111-4111-8111-111111111111',
+    'source': 'PATIENT_UPLOADED',
+    'status': 'QUALITY_CHECK_PASSED',
+    'expiresAt': null,
+    'doctorName': null,
+    'images': [],
+  },
+  'quote': {
+    'totalPrice': '225.00',
+    'currency': 'EGP',
+    'estimatedReadyMinutes': 45,
+    'note': 'All items available',
+    'quotedAt': '2026-08-31T10:05:00.000Z',
+  },
+  'patientNote': 'Take with food',
+  'staffNote': 'All items available',
+  'rejection': null,
+};
+
+void registerPharmacyOrderMocks(MockInterceptor interceptor) {
+  // Approve — registered before the bare create pattern below, since
+  // MockInterceptor matches first-registered-wins substring containment and
+  // '/v1/pharmacy-orders/{id}/approve' contains the bare create path too.
+  interceptor.register('POST', '${ApiPaths.pharmacyOrders}/', (options) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'pharmacyOrderId': _mockPharmacyOrderId,
+        'status': 'PAID',
+        'paymentIntentId': '33333333-3333-4333-8333-333333333333',
+        'totalAmount': '225.00',
+        'currency': 'EGP',
+      },
+    };
+  });
+
+  interceptor.register('POST', ApiPaths.pharmacyOrders, (options) {
+    final body = _body(options) ?? const {};
+    final branchId = body['pharmacyBranchId'] as String?;
+    return {
+      'statusCode': 200,
+      'data': {
+        'pharmacyOrderId': _mockPharmacyOrderId,
+        'status': 'RECEIVED',
+        'broadcastedBranchIds': [if (branchId != null) branchId],
+      },
+    };
+  });
+
+  // Detail — registered before the bare list pattern below, same ordering
+  // reasoning as approve/create above.
+  interceptor.register('GET', '${ApiPaths.pharmacyOrders}/', (options) {
+    return {'statusCode': 200, 'data': _mockPharmacyOrderDetailJson};
+  });
+
+  interceptor.register('GET', ApiPaths.pharmacyOrders, (options) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'orders': [_mockPharmacyOrderDetailJson],
+        'nextCursor': null,
+      },
+    };
+  });
+}
+
 // ─── Specialties mocks ──────────────────────────────────────────────────────
 
 const _mockSpecialtiesJson = <Map<String, dynamic>>[
@@ -1158,13 +1298,12 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
 
     _mockProviderDashboardStore.doctorAccount = {
       ..._mockProviderDashboardStore.doctorAccount,
-      if (str('full_name') != null) 'name': str('full_name'),
+      if (str('full_name') != null) 'displayName': str('full_name'),
       if (str('specialty_label') != null) 'specialty': str('specialty_label'),
       if (body['experience_years'] is int)
-        'years_of_experience': body['experience_years'],
+        'experienceYears': body['experience_years'],
       if (str('bio') != null) 'bio': str('bio'),
-      if (str('clinic_name') != null) 'hospital_name': str('clinic_name'),
-      if (str('photo_data_uri') != null) 'avatar_url': str('photo_data_uri'),
+      if (str('photo_data_uri') != null) 'photoUrl': str('photo_data_uri'),
     };
     _mockProviderDashboardStore.persistDoctorAccount();
 
@@ -1466,14 +1605,22 @@ class _MockProviderDashboardStore {
   late Map<String, dynamic> clinicSettings;
   late Map<String, dynamic> schedule;
 
+  /// Mirrors `GET /v1/doctors/me`'s real shape (`MyDoctorProfile`,
+  /// camelCase) — `hospital_name` was dropped 2026-08-31 along with the
+  /// entity field it backed, since the real endpoint has no clinic-branch
+  /// join to source it from.
   static Map<String, dynamic> _seedDoctorAccount() => {
     'id': 'doc-001',
-    'name': 'د. أحمد علي',
+    'displayName': 'د. أحمد علي',
+    'email': 'dr.ahmed@example.com',
+    'phone': '+201001234567',
     'specialty': 'استشاري الطب الباطني',
-    'hospital_name': 'مستشفى الملك فيصل التخصصي',
-    'avatar_url': null,
-    'years_of_experience': 12,
+    'licenseNumber': 'LIC-2026-001',
+    'photoUrl': null,
+    'degree': 'MBBCh, MD',
+    'experienceYears': 12,
     'bio': 'استشاري خبرة أكثر من 12 عاماً في الطب الباطني والأمراض المزمنة.',
+    'isVerified': true,
   };
 
   static Map<String, dynamic> _seedClinicSettings() => {
@@ -1748,36 +1895,6 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     return {
       'statusCode': 200,
       'data': {'success': true},
-    };
-  });
-
-  interceptor.register('GET', ApiPaths.providerMe, (options) {
-    return {
-      'statusCode': 200,
-      'data': _mockProviderDashboardStore.doctorAccount,
-    };
-  });
-
-  interceptor.register('PATCH', ApiPaths.providerMe, (options) {
-    final body = _body(options) ?? {};
-    if (body.containsKey('name')) {
-      _mockProviderDashboardStore.doctorAccount['name'] = body['name'];
-    }
-    if (body.containsKey('specialty')) {
-      _mockProviderDashboardStore.doctorAccount['specialty'] =
-          body['specialty'];
-    }
-    if (body.containsKey('years_of_experience')) {
-      _mockProviderDashboardStore.doctorAccount['years_of_experience'] =
-          body['years_of_experience'];
-    }
-    if (body.containsKey('bio')) {
-      _mockProviderDashboardStore.doctorAccount['bio'] = body['bio'];
-    }
-    _mockProviderDashboardStore.persistDoctorAccount();
-    return {
-      'statusCode': 200,
-      'data': _mockProviderDashboardStore.doctorAccount,
     };
   });
 

@@ -185,10 +185,6 @@ class _NotifHeader extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.search, color: _ink),
-        ),
       ],
     );
   }
