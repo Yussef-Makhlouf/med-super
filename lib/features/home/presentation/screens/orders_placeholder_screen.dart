@@ -354,26 +354,44 @@ class _PharmacyOrdersTab extends ConsumerWidget {
             .where(
               (o) =>
                   query.isEmpty ||
-                  shortOrderId(o.id).toLowerCase().contains(
-                    query.toLowerCase(),
-                  ),
+                  shortOrderId(
+                    o.id,
+                  ).toLowerCase().contains(query.toLowerCase()),
             )
             .toList();
         if (visible.isEmpty) {
-          return Center(
-            child: Text(
-              'orders.empty'.tr(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: _muted),
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(pharmacyOrdersProvider.future),
+            child: ListView(
+              // A `Center`'s child alone can't be pulled — a scrollable
+              // child (even an empty-looking one) is required for
+              // `RefreshIndicator` to receive the drag gesture at all.
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: Center(
+                    child: Text(
+                      'orders.empty'.tr(),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(color: _muted),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-          itemCount: visible.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (context, i) => _PharmacyOrderCard(order: visible[i]),
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(pharmacyOrdersProvider.future),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+            itemCount: visible.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, i) => _PharmacyOrderCard(order: visible[i]),
+          ),
         );
       },
     );
@@ -432,104 +450,101 @@ class _PharmacyOrderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                        Row(
-                          children: [
-                            PharmacyOrderStatusPill(status: order.status),
-                            const Spacer(),
-                            Text(
-                              '#${shortOrderId(order.id)}',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: _ink,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEEF4FF),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.local_pharmacy_outlined,
-                                size: 20,
-                                color: brandBlue,
-                              ),
-                            ),
-                          ],
+                Row(
+                  children: [
+                    PharmacyOrderStatusPill(status: order.status),
+                    const Spacer(),
+                    Text(
+                      '#${shortOrderId(order.id)}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: _ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF4FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.local_pharmacy_outlined,
+                        size: 20,
+                        color: brandBlue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  order.pharmacyName ??
+                      'pharmacy_booking.orders.pharmacy_label'.tr(),
+                  style: textTheme.titleSmall?.copyWith(
+                    color: brandBlue,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DeliveryMethod.fromApiValue(
+                    order.fulfillmentType,
+                  ).titleKey.tr(),
+                  style: textTheme.bodySmall?.copyWith(color: _ink),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatDate(order.createdAt),
+                  style: textTheme.bodySmall?.copyWith(color: _muted),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFEFF2F7)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: () =>
+                          context.push('/patient/orders/${order.id}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: brandBlue,
+                        side: BorderSide(
+                          color: brandBlue.withValues(alpha: 0.5),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          order.pharmacyName ??
-                              'pharmacy_booking.orders.pharmacy_label'.tr(),
-                          style: textTheme.titleSmall?.copyWith(
-                            color: brandBlue,
-                            fontWeight: FontWeight.w700,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text('orders.track'.tr()),
+                    ),
+                    const Spacer(),
+                    if (quote != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'orders.total'.tr(),
+                            style: textTheme.bodySmall?.copyWith(color: _muted),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DeliveryMethod.fromApiValue(
-                            order.fulfillmentType,
-                          ).titleKey.tr(),
-                          style: textTheme.bodySmall?.copyWith(color: _ink),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatDate(order.createdAt),
-                          style: textTheme.bodySmall?.copyWith(color: _muted),
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(height: 1, color: Color(0xFFEFF2F7)),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            OutlinedButton(
-                              onPressed: () =>
-                                  context.push('/patient/orders/${order.id}'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: brandBlue,
-                                side: BorderSide(
-                                  color: brandBlue.withValues(alpha: 0.5),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text('orders.track'.tr()),
+                          Text(
+                            '${quote.totalPrice} ${quote.currency}',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: _ink,
+                              fontWeight: FontWeight.w800,
                             ),
-                            const Spacer(),
-                            if (quote != null)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'orders.total'.tr(),
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: _muted,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${quote.totalPrice} ${quote.currency}',
-                                    style: textTheme.titleSmall?.copyWith(
-                                      color: _ink,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -647,9 +662,7 @@ class _LabOrderCard extends StatelessWidget {
                             onPressed: () {},
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF6B7280),
-                              side: const BorderSide(
-                                color: Color(0xFFD1D5DB),
-                              ),
+                              side: const BorderSide(color: Color(0xFFD1D5DB)),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 14,
                                 vertical: 8,

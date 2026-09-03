@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/features/pharmacy_booking/data/datasources/remote/pharmacy_order_remote_datasource.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_create_result.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 
 /// Thrown by [PharmacyOrderController.submit] when the device's location
@@ -14,15 +15,17 @@ class PharmacyOrderLocationUnavailableException implements Exception {
   const PharmacyOrderLocationUnavailableException();
 }
 
-final pharmacyOrderRemoteDatasourceProvider = Provider<PharmacyOrderRemoteDatasource>(
-  (ref) => PharmacyOrderRemoteDatasource(ref.watch(dioProvider)),
-);
+final pharmacyOrderRemoteDatasourceProvider =
+    Provider<PharmacyOrderRemoteDatasource>(
+      (ref) => PharmacyOrderRemoteDatasource(ref.watch(dioProvider)),
+    );
 
 /// Drives `POST /v1/pharmacy-orders` from the order-review screen's confirm
 /// button. Everything this call needs (the already-uploaded prescription,
 /// the chosen delivery method and pharmacy branch) was decided on earlier
 /// screens — this controller only fires the request and tracks its result.
-class PharmacyOrderController extends Notifier<AsyncValue<PharmacyOrderCreateResult?>> {
+class PharmacyOrderController
+    extends Notifier<AsyncValue<PharmacyOrderCreateResult?>> {
   @override
   AsyncValue<PharmacyOrderCreateResult?> build() => const AsyncData(null);
 
@@ -49,10 +52,19 @@ class PharmacyOrderController extends Notifier<AsyncValue<PharmacyOrderCreateRes
             pharmacyBranchId: pharmacyBranchId,
           );
     });
+    // Without this, the orders-tab list (`pharmacyOrdersProvider`) is a
+    // separate cached fetch and keeps showing whatever it last loaded —
+    // a brand-new order wouldn't appear there until an unrelated refetch
+    // happened to occur (matches the same staleness class already fixed
+    // for `approve()` on `PharmacyOrderApproveController`).
+    if (!state.hasError) {
+      ref.invalidate(pharmacyOrdersProvider);
+    }
   }
 }
 
 final pharmacyOrderControllerProvider =
-    NotifierProvider<PharmacyOrderController, AsyncValue<PharmacyOrderCreateResult?>>(
-      PharmacyOrderController.new,
-    );
+    NotifierProvider<
+      PharmacyOrderController,
+      AsyncValue<PharmacyOrderCreateResult?>
+    >(PharmacyOrderController.new);

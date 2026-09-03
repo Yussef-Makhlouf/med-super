@@ -19,7 +19,7 @@ void main() {
   ];
 
   setUpAll(() {
-    registerFallbackValue(<String>[]);
+    registerFallbackValue(<PrescriptionImage>[]);
   });
 
   setUp(() {
@@ -40,12 +40,12 @@ void main() {
   });
 
   test(
-    'submit sends one placeholder fileUrl per image (no real object storage '
-    'exists yet) and stores the result on success',
+    'submit forwards the picked images to the datasource and stores the '
+    'result on success',
     () async {
       when(
         () => datasource.upload(
-          fileUrls: any(named: 'fileUrls'),
+          images: any(named: 'images'),
           notes: any(named: 'notes'),
         ),
       ).thenAnswer(
@@ -61,12 +61,11 @@ void main() {
 
       final captured = verify(
         () => datasource.upload(
-          fileUrls: captureAny(named: 'fileUrls'),
+          images: captureAny(named: 'images'),
           notes: 'take with food',
         ),
-      ).captured.single as List<String>;
+      ).captured.single as List<PrescriptionImage>;
       expect(captured, hasLength(2));
-      expect(captured.every((url) => Uri.parse(url).isAbsolute), isTrue);
 
       expect(
         container.read(prescriptionUploadControllerProvider),
@@ -83,7 +82,7 @@ void main() {
   test('submit surfaces the datasource failure as AsyncError', () async {
     when(
       () => datasource.upload(
-        fileUrls: any(named: 'fileUrls'),
+        images: any(named: 'images'),
         notes: any(named: 'notes'),
       ),
     ).thenThrow(Exception('network down'));

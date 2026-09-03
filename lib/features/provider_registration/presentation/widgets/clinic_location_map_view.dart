@@ -60,8 +60,27 @@ class _ClinicLocationMapViewState extends State<ClinicLocationMapView> {
               options: MapOptions(
                 initialCenter: widget.initialPosition,
                 initialZoom: 14,
-                onPositionChanged: (camera, hasGesture) {
-                  widget.onPositionChanged(camera.center);
+                // Only report the settled position once a drag/fling/zoom
+                // gesture actually finishes — `onPositionChanged` fires on
+                // every intermediate frame of a drag, and each call here
+                // used to trigger a full Hive disk write + Riverpod state
+                // update up in `DoctorRegistrationClinicScheduleScreen`,
+                // causing visible lag while panning the map.
+                onMapEvent: (event) {
+                  final isSettledGesture =
+                      event is MapEventMoveEnd ||
+                      event is MapEventFlingAnimationEnd ||
+                      event is MapEventDoubleTapZoomEnd;
+                  // A programmatic `_mapController.move()` call (tap-to-move,
+                  // "locate me") is a single discrete jump reported as one
+                  // `MapEventMove`, not a per-frame drag update — safe to
+                  // report immediately, unlike a drag's `MapEventMove`s.
+                  final isProgrammaticMove =
+                      event is MapEventMove &&
+                      event.source == MapEventSource.mapController;
+                  if (isSettledGesture || isProgrammaticMove) {
+                    widget.onPositionChanged(event.camera.center);
+                  }
                 },
                 onTap: (_, point) => _moveTo(point),
               ),

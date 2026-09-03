@@ -16,25 +16,18 @@ class PrescriptionUploadController extends Notifier<AsyncValue<PrescriptionUploa
   @override
   AsyncValue<PrescriptionUploadResult?> build() => const AsyncData(null);
 
-  /// [images]' real bytes are never actually uploaded anywhere — no object
-  /// storage exists yet for prescription photos (backend's
-  /// `UploadPrescriptionDto.fileUrls` is deliberately pre-hosted-URL-only,
-  /// DEC-009-gated/deferred, same as `ProviderVerificationDocument.file_url`).
-  /// Each image is sent as a distinct placeholder URL just so the real
-  /// endpoint's quality-check/OCR pipeline runs end-to-end against something
-  /// — swap this for a real upload step once object storage is decided.
+  /// [images]' real bytes are now uploaded via `multipart/form-data` and
+  /// stored in ImageKit (`prescriptions/<patientId>`, private — DEC-009 is
+  /// resolved), matching `PrescriptionRemoteDatasource.upload`.
   Future<void> submit({
     required List<PrescriptionImage> images,
     String? notes,
   }) async {
     state = const AsyncLoading();
-    final fileUrls = images
-        .map((image) => 'https://placeholder.medsuper.local/prescriptions/${image.id}.jpg')
-        .toList();
     state = await AsyncValue.guard(
       () => ref
           .read(prescriptionRemoteDatasourceProvider)
-          .upload(fileUrls: fileUrls, notes: notes),
+          .upload(images: images, notes: notes),
     );
   }
 }

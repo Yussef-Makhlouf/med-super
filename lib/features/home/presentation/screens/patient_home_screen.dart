@@ -40,46 +40,53 @@ class PatientHomeScreen extends ConsumerWidget {
         child: const Icon(Icons.emergency, color: Colors.white),
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Column(
-                  children: [
-                    _HomeHeader(displayName: displayName),
-                    const SizedBox(height: 16),
-                    const _HomeSearchBar(),
-                    const SizedBox(height: 16),
-                    const _PromoBanner(),
-                    const SizedBox(height: 16),
-                    const _QuickActions(),
-                    const SizedBox(height: 24),
-                    _SectionHeader(
-                      title: 'home.specialties'.tr(),
-                      actionLabel: 'common.view_all'.tr(),
-                      onAction: () => context.push('/patient/home/search'),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+        child: RefreshIndicator(
+          onRefresh: () => Future.wait([
+            ref.refresh(specialtiesProvider.future),
+            ref.refresh(featuredDoctorsProvider.future),
+          ]),
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    children: [
+                      _HomeHeader(displayName: displayName),
+                      const SizedBox(height: 16),
+                      const _HomeSearchBar(),
+                      const SizedBox(height: 16),
+                      const _PromoBanner(),
+                      const SizedBox(height: 16),
+                      const _QuickActions(),
+                      const SizedBox(height: 24),
+                      _SectionHeader(
+                        title: 'home.specialties'.tr(),
+                        actionLabel: 'common.view_all'.tr(),
+                        onAction: () => context.push('/patient/home/search'),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SliverToBoxAdapter(child: _SpecialtiesRow()),
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _SectionHeader(title: 'home.featured_doctors'.tr()),
+              const SliverToBoxAdapter(child: _SpecialtiesRow()),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SectionHeader(title: 'home.featured_doctors'.tr()),
+                ),
               ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: const SliverToBoxAdapter(child: _FeaturedDoctorsList()),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 88)),
-          ],
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: const SliverToBoxAdapter(child: _FeaturedDoctorsList()),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 88)),
+            ],
+          ),
         ),
       ),
     );
@@ -463,9 +470,9 @@ class _SpecialtiesRow extends ConsumerWidget {
             return Center(
               child: Text(
                 'home.specialties_empty'.tr(),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: PatientHomeScreen._muted),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: PatientHomeScreen._muted,
+                ),
               ),
             );
           }
@@ -565,4 +572,3 @@ class _FeaturedDoctorsList extends ConsumerWidget {
     );
   }
 }
-

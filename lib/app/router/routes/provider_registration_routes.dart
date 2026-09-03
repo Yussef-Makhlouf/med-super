@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:med_super/features/provider_registration/presentation/screens/doctor_registration_basic_info_screen.dart';
 import 'package:med_super/features/provider_registration/presentation/screens/doctor_registration_clinic_schedule_screen.dart';
+import 'package:med_super/features/provider_registration/presentation/screens/doctor_registration_pending_screen.dart';
 import 'package:med_super/features/provider_registration/presentation/screens/doctor_registration_review_screen.dart';
 import 'package:med_super/features/provider_registration/presentation/screens/doctor_registration_verification_screen.dart';
 
@@ -24,5 +25,10 @@ final providerRegistrationRoutes = <RouteBase>[
     path: '/provider/registration/review',
     name: 'providerRegReview',
     builder: (context, state) => const DoctorRegistrationReviewScreen(),
+  ),
+  GoRoute(
+    path: '/provider/registration/pending',
+    name: 'providerRegPending',
+    builder: (context, state) => const DoctorRegistrationPendingScreen(),
   ),
 ];

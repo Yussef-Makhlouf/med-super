@@ -7,10 +7,14 @@ import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/domain/entities/otp_request_result.dart';
 import 'package:med_super/features/auth/presentation/controllers/auth_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/forgot_password_providers.dart';
+import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
+import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
+import 'package:med_super/features/wallet/presentation/controllers/wallet_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_provider.g.dart';
@@ -169,6 +173,20 @@ class SessionController extends _$SessionController {
         await ref.read(secureStorageProvider).clearTokens();
         return Result.err(failure);
       case Ok(:final value):
+        // Backend bug (tracked separately): `POST /v1/auth/otp/verify`
+        // ignores `role` entirely and always creates a PATIENT
+        // role_membership, so `value.isPatient` is true here even when the
+        // user picked "doctor" on the login screen. Remember that choice
+        // locally so the router can route a fresh doctor signup into the
+        // provider-registration flow instead of the patient onboarding —
+        // without this, choosing "doctor" here was silently discarded.
+        if (role == UserRole.doctor) {
+          await ref
+              .read(hiveServiceProvider)
+              .settingsBox
+              .put(SettingsKeys.choseDoctorRoleAtSignup, 'true');
+        }
+        await _resyncDoctorRegistrationStatus();
         final session = Session(
           user: value,
           onboardingComplete: value.profileComplete || _readOnboardingComplete(),
@@ -176,6 +194,37 @@ class SessionController extends _$SessionController {
         );
         state = AsyncData(session);
         return Result.ok(session);
+    }
+  }
+
+  /// One-time-per-login check against the real backend status
+  /// (`GET /v1/provider/registration/status`), so a still-PENDING doctor
+  /// who logged out (which deliberately wipes
+  /// `SettingsKeys.providerRegistrationSubmitted`, to stop one account's
+  /// registration state leaking into the next login on this device) still
+  /// lands back on the pending-approval screen after logging back in.
+  /// Deliberately NOT called from the router's `redirect` on every
+  /// navigation — that would mean every patient, not just doctors, firing a
+  /// request per screen change. `404` (never self-registered) always leaves
+  /// the flag untouched (a genuine patient). A network/server failure
+  /// retries once immediately (covers a transient blip without adding any
+  /// retry UI) before also leaving the flag untouched — better to
+  /// occasionally miss a real PENDING doctor once in a rare double-failure
+  /// than to ever block or fail the login itself over this check.
+  Future<void> _resyncDoctorRegistrationStatus() async {
+    var result = await ref.read(myDoctorRegistrationStatusUseCaseProvider).call();
+    if (result case Err()) {
+      result = await ref.read(myDoctorRegistrationStatusUseCaseProvider).call();
+    }
+    switch (result) {
+      case Ok(:final value) when value != null:
+        await ref
+            .read(hiveServiceProvider)
+            .settingsBox
+            .put(SettingsKeys.providerRegistrationSubmitted, 'true');
+      case Ok():
+      case Err():
+        break;
     }
   }
 
@@ -255,6 +304,7 @@ class SessionController extends _$SessionController {
         return Result.err(failure);
       case Ok(:final value):
         await _writePasswordComplete(true);
+        await _resyncDoctorRegistrationStatus();
         final session = Session(
           user: value,
           onboardingComplete: value.profileComplete || _readOnboardingComplete(),
@@ -335,6 +385,27 @@ class SessionController extends _$SessionController {
     await ref.read(logoutUseCaseProvider).call();
     await _writeOnboardingComplete(false);
     await _writePasswordComplete(false);
+    // Both are Hive-persisted local flags, not Riverpod providers, so they
+    // need their own explicit clear here — otherwise a different person
+    // signing in afterward on this same device/tab would inherit whatever
+    // registration state the previous account left behind (same class of
+    // bug `_resetEphemeralFlowState` exists to prevent for provider caches).
+    final settingsBox = ref.read(hiveServiceProvider).settingsBox;
+    await settingsBox.delete(SettingsKeys.providerRegistrationSubmitted);
+    await settingsBox.delete(SettingsKeys.choseDoctorRoleAtSignup);
+    // The in-progress doctor-registration draft (name, email, license
+    // number, profile photo, uploaded ID/license documents) is also
+    // Hive-persisted and its controller is `@Riverpod(keepAlive: true)` —
+    // neither is touched by clearing the two flags above. Confirmed live:
+    // without this, a different person registering as a doctor on this
+    // same device would see the previous applicant's half-filled personal
+    // data and documents. `ref.invalidate` forces `build()` to re-run,
+    // which re-reads the (now-cleared) Hive box and returns a fresh draft.
+    await ref
+        .read(hiveServiceProvider)
+        .providerRegistrationDraftBox
+        .delete(providerRegistrationDraftKey);
+    ref.invalidate(registrationFormControllerProvider);
     state = const AsyncData(null);
     _resetEphemeralFlowState();
   }
@@ -343,9 +414,17 @@ class SessionController extends _$SessionController {
   /// plain (non-`autoDispose`) `Notifier`/`FutureProvider`s that live for
   /// the whole app process, so whatever a patient typed/picked mid-flow
   /// (an attached prescription photo, a chosen pharmacy, an in-flight
-  /// order submission) would otherwise still be sitting there for the next
-  /// person who logs into this same browser tab/app instance. Logout is the
-  /// one guaranteed "this session is over" boundary, so it resets them.
+  /// order submission) — or whatever backend data they already fetched
+  /// (their pharmacy orders, appointments, wallet balance/transactions) —
+  /// would otherwise still be sitting there for the next person who logs
+  /// into this same browser tab/app instance. Confirmed live 2026-09-03:
+  /// logging out a patient and signing up as a new one still showed the
+  /// previous patient's pharmacy orders, because `pharmacyOrdersProvider`
+  /// wasn't in this list. Logout is the one guaranteed "this session is
+  /// over" boundary, so it resets every such provider found across the app
+  /// (audited repo-wide — `@riverpod` codegen without `keepAlive: true` is
+  /// `autoDispose` by default and self-clears once unwatched, so it's only
+  /// these hand-written plain providers that need resetting here).
   void _resetEphemeralFlowState() {
     ref.invalidate(uploadedPrescriptionImagesProvider);
     ref.invalidate(selectedDeliveryMethodProvider);
@@ -354,6 +433,15 @@ class SessionController extends _$SessionController {
     ref.invalidate(pharmacySearchProvider);
     ref.invalidate(pharmacyOrderControllerProvider);
     ref.invalidate(prescriptionUploadControllerProvider);
+    ref.invalidate(pharmacyOrdersProvider);
+    ref.invalidate(pharmacyOrderDetailProvider);
+    ref.invalidate(pharmacyOrderApproveControllerProvider);
+    ref.invalidate(myAppointmentsProvider);
+    ref.invalidate(myAppointmentsRefreshProvider);
+    ref.invalidate(walletBalanceProvider);
+    ref.invalidate(walletTransactionsProvider);
+    ref.invalidate(walletTransactionDetailProvider);
+    ref.invalidate(refundStatusProvider);
   }
 }
 

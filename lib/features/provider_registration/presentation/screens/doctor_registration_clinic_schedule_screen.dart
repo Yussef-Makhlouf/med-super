@@ -32,9 +32,9 @@ class _DoctorRegistrationClinicScheduleScreenState
     extends ConsumerState<DoctorRegistrationClinicScheduleScreen> {
   late final _nameController = TextEditingController();
   late final _addressController = TextEditingController();
+  late final _cityController = TextEditingController();
   late final _feeController = TextEditingController();
   late final _locationService = const ClinicLocationService();
-  String? _cityId;
   String? _regionCode;
 
   @override
@@ -43,10 +43,10 @@ class _DoctorRegistrationClinicScheduleScreenState
     final draft = ref.read(registrationFormControllerProvider);
     _nameController.text = draft.clinicName;
     _addressController.text = draft.clinicAddress;
+    _cityController.text = draft.city ?? '';
     _feeController.text = draft.consultationFee == 0
         ? ''
         : '${draft.consultationFee}';
-    _cityId = draft.city;
     _regionCode = draft.regionCode;
   }
 
@@ -56,7 +56,9 @@ class _DoctorRegistrationClinicScheduleScreenState
         .updateClinicInfo(
           clinicName: _nameController.text.trim(),
           clinicAddress: _addressController.text.trim(),
-          city: _cityId,
+          city: _cityController.text.trim().isEmpty
+              ? null
+              : _cityController.text.trim(),
           regionCode: _regionCode,
           consultationFee: int.tryParse(_feeController.text) ?? 0,
           clinicLat: lat,
@@ -155,6 +157,7 @@ class _DoctorRegistrationClinicScheduleScreenState
                             hint:
                                 'provider_registration.clinic_schedule.clinic_name_hint'
                                     .tr(),
+                            onChanged: (_) => _save(),
                           ),
                           const SizedBox(height: 16),
                           AppTextField(
@@ -165,27 +168,18 @@ class _DoctorRegistrationClinicScheduleScreenState
                             hint:
                                 'provider_registration.clinic_schedule.clinic_address_hint'
                                     .tr(),
+                            onChanged: (_) => _save(),
                           ),
                           const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            initialValue: _cityId,
-                            decoration: InputDecoration(
-                              labelText:
-                                  'provider_registration.clinic_schedule.city_label'
-                                      .tr(),
-                            ),
-                            items: lookups.cities
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                    value: c.id,
-                                    child: Text(c.label),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (v) {
-                              setState(() => _cityId = v);
-                              _save();
-                            },
+                          AppTextField(
+                            label:
+                                'provider_registration.clinic_schedule.city_label'
+                                    .tr(),
+                            controller: _cityController,
+                            hint:
+                                'provider_registration.clinic_schedule.city_hint'
+                                    .tr(),
+                            onChanged: (_) => _save(),
                           ),
                           const SizedBox(height: 8),
                           DropdownButtonFormField<String>(
@@ -247,6 +241,7 @@ class _DoctorRegistrationClinicScheduleScreenState
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                             ],
+                            onChanged: (_) => _save(),
                             suffix: Padding(
                               padding: const EdgeInsets.only(top: 14),
                               child: Text(

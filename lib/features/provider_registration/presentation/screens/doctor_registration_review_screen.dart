@@ -6,55 +6,63 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import 'package:med_super/core/widgets/simple_success_screen.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_registration/domain/entities/region_codes.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_lookups_providers.dart';
 import 'package:med_super/features/provider_registration/presentation/widgets/review_section_card.dart';
 
-class DoctorRegistrationReviewScreen extends ConsumerWidget {
+class DoctorRegistrationReviewScreen extends ConsumerStatefulWidget {
   const DoctorRegistrationReviewScreen({super.key});
 
-  Future<void> _submit(
-    BuildContext context,
-    WidgetRef ref, {
+  @override
+  ConsumerState<DoctorRegistrationReviewScreen> createState() =>
+      _DoctorRegistrationReviewScreenState();
+}
+
+class _DoctorRegistrationReviewScreenState
+    extends ConsumerState<DoctorRegistrationReviewScreen> {
+  // Local, screen-level guard so the submit button visibly disables itself
+  // on tap — `RegistrationFormController.submit()` has its own internal
+  // re-entrancy guard too, but that alone can't stop a UI double-tap from
+  // firing two calls before the first `await` yields.
+  bool _submitting = false;
+
+  Future<void> _submit({
     required String? specialtyLabel,
     required String? cityLabel,
     required String phone,
   }) async {
-    final result = await ref
-        .read(registrationFormControllerProvider.notifier)
-        .submit(
-          specialtyLabel: specialtyLabel,
-          cityLabel: cityLabel,
-          phone: phone,
-        );
-    if (!context.mounted) return;
-    if (result.isOk) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (routeContext) => SimpleSuccessScreen(
-            title: 'provider_registration.review.success_title'.tr(),
-            message: 'provider_registration.review.success_message'.tr(),
-            primaryActionLabel: 'provider_registration.review.back_home_cta'
-                .tr(),
-            accentColor: AppColors.providerPrimary,
-            onPrimaryAction: () => routeContext.go('/provider/home'),
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final result = await ref
+          .read(registrationFormControllerProvider.notifier)
+          .submit(
+            specialtyLabel: specialtyLabel,
+            cityLabel: cityLabel,
+            phone: phone,
+          );
+      if (!mounted) return;
+      if (result.isOk) {
+        // Not a plain success screen — the application still needs Admin
+        // approval, so this goes to the pending-status screen instead of
+        // straight to `/provider/home` (see that screen's doc comment).
+        context.go('/provider/registration/pending');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('provider_registration.review.submit_error'.tr()),
           ),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('provider_registration.review.submit_error'.tr()),
-        ),
-      );
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final draft = ref.watch(registrationFormControllerProvider);
     final session = ref.watch(sessionControllerProvider).asData?.value;
     final lookupsAsync = ref.watch(registrationLookupsProvider);
@@ -70,9 +78,11 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
             final specialtyLabel = lookups.specialties
                 .firstWhereOrNull((s) => s.id == draft.specialty)
                 ?.label;
-            final cityLabel = lookups.cities
-                .firstWhereOrNull((c) => c.id == draft.city)
-                ?.label;
+            // `city` is free text (backend has no cities lookup table —
+            // `GET /v1/provider/registration/lookups` always returns
+            // `cities: []`), not an id to resolve against a catalog — the
+            // value the applicant typed is already the label.
+            final cityLabel = draft.city;
             final regionLabel = kRegionCodes
                 .firstWhereOrNull((r) => r.id == draft.regionCode)
                 ?.label;
@@ -281,10 +291,9 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 AppButton.filled(
                   label: 'provider_registration.review.submit_cta'.tr(),
-                  onPressed: draft.agreedToTerms
+                  isLoading: _submitting,
+                  onPressed: (draft.agreedToTerms && !_submitting)
                       ? () => _submit(
-                          context,
-                          ref,
                           specialtyLabel: specialtyLabel,
                           cityLabel: cityLabel,
                           phone: phone,
@@ -299,6 +308,13 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 AppButton.outlined(
                   label: 'provider_registration.review.save_draft_cta'.tr(),
+                  // Every field-level edit already auto-saves to Hive
+                  // (`RegistrationFormController._persist`) — this button
+                  // never had anything of its own to save. It used to also
+                  // navigate to `/provider/home`, which the router would
+                  // immediately bounce back out of (the applicant is still
+                  // PATIENT at this point) — just confirm what's already
+                  // true and stay on this screen.
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -307,7 +323,6 @@ class DoctorRegistrationReviewScreen extends ConsumerWidget {
                         ),
                       ),
                     );
-                    context.go('/provider/home');
                   },
                   foregroundColor: AppColors.providerPrimary,
                   borderRadius: 9999,

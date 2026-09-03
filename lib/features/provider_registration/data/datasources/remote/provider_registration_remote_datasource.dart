@@ -7,6 +7,21 @@ class ProviderRegistrationRemoteDatasource {
 
   final Dio _dio;
 
+  /// `GET /v1/provider/registration/status` — returns `null` on a `404`
+  /// (never self-registered as a doctor), not an error; any other failure
+  /// still throws, for the repository to map to a `Result.err`.
+  Future<String?> getStatus() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.providerRegistrationStatus,
+      );
+      return response.data?['status'] as String?;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
   Future<void> submit(
     DoctorRegistrationDraft draft, {
     String? specialtyLabel,

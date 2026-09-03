@@ -148,8 +148,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    const _ProfileAvatar(),
-                    const SizedBox(height: 20),
+                    const CircleAvatar(
+                      radius: 32,
+                      backgroundColor: Color(0xFFDCE8FF),
+                      child: Icon(Icons.person, color: brandBlue, size: 32),
+                    ),
+                    const SizedBox(height: 16),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -274,74 +278,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 }
 
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: 104,
-          height: 104,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 104,
-                height: 104,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFDCE8FF),
-                ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  size: 56,
-                  color: brandBlue,
-                ),
-              ),
-              PositionedDirectional(
-                // Mockup places the edit badge on the visual bottom-left.
-                end: 0,
-                bottom: 0,
-                child: Material(
-                  color: brandBlue,
-                  shape: const CircleBorder(),
-                  elevation: 2,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('profile.photo_soon'.tr())),
-                      );
-                    },
-                    child: const SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: Icon(
-                        Icons.edit_rounded,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'profile.change_photo'.tr(),
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF8A94A6)),
-        ),
-      ],
-    );
-  }
-}
-
 class _LabeledField extends StatelessWidget {
   const _LabeledField({required this.label, required this.child});
 
@@ -434,4 +370,3 @@ class _ProfileTextField extends StatelessWidget {
     );
   }
 }
-

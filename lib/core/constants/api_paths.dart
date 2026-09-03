@@ -55,6 +55,12 @@ abstract final class ApiPaths {
   static const providerRegistrationSubmit = '/v1/provider/registration';
   static const providerRegistrationLookups =
       '/v1/provider/registration/lookups';
+  // Lets a self-registered doctor poll their own PENDING/VERIFIED/SUSPENDED
+  // status — their role membership stays PATIENT until an Admin verifies
+  // them, so there was previously no way to check this at all (`GET
+  // /v1/doctors/:doctorId` 404s for a non-Admin caller while PENDING).
+  static const providerRegistrationStatus =
+      '/v1/provider/registration/status';
 
   // Prescriptions (Phase 6)
   static const prescriptions = '/v1/prescriptions';

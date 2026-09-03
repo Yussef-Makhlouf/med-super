@@ -42,6 +42,14 @@ bool _isPublicAuthRoute(String path) =>
 bool _isProviderRegistrationRoute(String path) =>
     path.startsWith('/provider/registration');
 
+/// The pending-status screen is itself a registration route (so
+/// `_isProviderRegistrationRoute` lets it through), but it must never be
+/// treated as "registration done" the way the other registration routes'
+/// absence is — a submitted-but-still-PENDING doctor belongs on this
+/// screen specifically, not free to roam `/provider/home`.
+bool _isProviderRegistrationPendingRoute(String path) =>
+    path == '/provider/registration/pending';
+
 @riverpod
 GoRouter appRouter(Ref ref) {
   // Trigger redirect re-evaluation when session changes without recreating
@@ -74,18 +82,44 @@ GoRouter appRouter(Ref ref) {
 
       if (session != null) {
         final registrationSubmitted =
-            (kDevSkipProviderRegistrationInMock && AppConfig.instance.isMock) ||
             ref
-                    .read(hiveServiceProvider)
-                    .settingsBox
-                    .get(SettingsKeys.providerRegistrationSubmitted) ==
-                'true';
+                .read(hiveServiceProvider)
+                .settingsBox
+                .get(SettingsKeys.providerRegistrationSubmitted) ==
+            'true';
+        // Dev-mock convenience: a *mock* session whose role is already
+        // provider-side (a mock doctor/clinic-staff login) skips the
+        // registration wizard, same as before. Scoped to `isProvider`
+        // specifically — folding this into the shared `registrationSubmitted`
+        // above would also mark every mock PATIENT session as "registered,"
+        // sending them into the pending-status screen the instant the
+        // `isPatient` block below was added.
+        final skipRegistrationForMockProvider =
+            kDevSkipProviderRegistrationInMock &&
+            AppConfig.instance.isMock &&
+            session.user.isProvider;
 
-        if (session.user.isPatient && path.startsWith('/provider/')) {
+        // Provider-registration routes are the one `/provider/*` sub-tree a
+        // PATIENT session is legitimately allowed on (the whole self-
+        // registration flow, including the pending-status screen, runs
+        // while the applicant is still PATIENT — see the `isPatient` block
+        // below). Excluding them here is required, not just tidy: without
+        // it, a patient landing on `/provider/registration/pending` gets
+        // bounced to `/patient/home` by this check, which the `isPatient`
+        // block's own `registrationSubmitted` check then immediately
+        // bounces right back to `/provider/registration/pending` — GoRouter
+        // re-runs `redirect` after every redirect, so that pair fires
+        // forever and throws "too many redirects."
+        if (session.user.isPatient &&
+            path.startsWith('/provider/') &&
+            !_isProviderRegistrationRoute(path)) {
           return '/patient/home';
         }
+        final providerRegistrationSatisfied =
+            registrationSubmitted || skipRegistrationForMockProvider;
+
         if (session.user.isProvider && path.startsWith('/patient/')) {
-          return registrationSubmitted
+          return providerRegistrationSatisfied
               ? '/provider/home'
               : '/provider/registration/basic-info';
         }
@@ -114,12 +148,12 @@ GoRouter appRouter(Ref ref) {
           }
 
           if (isAuthRoute || isOnboarding || isSetPassword || isRoot) {
-            return registrationSubmitted
+            return providerRegistrationSatisfied
                 ? '/provider/home'
                 : '/provider/registration/basic-info';
           }
 
-          if (!registrationSubmitted && !isRegistrationRoute) {
+          if (!providerRegistrationSatisfied && !isRegistrationRoute) {
             return '/provider/registration/basic-info';
           }
 
@@ -129,6 +163,48 @@ GoRouter appRouter(Ref ref) {
         if (session.user.isPatient) {
           if (!session.passwordComplete) {
             return isSetPassword ? null : '/set-password';
+          }
+
+          // A self-registered doctor stays PATIENT (role membership only
+          // changes on Admin verify — see `DoctorRegistrationPendingScreen`'s
+          // doc comment) — so `session.user.isProvider` is never true for
+          // them, and the `isProvider` branch above never runs for this
+          // case. `registrationSubmitted` is re-synced against the real
+          // backend status exactly once per login (`SessionController
+          // .verifyOtp`/`.loginWithPassword`, not here) rather than on every
+          // redirect — checking the backend on every navigation would mean
+          // every patient, not just doctors, firing a request per screen
+          // change. Without that one-time resync, a still-PENDING doctor
+          // who logged out (which deliberately wipes this flag, to stop one
+          // account's registration state leaking into the next login on the
+          // same device) would never find their way back to this screen —
+          // this check is what sends them here once the flag is restored.
+          if (registrationSubmitted &&
+              !_isProviderRegistrationPendingRoute(path)) {
+            return '/provider/registration/pending';
+          }
+
+          // Separately: someone who just picked "doctor" on the login
+          // screen and verified their OTP for the first time also arrives
+          // here as a plain PATIENT (role selection at OTP-verify time is
+          // out of scope for this phase by backend design — see
+          // `SessionController.verifyOtp`'s doc comment). Route them into
+          // doctor registration instead of patient onboarding — but only
+          // up to the point they actually submit it (the check above takes
+          // over from there) and only if they haven't finished patient
+          // onboarding already (an existing patient switching to "doctor"
+          // mid-session on the login screen, if that's even reachable,
+          // must not be yanked out of their own account's flow).
+          final choseDoctorAtSignup =
+              ref
+                  .read(hiveServiceProvider)
+                  .settingsBox
+                  .get(SettingsKeys.choseDoctorRoleAtSignup) ==
+              'true';
+          if (choseDoctorAtSignup &&
+              !session.onboardingComplete &&
+              !_isProviderRegistrationRoute(path)) {
+            return '/provider/registration/basic-info';
           }
 
           if (isAuthRoute || isSetPassword || isRoot) {

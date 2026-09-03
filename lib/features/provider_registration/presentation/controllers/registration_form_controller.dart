@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
+import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/provider_registration/data/datasources/remote/provider_registration_remote_datasource.dart';
 import 'package:med_super/features/provider_registration/data/repositories/provider_registration_repository_impl.dart';
@@ -10,11 +11,15 @@ import 'package:med_super/features/provider_registration/domain/entities/clinic_
 import 'package:med_super/features/provider_registration/domain/entities/doctor_registration_draft.dart';
 import 'package:med_super/features/provider_registration/domain/entities/uploaded_document.dart';
 import 'package:med_super/features/provider_registration/domain/repositories/provider_registration_repository.dart';
+import 'package:med_super/features/provider_registration/domain/usecases/get_my_doctor_registration_status_usecase.dart';
 import 'package:med_super/features/provider_registration/domain/usecases/submit_registration_usecase.dart';
 
 part 'registration_form_controller.g.dart';
 
-const _draftKey = 'draft';
+/// Exposed (not private) so `SessionController.logout()` can clear the
+/// draft directly — a different person registering as a doctor on the same
+/// device must never see a half-filled draft left by whoever logged out.
+const providerRegistrationDraftKey = 'draft';
 
 @riverpod
 ProviderRegistrationRemoteDatasource providerRegistrationRemoteDatasource(
@@ -33,6 +38,13 @@ SubmitRegistrationUseCase submitRegistrationUseCase(Ref ref) =>
       ref.watch(providerRegistrationRepositoryProvider),
     );
 
+@riverpod
+GetMyDoctorRegistrationStatusUseCase myDoctorRegistrationStatusUseCase(
+  Ref ref,
+) => GetMyDoctorRegistrationStatusUseCase(
+  ref.watch(providerRegistrationRepositoryProvider),
+);
+
 /// Holds the in-progress multi-step draft, auto-saved to Hive on every change
 /// so the flow survives an app restart before final submission.
 @Riverpod(keepAlive: true)
@@ -43,7 +55,7 @@ class RegistrationFormController extends _$RegistrationFormController {
 
   DoctorRegistrationDraft? _loadDraft() {
     final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
-    final raw = box.get(_draftKey);
+    final raw = box.get(providerRegistrationDraftKey);
     if (raw == null) return null;
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -85,7 +97,7 @@ class RegistrationFormController extends _$RegistrationFormController {
     final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
     final d = state;
     await box.put(
-      _draftKey,
+      providerRegistrationDraftKey,
       jsonEncode({
         'full_name': d.fullName,
         'specialty': d.specialty,
@@ -205,32 +217,65 @@ class RegistrationFormController extends _$RegistrationFormController {
     _persist();
   }
 
+  bool _submitting = false;
+
   Future<Result<void>> submit({
     String? specialtyLabel,
     String? cityLabel,
     String? phone,
   }) async {
-    final result = await ref
-        .read(submitRegistrationUseCaseProvider)
-        .call(
-          state,
-          specialtyLabel: specialtyLabel,
-          cityLabel: cityLabel,
-          phone: phone,
-        );
-    if (result.isOk) {
-      await _clearDraft();
-      await ref
-          .read(hiveServiceProvider)
-          .settingsBox
-          .put(SettingsKeys.providerRegistrationSubmitted, 'true');
+    if (_submitting) {
+      return const Result.err(Failure.conflict('Already submitting.'));
     }
-    return result;
+    _submitting = true;
+    try {
+      final result = await ref
+          .read(submitRegistrationUseCaseProvider)
+          .call(
+            state,
+            specialtyLabel: specialtyLabel,
+            cityLabel: cityLabel,
+            phone: phone,
+          );
+      // A `DOCTOR_ALREADY_EXISTS` 409 (e.g. a retried/duplicate submit,
+      // or resubmitting from a stale screen after already registering) is
+      // treated the same as success here: the applicant already has a
+      // PENDING/VERIFIED registration either way, so the outcome the user
+      // needs — land on the pending-status screen — is identical. Without
+      // this, a doctor who is already PENDING would see a generic error
+      // and be stuck on the review screen with no way to reach the status
+      // screen short of a fresh login (which does its own resync).
+      // `reason` here is `ConflictError`'s raw backend message
+      // (`dio_failure_mapper.dart`), matched verbatim against
+      // `create-doctor.use-case.ts`'s exact string — same pattern
+      // `reschedule_screen.dart`'s `_conflictMessage` already uses.
+      final failure = result.failureOrNull;
+      final isDuplicateRegistration =
+          failure is ConflictFailure &&
+          failure.reason == 'This user already has a doctor profile.';
+      if (result.isOk || isDuplicateRegistration) {
+        await _clearDraft();
+        await ref
+            .read(hiveServiceProvider)
+            .settingsBox
+            .put(SettingsKeys.providerRegistrationSubmitted, 'true');
+        // No longer needed once the real submission flag takes over as the
+        // router's signal — see that flag's own doc comment.
+        await ref
+            .read(hiveServiceProvider)
+            .settingsBox
+            .delete(SettingsKeys.choseDoctorRoleAtSignup);
+        return isDuplicateRegistration ? const Result.ok(null) : result;
+      }
+      return result;
+    } finally {
+      _submitting = false;
+    }
   }
 
   Future<void> _clearDraft() async {
     final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
-    await box.delete(_draftKey);
+    await box.delete(providerRegistrationDraftKey);
     state = const DoctorRegistrationDraft();
   }
 }

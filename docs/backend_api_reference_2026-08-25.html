@@ -1108,14 +1108,14 @@
     { n: 5, name: 'Payments', status: 'done', desc: 'Pay‑at‑clinic ledger mechanics (commission split, cancellation refunds) — wired internally into Appointment confirm/cancel above. No gateway, and no controller/HTTP surface of its own yet.', modules: [] },
     {
       n: 6, name: 'Prescriptions', status: 'done',
-      desc: 'Patient‑uploaded prescriptions (URL‑based, not multipart), quality‑check gate, pharmacist review with a controlled‑substance confirmation guard.',
+      desc: 'Patient‑uploaded prescriptions, quality‑check gate, pharmacist review with a controlled‑substance confirmation guard. <strong>Updated 2026‑09‑03 (PR #10, branch <code>feature/imagekit</code>):</strong> upload is now real <code>multipart/form-data</code> against <a href="https://imagekit.io">ImageKit</a> — the old pre‑hosted‑URL‑only contract (<code>DEC-009</code>) is resolved. Image bytes are proxied through this API (server holds the ImageKit private key; no direct‑to‑storage/presigned‑upload endpoint exists) and land in the private ImageKit folder <code>prescriptions/&lt;patientId&gt;</code>. Reads return a freshly HMAC‑signed URL (5‑min TTL, recomputed on every request, never persisted) — never cache a <code>fileUrl</code> past the response it came in.',
       modules: [{
         name: 'prescriptions', prefix: '/v1/prescriptions', endpoints: [
           {
             method: 'POST', path: '/v1/prescriptions/upload', auth: 'PATIENT', status: 201,
-            desc: 'Upload a prescription photo/PDF as pre‑hosted URLs; runs quality‑check + OCR synchronously.',
+            desc: 'Upload a prescription photo/PDF as real multipart file bytes; runs quality‑check + OCR synchronously. <code>multipart/form-data</code>, field name <code>files</code> (backend\'s <code>FilesInterceptor(\'files\', 5, ...)</code>) — jpeg/png/pdf, ≤15MB each, max 5 files. Requires an <code>Idempotency-Key</code> header (retried uploads with the same key are safe no‑ops).',
             request: [
-              { f: 'fileUrls', t: 'string[]', n: '1–5 URLs' },
+              { f: 'files', t: 'binary[]', n: '1–5 files, jpeg/png/pdf, ≤15MB each' },
               { f: 'notes', t: 'string', n: 'optional, max 500 chars' }
             ],
             response: `{
@@ -1125,11 +1125,11 @@
           },
           {
             method: 'GET', path: '/v1/prescriptions/:prescriptionId', auth: 'PATIENT · PHARMACY_STAFF · ADMIN', status: 200,
-            desc: 'Prescription detail — images, items, review history.',
+            desc: 'Prescription detail — images, items, review history. Each image\'s <code>fileUrl</code> is a fresh ImageKit signed URL (5‑min TTL), re‑signed on every call — re‑fetch this endpoint rather than reusing a stored link.',
             request: null,
             response: `{
   <span class="k">prescriptionId</span>, <span class="k">status</span>, <span class="k">source</span>: <span class="t">string</span>,
-  <span class="k">images</span>: { <span class="k">id</span>, <span class="k">fileUrl</span>, <span class="k">qualityCheckStatus</span>: <span class="t">string</span> }[],
+  <span class="k">images</span>: { <span class="k">id</span>, <span class="k">fileUrl</span> <span class="c">// signed, 5‑min TTL</span>, <span class="k">qualityCheckStatus</span>: <span class="t">string</span> }[],
   <span class="k">items</span>: { <span class="k">id</span>: <span class="t">string</span>, <span class="k">drugCode</span>, <span class="k">drugNameFreeText</span>, <span class="k">dose</span>, <span class="k">frequency</span>: <span class="t">string | null</span> }[],
   <span class="k">reviews</span>: { <span class="k">id</span>, <span class="k">decision</span>: <span class="t">string</span>, <span class="k">reasonCode</span>: <span class="t">string | null</span>, <span class="k">reviewedAt</span>: <span class="t">string (ISO)</span> }[]
 }`,
@@ -1367,7 +1367,7 @@
     'GET /v1/appointments': { status: 'none', note: 'The Appointments tab is a static, hardcoded list — no network call at all.' },
     'GET /v1/appointments/:appointmentId': { status: 'none', note: 'No appointment-detail screen exists on the patient side.' },
 
-    'POST /v1/prescriptions/upload': { status: 'ok', note: 'Wired 2026‑08‑29 via <code>PrescriptionUploadController</code>/<code>PrescriptionRemoteDatasource</code> on <code>PharmacyPrescriptionUploadScreen</code>\'s submit CTA. Request/response fields match exactly; the image picker and notes field are capped client‑side at the backend\'s own 5‑image/500‑char limits. One caveat: <code>fileUrls</code> is pre‑hosted‑URL‑only by backend design (object storage is <code>DEC-009</code>, still open/deferred) — no real image bytes are uploaded anywhere, each attached image is sent as a distinct placeholder URL just so the real quality‑check/OCR pipeline runs end‑to‑end. <strong>OPEN DECISION (2026‑09‑01, File 12 Part 46, not ratified):</strong> with no OCR vendor chosen (<code>DEC-005</code>) every upload used to persist zero <code>prescription_items</code>, which made <em>every</em> pharmacy order fail <code>NO_FULFILLABLE_ITEMS</code> — <code>NoOpOcrExtractor</code> now fabricates one placeholder free‑text item per upload purely so the order flow is testable; revert once OCR or a real manual‑entry path exists.' },
+    'POST /v1/prescriptions/upload': { status: 'ok', note: 'Wired 2026‑08‑29 via <code>PrescriptionUploadController</code>/<code>PrescriptionRemoteDatasource</code> on <code>PharmacyPrescriptionUploadScreen</code>\'s submit CTA. <strong>Updated 2026‑09‑03:</strong> the backend added real object storage (ImageKit, PR #10 <code>feature/imagekit</code>) and the DEC‑009 placeholder‑URL workaround was removed on this branch — <code>PrescriptionRemoteDatasource.upload</code> now sends a genuine <code>multipart/form-data</code> request (<code>FormData</code>/<code>MultipartFile.fromBytes</code>, field name <code>files</code>) carrying each picked image\'s real bytes, matching <code>PrescriptionsController.upload</code> exactly; the Idempotency‑Key header is attached automatically by the existing <code>IdempotencyKeyInterceptor</code> (already listed <code>/prescriptions</code> as an idempotent path). The image picker and notes field stay capped client‑side at the backend\'s own 5‑image/500‑char limits. <strong>Still open (2026‑09‑01, File 12 Part 46, not ratified):</strong> with no OCR vendor chosen (<code>DEC-005</code>), every upload would otherwise persist zero <code>prescription_items</code>, which would make <em>every</em> pharmacy order fail <code>NO_FULFILLABLE_ITEMS</code> — <code>NoOpOcrExtractor</code> still fabricates one placeholder free‑text item per upload purely so the order flow stays testable; revert once OCR or a real manual‑entry path exists. This is unrelated to and unaffected by the ImageKit fix above — the file itself now uploads for real, only the text‑extraction step is still a stand‑in.' },
     'GET /v1/prescriptions/:prescriptionId': { status: 'none', note: 'No screen fetches a prescription by id from the backend.' },
     'GET /v1/prescriptions': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review queue lives in a separate web app.' },
     'POST /v1/prescriptions/:prescriptionId/review': { status: 'none', note: 'No pharmacy-staff surface exists in this app — that review action lives in a separate web app.' },

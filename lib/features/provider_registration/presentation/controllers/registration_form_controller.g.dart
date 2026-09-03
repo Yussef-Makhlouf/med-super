@@ -159,6 +159,57 @@ final class SubmitRegistrationUseCaseProvider
 String _$submitRegistrationUseCaseHash() =>
     r'c2db0c021efecd88b51c6ba10aa20e0ee5d32347';
 
+@ProviderFor(myDoctorRegistrationStatusUseCase)
+final myDoctorRegistrationStatusUseCaseProvider =
+    MyDoctorRegistrationStatusUseCaseProvider._();
+
+final class MyDoctorRegistrationStatusUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetMyDoctorRegistrationStatusUseCase,
+          GetMyDoctorRegistrationStatusUseCase,
+          GetMyDoctorRegistrationStatusUseCase
+        >
+    with $Provider<GetMyDoctorRegistrationStatusUseCase> {
+  MyDoctorRegistrationStatusUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'myDoctorRegistrationStatusUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$myDoctorRegistrationStatusUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetMyDoctorRegistrationStatusUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetMyDoctorRegistrationStatusUseCase create(Ref ref) {
+    return myDoctorRegistrationStatusUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetMyDoctorRegistrationStatusUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride:
+          $SyncValueProvider<GetMyDoctorRegistrationStatusUseCase>(value),
+    );
+  }
+}
+
+String _$myDoctorRegistrationStatusUseCaseHash() =>
+    r'b500feb20218f72a44ab458023461aee192c397f';
+
 /// Holds the in-progress multi-step draft, auto-saved to Hive on every change
 /// so the flow survives an app restart before final submission.
 

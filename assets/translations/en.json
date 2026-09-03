@@ -277,8 +277,6 @@
     "complete_profile": "Complete profile",
     "logout": "Sign out",
     "edit_title": "Edit profile",
-    "change_photo": "Tap to change photo",
-    "photo_soon": "Photo upload coming soon",
     "full_name": "Full name",
     "full_name_hint": "Your full name",
     "full_name_required": "Full name is required",
@@ -542,6 +540,7 @@
       "clinic_address_label": "Detailed address",
       "clinic_address_hint": "Enter clinic address",
       "city_label": "City",
+      "city_hint": "e.g. Cairo",
       "region_label": "Governorate *",
       "map_label": "Location on map",
       "fee_title": "Consultation fee",
@@ -576,7 +575,17 @@
       "draft_saved": "Draft saved",
       "success_title": "Application submitted successfully",
       "success_message": "Your application will be reviewed within 24-48 business hours.",
-      "back_home_cta": "Back to home"
+      "back_home_cta": "Back to home",
+      "pending_title": "Application under review",
+      "pending_message": "Your application will be reviewed within 24-48 business hours. Tap the refresh icon above to check for an update.",
+      "verified_title": "Your application was approved",
+      "verified_message": "You can now access your doctor dashboard.",
+      "sign_in_again_cta": "Login Now",
+      "suspended_title": "Application not approved",
+      "suspended_message": "Your application was not approved. Contact support for details.",
+      "status_check_error": "Couldn't check your application status. Tap the refresh icon above to try again.",
+      "refresh_tooltip": "Check for an update",
+      "logout_tooltip": "Sign out"
     }
   },
   "wallet": {

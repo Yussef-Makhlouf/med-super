@@ -72,6 +72,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Center(
+                  child: CircleAvatar(
+                    radius: 32,
+                    backgroundColor: Color(0xFFDCE8FF),
+                    child: Icon(Icons.person, color: brandBlue, size: 32),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Text(
                   'onboarding.title'.tr(),
                   style: textTheme.headlineSmall?.copyWith(
@@ -86,8 +94,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     color: const Color(0xFF8A94A6),
                   ),
                 ),
-                const SizedBox(height: 20),
-                const _OnboardingAvatar(),
                 const SizedBox(height: 20),
                 if (session != null)
                   Text(
@@ -141,7 +147,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   textInputAction: TextInputAction.done,
                   validator: (value) {
                     final trimmed = value?.trim() ?? '';
-                    if (trimmed.isEmpty) return 'onboarding.email_required'.tr();
+                    if (trimmed.isEmpty)
+                      return 'onboarding.email_required'.tr();
                     if (!_emailPattern.hasMatch(trimmed)) {
                       return 'onboarding.email_invalid'.tr();
                     }
@@ -186,83 +193,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         : Text('onboarding.continue'.tr()),
                   ),
                 ),
-            ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Photo upload is not real yet — same `DEC-009` object-storage gap as
-/// prescription/doctor-profile photos elsewhere in this app. Tapping just
-/// surfaces the same "coming soon" message `EditProfileScreen`'s own avatar
-/// already uses, rather than pretending to upload anything.
-class _OnboardingAvatar extends StatelessWidget {
-  const _OnboardingAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          SizedBox(
-            width: 88,
-            height: 88,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 88,
-                  height: 88,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFDCE8FF),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    size: 48,
-                    color: brandBlue,
-                  ),
-                ),
-                PositionedDirectional(
-                  end: 0,
-                  bottom: 0,
-                  child: Material(
-                    color: brandBlue,
-                    shape: const CircleBorder(),
-                    elevation: 2,
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('profile.photo_soon'.tr())),
-                        );
-                      },
-                      child: const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: Icon(
-                          Icons.edit_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'profile.change_photo'.tr(),
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF8A94A6)),
-          ),
-        ],
+        ),
       ),
     );
   }

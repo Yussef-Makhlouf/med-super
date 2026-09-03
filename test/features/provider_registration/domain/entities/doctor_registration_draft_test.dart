@@ -88,18 +88,23 @@ void main() {
   });
 
   group('DoctorRegistrationDraft.verificationComplete', () {
-    test('true when both medicalLicense and nationalId are present', () {
-      final draft = DoctorRegistrationDraft(
-        documents: [
-          _doc(DocumentType.medicalLicense),
-          _doc(DocumentType.nationalId),
-        ],
-      );
-      expect(draft.verificationComplete, isTrue);
-    });
+    test(
+      'true when medicalLicense, nationalId, and licenseNumber are all present',
+      () {
+        final draft = DoctorRegistrationDraft(
+          licenseNumber: 'LIC-123',
+          documents: [
+            _doc(DocumentType.medicalLicense),
+            _doc(DocumentType.nationalId),
+          ],
+        );
+        expect(draft.verificationComplete, isTrue);
+      },
+    );
 
     test('true even with extra unrelated documents present', () {
       final draft = DoctorRegistrationDraft(
+        licenseNumber: 'LIC-123',
         documents: [
           _doc(DocumentType.medicalLicense),
           _doc(DocumentType.nationalId),
@@ -108,6 +113,16 @@ void main() {
         ],
       );
       expect(draft.verificationComplete, isTrue);
+    });
+
+    test('false when licenseNumber is empty even with both documents', () {
+      final draft = DoctorRegistrationDraft(
+        documents: [
+          _doc(DocumentType.medicalLicense),
+          _doc(DocumentType.nationalId),
+        ],
+      );
+      expect(draft.verificationComplete, isFalse);
     });
 
     test('false when no documents are present', () {
@@ -146,6 +161,7 @@ void main() {
       clinicName: 'Best Clinic',
       clinicAddress: '123 Street',
       city: 'cairo',
+      regionCode: 'CAI',
       consultationFee: 200,
       workingDays: [enabledDay],
     );
@@ -176,6 +192,18 @@ void main() {
       const draft = DoctorRegistrationDraft(
         clinicName: 'Best Clinic',
         clinicAddress: '123 Street',
+        regionCode: 'CAI',
+        consultationFee: 200,
+        workingDays: [ClinicWorkingDay(day: Weekday.monday, isEnabled: true)],
+      );
+      expect(draft.clinicScheduleComplete, isFalse);
+    });
+
+    test('false when regionCode is null', () {
+      const draft = DoctorRegistrationDraft(
+        clinicName: 'Best Clinic',
+        clinicAddress: '123 Street',
+        city: 'cairo',
         consultationFee: 200,
         workingDays: [ClinicWorkingDay(day: Weekday.monday, isEnabled: true)],
       );
