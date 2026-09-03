@@ -12,8 +12,9 @@ class NetworkInfo {
     return _isOnline(result);
   }
 
-  Stream<bool> get onConnectivityChanged =>
-      _connectivity.onConnectivityChanged.map((results) => _isOnline(results));
+  Stream<bool> get onConnectivityChanged => _connectivity
+      .onConnectivityChanged
+      .map((results) => _isOnline(results));
 
   bool _isOnline(List<ConnectivityResult> results) =>
       results.any((r) => r != ConnectivityResult.none);

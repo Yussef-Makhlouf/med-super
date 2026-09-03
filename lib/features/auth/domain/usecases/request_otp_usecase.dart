@@ -11,5 +11,6 @@ class RequestOtpUseCase {
   Future<Result<OtpRequestResult>> call({
     required String phone,
     required UserRole role,
-  }) => _repository.requestOtp(phone: phone, role: role);
+  }) =>
+      _repository.requestOtp(phone: phone, role: role);
 }

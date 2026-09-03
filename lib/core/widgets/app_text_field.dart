@@ -53,7 +53,6 @@ class AppTextField extends StatelessWidget {
       inputFormatters: inputFormatters,
       readOnly: readOnly,
       focusNode: focusNode,
-      textDirection: TextDirection.rtl,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -61,10 +60,6 @@ class AppTextField extends StatelessWidget {
         suffixIcon: suffix,
         prefixIcon: prefix,
         counterText: '',
-        // Prevents the label from floating up as garbled characters on web
-        // RTL builds — keeps it always inline until focused/filled.
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        alignLabelWithHint: true,
       ),
     );
   }

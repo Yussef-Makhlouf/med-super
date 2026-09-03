@@ -5,7 +5,10 @@ import 'package:med_super/core/theme/color_schemes.dart';
 
 /// Bottom-tab shell for the patient flavor (Figma: 5 tabs).
 class PatientShellScreen extends StatelessWidget {
-  const PatientShellScreen({required this.navigationShell, super.key});
+  const PatientShellScreen({
+    required this.navigationShell,
+    super.key,
+  });
 
   final StatefulNavigationShell navigationShell;
 
@@ -47,14 +50,7 @@ class PatientShellScreen extends StatelessWidget {
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) => navigationShell.goBranch(
           index,
-          // Home (index 0) always resets to its root screen, never
-          // restoring whatever leaf it was left on — the branch's nested
-          // routes (`appointmentRoutes`/`searchRoutes`, e.g. booking
-          // confirm/success/doctor-detail) are one-shot flows, not states
-          // the Home tab should "remember". Every other tab keeps the
-          // normal go_router behavior (only reset on a same-tab re-tap).
-          initialLocation:
-              index == 0 || index == navigationShell.currentIndex,
+          initialLocation: index == navigationShell.currentIndex,
         ),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: _tabs

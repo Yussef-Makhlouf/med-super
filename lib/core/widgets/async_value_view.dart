@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
@@ -26,42 +25,46 @@ class AsyncValueView<T> extends StatelessWidget {
     return value.when(
       data: data,
       loading: () =>
-          loadingWidget ?? const Center(child: CircularProgressIndicator()),
+          loadingWidget ??
+          const Center(child: CircularProgressIndicator()),
       error: (error, _) => _buildError(context, error),
     );
   }
 
   Widget _buildError(BuildContext context, Object error) {
     if (error is! Failure) {
-      return ErrorBanner(message: error.toString(), onRetry: onRetry);
+      return ErrorBanner(
+        message: error.toString(),
+        onRetry: onRetry,
+      );
     }
 
     return switch (error) {
       NetworkFailure() => ErrorBanner(
-        message: 'errors.network'.tr(),
-        onRetry: onRetry,
-      ),
+          message: 'No internet connection. Check your network and try again.',
+          onRetry: onRetry,
+        ),
       ServerFailure(:final message) => ErrorBanner(
-        message: message ?? 'errors.server'.tr(),
-        onRetry: onRetry,
-      ),
-      AuthFailure() => EmptyState(
-        title: 'errors.session_expired'.tr(),
-        subtitle: 'errors.session_expired_subtitle'.tr(),
-        icon: Icons.lock_outline,
-      ),
+          message: message ?? 'Something went wrong. Please try again.',
+          onRetry: onRetry,
+        ),
+      AuthFailure() => const EmptyState(
+          title: 'Session expired',
+          subtitle: 'Please sign in again.',
+          icon: Icons.lock_outline,
+        ),
       ValidationFailure(:final fieldErrors) => ErrorBanner(
-        message: fieldErrors.values.first,
-      ),
+          message: fieldErrors.values.first,
+        ),
       ConflictFailure(:final reason) => _ConflictDialog(reason: reason),
       CacheFailure() => ErrorBanner(
-        message: 'errors.cache_load_failed'.tr(),
-        onRetry: onRetry,
-      ),
+          message: 'Could not load cached data.',
+          onRetry: onRetry,
+        ),
       UnknownFailure() => ErrorBanner(
-        message: 'errors.unexpected'.tr(),
-        onRetry: onRetry,
-      ),
+          message: 'An unexpected error occurred.',
+          onRetry: onRetry,
+        ),
     };
   }
 }

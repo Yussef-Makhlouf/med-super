@@ -40,7 +40,9 @@ Future<void> bootstrap(Widget Function() appBuilder) async {
       path: 'assets/translations',
       fallbackLocale: const Locale('ar'),
       startLocale: const Locale('ar'),
-      child: ProviderScope(child: appBuilder()),
+      child: ProviderScope(
+        child: appBuilder(),
+      ),
     ),
   );
 }
