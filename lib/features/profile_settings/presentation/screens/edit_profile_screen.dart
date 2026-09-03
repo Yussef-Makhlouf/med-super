@@ -29,21 +29,42 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _saving = false;
   bool _prefilled = false;
+  bool _dirty = false;
+  String _initialName = '';
+  String _initialEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_recomputeDirty);
+    _emailController.addListener(_recomputeDirty);
+  }
 
   @override
   void dispose() {
+    _nameController.removeListener(_recomputeDirty);
+    _emailController.removeListener(_recomputeDirty);
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
+  void _recomputeDirty() {
+    final dirty =
+        _nameController.text != _initialName ||
+        _emailController.text != _initialEmail;
+    if (dirty != _dirty) setState(() => _dirty = dirty);
+  }
+
   void _prefillFromSession(Session? session) {
     if (_prefilled || session == null) return;
     final user = session.user;
-    _nameController.text = user.displayName ?? '';
+    _initialName = user.displayName ?? '';
+    _initialEmail = user.email ?? '';
+    _nameController.text = _initialName;
     _phoneController.text = user.phone;
-    _emailController.text = user.email ?? '';
+    _emailController.text = _initialEmail;
     _prefilled = true;
   }
 
@@ -64,6 +85,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       switch (result) {
         case Ok():
+          _initialName = _nameController.text;
+          _initialEmail = _emailController.text;
+          if (mounted) setState(() => _dirty = false);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('profile.saved'.tr())));
@@ -205,7 +229,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 height: 56,
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saving ? null : _onSave,
+                  onPressed: (_saving || !_dirty) ? null : _onSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,

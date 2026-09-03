@@ -17,13 +17,17 @@ class DoctorAffiliationDto {
   final String currency;
   final String ianaTimezone;
 
-  factory DoctorAffiliationDto.fromJson(Map<String, dynamic> json) => DoctorAffiliationDto(
-    clinicBranchId: json['clinicBranchId'] as String,
-    clinicName: json['clinicName'] as String,
-    consultationFee: '${json['consultationFee']}',
-    currency: json['currency'] as String,
-    ianaTimezone: json['ianaTimezone'] as String,
-  );
+  /// Matches both the real backend's `DoctorAffiliationSummary`
+  /// (`get-doctor.use-case.ts`) and the mock's shape — both are already
+  /// flat camelCase with the same field names.
+  factory DoctorAffiliationDto.fromJson(Map<String, dynamic> json) =>
+      DoctorAffiliationDto(
+        clinicBranchId: json['clinicBranchId'] as String? ?? '',
+        clinicName: json['clinicName'] as String? ?? '',
+        consultationFee: '${json['consultationFee'] ?? ''}',
+        currency: json['currency'] as String? ?? 'EGP',
+        ianaTimezone: json['ianaTimezone'] as String? ?? 'Africa/Cairo',
+      );
 
   DoctorAffiliation toEntity() => DoctorAffiliation(
     clinicBranchId: clinicBranchId,
@@ -43,20 +47,18 @@ class DoctorProfileDto {
     required this.rating,
     required this.reviewCount,
     required this.clinicName,
-    required this.languages,
     required this.bio,
     required this.qualifications,
-    required this.fellowships,
     required this.consultationFee,
     required this.currency,
     required this.isVerified,
-    required this.isOnline,
     required this.availableDays,
     required this.affiliations,
     this.photoUrl,
     this.specialtyKey,
     this.clinicBranchId,
     this.ianaTimezone,
+    this.affiliationId,
   });
 
   final String id;
@@ -67,52 +69,56 @@ class DoctorProfileDto {
   final double rating;
   final int reviewCount;
   final String clinicName;
-  final List<String> languages;
   final String bio;
   final List<String> qualifications;
-  final List<String> fellowships;
   final int consultationFee;
   final String currency;
   final bool isVerified;
-  final bool isOnline;
   final String? photoUrl;
   final List<AvailableDay> availableDays;
   final List<DoctorAffiliationDto> affiliations;
   final String? clinicBranchId;
   final String? ianaTimezone;
+  final String? affiliationId;
 
-  /// The real backend (`GetDoctorUseCase`) returns a flat camelCase shape.
-  /// `bio`/`experienceYears` are real since ADR-005 Part 34.2 added
-  /// `Doctor.bio`/`experience_years`; `degree` (also added then) has no
-  /// dedicated UI field here, so it's folded into `qualifications` as one
-  /// entry. `qualifications` (beyond `degree`)/`fellowships`/`languages`/
-  /// `isOnline` still have no backend column at all (File 12 Part 32) and
-  /// default to empty/false rather than being invented. `affiliations` is
-  /// the real backend's full per-branch list (used to be dropped entirely).
-  /// Real-backend keys are tried first, falling back to the mock's
-  /// snake_case shape.
+  /// Dispatches on shape: the real `GET /v1/doctors/{id}` response
+  /// (`GetDoctorUseCase`, `provider-directory` module) is a **flat**
+  /// camelCase object (`{id, name, specialty, experienceYears,
+  /// affiliationId, clinicBranchId, affiliations: [...], ...}`) — not
+  /// nested under a `doctor` key as an earlier reconciliation pass wrongly
+  /// assumed (that shape never matched any real backend response; every
+  /// real call silently fell through to `_fromMockJson` instead). The mock
+  /// (`_mockDoctorDetail` in `mock_responses.dart`) already used this same
+  /// flat shape, so `fromJson` no longer needs to dispatch on structure at
+  /// all — one parser handles both, real and mock, keyed only by which
+  /// optional fields happen to be present.
+  ///
+  /// `languages`/`fellowships`/`isOnline` were removed entirely (2026-09-03)
+  /// — no backend column backs any of them (`GetDoctorUseCase`'s own doc
+  /// comment), so they always rendered empty/false and the UI that showed
+  /// them was deleted rather than kept permanently dead. `bio`/
+  /// `experienceYears` are real (ADR-005 Part 34.2); `degree` has no
+  /// dedicated UI field, so it's folded into `qualifications` as one entry.
   factory DoctorProfileDto.fromJson(Map<String, dynamic> json) {
     final days = (json['available_days'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(_dayFromJson)
         .toList();
 
+    final affiliations = (json['affiliations'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(DoctorAffiliationDto.fromJson)
+        .toList();
+
     return DoctorProfileDto(
       id: json['id'] as String,
       name: json['name'] as String,
       specialty: json['specialty'] as String,
-      specialtyKey:
-          (json['specialtyKey'] ?? json['specialty_key']) as String?,
-      experienceYears:
-          (json['experienceYears'] ?? json['experience_years']) as int? ?? 0,
+      specialtyKey: json['specialtyKey'] as String?,
+      experienceYears: json['experienceYears'] as int? ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
-      reviewCount:
-          (json['reviewCount'] ?? json['review_count']) as int? ?? 0,
-      clinicName:
-          (json['clinicName'] ?? json['clinic_name']) as String? ?? '',
-      languages: (json['languages'] as List<dynamic>? ?? const [])
-          .map((e) => '$e')
-          .toList(),
+      reviewCount: json['reviewCount'] as int? ?? 0,
+      clinicName: json['clinicName'] as String? ?? '',
       bio: json['bio'] as String? ?? '',
       qualifications: [
         if (json['degree'] != null) '${json['degree']}',
@@ -120,27 +126,16 @@ class DoctorProfileDto {
           (e) => '$e',
         ),
       ],
-      fellowships: (json['fellowships'] as List<dynamic>? ?? const [])
-          .map((e) => '$e')
-          .toList(),
       consultationFee:
-          double.tryParse('${json['consultationFee'] ?? ''}')?.round() ??
-          json['consultation_fee'] as int? ??
-          0,
+          double.tryParse('${json['consultationFee'] ?? ''}')?.round() ?? 0,
       currency: json['currency'] as String? ?? 'EGP',
-      isVerified:
-          (json['isVerified'] ?? json['is_verified']) as bool? ?? false,
-      isOnline: json['is_online'] as bool? ?? false,
-      photoUrl: (json['photoUrl'] ?? json['photo_url']) as String?,
+      isVerified: json['isVerified'] as bool? ?? false,
+      photoUrl: json['photoUrl'] as String?,
       availableDays: days,
-      affiliations: (json['affiliations'] as List<dynamic>? ?? const [])
-          .whereType<Map<String, dynamic>>()
-          .map(DoctorAffiliationDto.fromJson)
-          .toList(),
-      clinicBranchId:
-          (json['clinicBranchId'] ?? json['clinic_branch_id']) as String?,
-      ianaTimezone:
-          (json['ianaTimezone'] ?? json['iana_timezone']) as String?,
+      affiliations: affiliations,
+      clinicBranchId: json['clinicBranchId'] as String?,
+      ianaTimezone: json['ianaTimezone'] as String?,
+      affiliationId: json['affiliationId'] as String?,
     );
   }
 
@@ -169,18 +164,16 @@ class DoctorProfileDto {
     rating: rating,
     reviewCount: reviewCount,
     clinicName: clinicName,
-    languages: languages,
     bio: bio,
     qualifications: qualifications,
-    fellowships: fellowships,
     consultationFee: consultationFee,
     currency: currency,
     isVerified: isVerified,
-    isOnline: isOnline,
     photoUrl: photoUrl,
     availableDays: availableDays,
     affiliations: affiliations.map((a) => a.toEntity()).toList(),
     clinicBranchId: clinicBranchId,
     ianaTimezone: ianaTimezone,
+    affiliationId: affiliationId,
   );
 }

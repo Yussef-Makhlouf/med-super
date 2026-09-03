@@ -3,7 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_summary.dart';
 
-class DoctorResultCard extends StatelessWidget {
+const _ink = Color(0xFF1A2B4A);
+const _muted = Color(0xFF8A94A6);
+
+// Small semantic accent set — one color per meta-row kind instead of a
+// single flat gray, so the card reads as a modern dashboard row rather
+// than plain muted text. Kept local (not AppColors) per this file's own
+// established palette, matching every other Sprint 0/1/2 screen.
+const _teal = Color(0xFF0F766E);
+const _green = Color(0xFF16A34A);
+
+class DoctorResultCard extends StatefulWidget {
   const DoctorResultCard({
     required this.doctor,
     required this.onBook,
@@ -15,16 +25,36 @@ class DoctorResultCard extends StatelessWidget {
   final VoidCallback onBook;
   final VoidCallback onTap;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
+  @override
+  State<DoctorResultCard> createState() => _DoctorResultCardState();
+}
 
-  // Small semantic accent set — one color per meta-row kind instead of a
-  // single flat gray, so the card reads as a modern dashboard row rather
-  // than plain muted text. Kept local (not AppColors) per this file's own
-  // established palette, matching every other Sprint 0/1/2 screen.
-  static const _amber = Color(0xFFF59E0B);
-  static const _teal = Color(0xFF0F766E);
-  static const _green = Color(0xFF16A34A);
+class _DoctorResultCardState extends State<DoctorResultCard> {
+  // Both `onTap` (the card's own InkWell) and `onBook` (the nested "Book
+  // Now" button) call the same navigation in every current caller — a
+  // FilledButton nested inside an InkWell normally absorbs its own taps,
+  // but on Flutter web a mouse click can occasionally reach both handlers
+  // in the same gesture-arena pass, firing the identical `context.push`
+  // twice. go_router then ends up with two pages computing the same key in
+  // its stack at once, tripping the framework's
+  // "!keyReservation.contains(key)" duplicate-page assertion on the next
+  // frame. This flag collapses both handlers into a single fire per tap.
+  bool _handled = false;
+
+  void _guardedTap(VoidCallback action) {
+    if (_handled) return;
+    setState(() => _handled = true);
+    action();
+    // Reset on the next frame rather than staying permanently latched —
+    // this widget doesn't unmount on navigation away/back (it's reused in
+    // a scrolling list), so a one-shot flag would wrongly disable taps
+    // forever after the first one.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _handled = false);
+    });
+  }
+
+  DoctorSummary get doctor => widget.doctor;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +67,7 @@ class DoctorResultCard extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        onTap: onTap,
+        onTap: () => _guardedTap(widget.onTap),
         borderRadius: BorderRadius.circular(16),
         hoverColor: Colors.transparent,
         splashColor: Colors.transparent,
@@ -57,26 +87,19 @@ class DoctorResultCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                doctor.name,
-                                style: textTheme.titleMedium?.copyWith(
-                                  color: brandBlue,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            if (doctor.isVerified) ...[
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified,
-                                size: 18,
-                                color: brandBlue,
-                              ),
-                            ],
-                          ],
+                        // `doctor.isVerified` is never true here — the real
+                        // `GET /v1/doctors/search` response
+                        // (`SearchDoctorItem`) has no verification field at
+                        // all, so this always defaulted to `false`. Removed
+                        // rather than kept as permanently-dead UI; doctor
+                        // detail (`GET /v1/doctors/{id}`) does carry a real
+                        // `status` and shows verification there instead.
+                        Text(
+                          doctor.name,
+                          style: textTheme.titleMedium?.copyWith(
+                            color: brandBlue,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -86,43 +109,33 @@ class DoctorResultCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.work_outline,
-                              size: 14,
-                              color: _muted,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'search.experience_years'.tr(
-                                args: ['${doctor.experienceYears}'],
-                              ),
-                              style: textTheme.bodySmall?.copyWith(
-                                color: _muted,
-                              ),
-                            ),
-                          ],
-                        ),
+                        // Experience-years row removed — `SearchDoctorItem`
+                        // (the real `GET /v1/doctors/search` shape) has no
+                        // `experience_years` field, so this always rendered
+                        // "0 سنوات خبرة" against a live backend. The doctor
+                        // detail screen shows the real value where it
+                        // exists (`Doctor.experience_years`, ADR-005 Part
+                        // 34.2).
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              _MetaRow(
-                icon: Icons.star,
-                iconColor: _amber,
-                text:
-                    '${doctor.rating.toStringAsFixed(1)} (${doctor.reviewCount})',
-              ),
-              const SizedBox(height: 8),
+              // Rating/review-count row removed: `rating_avg`/
+              // `rating_count` are real columns but no reviews feature
+              // exists to ever write a non-zero value to them (the
+              // `reviews` module is POSTPONEd) — every doctor shows
+              // "0.0 (0)" forever, not a meaningful signal.
               _MetaRow(
                 icon: Icons.place_outlined,
                 iconColor: _teal,
-                text:
-                    '${doctor.locationLabel} (${doctor.distanceKm.toStringAsFixed(1)} كم)',
+                // `distanceKm` is null when the search ran without the
+                // device's location (denied/unavailable) — show just the
+                // clinic name rather than a fabricated "0.0 km".
+                text: doctor.distanceKm == null
+                    ? doctor.locationLabel
+                    : '${doctor.locationLabel} (${doctor.distanceKm!.toStringAsFixed(1)} كم)',
               ),
               const SizedBox(height: 8),
               _MetaRow(
@@ -134,7 +147,7 @@ class DoctorResultCard extends StatelessWidget {
               SizedBox(
                 height: 48,
                 child: FilledButton(
-                  onPressed: onBook,
+                  onPressed: () => _guardedTap(widget.onBook),
                   style: FilledButton.styleFrom(
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
@@ -160,7 +173,7 @@ class _MetaRow extends StatelessWidget {
   const _MetaRow({
     required this.icon,
     required this.text,
-    this.iconColor = DoctorResultCard._muted,
+    this.iconColor = _muted,
   });
 
   final IconData icon;
@@ -186,7 +199,7 @@ class _MetaRow extends StatelessWidget {
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: DoctorResultCard._ink.withValues(alpha: 0.8),
+              color: _ink.withValues(alpha: 0.8),
               fontWeight: FontWeight.w600,
             ),
           ),

@@ -69,7 +69,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
   }
 
   void _openDoctor(String doctorId) {
-    context.push('/patient/doctors/$doctorId');
+    context.push('/patient/home/doctors/$doctorId');
   }
 
   String get _title {
@@ -173,15 +173,33 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     icon: Icons.search_off,
                   );
                 }
+                // 1 header row + N doctors + (1 load-more row only if the
+                // backend actually said there's another page).
+                final itemCount = data.doctors.length + 1 + (data.hasMore ? 1 : 0);
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  itemCount: data.doctors.length + 1,
+                  itemCount: itemCount,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return Text(
                         'search.results_count'.tr(args: ['${data.totalCount}']),
                         style: textTheme.bodyMedium?.copyWith(color: _muted),
+                      );
+                    }
+                    if (index == itemCount - 1 && data.hasMore) {
+                      return Center(
+                        child: data.isLoadingMore
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                                child: CircularProgressIndicator(),
+                              )
+                            : TextButton(
+                                onPressed: () => ref
+                                    .read(doctorSearchResultsProvider.notifier)
+                                    .loadMore(),
+                                child: Text('search.load_more'.tr()),
+                              ),
                       );
                     }
                     final doctor = data.doctors[index - 1];

@@ -22,12 +22,13 @@ Architecture approval does not mean the data layer is production-ready.
 Every endpoint this feature calls (`/v1/provider/appointments`, `/patients`,
 `/notifications`, `/clinic-settings`, `/schedule`, `/change-password`,
 `/avatar`) is **mock-only and frontend-invented** — none exist on the real
-backend. Backend Phase 4 (Appointments) has not started; there is no
-backend module for a "provider dashboard" at all yet (`09_DASHBOARDS.md`:
-dashboards are clients over domain modules, not a module of their own).
-Treat every one of these as subject to change once Phase 4 — and whatever
-backend work a real provider-dashboard data layer needs — actually exists.
-Do not present any of this as backend-complete.
+backend, even though the *patient-facing* Phase 4 (Appointments) module
+itself is now complete (see `lib/features/appointments/`); there is still
+no backend module for a "provider dashboard" at all
+(`09_DASHBOARDS.md`: dashboards are clients over domain modules, not a
+module of their own). Treat every one of these as subject to change once
+whatever backend work a real provider-dashboard data layer needs actually
+exists. Do not present any of this as backend-complete.
 
 **Exception: `getDoctorAccount`/`updateDoctorAccount` (`ProviderProfileScreen`/
 `ProviderEditProfileScreen`) now call the real `GET`/`PATCH /v1/doctors/me`**

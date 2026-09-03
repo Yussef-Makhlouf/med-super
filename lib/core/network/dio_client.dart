@@ -58,6 +58,7 @@ Dio buildDioClient({required SecureStorageService storage}) {
     // '/v1/doctors/...' path by prefix, which would otherwise swallow
     // '/v1/doctors/{id}/slots' too (see registerAvailabilityMocks' docstring).
     registerAvailabilityMocks(mock);
+    registerAppointmentMocks(mock);
     registerDoctorMeMocks(mock);
     registerSearchMocks(mock);
     registerClinicBranchMocks(mock);

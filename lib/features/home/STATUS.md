@@ -11,8 +11,9 @@ screen's specialties row and featured-doctors row, which are real
   widget as the search screen, so it renders identically in mock and real
   backend modes.
 
-App shell and tab navigation otherwise. `appointments`/`orders`/`notifications`
-screens here are intentionally static placeholders (`*_placeholder_screen.dart`)
-— Phase 4 (Appointments), Payments, and Notifications don't exist on the
-backend yet. Do not wire these to real or mock network calls until the
-owning feature (not `home`) is built against a real backend phase.
+App shell and tab navigation otherwise. The `appointments` screen here is now
+wired to the real Phase 4 flow (see `lib/features/appointments/`, not this
+folder); `orders`/`notifications` screens remain intentionally static
+placeholders (`*_placeholder_screen.dart`) — Payments and Notifications don't
+exist on the backend yet. Do not wire these to real or mock network calls
+until the owning feature (not `home`) is built against a real backend phase.

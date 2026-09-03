@@ -58,7 +58,7 @@ class PatientHomeScreen extends ConsumerWidget {
                     _SectionHeader(
                       title: 'home.specialties'.tr(),
                       actionLabel: 'common.view_all'.tr(),
-                      onAction: () => context.push('/patient/search'),
+                      onAction: () => context.push('/patient/home/search'),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -147,7 +147,7 @@ class _HomeSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       readOnly: true,
-      onTap: () => context.push('/patient/search'),
+      onTap: () => context.push('/patient/home/search'),
       decoration: InputDecoration(
         hintText: 'home.search_hint'.tr(),
         hintStyle: const TextStyle(color: PatientHomeScreen._muted),
@@ -497,7 +497,7 @@ class _SpecialtyItem extends StatelessWidget {
       width: 78,
       child: InkWell(
         onTap: () => context.push(
-          '/patient/search'
+          '/patient/home/search'
           '?specialty=${Uri.encodeComponent(specialty.code)}'
           '&title=${Uri.encodeComponent(name)}',
         ),
@@ -542,7 +542,7 @@ class _FeaturedDoctorsList extends ConsumerWidget {
   const _FeaturedDoctorsList();
 
   void _openDoctor(BuildContext context, String doctorId) =>
-      context.push('/patient/doctors/$doctorId');
+      context.push('/patient/home/doctors/$doctorId');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

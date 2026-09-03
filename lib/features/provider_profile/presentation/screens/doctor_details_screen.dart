@@ -4,10 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_profile_providers.dart';
+
+/// `(id, displayLabel)` — the display label travels with the id selection so
+/// the booking summary (`BookingRequest`) can show it without re-resolving
+/// against whichever slot list (mock or real) happened to render it.
+typedef _SlotSelection = void Function(String id, String label);
 
 const _ink = Color(0xFF1A2B4A);
 const _muted = Color(0xFF8A94A6);
@@ -27,8 +33,71 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
   static const _pageBg = Color(0xFFF3F6FB);
 
   String? _selectedDayId;
+  String? _selectedDayLabel;
   String? _selectedSlotId;
+  String? _selectedTimeLabel;
   bool _favorited = false;
+  bool _navigatingToConfirm = false;
+
+  void _book(DoctorProfile profile) {
+    // Guards against a double-tap/double-click on "Book Now" firing
+    // `context.push` twice for the identical route before the first
+    // navigation completes — go_router then ends up with two pages
+    // computing the same key in its stack at once, tripping the
+    // framework's "!keyReservation.contains(key)" duplicate-page
+    // assertion on the next frame (the exact HeroControllerScope crash
+    // this guards against).
+    if (_navigatingToConfirm) return;
+    setState(() => _navigatingToConfirm = true);
+    context
+        .push(
+          '/patient/home/appointments/confirm',
+          extra: BookingRequest(
+            doctorClinicAffiliationId: profile.affiliationId!,
+            slotId: _selectedSlotId!,
+            doctorName: profile.name,
+            specialty: profile.specialty,
+            dayLabel: _selectedDayLabel ?? '',
+            timeLabel: _selectedTimeLabel ?? '',
+            consultationFee: profile.consultationFee,
+            currency: profile.currency,
+          ),
+        )
+        .then((_) {
+          if (!mounted) return;
+          // If the user backed out of the confirm/countdown screen without
+          // confirming, the slot they'd picked is now HELD server-side (or
+          // already expired back to OPEN) — either way, the id this screen
+          // was holding onto is stale, and the cached slot list this
+          // screen's `doctorAvailabilityProvider` is showing still reflects
+          // the pre-hold state. Explicitly invalidating here — right after
+          // this screen resumes, definitely still mounted — rather than
+          // relying on `BookingConfirmScreen.dispose` to bump a shared
+          // refresh signal is deliberate: a provider mutation fired from
+          // another widget's `dispose()` isn't guaranteed to still be
+          // observed by this one by the time it runs.
+          final profile = ref.read(doctorProfileProvider(widget.doctorId)).asData?.value;
+          if (profile?.clinicBranchId != null) {
+            ref.invalidate(
+              doctorAvailabilityProvider((
+                doctorId: widget.doctorId,
+                clinicBranchId: profile!.clinicBranchId!,
+                ianaTimezone: profile.ianaTimezone,
+              )),
+            );
+          }
+          setState(() {
+            _navigatingToConfirm = false;
+            // Clearing (rather than leaving it selected) prevents
+            // re-submitting the same dead slot and getting "This slot is
+            // no longer open."
+            _selectedDayId = null;
+            _selectedDayLabel = null;
+            _selectedSlotId = null;
+            _selectedTimeLabel = null;
+          });
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,30 +138,50 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
       body: AsyncValueView(
         value: asyncProfile,
         onRetry: () => ref.invalidate(doctorProfileProvider(widget.doctorId)),
-        data: (profile) => _ProfileBody(
-          profile: profile,
-          selectedDayId:
-              _selectedDayId ??
-              (profile.availableDays.isNotEmpty
-                  ? profile.availableDays.first.id
-                  : null),
-          selectedSlotId: _selectedSlotId,
-          onDaySelected: (id) => setState(() {
-            _selectedDayId = id;
-            _selectedSlotId = null;
-          }),
-          onSlotSelected: (id) => setState(() => _selectedSlotId = id),
-        ),
+        data: (profile) {
+          final defaultDay = profile.availableDays.isNotEmpty
+              ? profile.availableDays.first
+              : null;
+          return _ProfileBody(
+            profile: profile,
+            selectedDayId: _selectedDayId ?? defaultDay?.id,
+            selectedSlotId: _selectedSlotId,
+            onDaySelected: (id, label) => setState(() {
+              _selectedDayId = id;
+              _selectedDayLabel = label;
+              _selectedSlotId = null;
+              _selectedTimeLabel = null;
+            }),
+            onSlotSelected: (id, label) => setState(() {
+              // A time can be picked while still on the auto-selected
+              // default day (no explicit day tap) — capture that day's
+              // label here too, so BookingRequest.dayLabel is never blank.
+              _selectedDayId ??= defaultDay?.id;
+              _selectedDayLabel ??= defaultDay == null
+                  ? null
+                  : '${defaultDay.label} ${defaultDay.dayNumber}';
+              _selectedSlotId = id;
+              _selectedTimeLabel = label;
+            }),
+          );
+        },
       ),
       bottomNavigationBar: asyncProfile.maybeWhen(
         data: (profile) => _BottomBar(
           fee: profile.consultationFee,
           currency: profile.currency,
-          onBook: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('doctor_profile.booking_soon'.tr())),
-            );
-          },
+          // Real Phase 4 booking (File 10 §2.3) needs both a selected slot
+          // and the affiliation id — null only when the doctor genuinely
+          // has no visible affiliation (see DoctorProfile.affiliationId's
+          // doc comment), so the button stays disabled rather than sending
+          // a request that's guaranteed to 404. Also disabled mid-navigation
+          // (see `_book`'s doc comment) to prevent a double-tap crash.
+          onBook:
+              (profile.affiliationId != null &&
+                  _selectedSlotId != null &&
+                  !_navigatingToConfirm)
+              ? () => _book(profile)
+              : null,
         ),
         orElse: () => null,
       ),
@@ -112,8 +201,8 @@ class _ProfileBody extends StatelessWidget {
   final DoctorProfile profile;
   final String? selectedDayId;
   final String? selectedSlotId;
-  final ValueChanged<String> onDaySelected;
-  final ValueChanged<String> onSlotSelected;
+  final _SlotSelection onDaySelected;
+  final _SlotSelection onSlotSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -165,20 +254,10 @@ class _HeaderCard extends StatelessWidget {
                     ? const Icon(Icons.person, size: 48, color: brandBlue)
                     : null,
               ),
-              if (profile.isOnline)
-                Positioned(
-                  left: 6,
-                  bottom: 6,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
+              // The "online now" dot (profile.isOnline) is removed here —
+              // no backend column backs it at all
+              // (`GetDoctorUseCase`'s doc comment), so it always defaulted
+              // to false and never rendered against a real backend.
             ],
           ),
           const SizedBox(height: 12),
@@ -220,7 +299,7 @@ class _HeaderCard extends StatelessWidget {
                 InkWell(
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => context.push(
-                    '/patient/clinic-branches/${profile.clinicBranchId}',
+                    '/patient/home/clinic-branches/${profile.clinicBranchId}',
                   ),
                   child: _InfoChip(
                     icon: Icons.local_hospital_outlined,
@@ -234,16 +313,15 @@ class _HeaderCard extends StatelessWidget {
                   label: profile.clinicName,
                   iconColor: brandBlue,
                 ),
-              _InfoChip(
-                icon: Icons.star,
-                iconColor: const Color(0xFFF59E0B),
-                label:
-                    '${profile.rating.toStringAsFixed(1)} (${profile.reviewCount} ${'doctor_profile.reviews'.tr()})',
-              ),
-              _InfoChip(
-                icon: Icons.language,
-                label: profile.languages.join('، '),
-              ),
+              // Rating/review-count chip removed: `rating_avg`/
+              // `rating_count` are real columns but no reviews feature
+              // exists to ever write a non-zero value to them (the
+              // `reviews` module is POSTPONEd) — every doctor shows
+              // "0.0 (0)" forever, not a meaningful signal.
+              //
+              // Languages chip removed: `GetDoctorUseCase` doesn't return
+              // this field at all (see its doc comment), so it always
+              // rendered as an icon with no text next to it.
             ],
           ),
         ],
@@ -260,8 +338,7 @@ class _AboutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasBio = profile.bio.trim().isNotEmpty;
-    final hasCredentials =
-        profile.qualifications.isNotEmpty || profile.fellowships.isNotEmpty;
+    final hasCredentials = profile.qualifications.isNotEmpty;
     // Nothing to show yet (seeded/demo doctors often have no bio or
     // credentials filled in) — an empty card with just a header reads as
     // broken, so skip rendering it entirely rather than show blank space.
@@ -302,6 +379,9 @@ class _AboutCard extends StatelessWidget {
           ] else if (hasCredentials) ...[
             const SizedBox(height: 14),
           ],
+          // Fellowships row removed (2026-09-03) — no backend column backs
+          // it at all (`GetDoctorUseCase`'s doc comment), so it always
+          // rendered an empty list against a real backend.
           ...profile.qualifications.map(
             (q) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -310,13 +390,6 @@ class _AboutCard extends StatelessWidget {
                 title: 'doctor_profile.qualifications'.tr(),
                 value: q,
               ),
-            ),
-          ),
-          ...profile.fellowships.map(
-            (f) => _CredentialRow(
-              icon: Icons.military_tech_outlined,
-              title: 'doctor_profile.fellowships'.tr(),
-              value: f,
             ),
           ),
         ],
@@ -329,7 +402,8 @@ class _AboutCard extends StatelessWidget {
 /// resolved profile carries a `clinicBranchId`; falls back to the profile's
 /// own (mock-only) `availableDays` otherwise — see
 /// `DoctorProfile.clinicBranchId`'s doc comment for why that fallback still
-/// exists. No hold/booking affordance either way (Phase 4 doesn't exist).
+/// exists. Selecting a slot here feeds `_BottomBar`'s "Book Now," which
+/// additionally needs `profile.affiliationId` (Phase 4 is real now).
 class _AvailabilitySection extends ConsumerWidget {
   const _AvailabilitySection({
     required this.profile,
@@ -342,8 +416,8 @@ class _AvailabilitySection extends ConsumerWidget {
   final DoctorProfile profile;
   final String? selectedDayId;
   final String? selectedSlotId;
-  final ValueChanged<String> onDaySelected;
-  final ValueChanged<String> onSlotSelected;
+  final _SlotSelection onDaySelected;
+  final _SlotSelection onSlotSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -404,8 +478,8 @@ class _SlotsCard extends StatelessWidget {
   final List<AvailableDay> days;
   final String? selectedDayId;
   final String? selectedSlotId;
-  final ValueChanged<String> onDaySelected;
-  final ValueChanged<String> onSlotSelected;
+  final _SlotSelection onDaySelected;
+  final _SlotSelection onSlotSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -446,7 +520,8 @@ class _SlotsCard extends StatelessWidget {
                 final day = days[index];
                 final isSelected = day.id == selectedDayId;
                 return InkWell(
-                  onTap: () => onDaySelected(day.id),
+                  onTap: () =>
+                      onDaySelected(day.id, '${day.label} ${day.dayNumber}'),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     width: 88,
@@ -482,7 +557,9 @@ class _SlotsCard extends StatelessWidget {
                 final isSelected = slot.id == selectedSlotId;
                 final enabled = slot.available;
                 return InkWell(
-                  onTap: enabled ? () => onSlotSelected(slot.id) : null,
+                  onTap: enabled
+                      ? () => onSlotSelected(slot.id, slot.label)
+                      : null,
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: 84,
@@ -534,7 +611,7 @@ class _BottomBar extends StatelessWidget {
 
   final int fee;
   final String currency;
-  final VoidCallback onBook;
+  final VoidCallback? onBook;
 
   @override
   Widget build(BuildContext context) {

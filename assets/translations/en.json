@@ -179,16 +179,47 @@
   "appointments": {
     "title": "Appointments",
     "empty": "No appointments yet",
+    "load_more": "Load more",
     "tab_upcoming": "Upcoming",
     "tab_past": "Past",
     "status_confirmed": "Confirmed",
-    "status_pending": "Pending",
+    "status_cancelled": "Cancelled",
+    "status_rescheduled": "Rescheduled",
     "status_completed": "Completed",
-    "join": "Join Appointment",
-    "edit": "Edit",
-    "view_location": "View Location",
+    "status_held": "Held",
+    "status_checked_in": "Checked in",
+    "status_in_progress": "In progress",
+    "status_no_show": "No-show",
+    "status_expired": "Expired",
+    "cancel_reason_patient_request": "Cancelled by patient",
+    "cancel_reason_provider_request": "Cancelled by clinic",
+    "cancel_reason_other": "Other reason",
     "cancel": "Cancel Appointment",
-    "rebook": "Rebook"
+    "appointment_id": "Appointment #{}",
+    "confirm_title": "Confirm booking",
+    "pay_at_clinic": "Pay at clinic",
+    "consultation_fee": "Consultation fee",
+    "hold_countdown": "Slot reserved for {}",
+    "confirm_booking": "Confirm Booking",
+    "hold_expired": "This slot's hold expired. Please pick a slot again.",
+    "slot_no_longer_open": "This slot is no longer available. Please pick another one.",
+    "appointment_state_changed": "This appointment was modified concurrently. Reload and try again.",
+    "booking_confirmed": "Booking confirmed",
+    "booking_confirmed_message": "Your appointment with {} at {} is confirmed. Payment is due at the clinic.",
+    "view_my_appointments": "View My Appointments",
+    "cancel_confirm_title": "Cancel this appointment?",
+    "cancel_confirm_message": "This cannot be undone. You'll need to book a new slot if you change your mind.",
+    "cancel_confirm_dismiss": "No, keep it",
+    "cancel_error": "Couldn't cancel the appointment. Please try again.",
+    "reschedule": "Reschedule",
+    "reschedule_title": "Reschedule appointment",
+    "reschedule_current_slot": "Current time",
+    "reschedule_pick_slot": "Pick a new slot",
+    "reschedule_submit": "Confirm New Slot",
+    "reschedule_unavailable": "Rescheduling isn't available for this appointment from here yet. Please contact the clinic to change your slot.",
+    "detail_title": "Appointment details",
+    "detail_cancelled_reason": "Cancelled: {}",
+    "detail_rescheduled_from": "Rescheduled from appointment #{}"
   },
   "orders": {
     "title": "Orders",
@@ -218,7 +249,8 @@
     "experience_years": "{} years experience",
     "consultation_fee": "Consultation fee: {}",
     "empty_title": "No doctors found",
-    "empty_subtitle": "Try another specialty or search term"
+    "empty_subtitle": "Try another specialty or search term",
+    "load_more": "Load more"
   },
   "doctor_profile": {
     "title": "Doctor details",
@@ -228,8 +260,7 @@
     "available_slots": "Available appointments",
     "no_slots": "No open slots in the next 14 days",
     "fee_label": "Consultation fee",
-    "reviews": "reviews",
-    "booking_soon": "Booking comes in Sprint 3"
+    "reviews": "reviews"
   },
   "notifications": {
     "title": "Notifications",
@@ -269,7 +300,9 @@
     "network": "No internet connection. Check your network and try again.",
     "server": "Something went wrong. Please try again.",
     "session_expired": "Session expired. Please sign in again.",
+    "session_expired_subtitle": "Please sign in again.",
     "slot_taken": "This slot was just taken by someone else. Please choose another.",
+    "cache_load_failed": "Could not load cached data.",
     "unexpected": "An unexpected error occurred."
   },
   "lab_booking": {

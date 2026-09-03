@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
@@ -37,16 +38,16 @@ class AsyncValueView<T> extends StatelessWidget {
 
     return switch (error) {
       NetworkFailure() => ErrorBanner(
-        message: 'No internet connection. Check your network and try again.',
+        message: 'errors.network'.tr(),
         onRetry: onRetry,
       ),
       ServerFailure(:final message) => ErrorBanner(
-        message: message ?? 'Something went wrong. Please try again.',
+        message: message ?? 'errors.server'.tr(),
         onRetry: onRetry,
       ),
-      AuthFailure() => const EmptyState(
-        title: 'Session expired',
-        subtitle: 'Please sign in again.',
+      AuthFailure() => EmptyState(
+        title: 'errors.session_expired'.tr(),
+        subtitle: 'errors.session_expired_subtitle'.tr(),
         icon: Icons.lock_outline,
       ),
       ValidationFailure(:final fieldErrors) => ErrorBanner(
@@ -54,11 +55,11 @@ class AsyncValueView<T> extends StatelessWidget {
       ),
       ConflictFailure(:final reason) => _ConflictDialog(reason: reason),
       CacheFailure() => ErrorBanner(
-        message: 'Could not load cached data.',
+        message: 'errors.cache_load_failed'.tr(),
         onRetry: onRetry,
       ),
       UnknownFailure() => ErrorBanner(
-        message: 'An unexpected error occurred.',
+        message: 'errors.unexpected'.tr(),
         onRetry: onRetry,
       ),
     };

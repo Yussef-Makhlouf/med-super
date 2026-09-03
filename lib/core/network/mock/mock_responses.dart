@@ -558,25 +558,43 @@ Map<String, dynamic> _doctorSummaryJson(Map<String, dynamic> d) => {
   'photo_url': d['photo_url'],
 };
 
+/// Matches the real `GET /v1/doctors/{id}` response shape exactly
+/// (`GetDoctorUseCase` — a flat camelCase object, `DoctorProfileDto.fromJson`
+/// no longer dispatches on structure since both shapes are now identical).
+/// `languages`/`fellowships`/`isOnline` are deliberately absent — no
+/// backend column backs any of them, so this mock doesn't fabricate values
+/// the real backend could never actually send.
 Map<String, dynamic> _doctorProfileJson(Map<String, dynamic> d) => {
-  ..._doctorSummaryJson(d),
+  'id': d['id'],
+  'name': d['name'],
   'specialty': d['specialty'],
-  'clinic_name': d['clinic_name'],
-  'languages': d['languages'],
+  'specialtyKey': d['specialty_key'],
+  'experienceYears': d['experience_years'],
+  'rating': d['rating'],
+  'reviewCount': d['review_count'],
+  'clinicName': d['clinic_name'],
   'bio': d['bio'],
   'qualifications': d['qualifications'],
-  'fellowships': d['fellowships'],
-  'is_online': d['is_online'],
+  'consultationFee': d['consultation_fee'],
+  'currency': d['currency'],
+  'isVerified': d['is_verified'],
+  'photoUrl': d['photo_url'],
   // Kept for backward compatibility (used only if the real availability
   // call below has no data yet) — real availability now comes from
   // registerAvailabilityMocks / GET /v1/doctors/{id}/slots.
   'available_days': _defaultAvailableDays(),
-  // One mock clinic branch per doctor. The real backend exposes this via
-  // affiliations[].clinic_branch on the doctor-detail response (currently
-  // raw snake_case Prisma fields, not this flat shape — see
-  // med-super/docs/backend_frontend_parity_matrix.md).
-  'clinic_branch_id': 'branch-${d['id']}',
-  'iana_timezone': 'Africa/Cairo',
+  'clinicBranchId': 'branch-${d['id']}',
+  'ianaTimezone': 'Africa/Cairo',
+  'affiliationId': 'affiliation-${d['id']}',
+  'affiliations': [
+    {
+      'clinicBranchId': 'branch-${d['id']}',
+      'clinicName': d['clinic_name'],
+      'consultationFee': '${d['consultation_fee']}',
+      'currency': d['currency'],
+      'ianaTimezone': 'Africa/Cairo',
+    },
+  ],
 };
 
 /// Registers the real Phase 3 availability contract's mock:
@@ -632,6 +650,246 @@ void registerAvailabilityMocks(MockInterceptor interceptor) {
       'data': {'slots': slots},
     };
   });
+}
+
+/// In-memory mock state for the Phase 4 booking loop — module-level so it
+/// survives across calls within one app session (there is no persistence
+/// layer to fake against here, mirroring how `_mockDoctorsCatalog` etc. are
+/// plain in-memory lists elsewhere in this file).
+final Map<String, _MockHold> _mockHolds = {};
+final Map<String, _MockAppointment> _mockAppointments = {};
+int _mockAppointmentSeq = 0;
+
+class _MockHold {
+  _MockHold({
+    required this.slotId,
+    required this.doctorClinicAffiliationId,
+    required this.expiresAt,
+    this.rescheduledFromAppointmentId,
+  });
+  final String slotId;
+  final String doctorClinicAffiliationId;
+  final DateTime expiresAt;
+  final String? rescheduledFromAppointmentId;
+}
+
+class _MockAppointment {
+  _MockAppointment({
+    required this.slotId,
+    required this.doctorClinicAffiliationId,
+    required this.startAt,
+    required this.endAt,
+    this.status = 'CONFIRMED',
+    this.cancelledReason,
+    this.rescheduledFromAppointmentId,
+  });
+  final String slotId;
+  final String doctorClinicAffiliationId;
+  final DateTime startAt;
+  final DateTime endAt;
+  String status;
+  String? cancelledReason;
+  String? rescheduledFromAppointmentId;
+}
+
+/// Registers real Phase 4 (Appointments) mocks — File 10 §2.3 / File 12 Part
+/// 35's exact response shapes, so switching `BASE_URL` to a real backend
+/// later needs no client-side change (same principle as
+/// `registerAvailabilityMocks`). Simplified vs. the real backend in one
+/// deliberate way: holds never actually expire here (no background sweep to
+/// fake), so `HOLD_EXPIRED` only ever occurs for an unknown/already-used
+/// `holdId` — the concurrency guarantee itself is proven server-side
+/// (`appointment-hold-concurrency.integration.spec.ts`), not re-tested here.
+void registerAppointmentMocks(MockInterceptor interceptor) {
+  interceptor.register('POST', '/appointments/hold', (options) {
+    final body = _body(options) ?? {};
+    final slotId = body['slotId'] as String?;
+    final affiliationId = body['doctorClinicAffiliationId'] as String?;
+    final patientId = body['patientId'] as String?;
+    if (slotId == null || affiliationId == null || patientId == null) {
+      return _error(
+        400,
+        'VALIDATION_ERROR',
+        'doctorClinicAffiliationId, slotId and patientId are required.',
+      );
+    }
+
+    final holdId = 'mock-hold-${DateTime.now().microsecondsSinceEpoch}';
+    final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 5));
+    _mockHolds[holdId] = _MockHold(
+      slotId: slotId,
+      doctorClinicAffiliationId: affiliationId,
+      expiresAt: expiresAt,
+    );
+
+    return {
+      'statusCode': 201,
+      'data': {
+        'holdId': holdId,
+        'slotId': slotId,
+        'expiresAt': expiresAt.toIso8601String(),
+        'status': 'HELD',
+      },
+    };
+  });
+
+  interceptor.register('POST', '/confirm', (options) {
+    final segments = options.path.split('/');
+    final holdId = segments.length >= 2 ? segments[segments.length - 2] : '';
+    final hold = _mockHolds.remove(holdId);
+    if (hold == null) {
+      return _error(
+        410,
+        'HOLD_EXPIRED',
+        'This hold has expired or was already used. Start a new hold.',
+      );
+    }
+
+    final now = DateTime.now().toUtc();
+    _mockAppointmentSeq++;
+    final appointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    _mockAppointments[appointmentId] = _MockAppointment(
+      slotId: hold.slotId,
+      doctorClinicAffiliationId: hold.doctorClinicAffiliationId,
+      startAt: now,
+      endAt: now.add(const Duration(minutes: 20)),
+      rescheduledFromAppointmentId: hold.rescheduledFromAppointmentId,
+    );
+
+    return {
+      'statusCode': 200,
+      'data': {'appointmentId': appointmentId, 'status': 'CONFIRMED'},
+    };
+  });
+
+  interceptor.register('POST', '/cancel', (options) {
+    final segments = options.path.split('/');
+    final appointmentId = segments.length >= 2
+        ? segments[segments.length - 2]
+        : '';
+    final appointment = _mockAppointments[appointmentId];
+    if (appointment == null) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+    }
+    if (appointment.status != 'CONFIRMED') {
+      return _error(
+        422,
+        'APPOINTMENT_NOT_CANCELLABLE',
+        'Only a confirmed appointment can be cancelled.',
+      );
+    }
+
+    final body = _body(options) ?? {};
+    appointment.status = 'CANCELLED';
+    appointment.cancelledReason =
+        body['reason'] as String? ?? 'PATIENT_REQUEST';
+
+    return {
+      'statusCode': 200,
+      'data': {'status': 'CANCELLED', 'refundAmount': 0, 'feeApplied': 0},
+    };
+  });
+
+  interceptor.register('POST', '/reschedule', (options) {
+    final segments = options.path.split('/');
+    final appointmentId = segments.length >= 2
+        ? segments[segments.length - 2]
+        : '';
+    final appointment = _mockAppointments[appointmentId];
+    if (appointment == null) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+    }
+    if (appointment.status != 'CONFIRMED') {
+      return _error(
+        422,
+        'APPOINTMENT_NOT_RESCHEDULABLE',
+        'Only a confirmed appointment can be rescheduled.',
+      );
+    }
+
+    final body = _body(options) ?? {};
+    final newSlotId = body['newSlotId'] as String?;
+    if (newSlotId == null) {
+      return _error(400, 'VALIDATION_ERROR', 'newSlotId is required.');
+    }
+
+    appointment.status = 'RESCHEDULED';
+    final holdId = 'mock-hold-${DateTime.now().microsecondsSinceEpoch}';
+    final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 5));
+    _mockHolds[holdId] = _MockHold(
+      slotId: newSlotId,
+      doctorClinicAffiliationId: appointment.doctorClinicAffiliationId,
+      expiresAt: expiresAt,
+      rescheduledFromAppointmentId: appointmentId,
+    );
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'holdId': holdId,
+        'slotId': newSlotId,
+        'expiresAt': expiresAt.toIso8601String(),
+        'status': 'HELD',
+        'previousAppointmentId': appointmentId,
+      },
+    };
+  });
+
+  // Must be registered after '/cancel'/'/reschedule'/'/confirm' — those are
+  // all substring-contained within '/appointments/{id}' too, and
+  // first-registered-wins (see registerSearchMocks' ordering note).
+  interceptor.register('GET', ApiPaths.appointments, (options) {
+    final segments = options.path.split('/');
+    final last = segments.isNotEmpty ? segments.last.split('?').first : '';
+    final isDetail = last.isNotEmpty && _mockAppointments.containsKey(last);
+
+    if (isDetail) {
+      return {
+        'statusCode': 200,
+        'data': _mockAppointmentJson(last, _mockAppointments[last]!),
+      };
+    }
+
+    final items = _mockAppointments.entries
+        .map((e) => _mockAppointmentJson(e.key, e.value))
+        .toList();
+    return {
+      'statusCode': 200,
+      'data': {'items': items, 'nextCursor': null},
+    };
+  });
+}
+
+Map<String, dynamic> _mockAppointmentJson(String id, _MockAppointment a) {
+  // Mock-only convention: `affiliation-{doctorId}` (see
+  // `_mockOnlyDoctorIdFromAffiliation`'s doc comment in
+  // `reschedule_screen.dart`) — lets this mock stand in a doctor/clinic
+  // name without a real affiliation table to join against.
+  const prefix = 'affiliation-';
+  final doctorId = a.doctorClinicAffiliationId.startsWith(prefix)
+      ? a.doctorClinicAffiliationId.substring(prefix.length)
+      : a.doctorClinicAffiliationId;
+  final doctor = _mockDoctorsCatalog.firstWhere(
+    (d) => d['id'] == doctorId,
+    orElse: () => _mockDoctorsCatalog.first,
+  );
+  return {
+    'appointmentId': id,
+    'status': a.status,
+    'slotId': a.slotId,
+    'startAt': a.startAt.toIso8601String(),
+    'endAt': a.endAt.toIso8601String(),
+    'doctorClinicAffiliationId': a.doctorClinicAffiliationId,
+    'cancelledReason': a.cancelledReason,
+    'rescheduledFromAppointmentId': a.rescheduledFromAppointmentId,
+    'doctorId': doctorId,
+    'doctorName': doctor['name'],
+    'clinicBranchId': 'branch-$doctorId',
+    'clinicName': doctor['clinic_name'],
+    'clinicAddressLine1': '12 Demo St',
+    'clinicCity': 'Cairo',
+    'clinicPhone': '+20221230000',
+  };
 }
 
 /// Registers `GET`/`PATCH /v1/doctors/me`. Must run BEFORE

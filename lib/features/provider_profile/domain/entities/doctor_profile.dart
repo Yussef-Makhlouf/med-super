@@ -29,20 +29,18 @@ class DoctorProfile {
     required this.rating,
     required this.reviewCount,
     required this.clinicName,
-    required this.languages,
     required this.bio,
     required this.qualifications,
-    required this.fellowships,
     required this.consultationFee,
     required this.currency,
     required this.isVerified,
-    required this.isOnline,
     required this.availableDays,
     required this.affiliations,
     this.photoUrl,
     this.specialtyKey,
     this.clinicBranchId,
     this.ianaTimezone,
+    this.affiliationId,
   });
 
   final String id;
@@ -53,14 +51,11 @@ class DoctorProfile {
   final double rating;
   final int reviewCount;
   final String clinicName;
-  final List<String> languages;
   final String bio;
   final List<String> qualifications;
-  final List<String> fellowships;
   final int consultationFee;
   final String currency;
   final bool isVerified;
-  final bool isOnline;
   final String? photoUrl;
   final List<AvailableDay> availableDays;
 
@@ -69,10 +64,20 @@ class DoctorProfile {
   final List<DoctorAffiliation> affiliations;
 
   /// Needed to call the real Phase 3 slots endpoint
-  /// (`GET /v1/doctors/{doctorId}/slots?clinicBranchId=`). Null means the
-  /// caller falls back to [availableDays] (mock-only fake data) — see
-  /// med-super/docs/backend_frontend_parity_matrix.md for why the real
-  /// doctor-detail backend endpoint doesn't cleanly expose this yet.
+  /// (`GET /v1/doctors/{doctorId}/slots?clinicBranchId=`) — parsed from the
+  /// real backend's `affiliations[0].clinic_branch.id`
+  /// (`DoctorProfileDto._fromRealJson`) or the mock's flat `clinic_branch_id`.
+  /// Null only when a doctor genuinely has no (visible) affiliation, in
+  /// which case the caller falls back to [availableDays] (mock-only fake
+  /// data — a doctor with zero real affiliations has nothing to show here
+  /// against a live backend either way).
   final String? clinicBranchId;
   final String? ianaTimezone;
+
+  /// `doctorClinicAffiliationId` — required by the real Phase 4 hold
+  /// contract (`POST /v1/appointments/hold`, File 10 §2.3). Parsed from the
+  /// real backend's `affiliations[0].id`, or the mock's flat
+  /// `affiliation_id`. Null means "don't offer booking" (no visible
+  /// affiliation), not a parsing gap. See `lib/features/appointments/STATUS.md`.
+  final String? affiliationId;
 }

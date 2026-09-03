@@ -179,16 +179,47 @@
   "appointments": {
     "title": "مواعيدي",
     "empty": "لا توجد مواعيد بعد",
+    "load_more": "تحميل المزيد",
     "tab_upcoming": "قادمة",
     "tab_past": "سابقة",
     "status_confirmed": "مؤكد",
-    "status_pending": "قيد الانتظار",
+    "status_cancelled": "ملغى",
+    "status_rescheduled": "تمت إعادة الجدولة",
     "status_completed": "مكتمل",
-    "join": "انضم للموعد",
-    "edit": "تعديل",
-    "view_location": "عرض الموقع",
+    "status_held": "محجوز مؤقتاً",
+    "status_checked_in": "تم تسجيل الحضور",
+    "status_in_progress": "جارٍ الآن",
+    "status_no_show": "لم يحضر",
+    "status_expired": "منتهي الصلاحية",
+    "cancel_reason_patient_request": "بناءً على طلب المريض",
+    "cancel_reason_provider_request": "بناءً على طلب العيادة",
+    "cancel_reason_other": "سبب آخر",
     "cancel": "إلغاء الموعد",
-    "rebook": "إعادة الحجز"
+    "appointment_id": "الموعد #{}",
+    "confirm_title": "تأكيد الحجز",
+    "pay_at_clinic": "الدفع في العيادة",
+    "consultation_fee": "سعر الكشف",
+    "hold_countdown": "الموعد محجوز لمدة {}",
+    "confirm_booking": "تأكيد الحجز",
+    "hold_expired": "انتهت مدة حجز هذا الموعد. الرجاء اختيار موعد آخر.",
+    "slot_no_longer_open": "هذا الموعد لم يعد متاحًا. الرجاء اختيار موعد آخر.",
+    "appointment_state_changed": "تم تعديل هذا الموعد في نفس الوقت. الرجاء إعادة التحميل والمحاولة مرة أخرى.",
+    "booking_confirmed": "تم تأكيد الحجز",
+    "booking_confirmed_message": "تم تأكيد موعدك مع {} الساعة {}. الدفع يكون في العيادة.",
+    "view_my_appointments": "عرض مواعيدي",
+    "cancel_confirm_title": "إلغاء هذا الموعد؟",
+    "cancel_confirm_message": "لا يمكن التراجع عن هذا الإجراء. ستحتاج لحجز موعد جديد إذا غيّرت رأيك.",
+    "cancel_confirm_dismiss": "لا، احتفظ به",
+    "cancel_error": "تعذّر إلغاء الموعد. الرجاء المحاولة مرة أخرى.",
+    "reschedule": "إعادة الجدولة",
+    "reschedule_title": "إعادة جدولة الموعد",
+    "reschedule_current_slot": "الموعد الحالي",
+    "reschedule_pick_slot": "اختر موعداً جديداً",
+    "reschedule_submit": "تأكيد الموعد الجديد",
+    "reschedule_unavailable": "إعادة الجدولة غير متاحة لهذا الموعد من هنا حالياً. يرجى التواصل مع العيادة لتغيير موعدك.",
+    "detail_title": "تفاصيل الموعد",
+    "detail_cancelled_reason": "ملغى: {}",
+    "detail_rescheduled_from": "تمت إعادة جدولته من الموعد #{}"
   },
   "orders": {
     "title": "طلباتي",
@@ -218,7 +249,8 @@
     "experience_years": "خبرة {} عاماً",
     "consultation_fee": "سعر الكشفية: {}",
     "empty_title": "لا يوجد أطباء",
-    "empty_subtitle": "جرّب تخصصاً أو كلمة بحث أخرى"
+    "empty_subtitle": "جرّب تخصصاً أو كلمة بحث أخرى",
+    "load_more": "تحميل المزيد"
   },
   "doctor_profile": {
     "title": "تفاصيل الطبيب",
@@ -228,8 +260,7 @@
     "available_slots": "المواعيد المتاحة",
     "no_slots": "لا توجد مواعيد متاحة خلال الـ 14 يوم القادمة",
     "fee_label": "سعر الكشف",
-    "reviews": "تقييم",
-    "booking_soon": "الحجز يأتي في Sprint 3"
+    "reviews": "تقييم"
   },
   "notifications": {
     "title": "التنبيهات",
@@ -269,7 +300,9 @@
     "network": "لا يوجد اتصال بالإنترنت. تحقق من شبكتك وحاول مرة أخرى.",
     "server": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
     "session_expired": "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+    "session_expired_subtitle": "يرجى تسجيل الدخول مرة أخرى.",
     "slot_taken": "تم حجز هذا الموعد للتو من قِبل شخص آخر. يرجى اختيار موعد آخر.",
+    "cache_load_failed": "تعذّر تحميل البيانات المحفوظة.",
     "unexpected": "حدث خطأ غير متوقع."
   },
   "lab_booking": {

@@ -12,12 +12,16 @@ class SearchDoctorsUseCase {
     String? query,
     String? specialty,
     DoctorSort sort = DoctorSort.topRated,
+    double? latitude,
+    double? longitude,
     String? cursor,
     int limit = 20,
   }) => _repository.searchDoctors(
     query: query,
     specialty: specialty,
     sort: sort,
+    latitude: latitude,
+    longitude: longitude,
     cursor: cursor,
     limit: limit,
   );

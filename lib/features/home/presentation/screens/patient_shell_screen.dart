@@ -47,7 +47,14 @@ class PatientShellScreen extends StatelessWidget {
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) => navigationShell.goBranch(
           index,
-          initialLocation: index == navigationShell.currentIndex,
+          // Home (index 0) always resets to its root screen, never
+          // restoring whatever leaf it was left on — the branch's nested
+          // routes (`appointmentRoutes`/`searchRoutes`, e.g. booking
+          // confirm/success/doctor-detail) are one-shot flows, not states
+          // the Home tab should "remember". Every other tab keeps the
+          // normal go_router behavior (only reset on a same-tab re-tap).
+          initialLocation:
+              index == 0 || index == navigationShell.currentIndex,
         ),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: _tabs

@@ -21,14 +21,11 @@ const _profile = DoctorProfile(
   rating: 4.8,
   reviewCount: 120,
   clinicName: 'Nile Medical Center',
-  languages: ['English'],
   bio: 'Bio',
   qualifications: [],
-  fellowships: [],
   consultationFee: 300,
   currency: 'EGP',
   isVerified: true,
-  isOnline: true,
   availableDays: [],
   affiliations: [],
   clinicBranchId: _clinicBranchId,
@@ -67,7 +64,7 @@ Future<GoRouter> _pumpWithRouter(
       ),
       GoRoute(path: '/doctor-details', builder: (context, state) => child),
       GoRoute(
-        path: '/patient/clinic-branches/:branchId',
+        path: '/patient/home/clinic-branches/:branchId',
         builder: (context, state) => Scaffold(
           body: Text('branch-details-${state.pathParameters['branchId']}'),
         ),

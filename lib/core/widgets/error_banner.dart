@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class ErrorBanner extends StatelessWidget {
@@ -36,7 +37,7 @@ class ErrorBanner extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: colorScheme.onErrorContainer,
               ),
-              child: const Text('Retry'),
+              child: Text('common.retry'.tr()),
             ),
           ],
         ],

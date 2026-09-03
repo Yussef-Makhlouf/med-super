@@ -146,7 +146,6 @@ GoRouter appRouter(Ref ref) {
     },
     routes: [
       ...authRoutes,
-      ...searchRoutes,
       ..._patientRoutes(),
       ...labRoutes,
       ...pharmacyRoutes,
@@ -167,7 +166,7 @@ List<RouteBase> _patientRoutes() => [
             path: '/patient/home',
             name: 'patientHome',
             builder: (context, state) => const PatientHomeScreen(),
-            routes: appointmentRoutes,
+            routes: [...appointmentRoutes, ...searchRoutes],
           ),
         ],
       ),
