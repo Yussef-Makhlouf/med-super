@@ -1,11 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class ErrorBanner extends StatelessWidget {
-  const ErrorBanner({
-    required this.message,
-    this.onRetry,
-    super.key,
-  });
+  const ErrorBanner({required this.message, this.onRetry, super.key});
 
   final String message;
   final VoidCallback? onRetry;
@@ -21,8 +18,11 @@ class ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline,
-              color: colorScheme.onErrorContainer, size: 20),
+          Icon(
+            Icons.error_outline,
+            color: colorScheme.onErrorContainer,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -35,8 +35,9 @@ class ErrorBanner extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               style: TextButton.styleFrom(
-                  foregroundColor: colorScheme.onErrorContainer),
-              child: const Text('Retry'),
+                foregroundColor: colorScheme.onErrorContainer,
+              ),
+              child: Text('common.retry'.tr()),
             ),
           ],
         ],

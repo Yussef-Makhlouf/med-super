@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/network/mock/mock_responses.dart';
 import 'package:med_super/core/theme/app_theme.dart';
+import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -20,11 +20,13 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
   const VerifyOtpScreen({
     required this.phone,
     this.role = 'patient',
+    this.requestId = '',
     super.key,
   });
 
   final String phone;
   final String role;
+  final String requestId;
 
   @override
   ConsumerState<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -33,8 +35,10 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
 class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   static const _otpLength = 6;
 
-  final _controllers =
-      List.generate(_otpLength, (_) => TextEditingController());
+  final _controllers = List.generate(
+    _otpLength,
+    (_) => TextEditingController(),
+  );
   final _focusNodes = List.generate(_otpLength, (_) => FocusNode());
 
   int _secondsLeft = 59;
@@ -81,52 +85,51 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   String get _displayPhone {
     final digits = widget.phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 9) {
-      final local = digits.length > 9
-          ? digits.substring(digits.length - 9)
+    if (digits.length >= 11) {
+      final local = digits.length > 11
+          ? digits.substring(digits.length - 11)
           : digits;
-      return '+966 ${local[0]}X XXX ${local.substring(6)}';
+      return AppFormatters.ltrIsolate(
+        '+20 ${local.substring(0, 2)} ${local.substring(2, 5)} '
+        '${local.substring(5, 8)} ${local.substring(8)}',
+      );
     }
-    return '+966 ${widget.phone}';
+    return AppFormatters.ltrIsolate('+20 ${widget.phone}');
   }
 
   Future<void> _verify() async {
     if (_otp.length != _otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('auth.otp_invalid'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('auth.otp_invalid'.tr())));
       return;
     }
 
     setState(() => _verifying = true);
     try {
-      final result =
-          await ref.read(sessionControllerProvider.notifier).verifyOtp(
-                phone: widget.phone,
-                code: _otp,
-                role: _role,
-              );
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .verifyOtp(
+            requestId: widget.requestId,
+            phone: widget.phone,
+            code: _otp,
+            role: _role,
+          );
 
       if (!mounted) return;
 
       switch (result) {
-        case Ok(:final value):
-          if (!value.onboardingComplete) {
-            context.go('/onboarding');
-          } else {
-            context.go(
-              currentFlavor.isPatient ? '/patient/home' : '/provider/home',
-            );
-          }
+        case Ok():
+          context.go('/');
         case Err(:final failure):
           final key = failureMessage(failure);
           // OTP_INVALID → prefer dedicated copy; raw API messages skip .tr()
           final text = key.startsWith('auth.') || key.startsWith('errors.')
               ? key.tr()
               : key;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(text)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(text)));
       }
     } finally {
       if (mounted) setState(() => _verifying = false);
@@ -137,11 +140,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     if (_resending) return;
     setState(() => _resending = true);
     try {
-      final result =
-          await ref.read(sessionControllerProvider.notifier).requestOtp(
-                phone: widget.phone,
-                role: _role,
-              );
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .requestOtp(phone: widget.phone, role: _role);
       if (!mounted) return;
       switch (result) {
         case Ok():
@@ -151,9 +152,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           _focusNodes.first.requestFocus();
           _startTimer();
         case Err(:final failure):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failureMessage(failure).tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(failureMessage(failure).tr())));
       }
     } finally {
       if (mounted) setState(() => _resending = false);
@@ -234,8 +235,10 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             ),
             body: SafeArea(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 8),
@@ -340,8 +343,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brandBlue,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              brandBlue.withValues(alpha: 0.5),
+                          disabledBackgroundColor: brandBlue.withValues(
+                            alpha: 0.5,
+                          ),
                           elevation: 0,
                           shape: const StadiumBorder(),
                         ),
@@ -444,26 +448,10 @@ class _VerifyHeroIllustration extends StatelessWidget {
               size: 36,
               color: brandBlue.withValues(alpha: 0.95),
             ),
-            Positioned(
-              top: 28,
-              left: 36,
-              child: _tag('OTP'),
-            ),
-            Positioned(
-              top: 40,
-              right: 28,
-              child: _tag('VERIFY'),
-            ),
-            Positioned(
-              bottom: 36,
-              left: 28,
-              child: _tag('SECURE'),
-            ),
-            Positioned(
-              bottom: 48,
-              right: 40,
-              child: _tag(kMockOtpCode),
-            ),
+            Positioned(top: 28, left: 36, child: _tag('OTP')),
+            Positioned(top: 40, right: 28, child: _tag('VERIFY')),
+            Positioned(bottom: 36, left: 28, child: _tag('SECURE')),
+            Positioned(bottom: 48, right: 40, child: _tag(kMockOtpCode)),
           ],
         ),
       ),
@@ -471,20 +459,20 @@ class _VerifyHeroIllustration extends StatelessWidget {
   }
 
   static Widget _tag(String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: brandBlue.withValues(alpha: 0.25)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: brandBlue.withValues(alpha: 0.9),
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.4,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: brandBlue.withValues(alpha: 0.25)),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: brandBlue.withValues(alpha: 0.9),
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+      ),
+    ),
+  );
 }

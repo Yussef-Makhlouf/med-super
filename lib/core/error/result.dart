@@ -12,33 +12,32 @@ sealed class Result<T> {
   bool get isErr => this is Err<T>;
 
   T? get valueOrNull => switch (this) {
-        Ok(:final value) => value,
-        Err() => null,
-      };
+    Ok(:final value) => value,
+    Err() => null,
+  };
 
   Failure? get failureOrNull => switch (this) {
-        Ok() => null,
-        Err(:final failure) => failure,
-      };
+    Ok() => null,
+    Err(:final failure) => failure,
+  };
 
   R when<R>({
     required R Function(T value) ok,
     required R Function(Failure failure) err,
-  }) =>
-      switch (this) {
-        Ok(:final value) => ok(value),
-        Err(:final failure) => err(failure),
-      };
+  }) => switch (this) {
+    Ok(:final value) => ok(value),
+    Err(:final failure) => err(failure),
+  };
 
   Result<R> map<R>(R Function(T value) transform) => switch (this) {
-        Ok(:final value) => Result.ok(transform(value)),
-        Err(:final failure) => Result.err(failure),
-      };
+    Ok(:final value) => Result.ok(transform(value)),
+    Err(:final failure) => Result.err(failure),
+  };
 
   Result<R> flatMap<R>(Result<R> Function(T value) transform) => switch (this) {
-        Ok(:final value) => transform(value),
-        Err(:final failure) => Result.err(failure),
-      };
+    Ok(:final value) => transform(value),
+    Err(:final failure) => Result.err(failure),
+  };
 }
 
 final class Ok<T> extends Result<T> {

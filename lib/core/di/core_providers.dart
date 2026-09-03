@@ -49,8 +49,7 @@ NetworkInfo networkInfo(Ref ref) =>
     NetworkInfo(ref.watch(connectivityProvider));
 
 @riverpod
-Dio dio(Ref ref) =>
-    buildDioClient(storage: ref.watch(secureStorageProvider));
+Dio dio(Ref ref) => buildDioClient(storage: ref.watch(secureStorageProvider));
 
 // ── Services ─────────────────────────────────────────────────────────────────
 
@@ -71,6 +70,6 @@ NotificationPriorityRouter notificationPriorityRouter(Ref ref) =>
 
 @riverpod
 SyncService syncService(Ref ref) => SyncService(
-      networkInfo: ref.watch(networkInfoProvider),
-      outbox: ref.watch(outboxBoxProvider),
-    );
+  networkInfo: ref.watch(networkInfoProvider),
+  outbox: ref.watch(outboxBoxProvider),
+);

@@ -16,6 +16,7 @@ sealed class Failure with _$Failure {
   const factory Failure.auth() = AuthFailure;
   const factory Failure.validation(Map<String, String> fieldErrors) =
       ValidationFailure;
+
   /// Slot just taken, price changed, item OOS — not a generic error.
   const factory Failure.conflict(String reason) = ConflictFailure;
   const factory Failure.cache() = CacheFailure;

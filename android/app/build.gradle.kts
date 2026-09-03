@@ -21,19 +21,6 @@ android {
         versionName = flutter.versionName
     }
 
-    flavorDimensions += "app"
-
-    productFlavors {
-        create("patient") {
-            dimension = "app"
-            applicationIdSuffix = ".patient"
-        }
-        create("provider") {
-            dimension = "app"
-            applicationIdSuffix = ".provider"
-        }
-    }
-
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")

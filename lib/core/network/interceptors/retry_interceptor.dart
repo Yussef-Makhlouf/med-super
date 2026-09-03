@@ -19,7 +19,8 @@ class RetryInterceptor extends Interceptor {
     final options = err.requestOptions;
     final method = options.method.toUpperCase();
     final hasIdempotencyKey = options.headers.containsKey(_idempotencyHeader);
-    final isRetryable = method == 'GET' || (method == 'POST' && hasIdempotencyKey);
+    final isRetryable =
+        method == 'GET' || (method == 'POST' && hasIdempotencyKey);
 
     if (!isRetryable) {
       handler.next(err);
@@ -27,11 +28,11 @@ class RetryInterceptor extends Interceptor {
     }
 
     // Only retry on network errors or 5xx.
-    final shouldRetry = err.type == DioExceptionType.connectionTimeout ||
+    final shouldRetry =
+        err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError ||
-        (err.response?.statusCode != null &&
-            err.response!.statusCode! >= 500);
+        (err.response?.statusCode != null && err.response!.statusCode! >= 500);
 
     if (!shouldRetry) {
       handler.next(err);

@@ -8,16 +8,27 @@ class IdempotencyKeyInterceptor extends Interceptor {
   static const _headerName = 'Idempotency-Key';
   static const _extraKey = '_idempotencyKey';
 
+  // Phase 4 (Appointments) is real now — hold/confirm/cancel/reschedule all
+  // match `/appointments`, so this list is exercised for real by
+  // `AppointmentsRemoteDatasource`. `/payment-intents` stays forward-looking
+  // for Phase 5 (Payments), which still doesn't exist in the backend.
   static const _idempotentPaths = [
     '/appointments',
     '/payment-intents',
     '/appointments/hold',
+    // Phase 6 (Prescriptions) — POST /v1/prescriptions/upload is guarded by
+    // the backend's IdempotencyInterceptor (File 11 Part 11).
+    '/prescriptions',
+    // Phase 7 (Pharmacy Fulfillment) — POST /v1/pharmacy-orders is guarded
+    // the same way.
+    '/pharmacy-orders',
   ];
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final method = options.method.toUpperCase();
-    final needsKey = (method == 'POST' || method == 'PUT' || method == 'PATCH') &&
+    final needsKey =
+        (method == 'POST' || method == 'PUT' || method == 'PATCH') &&
         _idempotentPaths.any((p) => options.path.contains(p));
 
     if (needsKey && !options.headers.containsKey(_headerName)) {

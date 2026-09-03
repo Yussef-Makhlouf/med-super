@@ -1,0 +1,469 @@
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
+import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
+import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+
+enum _Stage { holding, held, confirming, error }
+
+/// Wraps a [BookingRequest] together with an already-created
+/// [AppointmentHold] — used when arriving from [RescheduleScreen], where
+/// `RescheduleAppointmentUseCase` already produced the hold (File 12 Part
+/// 35.10) and this screen just needs to show the countdown and confirm it,
+/// not create a fresh one.
+class BookingConfirmArgs {
+  const BookingConfirmArgs({required this.request, required this.initialHold});
+
+  final BookingRequest request;
+  final AppointmentHold initialHold;
+}
+
+/// Step 2 (final) of the booking flow: reserve the slot for 5 minutes
+/// (`POST /v1/appointments/hold`), show a countdown, then confirm
+/// (`POST /v1/appointments/{holdId}/confirm`, pay-at-clinic only — Phase 5
+/// Payments doesn't exist yet, File 12 Part 35.4). Reached from
+/// `doctor_details_screen`'s "Book Now" button, or from [RescheduleScreen]
+/// with [initialHold] already set (skips the auto-hold step).
+class BookingConfirmScreen extends ConsumerStatefulWidget {
+  const BookingConfirmScreen({
+    required this.request,
+    this.initialHold,
+    super.key,
+  });
+
+  final BookingRequest request;
+  final AppointmentHold? initialHold;
+
+  @override
+  ConsumerState<BookingConfirmScreen> createState() =>
+      _BookingConfirmScreenState();
+}
+
+class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
+  _Stage _stage = _Stage.holding;
+  AppointmentHold? _hold;
+  Failure? _failure;
+  Timer? _ticker;
+  Duration _remaining = Duration.zero;
+  bool _confirmed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialHold;
+    if (initial != null) {
+      _hold = initial;
+      _stage = _Stage.held;
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _startCountdown(initial.expiresAt),
+      );
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _createHold());
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    // A hold was created (slot flipped OPEN → HELD server-side) but the
+    // user left this screen without confirming — e.g. tapping back on the
+    // countdown before it expires. `doctorAvailabilityProvider` watches
+    // this same signal (see its doc comment) and would otherwise keep
+    // showing the now-HELD slot as available until the backend's own
+    // 5-minute/every-minute-cron expiry catches up. The success path
+    // already bumps this on confirm, so this only fires for the
+    // abandoned-hold case.
+    if (_hold != null && !_confirmed) {
+      ref.read(myAppointmentsRefreshProvider.notifier).state++;
+    }
+    super.dispose();
+  }
+
+  Future<void> _createHold() async {
+    setState(() {
+      _stage = _Stage.holding;
+      _failure = null;
+    });
+
+    final session = ref.read(sessionControllerProvider).asData?.value;
+    if (session == null) {
+      setState(() {
+        _stage = _Stage.error;
+        _failure = const Failure.auth();
+      });
+      return;
+    }
+
+    final result = await ref
+        .read(createHoldUseCaseProvider)
+        .call(
+          doctorClinicAffiliationId: widget.request.doctorClinicAffiliationId,
+          slotId: widget.request.slotId,
+          patientId: session.user.id,
+        );
+    if (!mounted) return;
+
+    result.when(
+      ok: (hold) {
+        setState(() {
+          _hold = hold;
+          _stage = _Stage.held;
+        });
+        _startCountdown(hold.expiresAt);
+      },
+      err: (failure) => setState(() {
+        _stage = _Stage.error;
+        _failure = failure;
+      }),
+    );
+  }
+
+  void _startCountdown(DateTime expiresAt) {
+    _ticker?.cancel();
+    void tick() {
+      final left = expiresAt.difference(DateTime.now().toUtc());
+      if (!mounted) return;
+      setState(() => _remaining = left.isNegative ? Duration.zero : left);
+      if (left.isNegative) {
+        _ticker?.cancel();
+        setState(() {
+          _stage = _Stage.error;
+          _failure = const Failure.conflict('appointments.hold_expired');
+        });
+      }
+    }
+
+    tick();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick());
+  }
+
+  Future<void> _confirm() async {
+    final hold = _hold;
+    if (hold == null) return;
+
+    setState(() => _stage = _Stage.confirming);
+    final result = await ref
+        .read(confirmAppointmentUseCaseProvider)
+        .call(hold.holdId);
+    if (!mounted) return;
+
+    result.when(
+      ok: (confirmed) {
+        _confirmed = true;
+        ref.read(myAppointmentsRefreshProvider.notifier).state++;
+        // `go` (not `pushReplacement`) deliberately clears the whole ad-hoc
+        // stack this booking flow built up (home → doctor detail → confirm)
+        // rather than just swapping the top page for the success screen —
+        // otherwise `doctor_details_screen` stays alive underneath it, and
+        // returning to the shell's home tab then re-entering the same
+        // doctor can resurface this now-stale success page instead of a
+        // fresh detail screen.
+        context.go(
+          '/patient/home/appointments/success',
+          extra: widget.request,
+        );
+      },
+      err: (failure) => setState(() {
+        _stage = _Stage.error;
+        _failure = failure;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surfaceApp,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _Header(onBack: () => context.pop()),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  _SummaryCard(request: widget.request),
+                  const SizedBox(height: 20),
+                  if (_stage == _Stage.held || _stage == _Stage.confirming)
+                    _HoldTimer(remaining: _remaining),
+                  if (_stage == _Stage.error && _failure != null) ...[
+                    const SizedBox(height: 12),
+                    ErrorBanner(
+                      message: _failureMessage(_failure!),
+                      onRetry: _createHold,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            _ConfirmBar(
+              stage: _stage,
+              onConfirm: _confirm,
+              fee: widget.request.consultationFee,
+              currency: widget.request.currency,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _failureMessage(Failure failure) => switch (failure) {
+    NetworkFailure() => 'errors.network'.tr(),
+    AuthFailure() => 'errors.session_expired'.tr(),
+    ConflictFailure(:final reason) => _conflictMessage(reason),
+    ServerFailure(:final message) => message ?? 'errors.server'.tr(),
+    ValidationFailure() => 'errors.server'.tr(),
+    CacheFailure() => 'errors.server'.tr(),
+    UnknownFailure() => 'errors.unexpected'.tr(),
+  };
+
+  /// `reason` is `ConflictError`'s raw English `message` from the backend
+  /// (`dio_failure_mapper.dart`'s `Failure.conflict(api.message ?? api.code)`)
+  /// — the exact strings mapped here match `create-hold.use-case.ts`/
+  /// `reschedule-appointment.use-case.ts` verbatim. Anything unrecognized
+  /// falls back to showing the raw string rather than a generic "error
+  /// occurred" that would hide real information.
+  String _conflictMessage(String reason) => switch (reason) {
+    'appointments.hold_expired' => 'appointments.hold_expired'.tr(),
+    'This slot is no longer open.' => 'appointments.slot_no_longer_open'.tr(),
+    'This appointment was modified concurrently. Reload and try again.' =>
+      'appointments.appointment_state_changed'.tr(),
+    _ => reason,
+  };
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const SizedBox(width: 48),
+          Expanded(
+            child: Text(
+              'appointments.confirm_title'.tr(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.patientPrimary,
+              ),
+            ),
+          ),
+          IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_forward)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.request});
+
+  final BookingRequest request;
+
+  @override
+  Widget build(BuildContext context) {
+    final feeLabel = request.currency == 'EGP'
+        ? '${request.consultationFee} ج.م'
+        : '${request.consultationFee} ${request.currency}';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            request.doctorName,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            request.specialty,
+            style: const TextStyle(fontSize: 13, color: AppColors.mutedText),
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppColors.borderLight),
+          const SizedBox(height: 14),
+          _InfoRow(
+            icon: Icons.calendar_today_outlined,
+            label: request.dayLabel,
+          ),
+          const SizedBox(height: 8),
+          _InfoRow(icon: Icons.access_time_outlined, label: request.timeLabel),
+          const SizedBox(height: 8),
+          _InfoRow(
+            icon: Icons.payments_outlined,
+            label: 'appointments.pay_at_clinic'.tr(),
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: AppColors.borderLight),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'appointments.consultation_fee'.tr(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.mutedText,
+                ),
+              ),
+              Text(
+                feeLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.patientPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.mutedText2),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: AppColors.bodyText),
+        ),
+      ],
+    );
+  }
+}
+
+class _HoldTimer extends StatelessWidget {
+  const _HoldTimer({required this.remaining});
+
+  final Duration remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = remaining.inMinutes.toString().padLeft(2, '0');
+    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    final low = remaining.inSeconds <= 60;
+    final color = low ? AppColors.errorRed : AppColors.tealAccent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.timer_outlined, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'appointments.hold_countdown'.tr(args: ['$minutes:$seconds']),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfirmBar extends StatelessWidget {
+  const _ConfirmBar({
+    required this.stage,
+    required this.onConfirm,
+    required this.fee,
+    required this.currency,
+  });
+
+  final _Stage stage;
+  final VoidCallback onConfirm;
+  final int fee;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final canConfirm = stage == _Stage.held;
+    final isBusy = stage == _Stage.holding || stage == _Stage.confirming;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: canConfirm ? onConfirm : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.patientPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+              ),
+            ),
+            child: isBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    'appointments.confirm_booking'.tr(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -4,4 +4,16 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application>
+        <!-- Debug builds use mock APIs and no real Firebase project, so the
+             native SDK's automatic settings fetch at startup always 404s
+             against the placeholder App ID. Disabling auto-init here (debug
+             source set only) stops that call before it fires; release
+             builds are unaffected and keep collection gated by
+             CrashlyticsService.init()'s `!kDebugMode` check. -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+    </application>
 </manifest>

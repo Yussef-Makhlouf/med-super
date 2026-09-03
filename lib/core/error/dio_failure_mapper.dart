@@ -23,9 +23,7 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
         return Failure.conflict(api.message ?? api.code);
       }
       if (api.isValidation) {
-        return Failure.validation({
-          'form': api.message ?? api.code,
-        });
+        return Failure.validation({'form': api.message ?? api.code});
       }
       return Failure.server(
         statusCode: api.statusCode,

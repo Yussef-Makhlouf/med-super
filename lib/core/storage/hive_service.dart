@@ -29,11 +29,27 @@ class HiveService {
     final cipher = await _cipher();
     await Future.wait([
       Hive.openBox<String>(HiveBoxNames.settings, encryptionCipher: cipher),
-      Hive.openBox<String>(HiveBoxNames.doctorSearchCache,
-          encryptionCipher: cipher),
-      Hive.openBox<String>(HiveBoxNames.appointmentCache,
-          encryptionCipher: cipher),
+      Hive.openBox<String>(
+        HiveBoxNames.doctorSearchCache,
+        encryptionCipher: cipher,
+      ),
+      Hive.openBox<String>(
+        HiveBoxNames.appointmentCache,
+        encryptionCipher: cipher,
+      ),
       Hive.openBox<String>(HiveBoxNames.outbox, encryptionCipher: cipher),
+      Hive.openBox<String>(
+        HiveBoxNames.labTestsCache,
+        encryptionCipher: cipher,
+      ),
+      Hive.openBox<String>(
+        HiveBoxNames.providerRegistrationDraft,
+        encryptionCipher: cipher,
+      ),
+      Hive.openBox<String>(
+        HiveBoxNames.providerDashboardCache,
+        encryptionCipher: cipher,
+      ),
     ]);
   }
 
@@ -53,6 +69,12 @@ class HiveService {
       Hive.box<String>(HiveBoxNames.doctorSearchCache);
   Box<String> get appointmentCacheBox =>
       Hive.box<String>(HiveBoxNames.appointmentCache);
+  Box<String> get labTestsCacheBox =>
+      Hive.box<String>(HiveBoxNames.labTestsCache);
+  Box<String> get providerRegistrationDraftBox =>
+      Hive.box<String>(HiveBoxNames.providerRegistrationDraft);
+  Box<String> get providerDashboardCacheBox =>
+      Hive.box<String>(HiveBoxNames.providerDashboardCache);
 }
 
 /// Generic JSON-backed cache store. Stores entities as JSON strings in Hive.

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<title>Live QA Report — Pharmacy Order Flow &amp; Profile (2026-09-01)</title>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background:#f3f6fb; color:#1a2b4a; margin:0; padding:24px; line-height:1.6; }
+  h1 { font-size:22px; margin-bottom:4px; }
+  .sub { color:#6b7280; margin-bottom:24px; font-size:13px; }
+  .page-card { background:#fff; border-radius:12px; padding:18px 20px; margin-bottom:18px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+  .page-title { font-size:16px; font-weight:700; margin-bottom:6px; }
+  .page-meta { font-size:12px; color:#6b7280; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid #eef1f5; vertical-align:top; }
+  th { color:#6b7280; font-weight:600; width:150px; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
+  ul.findings { margin:6px 0 0; padding-left:18px; }
+  ul.findings li { margin-bottom:4px; }
+  .section-title { font-size:14px; font-weight:700; margin:28px 0 10px; color:#374151; }
+</style>
+</head>
+<body>
+
+<h1>Live QA Report — What Was Tested So Far</h1>
+<div class="sub">Backend: clinic-reservations (local, Postgres+Redis on Docker) — Frontend: med-super (Flutter Web, real BASE_URL, not mock) — 2026-09-01</div>
+
+<div class="section-title">1. Login &amp; Registration (Auth)</div>
+
+<div class="page-card">
+  <div class="page-title">New patient registration (OTP)</div>
+  <div class="page-meta">Screens: /login → /verify-otp → /onboarding</div>
+  <table>
+    <tr><th>Fields sent</th><td>Phone number, verification code</td></tr>
+    <tr><th>Current status</th><td>Persisted correctly. Verified directly in <code>users</code> and <code>role_memberships</code> — row created with <code>PATIENT ACTIVE</code>.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Onboarding (name + email)</div>
+  <table>
+    <tr><th>Fields sent</th><td>Full name, email (via <code>PATCH /v1/auth/me</code>)</td></tr>
+    <tr><th>Current status</th><td><code>users.first_name</code>/<code>last_name</code>/<code>email</code> updated correctly in the database.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Logout</div>
+  <table>
+    <tr><th>Current status</th><td>Both the patient and doctor logout buttons navigate to the returning-user login screen <code>/account-login</code>. <code>logout()</code> invalidates every pharmacy-flow provider that holds per-session state (attached prescription photo, chosen pharmacy, chosen delivery method), so a new login starts clean.</td></tr>
+  </table>
+</div>
+
+<div class="section-title">2. Profile</div>
+
+<div class="page-card">
+  <div class="page-title">Edit patient profile (name, phone, email)</div>
+  <table>
+    <tr><th>Fields sent</th><td>Name, email (phone is display-only, not editable)</td></tr>
+    <tr><th>Current status</th><td>Persisted correctly via <code>PATCH /v1/auth/me</code>.</td></tr>
+    <tr><th>Open item</th><td>The "Save changes" button stays enabled even with no actual edit made — it should be disabled until a field is actually changed.</td></tr>
+  </table>
+</div>
+
+<div class="section-title">3. Prescription Upload &amp; Pharmacy Selection</div>
+
+<div class="page-card">
+  <div class="page-title">Upload prescription (images + note)</div>
+  <table>
+    <tr><th>Fields sent</th><td>Placeholder image URLs, text note</td></tr>
+    <tr><th>Current status</th><td>Persisted correctly in <code>prescriptions</code> + <code>prescription_images</code>.</td></tr>
+  </table>
+  <ul class="findings">
+    <li><b>Open decision (not ratified):</b> OCR is disabled in dev (<code>DEC-005</code>), so every upload now gets one automatically fabricated placeholder drug item (<code>[DEV PLACEHOLDER]</code>) so the pharmacy order flow can be exercised end to end. Flagged in code, in <code>FILE_12 PART 46</code>, and in the API reference doc — needs revisiting once a real OCR vendor or manual-entry path exists.</li>
+  </ul>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Select pharmacy</div>
+  <table>
+    <tr><th>Fields sent</th><td>Device location (when available), search text</td></tr>
+  </table>
+  <ul class="findings">
+    <li>Seeded demo pharmacies have coordinates (geo_lat/geo_lng) set.</li>
+    <li>PostGIS extension is enabled on the local Postgres instance, so location-based search works.</li>
+    <li>Location-based search uses a 15 km radius by default — results depend on the real device location relative to available pharmacies.</li>
+    <li>A "Load more" control is shown only when the backend reports another page.</li>
+    <li>No pharmacy is pre-selected when the screen opens; "Next" stays disabled until one is explicitly chosen.</li>
+    <li>When "Home delivery" is chosen, pharmacies that don't offer delivery are shown disabled and cannot be selected.</li>
+  </ul>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Pharmacy branch details</div>
+  <table>
+    <tr><th>Current status</th><td>Loads and renders correctly — the frontend accepts <code>geo_lat</code>/<code>geo_lng</code> as either a string or a number, matching what each backend endpoint actually returns (the search endpoint returns numbers, the detail endpoint returns strings).</td></tr>
+  </table>
+</div>
+
+<div class="section-title">4. Order Creation &amp; Tracking</div>
+
+<div class="page-card">
+  <div class="page-title">Review &amp; confirm order</div>
+  <table>
+    <tr><th>Fields sent</th><td>Prescription id, chosen branch, fulfillment method, location (only when no branch is chosen)</td></tr>
+    <tr><th>Current status</th><td>Location is required only when no specific branch is chosen (the backend needs it to find the nearest branch). When a branch is already chosen, the order submits without any location requirement.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">"Order submitted" confirmation screen</div>
+  <table>
+    <tr><th>Current status</th><td>Reaching this screen without the data it needs (e.g. via browser back/forward) redirects to the orders list instead of crashing.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Order detail / tracking</div>
+  <table>
+    <tr><th>Current status</th><td>A back button is present, falling back to the orders list when there's nothing to pop back to. The placed-at date is shown formatted. Fulfillment method, pharmacy name, and patient note are all displayed. The order number uses the same short format as the confirmation screen, via one shared helper, so both screens show the same reference for the same order.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Bottom-nav "Orders" tab</div>
+  <table>
+    <tr><th>Current status</th><td>Shows two top tabs — <b>Pharmacy</b> (default, real <code>GET /v1/pharmacy-orders</code> data, in the original screen's card design) and <b>Lab</b> (mock, since lab booking stays <code>BLOCKED</code>). The bottom tab bar is visible on both the list and the detail screen. Search on this tab is client-side only, filtering the already-fetched order list by id — no request is sent to the backend as the query is typed.</td></tr>
+    <tr><th>Fixed this pass</th><td>The pharmacy order card overflowed its layout by 12px (an <code>IntrinsicHeight</code> measurement mismatch once fulfillment method and date lines were added) — replaced with a left-border decoration instead.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Order detail screen — additional fields &amp; wording</div>
+  <table>
+    <tr><th>Current status</th><td>Now also displays the prescribing doctor's name, the pharmacy's staff note (shown only when no quote exists yet, to avoid duplicating the same text the quote card already shows), the last-updated timestamp (only when different from the placed-at time), and thumbnails of the uploaded prescription images — all of which the backend already returned but the frontend either didn't parse or didn't render.</td></tr>
+    <tr><th>Current status</th><td>The summary card now uses the same visual design as the orders-list card (colored left border by status, icon badge) instead of a plain bordered box.</td></tr>
+    <tr><th>Current status</th><td>The <code>ACCEPTED</code> status label reads "Awaiting your approval" / "بانتظار موافقتك على السعر" — the previous wording ("Quote ready" / "السعر جاهز") was confusing next to the quote card shown directly below it.</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Approve-and-pay button</div>
+  <table>
+    <tr><th>Current status</th><td>Confirmed wired to a real <code>POST /v1/pharmacy-orders/:id/approve</code> call (not a frontend-only button) by manually setting one local test order to <code>ACCEPTED</code> with a quote, since no branch-side dashboard was available in this pass to reach that state organically. "Approve and pay" here means pay-at-clinic bookkeeping only — it inserts a <code>payment_intents</code>/<code>payment_splits</code> ledger entry and flips the order to <code>PAID</code>; no real payment gateway charge occurs anywhere in this backend.</td></tr>
+  </table>
+</div>
+
+<div class="section-title">Remaining open items</div>
+<div class="page-card">
+  <ul class="findings">
+    <li>Doctor search results cap at 20 (backend default limit) with no "Load more" control — unlike the pharmacy branch select screen, which now shows one when the backend reports another page.</li>
+    <li>The placeholder prescription item (<code>[DEV PLACEHOLDER]</code>) added to every new upload is an open decision that needs revisiting once a real OCR vendor or manual-review path exists.</li>
+  </ul>
+</div>
+
+</body>
+</html>
