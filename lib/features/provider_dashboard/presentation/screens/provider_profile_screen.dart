@@ -49,10 +49,12 @@ class ProviderProfileScreen extends ConsumerWidget {
             orElse: () => '',
           );
 
-    final avatarUrl = doctorAccountAsync.maybeWhen(
-      data: (acc) => acc.avatarUrl,
-      orElse: () => null,
-    );
+    final avatarUrl = isAssistant
+        ? null
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => acc.avatarUrl,
+            orElse: () => null,
+          );
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -72,11 +74,14 @@ class ProviderProfileScreen extends ConsumerWidget {
                   // Centered Avatar with edit pencil badge
                   Center(
                     child: GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ProviderEditProfileScreen(),
-                        ),
-                      ),
+                      onTap: isAssistant
+                          ? null
+                          : () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const ProviderEditProfileScreen(),
+                              ),
+                            ),
                       child: Stack(
                         children: [
                           CircleAvatar(
@@ -93,26 +98,27 @@ class ProviderProfileScreen extends ConsumerWidget {
                                   )
                                 : null,
                           ),
-                          Positioned(
-                            bottom: 2,
-                            right: 2,
-                            child: Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: brandBlue,
-                                shape: BoxShape.circle,
-                                border: Border.all(
+                          if (!isAssistant)
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: brandBlue,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  size: 14,
                                   color: Colors.white,
-                                  width: 2,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.edit,
-                                size: 14,
-                                color: Colors.white,
-                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -134,20 +140,21 @@ class ProviderProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
                   // Navigation Options List
-                  _buildNavTile(
-                    icon: Icons.person_outline,
-                    iconBg: brandBlue.withValues(alpha: 0.1),
-                    iconColor: brandBlue,
-                    title: 'المعلومات الشخصية',
-                    subtitle: isAssistant
-                        ? 'الاسم والصورة الشخصية'
-                        : 'البريد الإلكتروني، نبذة، المؤهل العلمي، سنوات الخبرة',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProviderEditProfileScreen(),
+                  if (!isAssistant)
+                    _buildNavTile(
+                      icon: Icons.person_outline,
+                      iconBg: brandBlue.withValues(alpha: 0.1),
+                      iconColor: brandBlue,
+                      title: 'المعلومات الشخصية',
+                      subtitle: isAssistant
+                          ? 'الاسم والصورة الشخصية'
+                          : 'البريد الإلكتروني، نبذة، المؤهل العلمي، سنوات الخبرة',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderEditProfileScreen(),
+                        ),
                       ),
                     ),
-                  ),
                   // Doctor-only tiles — hidden from assistants
                   if (!isAssistant) ...[
                     const SizedBox(height: 14),

@@ -41,12 +41,14 @@ class AssistantRepositoryImpl implements AssistantRepository {
     required String id,
     String? displayName,
     String? status,
+    String? password,
   }) async {
     try {
       final dto = await _remote.updateAssistant(
         id: id,
         displayName: displayName,
         status: status,
+        password: password,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {

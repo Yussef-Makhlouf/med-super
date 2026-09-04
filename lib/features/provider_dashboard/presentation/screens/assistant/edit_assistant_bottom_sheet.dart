@@ -23,20 +23,24 @@ class _EditAssistantBottomSheetState
     extends ConsumerState<EditAssistantBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
+  late final TextEditingController _passwordController;
   late AssistantStatus _selectedStatus;
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.assistant.displayName);
+    _passwordController = TextEditingController();
     _selectedStatus = widget.assistant.status;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -46,8 +50,10 @@ class _EditAssistantBottomSheetState
     final newName = _nameController.text.trim();
     final nameChanged = newName != widget.assistant.displayName;
     final statusChanged = _selectedStatus != widget.assistant.status;
+    final newPassword = _passwordController.text.trim();
+    final passwordChanged = newPassword.isNotEmpty;
 
-    if (!nameChanged && !statusChanged) {
+    if (!nameChanged && !statusChanged && !passwordChanged) {
       Navigator.of(context).pop();
       return;
     }
@@ -63,6 +69,7 @@ class _EditAssistantBottomSheetState
           id: widget.assistant.id,
           displayName: nameChanged ? newName : null,
           status: statusChanged ? _selectedStatus : null,
+          password: passwordChanged ? newPassword : null,
         );
 
     if (!mounted) return;
@@ -130,14 +137,48 @@ class _EditAssistantBottomSheetState
             TextFormField(
               controller: _nameController,
               textDirection: TextDirection.rtl,
-              decoration: _inputDecoration(hint: 'assistants.name_hint_edit'.tr()),
+              decoration: _inputDecoration(
+                hint: 'assistants.name_hint_edit'.tr(),
+              ),
               validator: (v) {
                 if (v == null || v.trim().isEmpty) {
                   return 'assistants.name_required'.tr();
                 }
-                if (v.trim().length < 2) return 'assistants.name_too_short'.tr();
+                if (v.trim().length < 2) {
+                  return 'assistants.name_too_short'.tr();
+                }
                 return null;
               },
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              'assistants.password_label'.tr(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration:
+                  _inputDecoration(
+                    hint: 'assistants.password_hint_edit'.tr(),
+                  ).copyWith(
+                    suffixIcon: IconButton(
+                      tooltip: 'assistants.password_show'.tr(),
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
             ),
             const SizedBox(height: 20),
 

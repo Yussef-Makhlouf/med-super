@@ -37,17 +37,15 @@ class PharmacyBranchSearchItemDto {
     );
   }
 
-  /// Null when the branch has no geocoded address — such a row can't be
-  /// plotted on the map, so it's dropped from the list entirely rather than
-  /// shown with a fabricated position.
+  /// A branch can still be selected when its address has no coordinates; it
+  /// is simply omitted from the map by [PharmacyMapView].
   Pharmacy? toEntity() {
-    if (geoLat == null || geoLng == null) return null;
     return Pharmacy(
       id: branchId,
       name: brandName,
       address: addressLine1,
-      latitude: geoLat!,
-      longitude: geoLng!,
+      latitude: geoLat,
+      longitude: geoLng,
       deliveryCapable: deliveryCapable,
       distanceKm: distanceKm,
     );

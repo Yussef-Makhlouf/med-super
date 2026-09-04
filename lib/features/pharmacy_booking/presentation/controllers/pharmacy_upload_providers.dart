@@ -44,6 +44,11 @@ class UploadedPrescriptionImages extends Notifier<List<PrescriptionImage>> {
   void removeImage(String id) {
     state = state.where((image) => image.id != id).toList();
   }
+
+  void clear() {
+    _nextId = 0;
+    state = const [];
+  }
 }
 
 final uploadedPrescriptionImagesProvider =
@@ -59,6 +64,8 @@ class SelectedDeliveryMethod extends Notifier<DeliveryMethod> {
   DeliveryMethod build() => DeliveryMethod.homeDelivery;
 
   void select(DeliveryMethod method) => state = method;
+
+  void reset() => state = DeliveryMethod.homeDelivery;
 }
 
 final selectedDeliveryMethodProvider =

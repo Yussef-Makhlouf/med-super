@@ -19,6 +19,7 @@ abstract class AssistantRemoteDatasource {
     required String id,
     String? displayName,
     String? status,
+    String? password,
   });
 
   /// DELETE /v1/provider/assistants/:id — deactivate (soft-delete) an assistant.
@@ -60,12 +61,14 @@ class AssistantRemoteDatasourceImpl implements AssistantRemoteDatasource {
     required String id,
     String? displayName,
     String? status,
+    String? password,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '${ApiPaths.providerAssistants}/$id',
       data: {
         if (displayName != null) 'display_name': displayName,
         if (status != null) 'status': status,
+        if (password != null) 'password': password,
       },
     );
     return AssistantDto.fromJson(response.data ?? const <String, dynamic>{});

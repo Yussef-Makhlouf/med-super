@@ -57,12 +57,28 @@ class PharmacySearchState {
 class PharmacySearchNotifier extends AsyncNotifier<PharmacySearchState> {
   @override
   Future<PharmacySearchState> build() async {
+    final query = ref.watch(pharmacySearchQueryProvider);
     final position = await ref
         .watch(pharmacyLocationServiceProvider)
         .getCurrentPosition();
-    final page = await ref
+    var page = await ref
         .watch(pharmacyBranchSearchRemoteDatasourceProvider)
-        .search(latitude: position?.latitude, longitude: position?.longitude);
+        .search(
+          query: query,
+          latitude: position?.latitude,
+          longitude: position?.longitude,
+        );
+
+    // A valid but stale/emulator location can be outside the backend's
+    // default 15 km radius. Keep the nearby sort when it works, but do not
+    // turn the pharmacy picker into an empty state when a broader catalogue
+    // search can still offer verified branches.
+    if (page.items.isEmpty && position != null) {
+      page = await ref
+          .watch(pharmacyBranchSearchRemoteDatasourceProvider)
+          .search(query: query);
+    }
+
     return PharmacySearchState(
       items: page.items,
       nextCursor: page.nextCursor,
@@ -82,6 +98,7 @@ class PharmacySearchNotifier extends AsyncNotifier<PharmacySearchState> {
       final page = await ref
           .read(pharmacyBranchSearchRemoteDatasourceProvider)
           .search(
+            query: ref.read(pharmacySearchQueryProvider),
             latitude: position?.latitude,
             longitude: position?.longitude,
             cursor: current.nextCursor,
@@ -123,6 +140,8 @@ class SelectedPharmacy extends Notifier<String?> {
   String? build() => null;
 
   void select(String branchId) => state = branchId;
+
+  void clear() => state = null;
 }
 
 final selectedPharmacyProvider = NotifierProvider<SelectedPharmacy, String?>(
@@ -141,9 +160,9 @@ final pharmacySearchQueryProvider =
     NotifierProvider<PharmacySearchQuery, String>(PharmacySearchQuery.new);
 
 /// [pharmaciesProvider] narrowed by the search query, sorted by distance
-/// (nearest first, unknown-distance results last) — client-side, since the
-/// query box re-filters the same already-fetched page rather than re-hitting
-/// the network per keystroke.
+/// (nearest first, unknown-distance results last). The query is sent to the
+/// backend by [PharmacySearchNotifier] and retained here as a defensive local
+/// filter for mock/older responses that may ignore it.
 final filteredPharmaciesProvider = FutureProvider<List<Pharmacy>>((ref) async {
   final pharmacies = await ref.watch(pharmaciesProvider.future);
   final query = ref.watch(pharmacySearchQueryProvider).trim().toLowerCase();

@@ -823,6 +823,8 @@
     "password_warning": "Save the password now — it won't be shown again after closing this window.",
     "copied_phone": "Phone number copied",
     "password_label": "Password",
+    "password_hint_edit": "Enter a new password to replace the current one",
+    "password_show": "Show password",
     "copied_password": "Password copied",
     "done_cta": "Done, I've informed the assistant",
     "update_failed": "Failed to save changes. Please try again.",

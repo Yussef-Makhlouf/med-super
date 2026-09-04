@@ -9,6 +9,7 @@ class Assistant {
     required this.displayName,
     required this.status,
     required this.createdAt,
+    this.generatedPassword,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class Assistant {
   final String displayName;
   final AssistantStatus status;
   final DateTime createdAt;
+  final String? generatedPassword;
 
   bool get isActive => status == AssistantStatus.active;
 
@@ -25,11 +27,13 @@ class Assistant {
     String? displayName,
     AssistantStatus? status,
     DateTime? createdAt,
+    String? generatedPassword,
   }) => Assistant(
     id: id ?? this.id,
     phone: phone ?? this.phone,
     displayName: displayName ?? this.displayName,
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
+    generatedPassword: generatedPassword ?? this.generatedPassword,
   );
 }

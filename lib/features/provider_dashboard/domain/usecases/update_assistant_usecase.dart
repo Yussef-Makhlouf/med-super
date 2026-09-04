@@ -10,9 +10,11 @@ class UpdateAssistantUseCase {
     required String id,
     String? displayName,
     String? status,
+    String? password,
   }) => _repository.updateAssistant(
     id: id,
     displayName: displayName,
     status: status,
+    password: password,
   );
 }

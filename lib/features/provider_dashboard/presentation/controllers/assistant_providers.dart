@@ -89,10 +89,16 @@ class AssistantsNotifier extends AsyncNotifier<List<Assistant>> {
     required String id,
     String? displayName,
     AssistantStatus? status,
+    String? password,
   }) async {
     final result = await ref
         .read(updateAssistantUseCaseProvider)
-        .call(id: id, displayName: displayName, status: status?.apiValue);
+        .call(
+          id: id,
+          displayName: displayName,
+          status: status?.apiValue,
+          password: password,
+        );
     switch (result) {
       case Ok(:final value):
         state = state.whenData(

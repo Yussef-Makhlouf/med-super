@@ -8,6 +8,7 @@ class AssistantDto {
     required this.displayName,
     required this.status,
     required this.createdAt,
+    this.generatedPassword,
   });
 
   final String id;
@@ -15,6 +16,7 @@ class AssistantDto {
   final String displayName;
   final String status;
   final String createdAt;
+  final String? generatedPassword;
 
   factory AssistantDto.fromJson(Map<String, dynamic> json) => AssistantDto(
     id: json['id'] as String,
@@ -22,6 +24,8 @@ class AssistantDto {
     displayName: (json['displayName'] ?? json['display_name'] ?? '') as String,
     status: (json['status'] ?? 'ACTIVE') as String,
     createdAt: (json['createdAt'] ?? json['created_at'] ?? '') as String,
+    generatedPassword:
+        (json['generatedPassword'] ?? json['generated_password']) as String?,
   );
 
   Assistant toEntity() => Assistant(
@@ -30,5 +34,6 @@ class AssistantDto {
     displayName: displayName,
     status: AssistantStatus.fromApi(status),
     createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
+    generatedPassword: generatedPassword,
   );
 }

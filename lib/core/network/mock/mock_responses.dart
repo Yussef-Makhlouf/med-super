@@ -154,7 +154,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف ورمز التحقق مطلوبان.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
+      return _error(
+        401,
+        'OTP_INVALID',
+        'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.',
+      );
     }
 
     final isProvider = role != 'PATIENT';
@@ -189,7 +193,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
 
     final phone = _mockAuth.phone;
     if (phone == null) {
-      return _error(401, 'UNAUTHENTICATED', 'لا توجد جلسة نشِطة. سجّل الدخول مرة أخرى.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'لا توجد جلسة نشِطة. سجّل الدخول مرة أخرى.',
+      );
     }
 
     _passwordsByPhone[phone] = password;
@@ -213,16 +221,16 @@ void registerFoundationMocks(MockInterceptor interceptor) {
         options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
 
     if (phone == null || password == null) {
-      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف وكلمة المرور مطلوبان.');
+      return _error(
+        422,
+        'VALIDATION_ERROR',
+        'رقم الهاتف وكلمة المرور مطلوبان.',
+      );
     }
 
     final storedPassword = _passwordsByPhone[phone];
     if (storedPassword == null) {
-      return _error(
-        404,
-        'ACCOUNT_NOT_FOUND',
-        'لا يوجد حساب مرتبط بهذا الرقم.',
-      );
+      return _error(404, 'ACCOUNT_NOT_FOUND', 'لا يوجد حساب مرتبط بهذا الرقم.');
     }
     if (storedPassword != password) {
       return _error(
@@ -245,11 +253,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       }
     }
     if (assistantRecord != null && assistantRecord['status'] == 'SUSPENDED') {
-      return _error(
-        403,
-        'ACCOUNT_SUSPENDED',
-        'تم إيقاف حساب المساعد هذا.',
-      );
+      return _error(403, 'ACCOUNT_SUSPENDED', 'تم إيقاف حساب المساعد هذا.');
     }
     final resolvedRole = assistantRecord != null ? 'CLINIC_STAFF' : role;
 
@@ -300,7 +304,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(422, 'VALIDATION_ERROR', 'رمز التحقق مطلوب.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
+      return _error(
+        401,
+        'OTP_INVALID',
+        'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.',
+      );
     }
 
     // Checks-only — no side effects, no tokens, unlike passwordReset below.
@@ -317,7 +325,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(422, 'VALIDATION_ERROR', 'رمز التحقق مطلوب.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
+      return _error(
+        401,
+        'OTP_INVALID',
+        'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.',
+      );
     }
     if (newPassword == null || newPassword.length < 8) {
       return _error(
@@ -347,7 +359,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     if (refresh == null ||
         _mockAuth.refreshToken == null ||
         refresh != _mockAuth.refreshToken) {
-      return _error(401, 'TOKEN_INVALID', 'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.');
+      return _error(
+        401,
+        'TOKEN_INVALID',
+        'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.',
+      );
     }
     final access = _mockAuth.accessToken ?? 'dev_patient_refreshed';
     return {
@@ -363,13 +379,21 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   interceptor.register('GET', ApiPaths.me, (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
 
     // Accept mock session tokens and legacy dev_ bypass tokens.
     final ok = token == _mockAuth.accessToken || token.startsWith('dev_');
     if (!ok) {
-      return _error(401, 'TOKEN_INVALID', 'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.');
+      return _error(
+        401,
+        'TOKEN_INVALID',
+        'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.',
+      );
     }
 
     if (token.startsWith('dev_') && _mockAuth.accessToken == null) {
@@ -386,7 +410,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   interceptor.register('PATCH', ApiPaths.me, (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
     final body = _body(options);
     final name = body?['display_name'] as String?;
@@ -1190,9 +1218,7 @@ const _mockPharmacyBranchesCatalog = [
 /// built from the same `_mockPharmacyBranchesCatalog` rows so ids/names stay
 /// in sync with the detail mock and the real seeded demo branches.
 void registerPharmacyBranchSearchMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', '${ApiPaths.pharmacyBranches}/search', (
-    options,
-  ) {
+  interceptor.register('GET', '${ApiPaths.pharmacyBranches}/search', (options) {
     final q = (options.queryParameters['q'] as String?)?.toLowerCase();
     final hasLocation =
         options.queryParameters['lat'] != null &&
@@ -1202,8 +1228,7 @@ void registerPharmacyBranchSearchMocks(MockInterceptor interceptor) {
         .where((b) {
           if (q == null || q.isEmpty) return true;
           final brandName =
-              (b['pharmacy'] as Map<String, dynamic>)['brand_name']
-                  as String?;
+              (b['pharmacy'] as Map<String, dynamic>)['brand_name'] as String?;
           return brandName?.toLowerCase().contains(q) ?? false;
         })
         .toList()
@@ -2126,7 +2151,11 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     final body = _body(options) ?? {};
     final status = body['status'] as String?;
     if (status != 'ACTIVE' && status != 'PAUSED') {
-      return _error(400, 'VALIDATION_ERROR', 'الحالة يجب أن تكون «نشِط» أو «موقوف».');
+      return _error(
+        400,
+        'VALIDATION_ERROR',
+        'الحالة يجب أن تكون «نشِط» أو «موقوف».',
+      );
     }
 
     final updated = Map<String, dynamic>.from(
@@ -2173,7 +2202,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
     final now = DateTime.now().toUtc().toIso8601String();
     final created = {
-      'id': 'tmpl-${_mockProviderDashboardStore.scheduleTemplates.length + 1}-${DateTime.now().millisecondsSinceEpoch}',
+      'id':
+          'tmpl-${_mockProviderDashboardStore.scheduleTemplates.length + 1}-${DateTime.now().millisecondsSinceEpoch}',
       'doctorClinicAffiliationId': affiliationId,
       'clinicBranchId': clinic['clinicBranchId'],
       'clinicId': clinic['clinicId'],
@@ -2218,7 +2248,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       );
     }
 
-    final start = (body['startTime'] as String?) ?? current['startTime'] as String;
+    final start =
+        (body['startTime'] as String?) ?? current['startTime'] as String;
     final end = (body['endTime'] as String?) ?? current['endTime'] as String;
     if (end.compareTo(start) <= 0) {
       return _error(
@@ -2445,7 +2476,9 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     final from = DateTime.tryParse(
       options.queryParameters['from'] as String? ?? '',
     );
-    final to = DateTime.tryParse(options.queryParameters['to'] as String? ?? '');
+    final to = DateTime.tryParse(
+      options.queryParameters['to'] as String? ?? '',
+    );
     if (from != null || to != null) {
       items = items.where((a) {
         final startAt = DateTime.parse(a['startAt'] as String).toUtc();
@@ -2795,7 +2828,11 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('GET', '/v1/provider/assistants', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
     return {
       'statusCode': 200,
@@ -2807,7 +2844,11 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('POST', '/v1/provider/assistants', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
     final body = _body(options);
     final phone = body?['phone'] as String?;
@@ -2851,7 +2892,11 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('PATCH', '/v1/provider/assistants/', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
     final segments = options.path.split('/');
     final id = segments.isNotEmpty ? segments.last.split('?').first : '';
@@ -2867,17 +2912,31 @@ void registerAssistantMocks(MockInterceptor interceptor) {
     if (body?['status'] != null) {
       record['status'] = (body!['status'] as String).toUpperCase();
     }
+    if (body?['password'] != null) {
+      _passwordsByPhone[record['phone'] as String] =
+          body!['password'] as String;
+    }
     record['updated_at'] = DateTime.now().toUtc().toIso8601String();
     _mockAssistants[id] = record;
 
-    return {'statusCode': 200, 'data': record};
+    return {
+      'statusCode': 200,
+      'data': {
+        ...record,
+        if (body?['password'] != null) 'generated_password': body!['password'],
+      },
+    };
   });
 
   // DELETE /v1/provider/assistants/:id — soft-deactivate
   interceptor.register('DELETE', '/v1/provider/assistants/', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
     }
     final segments = options.path.split('/');
     final id = segments.isNotEmpty ? segments.last.split('?').first : '';

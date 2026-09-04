@@ -9,6 +9,7 @@ import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 
@@ -17,7 +18,9 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pre
 /// of `LabRequestUploadScreen` (lab_booking), including its back-button
 /// header, with side-by-side delivery-method cards per the mockup.
 class PharmacyPrescriptionUploadScreen extends ConsumerStatefulWidget {
-  const PharmacyPrescriptionUploadScreen({super.key});
+  const PharmacyPrescriptionUploadScreen({this.resetFlow = false, super.key});
+
+  final bool? resetFlow;
 
   @override
   ConsumerState<PharmacyPrescriptionUploadScreen> createState() =>
@@ -27,6 +30,24 @@ class PharmacyPrescriptionUploadScreen extends ConsumerStatefulWidget {
 class _PharmacyPrescriptionUploadScreenState
     extends ConsumerState<PharmacyPrescriptionUploadScreen> {
   final _notesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.resetFlow != true) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _startNewPharmacyFlow();
+    });
+  }
+
+  void _startNewPharmacyFlow() {
+    ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
+    ref.read(selectedDeliveryMethodProvider.notifier).reset();
+    ref.read(selectedPharmacyProvider.notifier).clear();
+    ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
+    ref.invalidate(pharmacySearchProvider);
+    ref.invalidate(prescriptionUploadControllerProvider);
+  }
 
   @override
   void dispose() {
@@ -48,9 +69,7 @@ class _PharmacyPrescriptionUploadScreenState
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('errors.image_picker_failed'.tr()),
-        ),
+        SnackBar(content: Text('errors.image_picker_failed'.tr())),
       );
       return;
     }
@@ -98,7 +117,9 @@ class _PharmacyPrescriptionUploadScreenState
     final images = ref.watch(uploadedPrescriptionImagesProvider);
     final selectedMethod = ref.watch(selectedDeliveryMethodProvider);
     final canSubmit = ref.watch(canSubmitPrescriptionUploadProvider);
-    final isSubmitting = ref.watch(prescriptionUploadControllerProvider).isLoading;
+    final isSubmitting = ref
+        .watch(prescriptionUploadControllerProvider)
+        .isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -112,7 +133,7 @@ class _PharmacyPrescriptionUploadScreenState
                 'pharmacy_booking.step_pharmacy'.tr(),
                 'pharmacy_booking.step_delivery'.tr(),
               ],
-              currentStep: 1,
+              currentStep: 0,
               accentColor: AppColors.patientPrimary,
             ),
             Expanded(

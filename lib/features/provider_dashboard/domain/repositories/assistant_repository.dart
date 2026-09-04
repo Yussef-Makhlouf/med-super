@@ -14,6 +14,7 @@ abstract class AssistantRepository {
     required String id,
     String? displayName,
     String? status,
+    String? password,
   });
 
   Future<Result<void>> deleteAssistant(String id);

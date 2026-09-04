@@ -9,6 +9,9 @@ import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/home/presentation/controllers/featured_doctors_provider.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
 import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
@@ -297,11 +300,11 @@ class _PromoBanner extends StatelessWidget {
   );
 }
 
-class _QuickActions extends StatelessWidget {
+class _QuickActions extends ConsumerWidget {
   const _QuickActions();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         Expanded(
@@ -320,7 +323,15 @@ class _QuickActions extends StatelessWidget {
             iconColor: const Color(0xFF14B8A6),
             title: 'home.upload_rx'.tr(),
             subtitle: 'home.upload_rx_sub'.tr(),
-            onTap: () => context.push('/patient/pharmacy/upload'),
+            onTap: () {
+              ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
+              ref.read(selectedDeliveryMethodProvider.notifier).reset();
+              ref.read(selectedPharmacyProvider.notifier).clear();
+              ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
+              ref.invalidate(pharmacySearchProvider);
+              ref.invalidate(prescriptionUploadControllerProvider);
+              context.push('/patient/pharmacy/upload');
+            },
           ),
         ),
         const SizedBox(width: 12),

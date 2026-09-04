@@ -48,11 +48,16 @@ class _PharmacyMapViewState extends State<PharmacyMapView> {
 
   @override
   Widget build(BuildContext context) {
-    final center = widget.pharmacies.isEmpty
+    final mappedPharmacies = widget.pharmacies
+        .where(
+          (pharmacy) => pharmacy.latitude != null && pharmacy.longitude != null,
+        )
+        .toList();
+    final center = mappedPharmacies.isEmpty
         ? const LatLng(24.7136, 46.6753)
         : LatLng(
-            widget.pharmacies.first.latitude,
-            widget.pharmacies.first.longitude,
+            mappedPharmacies.first.latitude!,
+            mappedPharmacies.first.longitude!,
           );
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadii.md),
@@ -81,10 +86,13 @@ class _PharmacyMapViewState extends State<PharmacyMapView> {
                   tileProvider: widget.tileProvider,
                 ),
                 MarkerLayer(
-                  markers: widget.pharmacies
+                  markers: mappedPharmacies
                       .map(
                         (pharmacy) => Marker(
-                          point: LatLng(pharmacy.latitude, pharmacy.longitude),
+                          point: LatLng(
+                            pharmacy.latitude!,
+                            pharmacy.longitude!,
+                          ),
                           width: 40,
                           height: 40,
                           child: GestureDetector(

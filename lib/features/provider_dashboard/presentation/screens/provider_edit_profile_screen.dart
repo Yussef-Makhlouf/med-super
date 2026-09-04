@@ -64,17 +64,6 @@ class _ProviderEditProfileScreenState
     setState(() => _isDirty = true);
   }
 
-  /// Photo upload has no real backend anywhere yet — no object-storage
-  /// decision exists for doctor photos (`DEC-009`, same gap as prescription
-  /// uploads). Surfaces the same "coming soon" message the patient side's
-  /// own avatar placeholder uses, rather than pretending to upload to the
-  /// invented `/v1/provider/avatar` this screen used to call.
-  void _showPhotoComingSoon() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('الصور قريبًا')));
-  }
-
   Future<void> _submit({required bool isAssistant}) async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
@@ -95,9 +84,9 @@ class _ProviderEditProfileScreenState
           );
           Navigator.of(context).pop();
         case Err(:final failure):
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('حدث خطأ: ${failure.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('حدث خطأ: ${failure.toString()}')),
+          );
       }
       return;
     }
@@ -117,9 +106,7 @@ class _ProviderEditProfileScreenState
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'حدث خطأ: ${(emailResult as Err).failure.toString()}',
-          ),
+          content: Text('حدث خطأ: ${(emailResult as Err).failure.toString()}'),
         ),
       );
       return;
@@ -193,47 +180,19 @@ class _ProviderEditProfileScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Avatar — placeholder only, see _showPhotoComingSoon.
+                  // Avatar is display-only until profile image storage exists.
                   Center(
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: AppColors.surfaceCard,
-                          backgroundImage: previewImage,
-                          child: previewImage == null
-                              ? const Icon(
-                                  Icons.account_circle,
-                                  size: 96,
-                                  color: AppColors.mutedText,
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: _showPhotoComingSoon,
-                            child: Container(
-                              padding: const EdgeInsets.all(7),
-                              decoration: BoxDecoration(
-                                color: brandBlue,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.edit,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundColor: AppColors.surfaceCard,
+                      backgroundImage: previewImage,
+                      child: previewImage == null
+                          ? const Icon(
+                              Icons.account_circle,
+                              size: 96,
+                              color: AppColors.mutedText,
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -314,8 +273,9 @@ class _ProviderEditProfileScreenState
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
                     fullWidth: true,
-                    onPressed:
-                        _isDirty ? () => _submit(isAssistant: isAssistant) : null,
+                    onPressed: _isDirty
+                        ? () => _submit(isAssistant: isAssistant)
+                        : null,
                   ),
                 ],
               ),

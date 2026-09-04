@@ -29,7 +29,8 @@ final pharmacyRoutes = <RouteBase>[
   GoRoute(
     path: '/patient/pharmacy/upload',
     name: 'patientPharmacyUpload',
-    builder: (context, state) => const PharmacyPrescriptionUploadScreen(),
+    builder: (context, state) =>
+        const PharmacyPrescriptionUploadScreen(resetFlow: true),
   ),
   GoRoute(
     path: '/patient/pharmacy/select',

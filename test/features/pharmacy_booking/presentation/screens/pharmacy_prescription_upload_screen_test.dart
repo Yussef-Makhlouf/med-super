@@ -90,7 +90,7 @@ void main() {
       final stepper = tester.widget<StepProgressHeader>(
         find.byType(StepProgressHeader),
       );
-      expect(stepper.currentStep, 1);
+      expect(stepper.currentStep, 0);
       expect(stepper.stepLabels, [
         'pharmacy_booking.step_upload'.tr(),
         'pharmacy_booking.step_pharmacy'.tr(),

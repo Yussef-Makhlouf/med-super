@@ -11,8 +11,8 @@ class Pharmacy {
     required this.id,
     required this.name,
     required this.address,
-    required this.latitude,
-    required this.longitude,
+    this.latitude,
+    this.longitude,
     required this.deliveryCapable,
     this.distanceKm,
   });
@@ -23,8 +23,8 @@ class Pharmacy {
   /// Street address shown next to the distance on the pharmacy card, e.g.
   /// "شارع التحلية، الرياض".
   final String address;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
 
   /// `pharmacy_branches.delivery_capable` — real backend data, unlike the
   /// rating/open-status fields dropped 2026-08-29.
