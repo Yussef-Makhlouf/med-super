@@ -1565,20 +1565,55 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
     };
     _mockProviderDashboardStore.persistDoctorAccount();
 
-    _mockProviderDashboardStore.clinicSettings = {
-      ..._mockProviderDashboardStore.clinicSettings,
-      if (str('clinic_name') != null) 'clinic_name': str('clinic_name'),
-      if (str('clinic_address') != null) 'address': str('clinic_address'),
-      if (str('phone') != null) 'phone': str('phone'),
-      if (str('email') != null) 'email': str('email'),
-      if (str('city_label') != null) 'city': str('city_label'),
-    };
-    _mockProviderDashboardStore.persistClinicSettings();
+    // Self-registration creates the doctor's first clinic/branch, so the
+    // dashboard's clinics list is seeded from what was actually submitted.
+    // `email` is deliberately dropped: no clinic or branch table has an email
+    // column, and the real `GET /v1/doctors/me/clinics` never returns one.
+    if (_mockProviderDashboardStore.clinics.isNotEmpty) {
+      final first = Map<String, dynamic>.from(
+        _mockProviderDashboardStore.clinics.first,
+      );
+      final address = Map<String, dynamic>.from(
+        first['address'] as Map<String, dynamic>,
+      );
+      if (str('clinic_name') != null) first['clinicName'] = str('clinic_name');
+      if (str('phone') != null) first['phone'] = str('phone');
+      if (str('clinic_address') != null) {
+        address['line1'] = str('clinic_address');
+      }
+      if (str('city_label') != null) address['city'] = str('city_label');
+      first['address'] = address;
+      _mockProviderDashboardStore.clinics[0] = first;
+      _mockProviderDashboardStore.persistClinics();
+    }
 
+    // `working_days` is already sent in the real `CreateScheduleTemplateDto`
+    // shape (`{weekday, startTime, endTime, slotDurationMinutes,
+    // bufferMinutes}`), and the backend persists it as real ScheduleTemplate
+    // rows — so it materializes here as templates, not as a separate blob.
     final workingDays = body['working_days'];
     if (workingDays is List && workingDays.isNotEmpty) {
-      _mockProviderDashboardStore.schedule = {'working_days': workingDays};
-      _mockProviderDashboardStore.persistSchedule();
+      final clinic = _mockProviderDashboardStore.clinics.isNotEmpty
+          ? _mockProviderDashboardStore.clinics.first
+          : const <String, dynamic>{};
+      final now = DateTime.now().toUtc().toIso8601String();
+      _mockProviderDashboardStore.scheduleTemplates = [
+        for (var i = 0; i < workingDays.length; i++)
+          if (workingDays[i] is Map<String, dynamic>)
+            {
+              'id': 'tmpl-reg-$i',
+              'doctorClinicAffiliationId': clinic['affiliationId'] ?? 'aff-001',
+              'clinicBranchId': clinic['clinicBranchId'] ?? 'branch-001',
+              'clinicId': clinic['clinicId'] ?? 'clinic-001',
+              'clinicName': clinic['clinicName'] ?? '',
+              'ianaTimezone': clinic['ianaTimezone'] ?? 'Africa/Cairo',
+              ...(workingDays[i] as Map<String, dynamic>),
+              'version': 1,
+              'createdAt': now,
+              'updatedAt': now,
+            },
+      ];
+      _mockProviderDashboardStore.persistScheduleTemplates();
     }
 
     return {
@@ -1611,101 +1646,191 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
 
 // ─── Seed data helpers ────────────────────────────────────────────────────────
 
-List<Map<String, dynamic>> _seedAppointments() => [
+/// Doctor Dashboard mock state, in the **real** contract shapes
+/// (`clinic-reservations` File 12 Part 49) — camelCase, `{items, nextCursor}`
+/// envelopes, `CONFIRMED`/`CANCELLED`/`RESCHEDULED`/`COMPLETED` statuses.
+///
+/// The previous seeds modelled an invented `/v1/provider/*` API (snake_case,
+/// `med_id`, `location_status`, a `pending` status that never existed) and so
+/// could not catch a single real contract mismatch. These can.
+const String _mockAffiliationId = 'aff-001';
+const String _mockBranchId = 'branch-001';
+const String _mockClinicId = 'clinic-001';
+const String _mockAffiliationId2 = 'aff-002';
+const String _mockBranchId2 = 'branch-002';
+const String _mockClinicId2 = 'clinic-002';
+
+Map<String, dynamic> _mockDoctorAppointment({
+  required String id,
+  required String patientName,
+  required String patientId,
+  required DateTime startUtc,
+  required String status,
+  String affiliationId = _mockAffiliationId,
+  String branchId = _mockBranchId,
+  String clinicId = _mockClinicId,
+  String clinicName = 'عيادة النيل التخصصية',
+  String? cancelledReason,
+}) => {
+  'appointmentId': id,
+  'status': status,
+  'slotId': '$branchId-${startUtc.toIso8601String()}',
+  'startAt': startUtc.toIso8601String(),
+  'endAt': startUtc.add(const Duration(minutes: 30)).toIso8601String(),
+  'doctorClinicAffiliationId': affiliationId,
+  'clinicId': clinicId,
+  'clinicName': clinicName,
+  'clinicBranchId': branchId,
+  'clinicBranchPhone': '+20221230000',
+  'clinicAddressLine1': '12 شارع التحرير',
+  'clinicCity': 'القاهرة',
+  'ianaTimezone': 'Africa/Cairo',
+  'patientId': patientId,
+  'patientName': patientName,
+  'patientPhone': '+201001112223',
+  'cancelledReason': cancelledReason,
+  'rescheduledFromAppointmentId': null,
+  'createdAt': startUtc.subtract(const Duration(days: 3)).toIso8601String(),
+};
+
+List<Map<String, dynamic>> _seedDoctorAppointments() {
+  final now = DateTime.now().toUtc();
+  final today = DateTime.utc(now.year, now.month, now.day);
+  return [
+    _mockDoctorAppointment(
+      id: 'apt-1',
+      patientName: 'أحمد محمود',
+      patientId: 'pat-1',
+      startUtc: today.add(const Duration(hours: 7)),
+      status: 'CONFIRMED',
+    ),
+    _mockDoctorAppointment(
+      id: 'apt-2',
+      patientName: 'سارة علي',
+      patientId: 'pat-2',
+      startUtc: today.add(const Duration(hours: 8, minutes: 30)),
+      status: 'CONFIRMED',
+    ),
+    _mockDoctorAppointment(
+      id: 'apt-3',
+      patientName: 'منى حسن',
+      patientId: 'pat-3',
+      startUtc: today.add(const Duration(hours: 6)),
+      status: 'COMPLETED',
+    ),
+    _mockDoctorAppointment(
+      id: 'apt-4',
+      patientName: 'فاطمة الشهري',
+      patientId: 'pat-4',
+      startUtc: today.subtract(const Duration(hours: 2)),
+      status: 'CANCELLED',
+      cancelledReason: 'PATIENT_REQUEST',
+    ),
+    _mockDoctorAppointment(
+      id: 'apt-5',
+      patientName: 'نورة العمري',
+      patientId: 'pat-5',
+      startUtc: today.add(const Duration(days: 1, hours: 7)),
+      status: 'CONFIRMED',
+      affiliationId: _mockAffiliationId2,
+      branchId: _mockBranchId2,
+      clinicId: _mockClinicId2,
+      clinicName: 'مركز الإسكندرية الطبي',
+    ),
+    _mockDoctorAppointment(
+      id: 'apt-6',
+      patientName: 'محمد الغامدي',
+      patientId: 'pat-6',
+      startUtc: today.add(const Duration(days: 2, hours: 7)),
+      status: 'CONFIRMED',
+    ),
+  ];
+}
+
+List<Map<String, dynamic>> _seedDoctorClinics() => [
   {
-    'id': 'apt-1',
-    'patient_name': 'سارة المحمد',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now().toLocal().toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .add(const Duration(minutes: 30))
-        .toIso8601String(),
-    'location_status': 'في العيادة',
-    'med_id': 'MED-1234',
-    'status': 'pending',
+    'affiliationId': _mockAffiliationId,
+    'affiliationStatus': 'ACTIVE',
+    'consultFee': '250.00',
+    'currency': 'EGP',
+    'clinicId': _mockClinicId,
+    'clinicName': 'عيادة النيل التخصصية',
+    'clinicStatus': 'VERIFIED',
+    'clinicBranchId': _mockBranchId,
+    'branchStatus': 'VERIFIED',
+    'phone': '+20221230000',
+    'ianaTimezone': 'Africa/Cairo',
+    'address': {
+      'line1': '12 شارع التحرير',
+      'city': 'القاهرة',
+      'regionCode': 'CAI',
+      'countryCode': 'EG',
+    },
   },
   {
-    'id': 'apt-2',
-    'patient_name': 'أحمد العتيبي',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now()
-        .toLocal()
-        .add(const Duration(hours: 1))
-        .toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .add(const Duration(hours: 1, minutes: 30))
-        .toIso8601String(),
-    'location_status': 'في العيادة',
-    'med_id': 'MED-1235',
-    'status': 'confirmed',
-  },
-  {
-    'id': 'apt-3',
-    'patient_name': 'خالد بن فهد',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now()
-        .toLocal()
-        .add(const Duration(hours: 2))
-        .toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .add(const Duration(hours: 2, minutes: 30))
-        .toIso8601String(),
-    'location_status': 'في العيادة',
-    'med_id': 'MED-1236',
-    'status': 'cancelled',
-  },
-  {
-    'id': 'apt-4',
-    'patient_name': 'فاطمة الشهري',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(hours: 2))
-        .toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(hours: 1, minutes: 30))
-        .toIso8601String(),
-    'location_status': 'في العيادة',
-    'med_id': 'MED-1237',
-    'status': 'completed',
-  },
-  {
-    'id': 'apt-5',
-    'patient_name': 'نورة العمري',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now()
-        .toLocal()
-        .add(const Duration(days: 1))
-        .toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .add(const Duration(days: 1, hours: 1))
-        .toIso8601String(),
-    'location_status': 'عيادة خارجية',
-    'med_id': 'MED-1238',
-    'status': 'pending',
-  },
-  {
-    'id': 'apt-6',
-    'patient_name': 'محمد الغامدي',
-    'patient_avatar_url': null,
-    'scheduled_start': DateTime.now()
-        .toLocal()
-        .add(const Duration(days: 2))
-        .toIso8601String(),
-    'scheduled_end': DateTime.now()
-        .toLocal()
-        .add(const Duration(days: 2, hours: 1))
-        .toIso8601String(),
-    'location_status': 'في العيادة',
-    'med_id': 'MED-1239',
-    'status': 'confirmed',
+    'affiliationId': _mockAffiliationId2,
+    'affiliationStatus': 'ACTIVE',
+    'consultFee': '300.00',
+    'currency': 'EGP',
+    'clinicId': _mockClinicId2,
+    'clinicName': 'مركز الإسكندرية الطبي',
+    'clinicStatus': 'VERIFIED',
+    'clinicBranchId': _mockBranchId2,
+    'branchStatus': 'PENDING',
+    'phone': '+20321230000',
+    'ianaTimezone': 'Africa/Cairo',
+    'address': {
+      'line1': '5 الكورنيش',
+      'city': 'الإسكندرية',
+      'regionCode': 'ALX',
+      'countryCode': 'EG',
+    },
   },
 ];
+
+List<Map<String, dynamic>> _seedDoctorScheduleTemplates() {
+  Map<String, dynamic> template({
+    required String id,
+    required int weekday,
+    String start = '09:00',
+    String end = '17:00',
+    String affiliationId = _mockAffiliationId,
+    String branchId = _mockBranchId,
+    String clinicId = _mockClinicId,
+    String clinicName = 'عيادة النيل التخصصية',
+  }) => {
+    'id': id,
+    'doctorClinicAffiliationId': affiliationId,
+    'clinicBranchId': branchId,
+    'clinicId': clinicId,
+    'clinicName': clinicName,
+    'ianaTimezone': 'Africa/Cairo',
+    'weekday': weekday,
+    'startTime': start,
+    'endTime': end,
+    'slotDurationMinutes': 30,
+    'bufferMinutes': 0,
+    'version': 1,
+    'createdAt': DateTime.utc(2026, 8, 1).toIso8601String(),
+    'updatedAt': DateTime.utc(2026, 8, 1).toIso8601String(),
+  };
+
+  return [
+    template(id: 'tmpl-1', weekday: 6),
+    template(id: 'tmpl-2', weekday: 7),
+    template(id: 'tmpl-3', weekday: 1),
+    template(
+      id: 'tmpl-4',
+      weekday: 3,
+      start: '10:00',
+      end: '14:00',
+      affiliationId: _mockAffiliationId2,
+      branchId: _mockBranchId2,
+      clinicId: _mockClinicId2,
+      clinicName: 'مركز الإسكندرية الطبي',
+    ),
+  ];
+}
 
 List<Map<String, dynamic>> _seedPatients() => [
   {
@@ -1864,20 +1989,27 @@ void _persist(String key, List<Map<String, dynamic>> list) {
 
 class _MockProviderDashboardStore {
   _MockProviderDashboardStore() {
-    appointments = _loadOrSeed('appointments', _seedAppointments);
+    appointments = _loadOrSeed('doctor_appointments', _seedDoctorAppointments);
     patients = _loadOrSeed('patients', _seedPatients);
     notifications = _loadOrSeed('notifications', _seedNotifications);
     doctorAccount = _loadOrSeedSingle('doctor_account', _seedDoctorAccount);
-    clinicSettings = _loadOrSeedSingle('clinic_settings', _seedClinicSettings);
-    schedule = _loadOrSeedSingle('schedule', _seedSchedule);
+    clinics = _loadOrSeed('doctor_clinics', _seedDoctorClinics);
+    scheduleTemplates = _loadOrSeed(
+      'doctor_schedule_templates',
+      _seedDoctorScheduleTemplates,
+    );
   }
 
+  /// Doctor-facing appointment rows, in the real `DoctorAppointmentSummary`
+  /// shape. The Hive key is new (`doctor_appointments`) on purpose: the old
+  /// `appointments` key holds rows in the abandoned invented shape, and
+  /// reusing it would deserialize those into the new parser on first launch.
   late List<Map<String, dynamic>> appointments;
   late List<Map<String, dynamic>> patients;
   late List<Map<String, dynamic>> notifications;
   late Map<String, dynamic> doctorAccount;
-  late Map<String, dynamic> clinicSettings;
-  late Map<String, dynamic> schedule;
+  late List<Map<String, dynamic>> clinics;
+  late List<Map<String, dynamic>> scheduleTemplates;
 
   /// Mirrors `GET /v1/doctors/me`'s real shape (`MyDoctorProfile`,
   /// camelCase) — `hospital_name` was dropped 2026-08-31 along with the
@@ -1895,51 +2027,6 @@ class _MockProviderDashboardStore {
     'experienceYears': 12,
     'bio': 'استشاري خبرة أكثر من 12 عاماً في الطب الباطني والأمراض المزمنة.',
     'isVerified': true,
-  };
-
-  static Map<String, dynamic> _seedClinicSettings() => {
-    'clinic_name': 'مستشفى الملك فيصل التخصصي',
-    'address': 'شارع التخصصي، المعذر، الرياض',
-    'phone': '+20221234567',
-    'email': 'dr.ahmed@kfshrc.edu.sa',
-    'city': 'الرياض',
-  };
-
-  static Map<String, dynamic> _seedSchedule() => {
-    'working_days': [
-      {
-        'day': 'saturday',
-        'is_enabled': true,
-        'from': {'hour': 9, 'minute': 0},
-        'to': {'hour': 17, 'minute': 0},
-      },
-      {
-        'day': 'sunday',
-        'is_enabled': true,
-        'from': {'hour': 9, 'minute': 0},
-        'to': {'hour': 17, 'minute': 0},
-      },
-      {
-        'day': 'monday',
-        'is_enabled': true,
-        'from': {'hour': 9, 'minute': 0},
-        'to': {'hour': 17, 'minute': 0},
-      },
-      {
-        'day': 'tuesday',
-        'is_enabled': true,
-        'from': {'hour': 9, 'minute': 0},
-        'to': {'hour': 17, 'minute': 0},
-      },
-      {
-        'day': 'wednesday',
-        'is_enabled': true,
-        'from': {'hour': 9, 'minute': 0},
-        'to': {'hour': 17, 'minute': 0},
-      },
-      {'day': 'thursday', 'is_enabled': false, 'from': null, 'to': null},
-      {'day': 'friday', 'is_enabled': false, 'from': null, 'to': null},
-    ],
   };
 
   static Map<String, dynamic> _loadOrSeedSingle(
@@ -1961,127 +2048,424 @@ class _MockProviderDashboardStore {
     return seeded;
   }
 
-  void persistAppointments() => _persist('appointments', appointments);
+  void persistAppointments() => _persist('doctor_appointments', appointments);
   void persistPatients() => _persist('patients', patients);
   void persistNotifications() => _persist('notifications', notifications);
   void persistDoctorAccount() =>
       _cacheBox?.put('doctor_account', jsonEncode(doctorAccount));
-  void persistClinicSettings() =>
-      _cacheBox?.put('clinic_settings', jsonEncode(clinicSettings));
-  void persistSchedule() => _cacheBox?.put('schedule', jsonEncode(schedule));
+  void persistClinics() => _persist('doctor_clinics', clinics);
+  void persistScheduleTemplates() =>
+      _persist('doctor_schedule_templates', scheduleTemplates);
 }
 
 final _mockProviderDashboardStore = _MockProviderDashboardStore();
 
+/// Doctor Dashboard mocks, on the **real** doctor-scoped routes
+/// (`clinic-reservations` File 12 Part 49).
+///
+/// MUST be registered before `registerDoctorMeMocks` (see `dio_client.dart`):
+/// `MockInterceptor` matches by first-registered-wins substring containment,
+/// and `/v1/doctors/me` is a prefix of every path here. Within this function
+/// the same rule applies — `.../clinics/branches` and `.../clinics/affiliations`
+/// are registered before `.../clinics`, and the appointment sub-actions before
+/// the list.
+///
+/// `/v1/provider/patients` and `/v1/provider/notifications` stay here too and
+/// stay **invented** — no backend route exists for either (see
+/// `provider_dashboard/STATUS.md`). Everything else now mirrors a real one.
 void registerProviderDashboardMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', ApiPaths.providerAppointments, (options) {
-    final dateParam = options.queryParameters['date'] as String?;
-    final statusParam = options.queryParameters['status'] as String?;
+  // --- Clinics and branches -------------------------------------------------
 
-    if (_mockProviderDashboardStore.appointments.isEmpty) {
-      _mockProviderDashboardStore.appointments = _seedAppointments();
-      _mockProviderDashboardStore.persistAppointments();
-    }
-
-    var filtered = List<Map<String, dynamic>>.from(
-      _mockProviderDashboardStore.appointments,
+  interceptor.register('PATCH', ApiPaths.doctorMeClinicBranches, (options) {
+    final branchId = options.path.split('/').last;
+    final index = _mockProviderDashboardStore.clinics.indexWhere(
+      (c) => c['clinicBranchId'] == branchId,
     );
-    if (dateParam != null && dateParam.isNotEmpty) {
-      // Parse year/month/day from the query param (YYYY-MM-DD format)
-      // and compare with appointment date in local time — timezone-safe on Web.
-      final parts = dateParam.split('-');
-      if (parts.length == 3) {
-        final qYear = int.tryParse(parts[0]);
-        final qMonth = int.tryParse(parts[1]);
-        final qDay = int.tryParse(parts[2]);
-        filtered = filtered.where((a) {
-          try {
-            final dt = DateTime.parse(a['scheduled_start'] as String).toLocal();
-            return dt.year == qYear && dt.month == qMonth && dt.day == qDay;
-          } catch (_) {
-            return false;
-          }
-        }).toList();
-      }
-    }
-
-    if (statusParam != null && statusParam.isNotEmpty) {
-      final statuses = statusParam
-          .split(',')
-          .map((s) => s.trim().toLowerCase())
-          .toList();
-      filtered = filtered.where((a) {
-        final st = (a['status'] as String).toLowerCase();
-        return statuses.contains(st);
-      }).toList();
-    }
-
-    return {
-      'statusCode': 200,
-      'data': {'items': filtered},
-    };
-  });
-
-  interceptor.register('POST', ApiPaths.providerAppointments, (options) {
-    final path = options.path;
-    if (path.contains('/accept') || path.contains('/reject')) {
-      final isAccept = path.contains('/accept');
-      final parts = path.split('/');
-      final actionIndex = parts.indexWhere(
-        (p) => p == 'accept' || p == 'reject',
-      );
-      final id = actionIndex > 0 ? parts[actionIndex - 1] : '';
-
-      final index = _mockProviderDashboardStore.appointments.indexWhere(
-        (a) => a['id'] == id,
-      );
-      if (index == -1) {
-        return _error(404, 'NOT_FOUND', 'Appointment not found');
-      }
-
-      final updated = Map<String, dynamic>.from(
-        _mockProviderDashboardStore.appointments[index],
-      );
-      updated['status'] = isAccept ? 'confirmed' : 'cancelled';
-      _mockProviderDashboardStore.appointments[index] = updated;
-      // Persist mutation to Hive so it survives a cold restart.
-      _mockProviderDashboardStore.persistAppointments();
-
-      return {'statusCode': 200, 'data': updated};
+    // The real backend answers 404 (never 403) for a branch the caller is not
+    // affiliated with — existence hiding. The mock does the same, so the
+    // client's own error handling is exercised against the right status.
+    if (index == -1) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'ClinicBranch not found.');
     }
 
     final body = _body(options) ?? {};
-    final newId = 'apt-${_mockProviderDashboardStore.appointments.length + 1}';
-    final medId =
-        'MED-${1240 + _mockProviderDashboardStore.appointments.length}';
-    final newApt = {
-      'id': newId,
-      'patient_name': body['patient_name'] ?? 'مريض جديد',
-      'patient_avatar_url': null,
-      'scheduled_start':
-          body['scheduled_start'] ?? DateTime.now().toIso8601String(),
-      'scheduled_end':
-          body['scheduled_end'] ??
-          DateTime.now().add(const Duration(minutes: 30)).toIso8601String(),
-      'location_status': 'في العيادة',
-      'med_id': medId,
-      'status': 'pending',
-    };
-    _mockProviderDashboardStore.appointments.add(newApt);
-    _mockProviderDashboardStore.patients.add({
-      'id': 'pat-${_mockProviderDashboardStore.patients.length + 1}',
-      'name': newApt['patient_name'],
-      'med_id': medId,
-      'avatar_url': null,
-      'status': 'مؤكد',
-      'next_appointment': newApt['scheduled_start'],
-    });
-    // Persist both lists to Hive so new appointment survives restart.
-    _mockProviderDashboardStore.persistAppointments();
-    _mockProviderDashboardStore.persistPatients();
-
-    return {'statusCode': 200, 'data': newApt};
+    final updated = Map<String, dynamic>.from(
+      _mockProviderDashboardStore.clinics[index],
+    );
+    if (body.containsKey('phone')) updated['phone'] = body['phone'];
+    if (body.containsKey('ianaTimezone')) {
+      updated['ianaTimezone'] = body['ianaTimezone'];
+    }
+    if (body['address'] is Map) {
+      final address = Map<String, dynamic>.from(
+        updated['address'] as Map<String, dynamic>,
+      );
+      final patch = body['address'] as Map<String, dynamic>;
+      if (patch.containsKey('line1')) address['line1'] = patch['line1'];
+      if (patch.containsKey('city')) address['city'] = patch['city'];
+      updated['address'] = address;
+    }
+    _mockProviderDashboardStore.clinics[index] = updated;
+    _mockProviderDashboardStore.persistClinics();
+    return {'statusCode': 200, 'data': updated};
   });
+
+  interceptor.register('PATCH', ApiPaths.doctorMeAffiliations, (options) {
+    final affiliationId = options.path.split('/').last;
+    final index = _mockProviderDashboardStore.clinics.indexWhere(
+      (c) => c['affiliationId'] == affiliationId,
+    );
+    if (index == -1) {
+      return _error(
+        404,
+        'RESOURCE_NOT_FOUND',
+        'DoctorClinicAffiliation not found.',
+      );
+    }
+
+    final body = _body(options) ?? {};
+    final status = body['status'] as String?;
+    if (status != 'ACTIVE' && status != 'PAUSED') {
+      return _error(400, 'VALIDATION_ERROR', 'status must be ACTIVE or PAUSED.');
+    }
+
+    final updated = Map<String, dynamic>.from(
+      _mockProviderDashboardStore.clinics[index],
+    )..['affiliationStatus'] = status;
+    _mockProviderDashboardStore.clinics[index] = updated;
+    _mockProviderDashboardStore.persistClinics();
+    return {'statusCode': 200, 'data': updated};
+  });
+
+  interceptor.register('GET', ApiPaths.doctorMeClinics, (options) {
+    return {
+      'statusCode': 200,
+      'data': {'items': _mockProviderDashboardStore.clinics},
+    };
+  });
+
+  // --- Schedule templates ---------------------------------------------------
+
+  interceptor.register('POST', ApiPaths.doctorMeScheduleTemplates, (options) {
+    final body = _body(options) ?? {};
+    final affiliationId = body['doctorClinicAffiliationId'] as String?;
+    final clinic = _mockProviderDashboardStore.clinics.firstWhere(
+      (c) => c['affiliationId'] == affiliationId,
+      orElse: () => const {},
+    );
+    if (clinic.isEmpty) {
+      return _error(
+        404,
+        'RESOURCE_NOT_FOUND',
+        'DoctorClinicAffiliation not found.',
+      );
+    }
+
+    final start = body['startTime'] as String? ?? '09:00';
+    final end = body['endTime'] as String? ?? '17:00';
+    if (end.compareTo(start) <= 0) {
+      return _error(
+        422,
+        'INVALID_SCHEDULE_WINDOW',
+        'endTime must be after startTime.',
+      );
+    }
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    final created = {
+      'id': 'tmpl-${_mockProviderDashboardStore.scheduleTemplates.length + 1}-${DateTime.now().millisecondsSinceEpoch}',
+      'doctorClinicAffiliationId': affiliationId,
+      'clinicBranchId': clinic['clinicBranchId'],
+      'clinicId': clinic['clinicId'],
+      'clinicName': clinic['clinicName'],
+      'ianaTimezone': clinic['ianaTimezone'],
+      'weekday': body['weekday'] ?? 1,
+      'startTime': start,
+      'endTime': end,
+      'slotDurationMinutes': body['slotDurationMinutes'] ?? 30,
+      'bufferMinutes': body['bufferMinutes'] ?? 0,
+      'version': 1,
+      'createdAt': now,
+      'updatedAt': now,
+    };
+    _mockProviderDashboardStore.scheduleTemplates.add(created);
+    _mockProviderDashboardStore.persistScheduleTemplates();
+    return {'statusCode': 201, 'data': created};
+  });
+
+  interceptor.register('PATCH', ApiPaths.doctorMeScheduleTemplates, (options) {
+    final templateId = options.path.split('/').last;
+    final index = _mockProviderDashboardStore.scheduleTemplates.indexWhere(
+      (t) => t['id'] == templateId,
+    );
+    if (index == -1) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'ScheduleTemplate not found.');
+    }
+
+    final current = Map<String, dynamic>.from(
+      _mockProviderDashboardStore.scheduleTemplates[index],
+    );
+    final body = _body(options) ?? {};
+
+    // Real optimistic locking: a stale `version` loses with a 409 rather than
+    // silently overwriting whatever landed first (File 12 Part 49.6).
+    final expectedVersion = body['version'];
+    if (expectedVersion is int && expectedVersion != current['version']) {
+      return _error(
+        409,
+        'OPTIMISTIC_LOCK_CONFLICT',
+        'This schedule was changed since you loaded it. Reload and try again.',
+      );
+    }
+
+    final start = (body['startTime'] as String?) ?? current['startTime'] as String;
+    final end = (body['endTime'] as String?) ?? current['endTime'] as String;
+    if (end.compareTo(start) <= 0) {
+      return _error(
+        422,
+        'INVALID_SCHEDULE_WINDOW',
+        'endTime must be after startTime.',
+      );
+    }
+
+    for (final key in [
+      'weekday',
+      'startTime',
+      'endTime',
+      'slotDurationMinutes',
+      'bufferMinutes',
+    ]) {
+      if (body.containsKey(key)) current[key] = body[key];
+    }
+    current['version'] = (current['version'] as int) + 1;
+    current['updatedAt'] = DateTime.now().toUtc().toIso8601String();
+
+    _mockProviderDashboardStore.scheduleTemplates[index] = current;
+    _mockProviderDashboardStore.persistScheduleTemplates();
+    return {'statusCode': 200, 'data': current};
+  });
+
+  interceptor.register('DELETE', ApiPaths.doctorMeScheduleTemplates, (options) {
+    final templateId = options.path.split('/').last;
+    final index = _mockProviderDashboardStore.scheduleTemplates.indexWhere(
+      (t) => t['id'] == templateId,
+    );
+    if (index == -1) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'ScheduleTemplate not found.');
+    }
+
+    final version = options.queryParameters['version'];
+    final expected = version is int ? version : int.tryParse('$version');
+    final current = _mockProviderDashboardStore.scheduleTemplates[index];
+    if (expected != null && expected != current['version']) {
+      return _error(
+        409,
+        'OPTIMISTIC_LOCK_CONFLICT',
+        'This schedule was changed since you loaded it. Reload and try again.',
+      );
+    }
+
+    _mockProviderDashboardStore.scheduleTemplates.removeAt(index);
+    _mockProviderDashboardStore.persistScheduleTemplates();
+    // Deliberately does NOT touch any generated slot — mirrors Part 33.8.
+    return {'statusCode': 204, 'data': null};
+  });
+
+  interceptor.register('GET', ApiPaths.doctorMeScheduleTemplates, (options) {
+    final affiliationId = options.queryParameters['affiliationId'] as String?;
+    var items = List<Map<String, dynamic>>.from(
+      _mockProviderDashboardStore.scheduleTemplates,
+    );
+    if (affiliationId != null) {
+      final owned = _mockProviderDashboardStore.clinics.any(
+        (c) => c['affiliationId'] == affiliationId,
+      );
+      if (!owned) {
+        return _error(
+          404,
+          'RESOURCE_NOT_FOUND',
+          'DoctorClinicAffiliation not found.',
+        );
+      }
+      items = items
+          .where((t) => t['doctorClinicAffiliationId'] == affiliationId)
+          .toList();
+    }
+    return {
+      'statusCode': 200,
+      'data': {'items': items},
+    };
+  });
+
+  // --- Appointments ---------------------------------------------------------
+
+  interceptor.register('POST', ApiPaths.doctorMeAppointments, (options) {
+    final path = options.path;
+    final parts = path.split('/');
+    final actionIndex = parts.indexWhere(
+      (p) => p == 'cancel' || p == 'reschedule',
+    );
+    if (actionIndex <= 0) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'Unknown action.');
+    }
+    final action = parts[actionIndex];
+    final appointmentId = parts[actionIndex - 1];
+
+    final index = _mockProviderDashboardStore.appointments.indexWhere(
+      (a) => a['appointmentId'] == appointmentId,
+    );
+    if (index == -1) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+    }
+
+    final appointment = Map<String, dynamic>.from(
+      _mockProviderDashboardStore.appointments[index],
+    );
+    if (appointment['status'] != 'CONFIRMED') {
+      return _error(
+        422,
+        action == 'cancel'
+            ? 'APPOINTMENT_NOT_CANCELLABLE'
+            : 'APPOINTMENT_NOT_RESCHEDULABLE',
+        'Only a confirmed appointment can be ${action == 'cancel' ? 'cancelled' : 'rescheduled'}.',
+      );
+    }
+
+    final body = _body(options) ?? {};
+
+    if (action == 'cancel') {
+      final reason = body['reason'] as String?;
+      // The real route accepts PROVIDER_REQUEST only — anything else is a 400
+      // at the DTO boundary, which is what waives the cancellation fee.
+      if (reason != 'PROVIDER_REQUEST') {
+        return _error(
+          400,
+          'VALIDATION_ERROR',
+          'reason must be PROVIDER_REQUEST.',
+        );
+      }
+      final note = body['note'] as String?;
+      appointment['status'] = 'CANCELLED';
+      appointment['cancelledReason'] = note == null || note.isEmpty
+          ? 'PROVIDER_REQUEST'
+          : 'PROVIDER_REQUEST: $note';
+      _mockProviderDashboardStore.appointments[index] = appointment;
+      _mockProviderDashboardStore.persistAppointments();
+      return {
+        'statusCode': 201,
+        'data': {'status': 'CANCELLED', 'refundAmount': 250.0, 'feeApplied': 0},
+      };
+    }
+
+    final newSlotId = body['newSlotId'] as String?;
+    if (newSlotId == null || newSlotId.isEmpty) {
+      return _error(400, 'VALIDATION_ERROR', 'newSlotId is required.');
+    }
+    // The slot must belong to the same branch — mirrors the backend's
+    // same-affiliation 404 (Part 35.11), using the mock slot-id convention
+    // `<branchId>-<startAtIso>` that `registerAvailabilityMocks` produces.
+    final branchId = appointment['clinicBranchId'] as String;
+    if (!newSlotId.startsWith('$branchId-')) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'AppointmentSlot not found.');
+    }
+
+    final newStart =
+        DateTime.tryParse(newSlotId.substring(branchId.length + 1))?.toUtc() ??
+        DateTime.now().toUtc();
+
+    appointment['status'] = 'RESCHEDULED';
+    _mockProviderDashboardStore.appointments[index] = appointment;
+
+    final replacementId = 'apt-${DateTime.now().millisecondsSinceEpoch}';
+    final replacement = Map<String, dynamic>.from(appointment)
+      ..['appointmentId'] = replacementId
+      ..['status'] = 'CONFIRMED'
+      ..['slotId'] = newSlotId
+      ..['startAt'] = newStart.toIso8601String()
+      ..['endAt'] = newStart.add(const Duration(minutes: 30)).toIso8601String()
+      ..['rescheduledFromAppointmentId'] = appointmentId
+      ..['cancelledReason'] = null;
+    _mockProviderDashboardStore.appointments.add(replacement);
+    _mockProviderDashboardStore.persistAppointments();
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'status': 'CONFIRMED',
+        'appointmentId': replacementId,
+        'slotId': newSlotId,
+        'previousAppointmentId': appointmentId,
+      },
+    };
+  });
+
+  interceptor.register('GET', ApiPaths.doctorMeAppointments, (options) {
+    if (_mockProviderDashboardStore.appointments.isEmpty) {
+      _mockProviderDashboardStore.appointments = _seedDoctorAppointments();
+      _mockProviderDashboardStore.persistAppointments();
+    }
+
+    // Detail: `/v1/doctors/me/appointments/{id}` — the path carries one more
+    // segment than the list route.
+    final tail = options.path.split('/').last;
+    if (tail != 'appointments') {
+      final match = _mockProviderDashboardStore.appointments.firstWhere(
+        (a) => a['appointmentId'] == tail,
+        orElse: () => const {},
+      );
+      if (match.isEmpty) {
+        return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+      }
+      return {'statusCode': 200, 'data': match};
+    }
+
+    var items = List<Map<String, dynamic>>.from(
+      _mockProviderDashboardStore.appointments,
+    );
+
+    final status = options.queryParameters['status'] as String?;
+    if (status != null && status.isNotEmpty) {
+      items = items.where((a) => a['status'] == status).toList();
+    }
+
+    final branchId = options.queryParameters['clinicBranchId'] as String?;
+    if (branchId != null && branchId.isNotEmpty) {
+      final owned = _mockProviderDashboardStore.clinics.any(
+        (c) => c['clinicBranchId'] == branchId,
+      );
+      if (!owned) {
+        return _error(404, 'RESOURCE_NOT_FOUND', 'ClinicBranch not found.');
+      }
+      items = items.where((a) => a['clinicBranchId'] == branchId).toList();
+    }
+
+    // Both bounds are applied — the backend's own half-open `[from, to)`
+    // range. Applying only one here would hide the exact class of bug the
+    // real repository had before File 12 Part 49.7 fixed it.
+    final from = DateTime.tryParse(
+      options.queryParameters['from'] as String? ?? '',
+    );
+    final to = DateTime.tryParse(options.queryParameters['to'] as String? ?? '');
+    if (from != null || to != null) {
+      items = items.where((a) {
+        final startAt = DateTime.parse(a['startAt'] as String).toUtc();
+        if (from != null && startAt.isBefore(from.toUtc())) return false;
+        if (to != null && !startAt.isBefore(to.toUtc())) return false;
+        return true;
+      }).toList();
+    }
+
+    items.sort(
+      (a, b) => (a['startAt'] as String).compareTo(b['startAt'] as String),
+    );
+
+    return {
+      'statusCode': 200,
+      'data': {'items': items, 'nextCursor': null},
+    };
+  });
+
+  // --- Still invented: no backend route exists for either -------------------
 
   interceptor.register('GET', ApiPaths.providerPatients, (options) {
     final q = (options.queryParameters['q'] as String?)?.toLowerCase();
@@ -2156,94 +2540,13 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         );
         updated['is_unread'] = false;
         _mockProviderDashboardStore.notifications[index] = updated;
-        // Persist to Hive so read-state survives a cold restart.
         _mockProviderDashboardStore.persistNotifications();
       }
-
-      return {
-        'statusCode': 200,
-        'data': {'success': true},
-      };
     }
 
     return {
       'statusCode': 200,
       'data': {'success': true},
-    };
-  });
-
-  interceptor.register('GET', '/v1/provider/clinic-settings', (options) {
-    return {
-      'statusCode': 200,
-      'data': _mockProviderDashboardStore.clinicSettings,
-    };
-  });
-
-  interceptor.register('PATCH', '/v1/provider/clinic-settings', (options) {
-    final body = _body(options) ?? {};
-    _mockProviderDashboardStore.clinicSettings = {
-      ..._mockProviderDashboardStore.clinicSettings,
-      ...body,
-    };
-    _mockProviderDashboardStore.persistClinicSettings();
-    return {
-      'statusCode': 200,
-      'data': _mockProviderDashboardStore.clinicSettings,
-    };
-  });
-
-  interceptor.register('GET', '/v1/provider/schedule', (options) {
-    return {'statusCode': 200, 'data': _mockProviderDashboardStore.schedule};
-  });
-
-  interceptor.register('PATCH', '/v1/provider/schedule', (options) {
-    final body = _body(options) ?? {};
-    if (body.containsKey('working_days')) {
-      _mockProviderDashboardStore.schedule['working_days'] =
-          body['working_days'];
-    }
-    _mockProviderDashboardStore.persistSchedule();
-    return {'statusCode': 200, 'data': _mockProviderDashboardStore.schedule};
-  });
-
-  interceptor.register('POST', '/v1/provider/change-password', (options) {
-    final body = _body(options) ?? {};
-    final cur = body['current_password'] as String?;
-    final next = body['new_password'] as String?;
-    if (cur == null || cur.isEmpty || next == null || next.length < 6) {
-      return _error(
-        422,
-        'VALIDATION_ERROR',
-        'كلمة المرور غير صحيحة أو قصيرة جداً',
-      );
-    }
-    return {
-      'statusCode': 200,
-      'data': {'success': true},
-    };
-  });
-
-  interceptor.register('POST', '/v1/provider/avatar', (options) {
-    final body = _body(options) ?? {};
-    final path = body['file_path'] as String? ?? 'uploaded_avatar.jpg';
-    if (path.isEmpty) {
-      // Empty path is the "remove photo" signal from the edit-profile screen.
-      _mockProviderDashboardStore.doctorAccount['avatar_url'] = null;
-    } else if (path.startsWith('data:')) {
-      // Real picked-image bytes (base64 data URI) — store as-is so the
-      // actually-uploaded photo displays. A fake stock-photo URL would
-      // show the same generic image regardless of what was picked, which
-      // reads as "the upload didn't do anything."
-      _mockProviderDashboardStore.doctorAccount['avatar_url'] = path;
-    } else {
-      final fakeUrl =
-          'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=300&q=80#path=$path';
-      _mockProviderDashboardStore.doctorAccount['avatar_url'] = fakeUrl;
-    }
-    _mockProviderDashboardStore.persistDoctorAccount();
-    return {
-      'statusCode': 200,
-      'data': _mockProviderDashboardStore.doctorAccount,
     };
   });
 }

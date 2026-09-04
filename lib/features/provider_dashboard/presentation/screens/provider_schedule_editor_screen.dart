@@ -1,140 +1,200 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
-import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
-import 'package:med_super/features/provider_registration/presentation/widgets/working_hours_day_row.dart';
-import '../controllers/provider_dashboard_providers.dart';
+import 'package:med_super/core/widgets/empty_state.dart';
+import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
+import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
+import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
+import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/schedule_template_editor_sheet.dart';
 
-class ProviderScheduleEditorScreen extends ConsumerStatefulWidget {
+/// The doctor's weekly availability, backed by
+/// `/v1/doctors/me/schedule-templates` (File 12 Part 49.5).
+///
+/// Replaces the previous mock-only day toggles. Three real differences the
+/// old UI could not express: a template belongs to one **branch**, it carries
+/// a slot length and a buffer, and its times are local to that branch's
+/// timezone. All three are now visible and editable.
+///
+/// Changes affect **future** slot generation only — the banner says so,
+/// because a doctor deleting Monday hours must not believe Monday's already
+/// booked appointments just vanished. They did not.
+class ProviderScheduleEditorScreen extends ConsumerWidget {
   const ProviderScheduleEditorScreen({super.key});
 
-  @override
-  ConsumerState<ProviderScheduleEditorScreen> createState() =>
-      _ProviderScheduleEditorScreenState();
-}
-
-class _ProviderScheduleEditorScreenState
-    extends ConsumerState<ProviderScheduleEditorScreen> {
-  List<ClinicWorkingDay>? _days;
-  bool _isSaving = false;
-  bool _isDirty = false;
-
-  Future<void> _pickTime(Weekday day, {required bool isFrom}) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
+  void _showSnack(BuildContext context, String message, {bool success = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: success ? const Color(0xFF10B981) : null,
+      ),
     );
-    if (picked == null || _days == null) return;
+  }
 
-    final time = ClinicTime(hour: picked.hour, minute: picked.minute);
-    setState(() {
-      _days = _days!.map((d) {
-        if (d.day != day) return d;
-        return d.copyWith(
-          from: isFrom ? time : d.from,
-          to: isFrom ? d.to : time,
+  Future<void> _create(BuildContext context, WidgetRef ref, List<DoctorClinic> clinics) async {
+    if (clinics.isEmpty) return;
+    final draft = await showScheduleTemplateEditor(context, clinics: clinics);
+    if (draft == null || !context.mounted) return;
+
+    final result = await ref
+        .read(createMyScheduleTemplateUseCaseProvider)
+        .call(
+          NewDoctorScheduleTemplate(
+            doctorClinicAffiliationId: draft.affiliationId,
+            weekday: draft.weekday,
+            startTime: draft.startTime,
+            endTime: draft.endTime,
+            slotDurationMinutes: draft.slotDurationMinutes,
+            bufferMinutes: draft.bufferMinutes,
+          ),
         );
-      }).toList();
-      _isDirty = true;
-    });
-  }
-
-  void _toggleDay(Weekday day, bool enabled) {
-    if (_days == null) return;
-    setState(() {
-      _days = _days!.map((d) {
-        if (d.day != day) return d;
-        return d.copyWith(isEnabled: enabled);
-      }).toList();
-      _isDirty = true;
-    });
-  }
-
-  Future<void> _submit() async {
-    if (_days == null) return;
-    setState(() => _isSaving = true);
-
-    final useCase = ref.read(updateDoctorScheduleUseCaseProvider);
-    final result = await useCase.call(_days!);
-
-    if (!mounted) return;
-    setState(() => _isSaving = false);
+    if (!context.mounted) return;
 
     result.when(
-      ok: (updated) {
-        ref.invalidate(doctorScheduleProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تحديث جدول المواعيد بنجاح')),
+      ok: (_) {
+        _showSnack(context, 'provider_dashboard.schedule.created'.tr(), success: true);
+        ref.invalidate(myScheduleTemplatesProvider);
+      },
+      err: (failure) => _showSnack(context, providerFailureMessage(failure)),
+    );
+  }
+
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    List<DoctorClinic> clinics,
+    DoctorScheduleTemplate template,
+  ) async {
+    final draft = await showScheduleTemplateEditor(
+      context,
+      clinics: clinics,
+      existing: template,
+    );
+    if (draft == null || !context.mounted) return;
+
+    final result = await ref
+        .read(updateMyScheduleTemplateUseCaseProvider)
+        .call(
+          templateId: template.id,
+          patch: DoctorScheduleTemplatePatch(
+            weekday: draft.weekday,
+            startTime: draft.startTime,
+            endTime: draft.endTime,
+            slotDurationMinutes: draft.slotDurationMinutes,
+            bufferMinutes: draft.bufferMinutes,
+            // Round-tripping the version is what turns a concurrent edit into
+            // a 409 instead of a silent overwrite (File 12 Part 49.6).
+            version: template.version,
+          ),
         );
-        Navigator.of(context).pop();
+    if (!context.mounted) return;
+
+    result.when(
+      ok: (_) {
+        _showSnack(context, 'provider_dashboard.schedule.updated'.tr(), success: true);
+        ref.invalidate(myScheduleTemplatesProvider);
       },
       err: (failure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: ${failure.toString()}')),
-        );
+        _showSnack(context, providerFailureMessage(failure));
+        // On a 409 our copy is stale; refetch so the next attempt carries the
+        // current version rather than repeating the same losing one.
+        ref.invalidate(myScheduleTemplatesProvider);
+      },
+    );
+  }
+
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    DoctorScheduleTemplate template,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('provider_dashboard.schedule.delete_title'.tr()),
+        content: Text('provider_dashboard.schedule.delete_message'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text('provider_dashboard.cancel.keep'.tr()),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text('provider_dashboard.schedule.delete'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final result = await ref
+        .read(deleteMyScheduleTemplateUseCaseProvider)
+        .call(templateId: template.id, version: template.version);
+    if (!context.mounted) return;
+
+    result.when(
+      ok: (_) {
+        _showSnack(context, 'provider_dashboard.schedule.deleted'.tr(), success: true);
+        ref.invalidate(myScheduleTemplatesProvider);
+      },
+      err: (failure) {
+        _showSnack(context, providerFailureMessage(failure));
+        ref.invalidate(myScheduleTemplatesProvider);
       },
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final scheduleAsync = ref.watch(doctorScheduleProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final templatesAsync = ref.watch(myScheduleTemplatesProvider());
+    final clinics = ref
+        .watch(myClinicsProvider)
+        .maybeWhen(data: (list) => list, orElse: () => const <DoctorClinic>[]);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
-      appBar: AppBar(
-        title: const Text('جدول المواعيد وساعات العمل'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.ink900,
-        elevation: 0,
-      ),
-      body: AsyncValueView(
-        value: scheduleAsync,
-        onRetry: () => ref.invalidate(doctorScheduleProvider),
-        data: (initialDays) {
-          _days ??= List.from(initialDays);
+      appBar: AppBar(title: Text('provider_dashboard.schedule.title'.tr())),
+      floatingActionButton: clinics.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'provider_schedule_fab',
+              backgroundColor: brandBlue,
+              foregroundColor: Colors.white,
+              onPressed: () => _create(context, ref, clinics),
+              icon: const Icon(Icons.add),
+              label: Text('provider_dashboard.schedule.add'.tr()),
+            ),
+      body: AsyncValueView<List<DoctorScheduleTemplate>>(
+        value: templatesAsync,
+        onRetry: () => ref.invalidate(myScheduleTemplatesProvider),
+        data: (templates) {
+          if (templates.isEmpty) {
+            return EmptyState(
+              title: 'provider_dashboard.schedule.empty_title'.tr(),
+              subtitle: 'provider_dashboard.schedule.empty_subtitle'.tr(),
+              icon: Icons.schedule_outlined,
+            );
+          }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(myScheduleTemplatesProvider),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
               children: [
-                const Text(
-                  'حدد أيام وساعات العمل المستمرة لاستقبال حجز المواعيد:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.mutedText2,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                _notRetroactiveBanner(),
                 const SizedBox(height: 16),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _days!.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final day = _days![index];
-                    return WorkingHoursDayRow(
-                      day: day,
-                      onToggle: (v) => _toggleDay(day.day, v),
-                      onPickFrom: () => _pickTime(day.day, isFrom: true),
-                      onPickTo: () => _pickTime(day.day, isFrom: false),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                AppButton.filled(
-                  label: 'حفظ التغييرات',
-                  isLoading: _isSaving,
-                  backgroundColor: brandBlue,
-                  foregroundColor: Colors.white,
-                  fullWidth: true,
-                  onPressed: _isDirty ? _submit : null,
-                ),
+                for (final template in templates)
+                  _templateCard(
+                    context,
+                    template,
+                    onEdit: () => _edit(context, ref, clinics, template),
+                    onDelete: () => _delete(context, ref, template),
+                  ),
+                const SizedBox(height: 80),
               ],
             ),
           );
@@ -142,4 +202,109 @@ class _ProviderScheduleEditorScreenState
       ),
     );
   }
+
+  Widget _notRetroactiveBanner() => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEFF6FF),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.info_outline, size: 18, color: brandBlue),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'provider_dashboard.schedule.not_retroactive_note'.tr(),
+            style: const TextStyle(fontSize: 12, color: AppColors.ink900),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _templateCard(
+    BuildContext context,
+    DoctorScheduleTemplate template, {
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'provider_dashboard.weekday.${template.weekday}'.tr(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink900,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: AppColors.errorRed,
+                ),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+          Text(
+            '${template.startTime} — ${template.endTime}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${template.clinicName} · ${'provider_dashboard.schedule.times_local_note'.tr(args: [template.ianaTimezone])}',
+            style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              _pill(
+                '${'provider_dashboard.schedule.slot_duration'.tr()}: ${template.slotDurationMinutes}',
+              ),
+              _pill(
+                '${'provider_dashboard.schedule.buffer'.tr()}: ${template.bufferMinutes}',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(String text) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+    ),
+  );
 }

@@ -1,75 +1,96 @@
 # Feature status: provider_dashboard
 
-**Label:** `MOCKED` — architecture approved, backend not ready
+**Label:** `PARTIAL` — profile, clinics, availability and appointments are
+backed by real endpoints; patients and notifications are still mock-only.
+
+Was `MOCKED` until 2026-09-04. See `clinic-reservations` File 12 **Part 49**
+and `clinic-reservations/docs/DOCTOR_DASHBOARD_ARCHITECTURE.md`.
 
 ## Architecture: approved (2026-08-14)
 
 `ADR-006-PROVIDER-SURFACE-SPLIT.md` resolves `ADR-003` (previously
 OPEN/unresolved): the doctor-facing dashboard stays in Flutter, scoped to
 appointments, profile, schedule, and related doctor/provider transactions.
-This feature's existing scope (appointments queue, patient list/detail,
-notifications, profile, clinic settings, schedule editor, security/privacy)
-fits entirely within that approval. **It is no longer `BLOCKED` on
-architecture grounds.**
 
 **Do not expand this feature into pharmacy or laboratory dashboard scope**
 — those are a separate Next.js web application per `ADR-006`, not Flutter,
 regardless of how similar the UI pattern might look.
 
-## Backend: still not ready, with one exception (2026-08-31)
+## Backend: real as of 2026-09-04
 
-Architecture approval does not mean the data layer is production-ready.
-Every endpoint this feature calls (`/v1/provider/appointments`, `/patients`,
-`/notifications`, `/clinic-settings`, `/schedule`, `/change-password`,
-`/avatar`) is **mock-only and frontend-invented** — none exist on the real
-backend, even though the *patient-facing* Phase 4 (Appointments) module
-itself is now complete (see `lib/features/appointments/`); there is still
-no backend module for a "provider dashboard" at all
-(`09_DASHBOARDS.md`: dashboards are clients over domain modules, not a
-module of their own). Treat every one of these as subject to change once
-whatever backend work a real provider-dashboard data layer needs actually
-exists. Do not present any of this as backend-complete.
+Every route below exists in `clinic-reservations` and is exercised by
+`test/doctor-dashboard.e2e-spec.ts` (47 tests against a real Postgres).
 
-**Exception: `getDoctorAccount`/`updateDoctorAccount` (`ProviderProfileScreen`/
-`ProviderEditProfileScreen`) now call the real `GET`/`PATCH /v1/doctors/me`**
-(`clinic-reservations` File 12 Part 45), replacing the invented
-`/v1/provider/me`. Audited against `Prisma.Doctor`'s real columns:
-`bio`/`degree`/`experienceYears` are genuinely editable; `phone` is shown
-read-only (no endpoint changes it post-signup, same as the patient side);
-`email` lives on `User` not `Doctor`, so it's editable through the shared
-`PATCH /v1/auth/me` instead (sent alongside the doctor-specific update, not
-part of it) — already collected for real at doctor registration time
-(`doctor_registration_basic_info_screen.dart`), this closes the loop so it
-can be seen/changed afterward too. `name` also lives on `User`, but stays
-read-only here (unlike email) since editing it wasn't asked for; an
-assistant's own name still goes through that same shared call, since an
-assistant is a `CLINIC_STAFF` `User` with no `Doctor` row at all.
-`specialty`/`licenseNumber` are Admin-only (shown read-only). `hospitalName`
-was dropped from `DoctorAccountProfile` — no clinic-affiliation join exists
-in the real endpoint's response, so it had nothing to be backed by. Avatar
-upload (`/v1/provider/avatar`) stays exactly as unreal as the rest of this
-list — no object-storage decision exists yet (`DEC-009`) — but the UI no
-longer pretends otherwise: tapping the avatar now shows a plain "coming
-soon" message instead of running a fake upload round trip.
+| Area | Endpoint | Notes |
+|---|---|---|
+| Profile | `GET`/`PATCH /v1/doctors/me` | `bio`/`degree`/`experienceYears` only (Part 45) |
+| Account | `GET`/`PATCH /v1/auth/me` | name/email live on `User`, not `Doctor` |
+| Clinics | `GET /v1/doctors/me/clinics` | list of affiliations, not one clinic |
+| Branch | `PATCH /v1/doctors/me/clinics/branches/{id}` | phone, timezone, street, city |
+| Affiliation | `PATCH /v1/doctors/me/clinics/affiliations/{id}` | `ACTIVE`/`PAUSED` |
+| Availability | `GET/POST/PATCH/DELETE /v1/doctors/me/schedule-templates` | optimistic-locked |
+| Appointments | `GET /v1/doctors/me/appointments[/{id}]` | filters + cursor paging |
+| Cancel | `POST /v1/doctors/me/appointments/{id}/cancel` | `PROVIDER_REQUEST`, full refund |
+| Reschedule | `POST /v1/doctors/me/appointments/{id}/reschedule` | completes in one transaction |
 
-**Fixed 2026-09-04**: the shared `ProviderPageHeader` app bar (used by
-all 5 screens in this feature) has always accepted an `avatarUrl` and
-shown the real photo when set, but no screen ever passed one in —
-including `ProviderProfileScreen` itself, which already read
-`doctorAccountProvider`'s `avatarUrl` for its own large avatar but never
-forwarded it to the header. Every screen now passes the same real
-`avatarUrl` through, so the doctor's photo (already real via
-`GET /v1/doctors/me`, see above) shows in the header too. The header
-avatar's fallback icon style (radius/colors) was also changed to
-visually match the patient app's home header exactly.
+### What changed, and why the old shapes were wrong
+
+* **`Appointment` → `DoctorAppointment`.** The old entity carried `medId` and
+  `locationStatus`, neither of which exists in any table, and a `pending`
+  status that the backend has no concept of. An appointment row is only
+  created at *confirm* time, already `CONFIRMED` — so the accept/reject queue
+  was modelling a state that never occurs. The doctor's real actions are
+  **cancel** and **reschedule**.
+* **`ClinicSettings` → `DoctorClinic[]`.** The old shape was one hardcoded
+  clinic with an `email` field no clinic or branch table has. A doctor can
+  practise at several branches, so this is a list.
+* **`{working_days: [...]}` → `DoctorScheduleTemplate[]`.** The old blob could
+  not express which branch a plan belongs to, the slot length, the buffer, or
+  the timezone the times are in — all of which the real contract requires.
+* **`createAppointment` removed.** A doctor cannot create an appointment;
+  only a patient can, via hold → confirm. The FAB that pretended otherwise is
+  gone rather than left to 404.
+* **`UploadAvatarUseCase` removed.** Dead code pointing at
+  `/v1/provider/avatar`, which no screen called and no backend serves.
+
+### Still mock-only (no backend route exists)
+
+`/v1/provider/patients` and `/v1/provider/notifications`. Both remain
+frontend-invented. Notifications is Phase 8 and unbuilt; there is no
+"patients" module at all. `provider_patients_screen` and
+`provider_notifications_screen` are honest about being demo surfaces — do not
+present either as backend-ready.
+
+Avatar upload stays unavailable (`DEC-009`, no object-storage decision); the
+UI shows a "coming soon" message rather than faking an upload. Password
+change should go through `POST /v1/auth/password/set`, not the invented
+`/v1/provider/change-password` — that screen has not been rewired yet.
+
+## Known gaps in this feature
+
+1. **Times render in the device zone, not the branch zone.** Every response
+   carries `ianaTimezone` and the UI always displays it next to the time, so
+   a reading is never ambiguous — but the app bundles no tz database, so a
+   doctor whose phone is in a different zone from the clinic sees their own
+   local time. Fixing this properly needs a `timezone` package dependency.
+2. **The reschedule picker depends on `GET /v1/doctors/{doctorId}/slots`,**
+   which applies the Part 32 visibility chain for non-Admin callers. A doctor
+   whose own branch is not `VERIFIED` therefore sees an empty slot list —
+   correct in effect (no slots are generated for such a branch anyway), but
+   it reads as "no availability" rather than "branch not verified".
+3. **`provider_home_screen`'s calendar is still generated mock data**
+   (`provider_calendar_providers.dart`). It was left alone this pass: it is a
+   day-grid over slots, and the real slot source is the patient-facing
+   `/slots` endpoint rather than anything in this feature's contract.
+4. **Localization.** New strings all go through `provider_dashboard.*` in
+   `en.json`/`ar.json`. The feature's pre-existing ~25 hardcoded Arabic
+   strings are still there — known debt, not a pattern to extend.
 
 ## Separately unresolved: role gating
 
 The two-flavor (patient/provider) build separation was deleted in the same
-branch that built this feature (`lib/app/flavor.dart`,
-`lib/app/router/route_guards.dart`, `lib/main_provider.dart` — see
-`med-super/docs/backend_frontend_parity_matrix.md`, finding D7). Role
-gating is currently a single client-trusted boolean with no build-time
-isolation. `ADR-006` does not address this — it's a separate, still-open
-concern. Don't treat "the surface is approved" as "the security model is
+branch that built this feature. Role gating is a single client-trusted
+boolean with no build-time isolation. `ADR-006` does not address this — it is
+a separate, still-open concern, and the backend is what actually enforces
+access. Don't treat "the surface is approved" as "the security model is
 settled."

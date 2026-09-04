@@ -74,13 +74,30 @@ abstract final class ApiPaths {
   static const pharmacyOrders = '/v1/pharmacy-orders';
 
   // Provider dashboard
-  static const providerAppointments = '/v1/provider/appointments';
+  //
+  // Still frontend-invented / mock-only — no backend route exists for either
+  // (see provider_dashboard/STATUS.md). Everything else in this block is real.
   static const providerPatients = '/v1/provider/patients';
   static const providerNotifications = '/v1/provider/notifications';
+
   // Real backend route, replacing the invented `/v1/provider/me` (which
   // never existed anywhere in clinic-reservations) — a DOCTOR-role-only
   // self-profile read/edit (File 12 Part 45).
   static const doctorMe = '/v1/doctors/me';
+
+  // Doctor Dashboard, doctor-scoped (File 12 Part 49). Every route below
+  // resolves the doctor from the JWT — no doctorId/clinicId is ever sent as
+  // a scoping parameter, and any id in a path is re-checked server-side.
+  //
+  // MockInterceptor matches first-registered-wins by substring containment,
+  // so the more specific `doctorMeClinicBranches`/`doctorMeAffiliations`
+  // must be registered BEFORE `doctorMeClinics`, and
+  // `doctorMeAppointments`/`doctorMeScheduleTemplates` before `doctorMe`.
+  static const doctorMeClinics = '/v1/doctors/me/clinics';
+  static const doctorMeClinicBranches = '/v1/doctors/me/clinics/branches';
+  static const doctorMeAffiliations = '/v1/doctors/me/clinics/affiliations';
+  static const doctorMeScheduleTemplates = '/v1/doctors/me/schedule-templates';
+  static const doctorMeAppointments = '/v1/doctors/me/appointments';
   // Doctor-only: manage clinic assistants (CLINIC_STAFF accounts).
   // Backend endpoint: POST/GET /v1/provider/assistants,
   // PATCH/DELETE /v1/provider/assistants/:id

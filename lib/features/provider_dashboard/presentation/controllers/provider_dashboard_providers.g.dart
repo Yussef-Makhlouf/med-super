@@ -110,197 +110,655 @@ final class ProviderDashboardRepositoryProvider
 String _$providerDashboardRepositoryHash() =>
     r'a98bc7eddcc52f64a9b2592569236814aec78148';
 
-@ProviderFor(getAppointmentsUseCase)
-final getAppointmentsUseCaseProvider = GetAppointmentsUseCaseProvider._();
+@ProviderFor(getDoctorAccountUseCase)
+final getDoctorAccountUseCaseProvider = GetDoctorAccountUseCaseProvider._();
 
-final class GetAppointmentsUseCaseProvider
+final class GetDoctorAccountUseCaseProvider
     extends
         $FunctionalProvider<
-          GetAppointmentsUseCase,
-          GetAppointmentsUseCase,
-          GetAppointmentsUseCase
+          GetDoctorAccountUseCase,
+          GetDoctorAccountUseCase,
+          GetDoctorAccountUseCase
         >
-    with $Provider<GetAppointmentsUseCase> {
-  GetAppointmentsUseCaseProvider._()
+    with $Provider<GetDoctorAccountUseCase> {
+  GetDoctorAccountUseCaseProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'getAppointmentsUseCaseProvider',
+        name: r'getDoctorAccountUseCaseProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$getAppointmentsUseCaseHash();
+  String debugGetCreateSourceHash() => _$getDoctorAccountUseCaseHash();
 
   @$internal
   @override
-  $ProviderElement<GetAppointmentsUseCase> $createElement(
+  $ProviderElement<GetDoctorAccountUseCase> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  GetAppointmentsUseCase create(Ref ref) {
-    return getAppointmentsUseCase(ref);
+  GetDoctorAccountUseCase create(Ref ref) {
+    return getDoctorAccountUseCase(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GetAppointmentsUseCase value) {
+  Override overrideWithValue(GetDoctorAccountUseCase value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<GetAppointmentsUseCase>(value),
+      providerOverride: $SyncValueProvider<GetDoctorAccountUseCase>(value),
     );
   }
 }
 
-String _$getAppointmentsUseCaseHash() =>
-    r'c90186ed5a52204d987cf8ba73b492aaecf8e70d';
+String _$getDoctorAccountUseCaseHash() =>
+    r'ed3bd84e7dabd7612885a998e45b3cabc29c466b';
 
-@ProviderFor(acceptAppointmentUseCase)
-final acceptAppointmentUseCaseProvider = AcceptAppointmentUseCaseProvider._();
+@ProviderFor(updateDoctorAccountUseCase)
+final updateDoctorAccountUseCaseProvider =
+    UpdateDoctorAccountUseCaseProvider._();
 
-final class AcceptAppointmentUseCaseProvider
+final class UpdateDoctorAccountUseCaseProvider
     extends
         $FunctionalProvider<
-          AcceptAppointmentUseCase,
-          AcceptAppointmentUseCase,
-          AcceptAppointmentUseCase
+          UpdateDoctorAccountUseCase,
+          UpdateDoctorAccountUseCase,
+          UpdateDoctorAccountUseCase
         >
-    with $Provider<AcceptAppointmentUseCase> {
-  AcceptAppointmentUseCaseProvider._()
+    with $Provider<UpdateDoctorAccountUseCase> {
+  UpdateDoctorAccountUseCaseProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'acceptAppointmentUseCaseProvider',
+        name: r'updateDoctorAccountUseCaseProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$acceptAppointmentUseCaseHash();
+  String debugGetCreateSourceHash() => _$updateDoctorAccountUseCaseHash();
 
   @$internal
   @override
-  $ProviderElement<AcceptAppointmentUseCase> $createElement(
+  $ProviderElement<UpdateDoctorAccountUseCase> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  AcceptAppointmentUseCase create(Ref ref) {
-    return acceptAppointmentUseCase(ref);
+  UpdateDoctorAccountUseCase create(Ref ref) {
+    return updateDoctorAccountUseCase(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AcceptAppointmentUseCase value) {
+  Override overrideWithValue(UpdateDoctorAccountUseCase value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<AcceptAppointmentUseCase>(value),
+      providerOverride: $SyncValueProvider<UpdateDoctorAccountUseCase>(value),
     );
   }
 }
 
-String _$acceptAppointmentUseCaseHash() =>
-    r'33a77138fd8912f82192527db7e1617ffc95af75';
+String _$updateDoctorAccountUseCaseHash() =>
+    r'bc700027d8c9c6cdf1968d514f8c7369afc428d5';
 
-@ProviderFor(rejectAppointmentUseCase)
-final rejectAppointmentUseCaseProvider = RejectAppointmentUseCaseProvider._();
+@ProviderFor(getMyClinicsUseCase)
+final getMyClinicsUseCaseProvider = GetMyClinicsUseCaseProvider._();
 
-final class RejectAppointmentUseCaseProvider
+final class GetMyClinicsUseCaseProvider
     extends
         $FunctionalProvider<
-          RejectAppointmentUseCase,
-          RejectAppointmentUseCase,
-          RejectAppointmentUseCase
+          GetMyClinicsUseCase,
+          GetMyClinicsUseCase,
+          GetMyClinicsUseCase
         >
-    with $Provider<RejectAppointmentUseCase> {
-  RejectAppointmentUseCaseProvider._()
+    with $Provider<GetMyClinicsUseCase> {
+  GetMyClinicsUseCaseProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'rejectAppointmentUseCaseProvider',
+        name: r'getMyClinicsUseCaseProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$rejectAppointmentUseCaseHash();
+  String debugGetCreateSourceHash() => _$getMyClinicsUseCaseHash();
 
   @$internal
   @override
-  $ProviderElement<RejectAppointmentUseCase> $createElement(
+  $ProviderElement<GetMyClinicsUseCase> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  RejectAppointmentUseCase create(Ref ref) {
-    return rejectAppointmentUseCase(ref);
+  GetMyClinicsUseCase create(Ref ref) {
+    return getMyClinicsUseCase(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(RejectAppointmentUseCase value) {
+  Override overrideWithValue(GetMyClinicsUseCase value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<RejectAppointmentUseCase>(value),
+      providerOverride: $SyncValueProvider<GetMyClinicsUseCase>(value),
     );
   }
 }
 
-String _$rejectAppointmentUseCaseHash() =>
-    r'b0edbcd7e16d2dd66533188e0e46a8f7607b28cf';
+String _$getMyClinicsUseCaseHash() =>
+    r'ccbecf3171b2daded57b7f1d78227d2378a54094';
 
-@ProviderFor(createAppointmentUseCase)
-final createAppointmentUseCaseProvider = CreateAppointmentUseCaseProvider._();
+@ProviderFor(updateMyClinicBranchUseCase)
+final updateMyClinicBranchUseCaseProvider =
+    UpdateMyClinicBranchUseCaseProvider._();
 
-final class CreateAppointmentUseCaseProvider
+final class UpdateMyClinicBranchUseCaseProvider
     extends
         $FunctionalProvider<
-          CreateAppointmentUseCase,
-          CreateAppointmentUseCase,
-          CreateAppointmentUseCase
+          UpdateMyClinicBranchUseCase,
+          UpdateMyClinicBranchUseCase,
+          UpdateMyClinicBranchUseCase
         >
-    with $Provider<CreateAppointmentUseCase> {
-  CreateAppointmentUseCaseProvider._()
+    with $Provider<UpdateMyClinicBranchUseCase> {
+  UpdateMyClinicBranchUseCaseProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'createAppointmentUseCaseProvider',
+        name: r'updateMyClinicBranchUseCaseProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$createAppointmentUseCaseHash();
+  String debugGetCreateSourceHash() => _$updateMyClinicBranchUseCaseHash();
 
   @$internal
   @override
-  $ProviderElement<CreateAppointmentUseCase> $createElement(
+  $ProviderElement<UpdateMyClinicBranchUseCase> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  CreateAppointmentUseCase create(Ref ref) {
-    return createAppointmentUseCase(ref);
+  UpdateMyClinicBranchUseCase create(Ref ref) {
+    return updateMyClinicBranchUseCase(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(CreateAppointmentUseCase value) {
+  Override overrideWithValue(UpdateMyClinicBranchUseCase value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<CreateAppointmentUseCase>(value),
+      providerOverride: $SyncValueProvider<UpdateMyClinicBranchUseCase>(value),
     );
   }
 }
 
-String _$createAppointmentUseCaseHash() =>
-    r'a95e8a83cc05f70a2dcc805aeefccfa035e9aece';
+String _$updateMyClinicBranchUseCaseHash() =>
+    r'8c900551a01633c88418c1fbfba7b667bab6c22d';
+
+@ProviderFor(setMyAffiliationActiveUseCase)
+final setMyAffiliationActiveUseCaseProvider =
+    SetMyAffiliationActiveUseCaseProvider._();
+
+final class SetMyAffiliationActiveUseCaseProvider
+    extends
+        $FunctionalProvider<
+          SetMyAffiliationActiveUseCase,
+          SetMyAffiliationActiveUseCase,
+          SetMyAffiliationActiveUseCase
+        >
+    with $Provider<SetMyAffiliationActiveUseCase> {
+  SetMyAffiliationActiveUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'setMyAffiliationActiveUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$setMyAffiliationActiveUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<SetMyAffiliationActiveUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SetMyAffiliationActiveUseCase create(Ref ref) {
+    return setMyAffiliationActiveUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SetMyAffiliationActiveUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SetMyAffiliationActiveUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$setMyAffiliationActiveUseCaseHash() =>
+    r'ee755180996193a9bbf5f2af77b801413141daeb';
+
+@ProviderFor(getMyScheduleTemplatesUseCase)
+final getMyScheduleTemplatesUseCaseProvider =
+    GetMyScheduleTemplatesUseCaseProvider._();
+
+final class GetMyScheduleTemplatesUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetMyScheduleTemplatesUseCase,
+          GetMyScheduleTemplatesUseCase,
+          GetMyScheduleTemplatesUseCase
+        >
+    with $Provider<GetMyScheduleTemplatesUseCase> {
+  GetMyScheduleTemplatesUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getMyScheduleTemplatesUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getMyScheduleTemplatesUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetMyScheduleTemplatesUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetMyScheduleTemplatesUseCase create(Ref ref) {
+    return getMyScheduleTemplatesUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetMyScheduleTemplatesUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetMyScheduleTemplatesUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$getMyScheduleTemplatesUseCaseHash() =>
+    r'db99a7e605ab1003b9ac1f6863b12066316ecfde';
+
+@ProviderFor(createMyScheduleTemplateUseCase)
+final createMyScheduleTemplateUseCaseProvider =
+    CreateMyScheduleTemplateUseCaseProvider._();
+
+final class CreateMyScheduleTemplateUseCaseProvider
+    extends
+        $FunctionalProvider<
+          CreateMyScheduleTemplateUseCase,
+          CreateMyScheduleTemplateUseCase,
+          CreateMyScheduleTemplateUseCase
+        >
+    with $Provider<CreateMyScheduleTemplateUseCase> {
+  CreateMyScheduleTemplateUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'createMyScheduleTemplateUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$createMyScheduleTemplateUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<CreateMyScheduleTemplateUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CreateMyScheduleTemplateUseCase create(Ref ref) {
+    return createMyScheduleTemplateUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CreateMyScheduleTemplateUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CreateMyScheduleTemplateUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$createMyScheduleTemplateUseCaseHash() =>
+    r'be2dc6e4f54d98556815aa267548c3b09e2ef86f';
+
+@ProviderFor(updateMyScheduleTemplateUseCase)
+final updateMyScheduleTemplateUseCaseProvider =
+    UpdateMyScheduleTemplateUseCaseProvider._();
+
+final class UpdateMyScheduleTemplateUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UpdateMyScheduleTemplateUseCase,
+          UpdateMyScheduleTemplateUseCase,
+          UpdateMyScheduleTemplateUseCase
+        >
+    with $Provider<UpdateMyScheduleTemplateUseCase> {
+  UpdateMyScheduleTemplateUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'updateMyScheduleTemplateUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$updateMyScheduleTemplateUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateMyScheduleTemplateUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UpdateMyScheduleTemplateUseCase create(Ref ref) {
+    return updateMyScheduleTemplateUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateMyScheduleTemplateUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateMyScheduleTemplateUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$updateMyScheduleTemplateUseCaseHash() =>
+    r'ccab5fa0cab9eefc4f8d82d42552d958c1696575';
+
+@ProviderFor(deleteMyScheduleTemplateUseCase)
+final deleteMyScheduleTemplateUseCaseProvider =
+    DeleteMyScheduleTemplateUseCaseProvider._();
+
+final class DeleteMyScheduleTemplateUseCaseProvider
+    extends
+        $FunctionalProvider<
+          DeleteMyScheduleTemplateUseCase,
+          DeleteMyScheduleTemplateUseCase,
+          DeleteMyScheduleTemplateUseCase
+        >
+    with $Provider<DeleteMyScheduleTemplateUseCase> {
+  DeleteMyScheduleTemplateUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deleteMyScheduleTemplateUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteMyScheduleTemplateUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<DeleteMyScheduleTemplateUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DeleteMyScheduleTemplateUseCase create(Ref ref) {
+    return deleteMyScheduleTemplateUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DeleteMyScheduleTemplateUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DeleteMyScheduleTemplateUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$deleteMyScheduleTemplateUseCaseHash() =>
+    r'7dbfbae34e345f8efab3eb3c65bea10f311d3abc';
+
+@ProviderFor(getDoctorAppointmentsUseCase)
+final getDoctorAppointmentsUseCaseProvider =
+    GetDoctorAppointmentsUseCaseProvider._();
+
+final class GetDoctorAppointmentsUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetDoctorAppointmentsUseCase,
+          GetDoctorAppointmentsUseCase,
+          GetDoctorAppointmentsUseCase
+        >
+    with $Provider<GetDoctorAppointmentsUseCase> {
+  GetDoctorAppointmentsUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getDoctorAppointmentsUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getDoctorAppointmentsUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetDoctorAppointmentsUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetDoctorAppointmentsUseCase create(Ref ref) {
+    return getDoctorAppointmentsUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetDoctorAppointmentsUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetDoctorAppointmentsUseCase>(value),
+    );
+  }
+}
+
+String _$getDoctorAppointmentsUseCaseHash() =>
+    r'd0ca9e761c1963b662a5388b437469f672b229cc';
+
+@ProviderFor(getDoctorAppointmentUseCase)
+final getDoctorAppointmentUseCaseProvider =
+    GetDoctorAppointmentUseCaseProvider._();
+
+final class GetDoctorAppointmentUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetDoctorAppointmentUseCase,
+          GetDoctorAppointmentUseCase,
+          GetDoctorAppointmentUseCase
+        >
+    with $Provider<GetDoctorAppointmentUseCase> {
+  GetDoctorAppointmentUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getDoctorAppointmentUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getDoctorAppointmentUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetDoctorAppointmentUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetDoctorAppointmentUseCase create(Ref ref) {
+    return getDoctorAppointmentUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetDoctorAppointmentUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetDoctorAppointmentUseCase>(value),
+    );
+  }
+}
+
+String _$getDoctorAppointmentUseCaseHash() =>
+    r'7e340c35e91200bbf46a3340d4e2f5da939764f7';
+
+@ProviderFor(cancelDoctorAppointmentUseCase)
+final cancelDoctorAppointmentUseCaseProvider =
+    CancelDoctorAppointmentUseCaseProvider._();
+
+final class CancelDoctorAppointmentUseCaseProvider
+    extends
+        $FunctionalProvider<
+          CancelDoctorAppointmentUseCase,
+          CancelDoctorAppointmentUseCase,
+          CancelDoctorAppointmentUseCase
+        >
+    with $Provider<CancelDoctorAppointmentUseCase> {
+  CancelDoctorAppointmentUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cancelDoctorAppointmentUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cancelDoctorAppointmentUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<CancelDoctorAppointmentUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CancelDoctorAppointmentUseCase create(Ref ref) {
+    return cancelDoctorAppointmentUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CancelDoctorAppointmentUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CancelDoctorAppointmentUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$cancelDoctorAppointmentUseCaseHash() =>
+    r'1927e6b334f52164db536e4d865211160d6c5679';
+
+@ProviderFor(rescheduleDoctorAppointmentUseCase)
+final rescheduleDoctorAppointmentUseCaseProvider =
+    RescheduleDoctorAppointmentUseCaseProvider._();
+
+final class RescheduleDoctorAppointmentUseCaseProvider
+    extends
+        $FunctionalProvider<
+          RescheduleDoctorAppointmentUseCase,
+          RescheduleDoctorAppointmentUseCase,
+          RescheduleDoctorAppointmentUseCase
+        >
+    with $Provider<RescheduleDoctorAppointmentUseCase> {
+  RescheduleDoctorAppointmentUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'rescheduleDoctorAppointmentUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$rescheduleDoctorAppointmentUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<RescheduleDoctorAppointmentUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RescheduleDoctorAppointmentUseCase create(Ref ref) {
+    return rescheduleDoctorAppointmentUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RescheduleDoctorAppointmentUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RescheduleDoctorAppointmentUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$rescheduleDoctorAppointmentUseCaseHash() =>
+    r'8d5f0860613f61228f8d1ff71f1fe5cbb715487d';
 
 @ProviderFor(getPatientsUseCase)
 final getPatientsUseCaseProvider = GetPatientsUseCaseProvider._();
@@ -447,394 +905,156 @@ final class MarkNotificationReadUseCaseProvider
 String _$markNotificationReadUseCaseHash() =>
     r'9dd146028e69a7a7600fde0878ea8c82c5eea7a1';
 
-@ProviderFor(getDoctorAccountUseCase)
-final getDoctorAccountUseCaseProvider = GetDoctorAccountUseCaseProvider._();
+@ProviderFor(doctorAccount)
+final doctorAccountProvider = DoctorAccountProvider._();
 
-final class GetDoctorAccountUseCaseProvider
+final class DoctorAccountProvider
     extends
         $FunctionalProvider<
-          GetDoctorAccountUseCase,
-          GetDoctorAccountUseCase,
-          GetDoctorAccountUseCase
-        >
-    with $Provider<GetDoctorAccountUseCase> {
-  GetDoctorAccountUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'getDoctorAccountUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$getDoctorAccountUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<GetDoctorAccountUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  GetDoctorAccountUseCase create(Ref ref) {
-    return getDoctorAccountUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GetDoctorAccountUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<GetDoctorAccountUseCase>(value),
-    );
-  }
-}
-
-String _$getDoctorAccountUseCaseHash() =>
-    r'ed3bd84e7dabd7612885a998e45b3cabc29c466b';
-
-@ProviderFor(updateDoctorAccountUseCase)
-final updateDoctorAccountUseCaseProvider =
-    UpdateDoctorAccountUseCaseProvider._();
-
-final class UpdateDoctorAccountUseCaseProvider
-    extends
-        $FunctionalProvider<
-          UpdateDoctorAccountUseCase,
-          UpdateDoctorAccountUseCase,
-          UpdateDoctorAccountUseCase
-        >
-    with $Provider<UpdateDoctorAccountUseCase> {
-  UpdateDoctorAccountUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'updateDoctorAccountUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$updateDoctorAccountUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<UpdateDoctorAccountUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UpdateDoctorAccountUseCase create(Ref ref) {
-    return updateDoctorAccountUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UpdateDoctorAccountUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UpdateDoctorAccountUseCase>(value),
-    );
-  }
-}
-
-String _$updateDoctorAccountUseCaseHash() =>
-    r'bc700027d8c9c6cdf1968d514f8c7369afc428d5';
-
-@ProviderFor(getClinicSettingsUseCase)
-final getClinicSettingsUseCaseProvider = GetClinicSettingsUseCaseProvider._();
-
-final class GetClinicSettingsUseCaseProvider
-    extends
-        $FunctionalProvider<
-          GetClinicSettingsUseCase,
-          GetClinicSettingsUseCase,
-          GetClinicSettingsUseCase
-        >
-    with $Provider<GetClinicSettingsUseCase> {
-  GetClinicSettingsUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'getClinicSettingsUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$getClinicSettingsUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<GetClinicSettingsUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  GetClinicSettingsUseCase create(Ref ref) {
-    return getClinicSettingsUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GetClinicSettingsUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<GetClinicSettingsUseCase>(value),
-    );
-  }
-}
-
-String _$getClinicSettingsUseCaseHash() =>
-    r'96bdb75ef54527414dcf7a9248db66fa96254a23';
-
-@ProviderFor(updateClinicSettingsUseCase)
-final updateClinicSettingsUseCaseProvider =
-    UpdateClinicSettingsUseCaseProvider._();
-
-final class UpdateClinicSettingsUseCaseProvider
-    extends
-        $FunctionalProvider<
-          UpdateClinicSettingsUseCase,
-          UpdateClinicSettingsUseCase,
-          UpdateClinicSettingsUseCase
-        >
-    with $Provider<UpdateClinicSettingsUseCase> {
-  UpdateClinicSettingsUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'updateClinicSettingsUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$updateClinicSettingsUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<UpdateClinicSettingsUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UpdateClinicSettingsUseCase create(Ref ref) {
-    return updateClinicSettingsUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UpdateClinicSettingsUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UpdateClinicSettingsUseCase>(value),
-    );
-  }
-}
-
-String _$updateClinicSettingsUseCaseHash() =>
-    r'4b3ba2007296bc1359fa0e69217a5bc2f20c3e30';
-
-@ProviderFor(getDoctorScheduleUseCase)
-final getDoctorScheduleUseCaseProvider = GetDoctorScheduleUseCaseProvider._();
-
-final class GetDoctorScheduleUseCaseProvider
-    extends
-        $FunctionalProvider<
-          GetDoctorScheduleUseCase,
-          GetDoctorScheduleUseCase,
-          GetDoctorScheduleUseCase
-        >
-    with $Provider<GetDoctorScheduleUseCase> {
-  GetDoctorScheduleUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'getDoctorScheduleUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$getDoctorScheduleUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<GetDoctorScheduleUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  GetDoctorScheduleUseCase create(Ref ref) {
-    return getDoctorScheduleUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GetDoctorScheduleUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<GetDoctorScheduleUseCase>(value),
-    );
-  }
-}
-
-String _$getDoctorScheduleUseCaseHash() =>
-    r'5f5f7d9a2e6541a87e6990a61ff754a3c5f59d79';
-
-@ProviderFor(updateDoctorScheduleUseCase)
-final updateDoctorScheduleUseCaseProvider =
-    UpdateDoctorScheduleUseCaseProvider._();
-
-final class UpdateDoctorScheduleUseCaseProvider
-    extends
-        $FunctionalProvider<
-          UpdateDoctorScheduleUseCase,
-          UpdateDoctorScheduleUseCase,
-          UpdateDoctorScheduleUseCase
-        >
-    with $Provider<UpdateDoctorScheduleUseCase> {
-  UpdateDoctorScheduleUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'updateDoctorScheduleUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$updateDoctorScheduleUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<UpdateDoctorScheduleUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UpdateDoctorScheduleUseCase create(Ref ref) {
-    return updateDoctorScheduleUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UpdateDoctorScheduleUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UpdateDoctorScheduleUseCase>(value),
-    );
-  }
-}
-
-String _$updateDoctorScheduleUseCaseHash() =>
-    r'882dc33d3f0796588fcc7ee4f714fb44f0e5bfc0';
-
-@ProviderFor(uploadAvatarUseCase)
-final uploadAvatarUseCaseProvider = UploadAvatarUseCaseProvider._();
-
-final class UploadAvatarUseCaseProvider
-    extends
-        $FunctionalProvider<
-          UploadAvatarUseCase,
-          UploadAvatarUseCase,
-          UploadAvatarUseCase
-        >
-    with $Provider<UploadAvatarUseCase> {
-  UploadAvatarUseCaseProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'uploadAvatarUseCaseProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$uploadAvatarUseCaseHash();
-
-  @$internal
-  @override
-  $ProviderElement<UploadAvatarUseCase> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UploadAvatarUseCase create(Ref ref) {
-    return uploadAvatarUseCase(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UploadAvatarUseCase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UploadAvatarUseCase>(value),
-    );
-  }
-}
-
-String _$uploadAvatarUseCaseHash() =>
-    r'4de0172865a917ad2f1585dae3f6948d69b0b624';
-
-@ProviderFor(appointments)
-final appointmentsProvider = AppointmentsFamily._();
-
-final class AppointmentsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Appointment>>,
-          List<Appointment>,
-          FutureOr<List<Appointment>>
+          AsyncValue<DoctorAccountProfile>,
+          DoctorAccountProfile,
+          FutureOr<DoctorAccountProfile>
         >
     with
-        $FutureModifier<List<Appointment>>,
-        $FutureProvider<List<Appointment>> {
-  AppointmentsProvider._({
-    required AppointmentsFamily super.from,
-    required ({DateTime? date, String? status}) super.argument,
+        $FutureModifier<DoctorAccountProfile>,
+        $FutureProvider<DoctorAccountProfile> {
+  DoctorAccountProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'doctorAccountProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$doctorAccountHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<DoctorAccountProfile> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DoctorAccountProfile> create(Ref ref) {
+    return doctorAccount(ref);
+  }
+}
+
+String _$doctorAccountHash() => r'21db78340eab948d3983b74b389b4997a5412829';
+
+/// The doctor's clinics/branches. Every mutation on this feature invalidates
+/// it rather than mutating a local copy, so what the UI shows after a save is
+/// always what the server returned.
+
+@ProviderFor(myClinics)
+final myClinicsProvider = MyClinicsProvider._();
+
+/// The doctor's clinics/branches. Every mutation on this feature invalidates
+/// it rather than mutating a local copy, so what the UI shows after a save is
+/// always what the server returned.
+
+final class MyClinicsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<DoctorClinic>>,
+          List<DoctorClinic>,
+          FutureOr<List<DoctorClinic>>
+        >
+    with
+        $FutureModifier<List<DoctorClinic>>,
+        $FutureProvider<List<DoctorClinic>> {
+  /// The doctor's clinics/branches. Every mutation on this feature invalidates
+  /// it rather than mutating a local copy, so what the UI shows after a save is
+  /// always what the server returned.
+  MyClinicsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'myClinicsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$myClinicsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<DoctorClinic>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<DoctorClinic>> create(Ref ref) {
+    return myClinics(ref);
+  }
+}
+
+String _$myClinicsHash() => r'd3a2e2945b41fccc926ba3cadaa9d548b3322e52';
+
+/// Weekly availability. `affiliationId` narrows to one branch; omit it for
+/// the combined plan across every branch the doctor works at.
+
+@ProviderFor(myScheduleTemplates)
+final myScheduleTemplatesProvider = MyScheduleTemplatesFamily._();
+
+/// Weekly availability. `affiliationId` narrows to one branch; omit it for
+/// the combined plan across every branch the doctor works at.
+
+final class MyScheduleTemplatesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<DoctorScheduleTemplate>>,
+          List<DoctorScheduleTemplate>,
+          FutureOr<List<DoctorScheduleTemplate>>
+        >
+    with
+        $FutureModifier<List<DoctorScheduleTemplate>>,
+        $FutureProvider<List<DoctorScheduleTemplate>> {
+  /// Weekly availability. `affiliationId` narrows to one branch; omit it for
+  /// the combined plan across every branch the doctor works at.
+  MyScheduleTemplatesProvider._({
+    required MyScheduleTemplatesFamily super.from,
+    required String? super.argument,
   }) : super(
          retry: null,
-         name: r'appointmentsProvider',
+         name: r'myScheduleTemplatesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$appointmentsHash();
+  String debugGetCreateSourceHash() => _$myScheduleTemplatesHash();
 
   @override
   String toString() {
-    return r'appointmentsProvider'
+    return r'myScheduleTemplatesProvider'
         ''
-        '$argument';
+        '($argument)';
   }
 
   @$internal
   @override
-  $FutureProviderElement<List<Appointment>> $createElement(
+  $FutureProviderElement<List<DoctorScheduleTemplate>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<Appointment>> create(Ref ref) {
-    final argument = this.argument as ({DateTime? date, String? status});
-    return appointments(ref, date: argument.date, status: argument.status);
+  FutureOr<List<DoctorScheduleTemplate>> create(Ref ref) {
+    final argument = this.argument as String?;
+    return myScheduleTemplates(ref, affiliationId: argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is AppointmentsProvider && other.argument == argument;
+    return other is MyScheduleTemplatesProvider && other.argument == argument;
   }
 
   @override
@@ -843,31 +1063,268 @@ final class AppointmentsProvider
   }
 }
 
-String _$appointmentsHash() => r'0b5705dedd9e7ce0bafc4047f9940b4f972b4ff4';
+String _$myScheduleTemplatesHash() =>
+    r'719ab28b34aab28e63d76862bcec1296a2701221';
 
-final class AppointmentsFamily extends $Family
+/// Weekly availability. `affiliationId` narrows to one branch; omit it for
+/// the combined plan across every branch the doctor works at.
+
+final class MyScheduleTemplatesFamily extends $Family
     with
         $FunctionalFamilyOverride<
-          FutureOr<List<Appointment>>,
-          ({DateTime? date, String? status})
+          FutureOr<List<DoctorScheduleTemplate>>,
+          String?
         > {
-  AppointmentsFamily._()
+  MyScheduleTemplatesFamily._()
     : super(
         retry: null,
-        name: r'appointmentsProvider',
+        name: r'myScheduleTemplatesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  AppointmentsProvider call({DateTime? date, String? status}) =>
-      AppointmentsProvider._(
-        argument: (date: date, status: status),
-        from: this,
-      );
+  /// Weekly availability. `affiliationId` narrows to one branch; omit it for
+  /// the combined plan across every branch the doctor works at.
+
+  MyScheduleTemplatesProvider call({String? affiliationId}) =>
+      MyScheduleTemplatesProvider._(argument: affiliationId, from: this);
 
   @override
-  String toString() => r'appointmentsProvider';
+  String toString() => r'myScheduleTemplatesProvider';
+}
+
+/// One page of the doctor's appointment queue.
+///
+/// `from`/`to` are a half-open range on the slot start time — the backend
+/// applies both bounds, so a single-day view sends midnight-to-midnight.
+
+@ProviderFor(doctorAppointments)
+final doctorAppointmentsProvider = DoctorAppointmentsFamily._();
+
+/// One page of the doctor's appointment queue.
+///
+/// `from`/`to` are a half-open range on the slot start time — the backend
+/// applies both bounds, so a single-day view sends midnight-to-midnight.
+
+final class DoctorAppointmentsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<DoctorAppointmentPage>,
+          DoctorAppointmentPage,
+          FutureOr<DoctorAppointmentPage>
+        >
+    with
+        $FutureModifier<DoctorAppointmentPage>,
+        $FutureProvider<DoctorAppointmentPage> {
+  /// One page of the doctor's appointment queue.
+  ///
+  /// `from`/`to` are a half-open range on the slot start time — the backend
+  /// applies both bounds, so a single-day view sends midnight-to-midnight.
+  DoctorAppointmentsProvider._({
+    required DoctorAppointmentsFamily super.from,
+    required ({
+      DateTime? from,
+      DateTime? to,
+      DoctorAppointmentStatus? status,
+      String? clinicBranchId,
+      String? cursor,
+      int? limit,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'doctorAppointmentsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$doctorAppointmentsHash();
+
+  @override
+  String toString() {
+    return r'doctorAppointmentsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<DoctorAppointmentPage> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DoctorAppointmentPage> create(Ref ref) {
+    final argument =
+        this.argument
+            as ({
+              DateTime? from,
+              DateTime? to,
+              DoctorAppointmentStatus? status,
+              String? clinicBranchId,
+              String? cursor,
+              int? limit,
+            });
+    return doctorAppointments(
+      ref,
+      from: argument.from,
+      to: argument.to,
+      status: argument.status,
+      clinicBranchId: argument.clinicBranchId,
+      cursor: argument.cursor,
+      limit: argument.limit,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DoctorAppointmentsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$doctorAppointmentsHash() =>
+    r'7c89860b4895b05017bafbdc2807775daf497911';
+
+/// One page of the doctor's appointment queue.
+///
+/// `from`/`to` are a half-open range on the slot start time — the backend
+/// applies both bounds, so a single-day view sends midnight-to-midnight.
+
+final class DoctorAppointmentsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<DoctorAppointmentPage>,
+          ({
+            DateTime? from,
+            DateTime? to,
+            DoctorAppointmentStatus? status,
+            String? clinicBranchId,
+            String? cursor,
+            int? limit,
+          })
+        > {
+  DoctorAppointmentsFamily._()
+    : super(
+        retry: null,
+        name: r'doctorAppointmentsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// One page of the doctor's appointment queue.
+  ///
+  /// `from`/`to` are a half-open range on the slot start time — the backend
+  /// applies both bounds, so a single-day view sends midnight-to-midnight.
+
+  DoctorAppointmentsProvider call({
+    DateTime? from,
+    DateTime? to,
+    DoctorAppointmentStatus? status,
+    String? clinicBranchId,
+    String? cursor,
+    int? limit,
+  }) => DoctorAppointmentsProvider._(
+    argument: (
+      from: from,
+      to: to,
+      status: status,
+      clinicBranchId: clinicBranchId,
+      cursor: cursor,
+      limit: limit,
+    ),
+    from: this,
+  );
+
+  @override
+  String toString() => r'doctorAppointmentsProvider';
+}
+
+@ProviderFor(doctorAppointmentDetail)
+final doctorAppointmentDetailProvider = DoctorAppointmentDetailFamily._();
+
+final class DoctorAppointmentDetailProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<DoctorAppointment>,
+          DoctorAppointment,
+          FutureOr<DoctorAppointment>
+        >
+    with
+        $FutureModifier<DoctorAppointment>,
+        $FutureProvider<DoctorAppointment> {
+  DoctorAppointmentDetailProvider._({
+    required DoctorAppointmentDetailFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'doctorAppointmentDetailProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$doctorAppointmentDetailHash();
+
+  @override
+  String toString() {
+    return r'doctorAppointmentDetailProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<DoctorAppointment> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DoctorAppointment> create(Ref ref) {
+    final argument = this.argument as String;
+    return doctorAppointmentDetail(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DoctorAppointmentDetailProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$doctorAppointmentDetailHash() =>
+    r'a93d8ee5f7154459abfd9cadde17d83e3f7a0538';
+
+final class DoctorAppointmentDetailFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<DoctorAppointment>, String> {
+  DoctorAppointmentDetailFamily._()
+    : super(
+        retry: null,
+        name: r'doctorAppointmentDetailProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  DoctorAppointmentDetailProvider call(String appointmentId) =>
+      DoctorAppointmentDetailProvider._(argument: appointmentId, from: this);
+
+  @override
+  String toString() => r'doctorAppointmentDetailProvider';
 }
 
 @ProviderFor(patients)
@@ -990,124 +1447,3 @@ final class DoctorNotificationsProvider
 
 String _$doctorNotificationsHash() =>
     r'aa19eab81a9d6fa2f0acbfc167fc8b41b1f83d78';
-
-@ProviderFor(doctorAccount)
-final doctorAccountProvider = DoctorAccountProvider._();
-
-final class DoctorAccountProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<DoctorAccountProfile>,
-          DoctorAccountProfile,
-          FutureOr<DoctorAccountProfile>
-        >
-    with
-        $FutureModifier<DoctorAccountProfile>,
-        $FutureProvider<DoctorAccountProfile> {
-  DoctorAccountProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'doctorAccountProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$doctorAccountHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<DoctorAccountProfile> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<DoctorAccountProfile> create(Ref ref) {
-    return doctorAccount(ref);
-  }
-}
-
-String _$doctorAccountHash() => r'21db78340eab948d3983b74b389b4997a5412829';
-
-@ProviderFor(clinicSettings)
-final clinicSettingsProvider = ClinicSettingsProvider._();
-
-final class ClinicSettingsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<ClinicSettings>,
-          ClinicSettings,
-          FutureOr<ClinicSettings>
-        >
-    with $FutureModifier<ClinicSettings>, $FutureProvider<ClinicSettings> {
-  ClinicSettingsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'clinicSettingsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$clinicSettingsHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<ClinicSettings> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<ClinicSettings> create(Ref ref) {
-    return clinicSettings(ref);
-  }
-}
-
-String _$clinicSettingsHash() => r'853e9aad04a87553806ce34f5b3ff3732d78fcfc';
-
-@ProviderFor(doctorSchedule)
-final doctorScheduleProvider = DoctorScheduleProvider._();
-
-final class DoctorScheduleProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<ClinicWorkingDay>>,
-          List<ClinicWorkingDay>,
-          FutureOr<List<ClinicWorkingDay>>
-        >
-    with
-        $FutureModifier<List<ClinicWorkingDay>>,
-        $FutureProvider<List<ClinicWorkingDay>> {
-  DoctorScheduleProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'doctorScheduleProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$doctorScheduleHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<ClinicWorkingDay>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<ClinicWorkingDay>> create(Ref ref) {
-    return doctorSchedule(ref);
-  }
-}
-
-String _$doctorScheduleHash() => r'fe02a1fce1cacdbd3d0244e6769438d2be178b28';

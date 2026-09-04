@@ -59,6 +59,11 @@ Dio buildDioClient({required SecureStorageService storage}) {
     // '/v1/doctors/{id}/slots' too (see registerAvailabilityMocks' docstring).
     registerAvailabilityMocks(mock);
     registerAppointmentMocks(mock);
+    // Before registerDoctorMeMocks: every doctor-scoped dashboard route is
+    // prefixed by '/v1/doctors/me', which that function registers as a whole
+    // path — first-registered-wins substring containment would otherwise let
+    // it swallow '/v1/doctors/me/appointments' and friends.
+    registerProviderDashboardMocks(mock);
     registerDoctorMeMocks(mock);
     registerSearchMocks(mock);
     registerClinicBranchMocks(mock);
@@ -68,7 +73,6 @@ Dio buildDioClient({required SecureStorageService storage}) {
     registerPrescriptionMocks(mock);
     registerPharmacyOrderMocks(mock);
     registerProviderRegistrationMocks(mock);
-    registerProviderDashboardMocks(mock);
     registerWalletMocks(mock);
     registerAssistantMocks(mock);
     dio.interceptors.add(mock);

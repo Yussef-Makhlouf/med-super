@@ -1,33 +1,23 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
-import '../../models/appointment_dto.dart';
-import '../../models/clinic_settings_dto.dart';
 import '../../models/doctor_account_profile_dto.dart';
+import '../../models/doctor_appointment_dto.dart';
+import '../../models/doctor_clinic_dto.dart';
 import '../../models/doctor_notification_dto.dart';
-import '../../models/doctor_schedule_dto.dart';
+import '../../models/doctor_schedule_template_dto.dart';
 import '../../models/patient_dto.dart';
+import '../../../domain/entities/doctor_appointment.dart';
+import '../../../domain/entities/doctor_schedule_template.dart';
 
+/// Every method below maps 1:1 onto a real `clinic-reservations` route
+/// (File 12 Part 49), with two documented exceptions that remain mock-only:
+/// [getPatients] and the notification pair. Nothing here invents a path.
+///
+/// `EnvelopeInterceptor` has already unwrapped the backend's
+/// `{success, data, requestId, correlationId}` success envelope, so
+/// `response.data` is the `data` payload itself.
 abstract class ProviderDashboardRemoteDatasource {
-  Future<List<AppointmentDto>> getAppointments({
-    DateTime? date,
-    String? status,
-  });
-
-  Future<AppointmentDto> acceptAppointment(String id);
-
-  Future<AppointmentDto> rejectAppointment(String id);
-
-  Future<AppointmentDto> createAppointment({
-    required String patientName,
-    required DateTime scheduledStart,
-    required DateTime scheduledEnd,
-  });
-
-  Future<List<PatientDto>> getPatients({String? query, String? filter});
-
-  Future<List<DoctorNotificationDto>> getNotifications();
-
-  Future<void> markNotificationRead(String id);
+  // --- Profile (GET/PATCH /v1/doctors/me) ---
 
   Future<DoctorAccountProfileDto> getDoctorAccount();
 
@@ -41,15 +31,67 @@ abstract class ProviderDashboardRemoteDatasource {
     int? yearsOfExperience,
   });
 
-  Future<ClinicSettingsDto> getClinicSettings();
+  // --- Clinics and branches (/v1/doctors/me/clinics) ---
 
-  Future<ClinicSettingsDto> updateClinicSettings(ClinicSettingsDto settings);
+  Future<List<DoctorClinicDto>> getMyClinics();
 
-  Future<DoctorScheduleDto> getDoctorSchedule();
+  Future<DoctorClinicDto> updateMyClinicBranch(
+    String branchId,
+    UpdateDoctorBranchRequestDto body,
+  );
 
-  Future<DoctorScheduleDto> updateDoctorSchedule(DoctorScheduleDto schedule);
+  Future<DoctorClinicDto> updateMyAffiliationStatus(
+    String affiliationId, {
+    required bool active,
+  });
 
-  Future<DoctorAccountProfileDto> uploadAvatar(String filePath);
+  // --- Availability (/v1/doctors/me/schedule-templates) ---
+
+  Future<List<DoctorScheduleTemplateDto>> getMyScheduleTemplates({
+    String? affiliationId,
+  });
+
+  Future<DoctorScheduleTemplateDto> createMyScheduleTemplate(
+    NewDoctorScheduleTemplate template,
+  );
+
+  Future<DoctorScheduleTemplateDto> updateMyScheduleTemplate(
+    String templateId,
+    DoctorScheduleTemplatePatch patch,
+  );
+
+  Future<void> deleteMyScheduleTemplate(String templateId, {int? version});
+
+  // --- Appointments (/v1/doctors/me/appointments) ---
+
+  Future<DoctorAppointmentPageDto> getMyAppointments({
+    DateTime? from,
+    DateTime? to,
+    DoctorAppointmentStatus? status,
+    String? clinicBranchId,
+    String? cursor,
+    int? limit,
+  });
+
+  Future<DoctorAppointmentDto> getMyAppointment(String appointmentId);
+
+  Future<CancelAppointmentResultDto> cancelMyAppointment(
+    String appointmentId, {
+    String? note,
+  });
+
+  Future<RescheduleAppointmentResultDto> rescheduleMyAppointment(
+    String appointmentId, {
+    required String newSlotId,
+  });
+
+  // --- Still mock-only: no backend route exists (see STATUS.md) ---
+
+  Future<List<PatientDto>> getPatients({String? query, String? filter});
+
+  Future<List<DoctorNotificationDto>> getNotifications();
+
+  Future<void> markNotificationRead(String id);
 }
 
 class ProviderDashboardRemoteDatasourceImpl
@@ -58,100 +100,13 @@ class ProviderDashboardRemoteDatasourceImpl
 
   final Dio _dio;
 
-  @override
-  Future<List<AppointmentDto>> getAppointments({
-    DateTime? date,
-    String? status,
-  }) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerAppointments,
-      queryParameters: {
-        if (date != null) 'date': date.toIso8601String().split('T').first,
-        if (status != null && status.isNotEmpty) 'status': status,
-      },
-    );
-
-    final items = (response.data?['items'] as List<dynamic>?) ?? [];
-    return items
-        .map((e) => AppointmentDto.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<AppointmentDto> acceptAppointment(String id) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.providerAppointments}/$id/accept',
-    );
-    return AppointmentDto.fromJson(response.data ?? const <String, dynamic>{});
-  }
-
-  @override
-  Future<AppointmentDto> rejectAppointment(String id) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.providerAppointments}/$id/reject',
-    );
-    return AppointmentDto.fromJson(response.data ?? const <String, dynamic>{});
-  }
-
-  @override
-  Future<AppointmentDto> createAppointment({
-    required String patientName,
-    required DateTime scheduledStart,
-    required DateTime scheduledEnd,
-  }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      ApiPaths.providerAppointments,
-      data: {
-        'patient_name': patientName,
-        'scheduled_start': scheduledStart.toIso8601String(),
-        'scheduled_end': scheduledEnd.toIso8601String(),
-      },
-    );
-    return AppointmentDto.fromJson(response.data ?? const <String, dynamic>{});
-  }
-
-  @override
-  Future<List<PatientDto>> getPatients({String? query, String? filter}) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerPatients,
-      queryParameters: {
-        if (query != null && query.isNotEmpty) 'q': query,
-        if (filter != null && filter.isNotEmpty) 'filter': filter,
-      },
-    );
-
-    final items = (response.data?['items'] as List<dynamic>?) ?? [];
-    return items
-        .map((e) => PatientDto.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<List<DoctorNotificationDto>> getNotifications() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerNotifications,
-    );
-
-    final items = (response.data?['items'] as List<dynamic>?) ?? [];
-    return items
-        .map((e) => DoctorNotificationDto.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<void> markNotificationRead(String id) async {
-    await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.providerNotifications}/$id/read',
-    );
-  }
+  static Map<String, dynamic> _obj(Response<Map<String, dynamic>> response) =>
+      response.data ?? const <String, dynamic>{};
 
   @override
   Future<DoctorAccountProfileDto> getDoctorAccount() async {
     final response = await _dio.get<Map<String, dynamic>>(ApiPaths.doctorMe);
-
-    return DoctorAccountProfileDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
+    return DoctorAccountProfileDto.fromJson(_obj(response));
   }
 
   @override
@@ -168,65 +123,188 @@ class ProviderDashboardRemoteDatasourceImpl
         if (yearsOfExperience != null) 'experienceYears': yearsOfExperience,
       },
     );
-    return DoctorAccountProfileDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
+    return DoctorAccountProfileDto.fromJson(_obj(response));
   }
 
   @override
-  Future<ClinicSettingsDto> getClinicSettings() async {
+  Future<List<DoctorClinicDto>> getMyClinics() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/v1/provider/clinic-settings',
+      ApiPaths.doctorMeClinics,
     );
-    return ClinicSettingsDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map((e) => DoctorClinicDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
-  Future<ClinicSettingsDto> updateClinicSettings(
-    ClinicSettingsDto settings,
+  Future<DoctorClinicDto> updateMyClinicBranch(
+    String branchId,
+    UpdateDoctorBranchRequestDto body,
   ) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/v1/provider/clinic-settings',
-      data: settings.toJson(),
+      '${ApiPaths.doctorMeClinicBranches}/$branchId',
+      data: body.toJson(),
     );
-    return ClinicSettingsDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
+    return DoctorClinicDto.fromJson(_obj(response));
   }
 
   @override
-  Future<DoctorScheduleDto> getDoctorSchedule() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/v1/provider/schedule',
-    );
-    return DoctorScheduleDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
-  }
-
-  @override
-  Future<DoctorScheduleDto> updateDoctorSchedule(
-    DoctorScheduleDto schedule,
-  ) async {
+  Future<DoctorClinicDto> updateMyAffiliationStatus(
+    String affiliationId, {
+    required bool active,
+  }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
-      '/v1/provider/schedule',
-      data: schedule.toJson(),
+      '${ApiPaths.doctorMeAffiliations}/$affiliationId',
+      data: {'status': active ? 'ACTIVE' : 'PAUSED'},
     );
-    return DoctorScheduleDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    );
+    return DoctorClinicDto.fromJson(_obj(response));
   }
 
   @override
-  Future<DoctorAccountProfileDto> uploadAvatar(String filePath) async {
+  Future<List<DoctorScheduleTemplateDto>> getMyScheduleTemplates({
+    String? affiliationId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.doctorMeScheduleTemplates,
+      queryParameters: {
+        if (affiliationId != null) 'affiliationId': affiliationId,
+      },
+    );
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map(
+          (e) => DoctorScheduleTemplateDto.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  @override
+  Future<DoctorScheduleTemplateDto> createMyScheduleTemplate(
+    NewDoctorScheduleTemplate template,
+  ) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/v1/provider/avatar',
-      data: {'file_path': filePath},
+      ApiPaths.doctorMeScheduleTemplates,
+      data: DoctorScheduleTemplateDto.createBody(template),
     );
-    return DoctorAccountProfileDto.fromJson(
-      response.data ?? const <String, dynamic>{},
+    return DoctorScheduleTemplateDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorScheduleTemplateDto> updateMyScheduleTemplate(
+    String templateId,
+    DoctorScheduleTemplatePatch patch,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeScheduleTemplates}/$templateId',
+      data: DoctorScheduleTemplateDto.patchBody(patch),
+    );
+    return DoctorScheduleTemplateDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<void> deleteMyScheduleTemplate(String templateId, {int? version}) async {
+    await _dio.delete<void>(
+      '${ApiPaths.doctorMeScheduleTemplates}/$templateId',
+      queryParameters: {if (version != null) 'version': version},
+    );
+  }
+
+  @override
+  Future<DoctorAppointmentPageDto> getMyAppointments({
+    DateTime? from,
+    DateTime? to,
+    DoctorAppointmentStatus? status,
+    String? clinicBranchId,
+    String? cursor,
+    int? limit,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.doctorMeAppointments,
+      queryParameters: {
+        // Bounds are sent as UTC ISO-8601 — the backend filters on the slot's
+        // `start_at`, which is timestamptz.
+        if (from != null) 'from': from.toUtc().toIso8601String(),
+        if (to != null) 'to': to.toUtc().toIso8601String(),
+        if (status?.wireValue != null) 'status': status!.wireValue,
+        if (clinicBranchId != null) 'clinicBranchId': clinicBranchId,
+        if (cursor != null) 'cursor': cursor,
+        if (limit != null) 'limit': limit,
+      },
+    );
+    return DoctorAppointmentPageDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorAppointmentDto> getMyAppointment(String appointmentId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId',
+    );
+    return DoctorAppointmentDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<CancelAppointmentResultDto> cancelMyAppointment(
+    String appointmentId, {
+    String? note,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/cancel',
+      // `PROVIDER_REQUEST` is the only reason this route accepts — it is what
+      // waives the cancellation fee entirely (File 12 Part 49.8). Sending
+      // anything else is a 400.
+      data: {
+        'reason': 'PROVIDER_REQUEST',
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+    );
+    return CancelAppointmentResultDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<RescheduleAppointmentResultDto> rescheduleMyAppointment(
+    String appointmentId, {
+    required String newSlotId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/reschedule',
+      data: {'newSlotId': newSlotId},
+    );
+    return RescheduleAppointmentResultDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<List<PatientDto>> getPatients({String? query, String? filter}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.providerPatients,
+      queryParameters: {
+        if (query != null && query.isNotEmpty) 'q': query,
+        if (filter != null && filter.isNotEmpty) 'filter': filter,
+      },
+    );
+
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map((e) => PatientDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<DoctorNotificationDto>> getNotifications() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.providerNotifications,
+    );
+
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map((e) => DoctorNotificationDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> markNotificationRead(String id) async {
+    await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.providerNotifications}/$id/read',
     );
   }
 }

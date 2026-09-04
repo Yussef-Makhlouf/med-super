@@ -35,7 +35,10 @@ void main() {
     expect(find.text('المعلومات الشخصية'), findsOneWidget);
   });
 
-  testWidgets('ProviderClinicSettingsScreen renders form', (tester) async {
+  // Both screens below pump the real Dio stack against `MockInterceptor`, so
+  // they exercise the actual doctor-scoped routes and DTO parsing end to end
+  // — not a stubbed repository (File 12 Part 49.2/49.5).
+  testWidgets('ProviderClinicSettingsScreen lists the doctor clinics', (tester) async {
     final storage = SecureStorageService(const FlutterSecureStorage());
     final dio = buildDioClient(storage: storage);
 
@@ -50,10 +53,13 @@ void main() {
     });
     await tester.pump();
 
-    expect(find.text('إعدادات العيادة'), findsOneWidget);
+    expect(find.text('عياداتي'), findsOneWidget);
+    // Seeded by the mock's `GET /v1/doctors/me/clinics` in the real shape.
+    expect(find.text('عيادة النيل التخصصية'), findsOneWidget);
+    expect(find.text('مركز الإسكندرية الطبي'), findsOneWidget);
   });
 
-  testWidgets('ProviderScheduleEditorScreen renders working days', (
+  testWidgets('ProviderScheduleEditorScreen lists weekly availability', (
     tester,
   ) async {
     final storage = SecureStorageService(const FlutterSecureStorage());
@@ -65,6 +71,17 @@ void main() {
       overrides: [dioProvider.overrideWithValue(dio)],
     );
 
-    expect(find.text('جدول المواعيد وساعات العمل'), findsOneWidget);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pump();
+
+    expect(find.text('أوقات عملي'), findsOneWidget);
+    // The "future generation only" warning must always be visible — a doctor
+    // editing hours must never believe booked appointments moved with them.
+    expect(
+      find.textContaining('تسري التغييرات على الأوقات الجديدة فقط'),
+      findsOneWidget,
+    );
   });
 }

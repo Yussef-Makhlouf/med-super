@@ -1,26 +1,22 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/core/di/core_providers.dart';
-import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
 import '../../data/datasources/remote/provider_dashboard_remote_datasource.dart';
 import '../../data/repositories/provider_dashboard_repository_impl.dart';
-import '../../domain/entities/appointment.dart';
-import '../../domain/entities/clinic_settings.dart';
 import '../../domain/entities/doctor_account_profile.dart';
+import '../../domain/entities/doctor_appointment.dart';
+import '../../domain/entities/doctor_clinic.dart';
 import '../../domain/entities/doctor_notification.dart';
+import '../../domain/entities/doctor_schedule_template.dart';
 import '../../domain/entities/patient.dart';
 import '../../domain/repositories/provider_dashboard_repository.dart';
-import '../../domain/usecases/accept_appointment_usecase.dart';
-import '../../domain/usecases/clinic_settings_usecases.dart';
-import '../../domain/usecases/create_appointment_usecase.dart';
-import '../../domain/usecases/doctor_schedule_usecases.dart';
-import '../../domain/usecases/get_appointments_usecase.dart';
+import '../../domain/usecases/doctor_appointment_usecases.dart';
+import '../../domain/usecases/doctor_clinic_usecases.dart';
+import '../../domain/usecases/doctor_schedule_template_usecases.dart';
 import '../../domain/usecases/get_doctor_account_usecase.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
 import '../../domain/usecases/get_patients_usecase.dart';
 import '../../domain/usecases/mark_notification_read_usecase.dart';
-import '../../domain/usecases/reject_appointment_usecase.dart';
 import '../../domain/usecases/update_doctor_account_usecase.dart';
-import '../../domain/usecases/upload_avatar_usecase.dart';
 
 part 'provider_dashboard_providers.g.dart';
 
@@ -34,21 +30,73 @@ ProviderDashboardRepository providerDashboardRepository(Ref ref) =>
       ref.watch(providerDashboardRemoteDatasourceProvider),
     );
 
-@riverpod
-GetAppointmentsUseCase getAppointmentsUseCase(Ref ref) =>
-    GetAppointmentsUseCase(ref.watch(providerDashboardRepositoryProvider));
+// --- Use cases ---
 
 @riverpod
-AcceptAppointmentUseCase acceptAppointmentUseCase(Ref ref) =>
-    AcceptAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
+GetDoctorAccountUseCase getDoctorAccountUseCase(Ref ref) =>
+    GetDoctorAccountUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
-RejectAppointmentUseCase rejectAppointmentUseCase(Ref ref) =>
-    RejectAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
+UpdateDoctorAccountUseCase updateDoctorAccountUseCase(Ref ref) =>
+    UpdateDoctorAccountUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
-CreateAppointmentUseCase createAppointmentUseCase(Ref ref) =>
-    CreateAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
+GetMyClinicsUseCase getMyClinicsUseCase(Ref ref) =>
+    GetMyClinicsUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
+UpdateMyClinicBranchUseCase updateMyClinicBranchUseCase(Ref ref) =>
+    UpdateMyClinicBranchUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
+SetMyAffiliationActiveUseCase setMyAffiliationActiveUseCase(Ref ref) =>
+    SetMyAffiliationActiveUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+GetMyScheduleTemplatesUseCase getMyScheduleTemplatesUseCase(Ref ref) =>
+    GetMyScheduleTemplatesUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+CreateMyScheduleTemplateUseCase createMyScheduleTemplateUseCase(Ref ref) =>
+    CreateMyScheduleTemplateUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+UpdateMyScheduleTemplateUseCase updateMyScheduleTemplateUseCase(Ref ref) =>
+    UpdateMyScheduleTemplateUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+DeleteMyScheduleTemplateUseCase deleteMyScheduleTemplateUseCase(Ref ref) =>
+    DeleteMyScheduleTemplateUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+GetDoctorAppointmentsUseCase getDoctorAppointmentsUseCase(Ref ref) =>
+    GetDoctorAppointmentsUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
+GetDoctorAppointmentUseCase getDoctorAppointmentUseCase(Ref ref) =>
+    GetDoctorAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
+CancelDoctorAppointmentUseCase cancelDoctorAppointmentUseCase(Ref ref) =>
+    CancelDoctorAppointmentUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
+
+@riverpod
+RescheduleDoctorAppointmentUseCase rescheduleDoctorAppointmentUseCase(Ref ref) =>
+    RescheduleDoctorAppointmentUseCase(
+      ref.watch(providerDashboardRepositoryProvider),
+    );
 
 @riverpod
 GetPatientsUseCase getPatientsUseCase(Ref ref) =>
@@ -62,45 +110,71 @@ GetNotificationsUseCase getNotificationsUseCase(Ref ref) =>
 MarkNotificationReadUseCase markNotificationReadUseCase(Ref ref) =>
     MarkNotificationReadUseCase(ref.watch(providerDashboardRepositoryProvider));
 
-@riverpod
-GetDoctorAccountUseCase getDoctorAccountUseCase(Ref ref) =>
-    GetDoctorAccountUseCase(ref.watch(providerDashboardRepositoryProvider));
+// --- State providers ---
 
 @riverpod
-UpdateDoctorAccountUseCase updateDoctorAccountUseCase(Ref ref) =>
-    UpdateDoctorAccountUseCase(ref.watch(providerDashboardRepositoryProvider));
+Future<DoctorAccountProfile> doctorAccount(Ref ref) async {
+  final result = await ref.watch(getDoctorAccountUseCaseProvider).call();
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
 
+/// The doctor's clinics/branches. Every mutation on this feature invalidates
+/// it rather than mutating a local copy, so what the UI shows after a save is
+/// always what the server returned.
 @riverpod
-GetClinicSettingsUseCase getClinicSettingsUseCase(Ref ref) =>
-    GetClinicSettingsUseCase(ref.watch(providerDashboardRepositoryProvider));
+Future<List<DoctorClinic>> myClinics(Ref ref) async {
+  final result = await ref.watch(getMyClinicsUseCaseProvider).call();
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
 
+/// Weekly availability. `affiliationId` narrows to one branch; omit it for
+/// the combined plan across every branch the doctor works at.
 @riverpod
-UpdateClinicSettingsUseCase updateClinicSettingsUseCase(Ref ref) =>
-    UpdateClinicSettingsUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-GetDoctorScheduleUseCase getDoctorScheduleUseCase(Ref ref) =>
-    GetDoctorScheduleUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-UpdateDoctorScheduleUseCase updateDoctorScheduleUseCase(Ref ref) =>
-    UpdateDoctorScheduleUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-UploadAvatarUseCase uploadAvatarUseCase(Ref ref) =>
-    UploadAvatarUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-// State Providers
-
-@riverpod
-Future<List<Appointment>> appointments(
+Future<List<DoctorScheduleTemplate>> myScheduleTemplates(
   Ref ref, {
-  DateTime? date,
-  String? status,
+  String? affiliationId,
 }) async {
   final result = await ref
-      .watch(getAppointmentsUseCaseProvider)
-      .call(date: date, status: status);
+      .watch(getMyScheduleTemplatesUseCaseProvider)
+      .call(affiliationId: affiliationId);
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
+
+/// One page of the doctor's appointment queue.
+///
+/// `from`/`to` are a half-open range on the slot start time — the backend
+/// applies both bounds, so a single-day view sends midnight-to-midnight.
+@riverpod
+Future<DoctorAppointmentPage> doctorAppointments(
+  Ref ref, {
+  DateTime? from,
+  DateTime? to,
+  DoctorAppointmentStatus? status,
+  String? clinicBranchId,
+  String? cursor,
+  int? limit,
+}) async {
+  final result = await ref
+      .watch(getDoctorAppointmentsUseCaseProvider)
+      .call(
+        from: from,
+        to: to,
+        status: status,
+        clinicBranchId: clinicBranchId,
+        cursor: cursor,
+        limit: limit,
+      );
+  return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
+
+@riverpod
+Future<DoctorAppointment> doctorAppointmentDetail(
+  Ref ref,
+  String appointmentId,
+) async {
+  final result = await ref
+      .watch(getDoctorAppointmentUseCaseProvider)
+      .call(appointmentId);
   return result.when(ok: (value) => value, err: (failure) => throw failure);
 }
 
@@ -115,23 +189,5 @@ Future<List<Patient>> patients(Ref ref, {String? query, String? filter}) async {
 @riverpod
 Future<List<DoctorNotification>> doctorNotifications(Ref ref) async {
   final result = await ref.watch(getNotificationsUseCaseProvider).call();
-  return result.when(ok: (value) => value, err: (failure) => throw failure);
-}
-
-@riverpod
-Future<DoctorAccountProfile> doctorAccount(Ref ref) async {
-  final result = await ref.watch(getDoctorAccountUseCaseProvider).call();
-  return result.when(ok: (value) => value, err: (failure) => throw failure);
-}
-
-@riverpod
-Future<ClinicSettings> clinicSettings(Ref ref) async {
-  final result = await ref.watch(getClinicSettingsUseCaseProvider).call();
-  return result.when(ok: (value) => value, err: (failure) => throw failure);
-}
-
-@riverpod
-Future<List<ClinicWorkingDay>> doctorSchedule(Ref ref) async {
-  final result = await ref.watch(getDoctorScheduleUseCaseProvider).call();
   return result.when(ok: (value) => value, err: (failure) => throw failure);
 }

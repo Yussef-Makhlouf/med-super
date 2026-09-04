@@ -4,16 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import '../../domain/entities/appointment.dart';
 import '../../domain/entities/patient.dart';
 import '../controllers/provider_dashboard_providers.dart';
-
-String _appointmentStatusLabel(AppointmentStatus status) => switch (status) {
-  AppointmentStatus.confirmed => 'مؤكد',
-  AppointmentStatus.cancelled => 'ملغي',
-  AppointmentStatus.completed => 'مكتمل',
-  AppointmentStatus.pending => 'قيد الانتظار',
-};
+import '../widgets/provider_appointment_card.dart';
 
 class ProviderPatientDetailScreen extends ConsumerWidget {
   const ProviderPatientDetailScreen({required this.patient, super.key});
@@ -26,7 +19,18 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appointmentsAsync = ref.watch(appointmentsProvider());
+    // The real queue is date-ranged and paginated. A patient's history is a
+    // narrow read, so this asks for a wide window around today and filters
+    // client-side — `GET /v1/doctors/me/appointments` has no patientId
+    // filter, and inventing one on the client would not make it real.
+    final now = DateTime.now();
+    final appointmentsAsync = ref.watch(
+      doctorAppointmentsProvider(
+        from: now.subtract(const Duration(days: 90)),
+        to: now.add(const Duration(days: 90)),
+        limit: 50,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -152,12 +156,12 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
             // Appointment History List
             AsyncValueView(
               value: appointmentsAsync,
-              onRetry: () => ref.invalidate(appointmentsProvider),
-              data: (allAppointments) {
-                final patientAppointments = allAppointments
+              onRetry: () => ref.invalidate(doctorAppointmentsProvider),
+              data: (page) {
+                final patientAppointments = page.items
                     .where(
                       (a) =>
-                          a.medId == patient.medId ||
+                          a.patientId == patient.id ||
                           a.patientName.contains(patient.name) ||
                           patient.name.contains(a.patientName),
                     )
@@ -207,7 +211,7 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _formatDate(apt.scheduledStart),
+                                  _formatDate(apt.startAt.toLocal()),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
@@ -216,7 +220,7 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  apt.locationStatus,
+                                  apt.clinicName,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: AppColors.mutedText2,
@@ -226,7 +230,7 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            _appointmentStatusLabel(apt.status),
+                            doctorAppointmentStatusStyle(apt.status).label,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
