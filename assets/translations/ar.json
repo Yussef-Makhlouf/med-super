@@ -511,6 +511,7 @@
       "delivery_method_title": "طريقة الاستلام",
       "pickup_title": "استلام من الصيدلية",
       "delivery_title": "توصيل للمنزل",
+      "clinic_handover_title": "تسليم في العيادة",
       "notes_label": "ملاحظات للصيدلي (اختياري)",
       "notes_hint": "اكتب أي تعليمات إضافية هنا...",
       "submit_cta": "إرسال للصيدلية",
@@ -586,7 +587,14 @@
       "rejection_label": "سبب الرفض",
       "approve_cta": "موافقة ودفع",
       "approve_success": "تم تأكيد الدفع",
-      "approve_error": "تعذر تأكيد الطلب. حاول مرة أخرى."
+      "approve_error": "تعذر تأكيد الطلب. حاول مرة أخرى.",
+      "confirm_receipt_cta": "تأكيد الاستلام",
+      "confirm_receipt_dialog_title": "تأكيد استلام الطلب",
+      "confirm_receipt_dialog_message": "هل استلمت هذا الطلب من مندوب التوصيل؟ لن تتمكن من التراجع بعد التأكيد.",
+      "confirm_receipt_dialog_confirm": "نعم، تم الاستلام",
+      "confirm_receipt_dialog_dismiss": "إلغاء",
+      "confirm_receipt_success": "تم تأكيد استلام الطلب، شكرًا لك",
+      "confirm_receipt_error": "تعذر تأكيد الاستلام. حاول مرة أخرى."
     }
   },
   "provider_registration": {

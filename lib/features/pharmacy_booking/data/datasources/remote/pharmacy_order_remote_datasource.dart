@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_approve_dto.dart';
+import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_confirm_receipt_dto.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_create_dto.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_detail_dto.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_approve_result.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirm_receipt_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_create_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 
@@ -67,6 +69,21 @@ class PharmacyOrderRemoteDatasource {
       '${ApiPaths.pharmacyOrders}/$orderId/approve',
     );
     return PharmacyOrderApproveDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    ).toEntity();
+  }
+
+  /// `POST /v1/pharmacy-orders/:id/confirm-receipt` — patient-triggered,
+  /// `OUT_FOR_DELIVERY -> FULFILLED` (`clinic-reservations`
+  /// `ConfirmPharmacyOrderReceiptUseCase`). Only valid while the order is out
+  /// for delivery; a pickup order is closed by pharmacy staff instead.
+  Future<PharmacyOrderConfirmReceiptResult> confirmReceipt(
+    String orderId,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.pharmacyOrders}/$orderId/confirm-receipt',
+    );
+    return PharmacyOrderConfirmReceiptDto.fromJson(
       response.data ?? const <String, dynamic>{},
     ).toEntity();
   }

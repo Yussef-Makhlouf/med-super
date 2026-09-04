@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_approve_result.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirm_receipt_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
 
@@ -39,3 +40,27 @@ final pharmacyOrderApproveControllerProvider = NotifierProvider<
   PharmacyOrderApproveController,
   AsyncValue<PharmacyOrderApproveResult?>
 >(PharmacyOrderApproveController.new);
+
+/// Drives `POST /v1/pharmacy-orders/:id/confirm-receipt` from the
+/// order-detail screen's "تأكيد الاستلام" button (shown only while a
+/// home-delivery order is `OUT_FOR_DELIVERY`).
+class PharmacyOrderConfirmReceiptController
+    extends Notifier<AsyncValue<PharmacyOrderConfirmReceiptResult?>> {
+  @override
+  AsyncValue<PharmacyOrderConfirmReceiptResult?> build() =>
+      const AsyncData(null);
+
+  Future<void> confirmReceipt(String orderId) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref
+          .read(pharmacyOrderRemoteDatasourceProvider)
+          .confirmReceipt(orderId),
+    );
+  }
+}
+
+final pharmacyOrderConfirmReceiptControllerProvider = NotifierProvider<
+  PharmacyOrderConfirmReceiptController,
+  AsyncValue<PharmacyOrderConfirmReceiptResult?>
+>(PharmacyOrderConfirmReceiptController.new);

@@ -511,6 +511,7 @@
       "delivery_method_title": "Receipt method",
       "pickup_title": "Pick up from pharmacy",
       "delivery_title": "Home delivery",
+      "clinic_handover_title": "Clinic handover",
       "notes_label": "Notes to the pharmacist (optional)",
       "notes_hint": "Write any additional instructions here...",
       "submit_cta": "Send to pharmacy",
@@ -586,7 +587,14 @@
       "rejection_label": "Rejection reason",
       "approve_cta": "Approve & Pay",
       "approve_success": "Payment confirmed",
-      "approve_error": "Couldn't approve the order. Please try again."
+      "approve_error": "Couldn't approve the order. Please try again.",
+      "confirm_receipt_cta": "Confirm Receipt",
+      "confirm_receipt_dialog_title": "Confirm order receipt",
+      "confirm_receipt_dialog_message": "Did you receive this order from the delivery courier? You won't be able to undo this after confirming.",
+      "confirm_receipt_dialog_confirm": "Yes, I received it",
+      "confirm_receipt_dialog_dismiss": "Cancel",
+      "confirm_receipt_success": "Order receipt confirmed, thank you",
+      "confirm_receipt_error": "Couldn't confirm receipt. Please try again."
     }
   },
   "provider_registration": {

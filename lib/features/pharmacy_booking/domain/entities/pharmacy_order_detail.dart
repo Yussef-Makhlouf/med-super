@@ -90,4 +90,11 @@ class PharmacyOrderDetail {
   /// has priced the order — mirrors the backend's own
   /// `APPROVABLE_STATUS = 'ACCEPTED'` guard on `ApprovePharmacyOrderUseCase`.
   bool get canApprove => status == 'ACCEPTED' && quote != null;
+
+  /// The patient's own "confirm receipt" CTA — only while a home-delivery
+  /// order is actually out for delivery, mirroring the backend's
+  /// `assertOrderIsOutForDelivery` guard on
+  /// `ConfirmPharmacyOrderReceiptUseCase`. A pickup order (`READY_FOR_PICKUP`)
+  /// is closed by pharmacy staff instead, not from this screen.
+  bool get canConfirmReceipt => status == 'OUT_FOR_DELIVERY';
 }

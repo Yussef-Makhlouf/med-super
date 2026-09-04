@@ -416,7 +416,7 @@ class _ImageThumbnail extends StatelessWidget {
   }
 }
 
-/// "طريقة الاستلام" — the two side-by-side selectable delivery cards.
+/// "طريقة الاستلام" — the three side-by-side selectable delivery cards.
 /// Defaults to [DeliveryMethod.homeDelivery] (see
 /// [SelectedDeliveryMethod]).
 class _DeliveryMethodSection extends StatelessWidget {
@@ -453,13 +453,22 @@ class _DeliveryMethodSection extends StatelessWidget {
                 onTap: () => onSelect(DeliveryMethod.pickup),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: _DeliveryMethodCard(
                 method: DeliveryMethod.homeDelivery,
                 isSelected: selected == DeliveryMethod.homeDelivery,
                 icon: Icons.delivery_dining_outlined,
                 onTap: () => onSelect(DeliveryMethod.homeDelivery),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _DeliveryMethodCard(
+                method: DeliveryMethod.clinicHandover,
+                isSelected: selected == DeliveryMethod.clinicHandover,
+                icon: Icons.local_hospital_outlined,
+                onTap: () => onSelect(DeliveryMethod.clinicHandover),
               ),
             ),
           ],

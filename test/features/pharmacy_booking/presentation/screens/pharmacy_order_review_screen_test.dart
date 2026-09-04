@@ -339,6 +339,28 @@ void main() {
   );
 
   testWidgets(
+    'clinic-handover method shows the clinic-handover title and hospital '
+    'icon, with no home address row',
+    (tester) async {
+      await pumpReviewScreen(
+        tester,
+        overrides: _overrides(deliveryMethod: DeliveryMethod.clinicHandover),
+      );
+
+      expect(
+        find.text(DeliveryMethod.clinicHandover.titleKey.tr()),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.local_hospital_outlined), findsOneWidget);
+      expect(
+        find.text('pharmacy_booking.review.home_label'.tr()),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'renders the payment summary rows with the real translated copy and '
     'mock values',
     (tester) async {

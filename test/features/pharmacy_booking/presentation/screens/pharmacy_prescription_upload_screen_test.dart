@@ -110,7 +110,7 @@ void main() {
       expect(find.byIcon(Icons.close), findsNothing);
       expect(find.byType(Image), findsNothing);
 
-      // Delivery method section with both cards.
+      // Delivery method section with all three cards.
       expect(
         find.text('pharmacy_booking.upload.delivery_method_title'.tr()),
         findsOneWidget,
@@ -121,6 +121,10 @@ void main() {
       );
       expect(
         find.text('pharmacy_booking.upload.delivery_title'.tr()),
+        findsOneWidget,
+      );
+      expect(
+        find.text('pharmacy_booking.upload.clinic_handover_title'.tr()),
         findsOneWidget,
       );
 
@@ -255,6 +259,41 @@ void main() {
       expect(
         container.read(selectedDeliveryMethodProvider),
         DeliveryMethod.pickup,
+      );
+      // Still exactly one check badge — mutually exclusive selection.
+      expect(deliveryCardCheckIcon, findsOneWidget);
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the clinic-handover card is selectable and shows the check badge once '
+    'tapped',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await pumpLocalizedWidget(
+        tester,
+        UncontrolledProviderScope(
+          container: container,
+          child: const PharmacyPrescriptionUploadScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final clinicCard = find.ancestor(
+        of: find.text('pharmacy_booking.upload.clinic_handover_title'.tr()),
+        matching: find.byType(InkWell),
+      );
+      expect(clinicCard, findsOneWidget);
+      tester.widget<InkWell>(clinicCard).onTap!();
+      await tester.pumpAndSettle();
+
+      expect(
+        container.read(selectedDeliveryMethodProvider),
+        DeliveryMethod.clinicHandover,
       );
       // Still exactly one check badge — mutually exclusive selection.
       expect(deliveryCardCheckIcon, findsOneWidget);

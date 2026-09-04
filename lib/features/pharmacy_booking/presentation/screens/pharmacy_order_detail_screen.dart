@@ -54,11 +54,76 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
     ref.invalidate(pharmacyOrdersProvider);
   }
 
+  Future<void> _confirmReceipt(BuildContext context, WidgetRef ref) async {
+    // Terminal action, no undo (same "ask before an irreversible action"
+    // convention as `appointment_detail_screen.dart`'s cancel dialog) — the
+    // order closes to FULFILLED the moment this is confirmed.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'pharmacy_booking.orders.confirm_receipt_dialog_title'.tr(),
+        ),
+        content: Text(
+          'pharmacy_booking.orders.confirm_receipt_dialog_message'.tr(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'pharmacy_booking.orders.confirm_receipt_dialog_dismiss'.tr(),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'pharmacy_booking.orders.confirm_receipt_dialog_confirm'.tr(),
+              style: const TextStyle(
+                color: AppColors.patientPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    await ref
+        .read(pharmacyOrderConfirmReceiptControllerProvider.notifier)
+        .confirmReceipt(orderId);
+    if (!context.mounted) return;
+
+    final result = ref.read(pharmacyOrderConfirmReceiptControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'pharmacy_booking.orders.confirm_receipt_error'.tr(),
+          ),
+        ),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'pharmacy_booking.orders.confirm_receipt_success'.tr(),
+        ),
+      ),
+    );
+    ref.invalidate(pharmacyOrderDetailProvider(orderId));
+    ref.invalidate(pharmacyOrdersProvider);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(pharmacyOrderDetailProvider(orderId));
     final approving = ref.watch(
       pharmacyOrderApproveControllerProvider,
+    ).isLoading;
+    final confirmingReceipt = ref.watch(
+      pharmacyOrderConfirmReceiptControllerProvider,
     ).isLoading;
 
     return Scaffold(
@@ -88,6 +153,8 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
           order: order,
           approving: approving,
           onApprove: () => _approve(context, ref),
+          confirmingReceipt: confirmingReceipt,
+          onConfirmReceipt: () => _confirmReceipt(context, ref),
         ),
       ),
     );
@@ -99,11 +166,15 @@ class _OrderDetailBody extends StatelessWidget {
     required this.order,
     required this.approving,
     required this.onApprove,
+    required this.confirmingReceipt,
+    required this.onConfirmReceipt,
   });
 
   final PharmacyOrderDetail order;
   final bool approving;
   final VoidCallback onApprove;
+  final bool confirmingReceipt;
+  final VoidCallback onConfirmReceipt;
 
   @override
   Widget build(BuildContext context) {
@@ -369,6 +440,18 @@ class _OrderDetailBody extends StatelessWidget {
             foregroundColor: Colors.white,
             borderRadius: AppRadii.xl,
             onPressed: approving ? null : onApprove,
+          ),
+        ],
+        if (order.canConfirmReceipt) ...[
+          const SizedBox(height: 24),
+          AppButton.filled(
+            label: 'pharmacy_booking.orders.confirm_receipt_cta'.tr(),
+            fullWidth: true,
+            isLoading: confirmingReceipt,
+            backgroundColor: AppColors.patientPrimary,
+            foregroundColor: Colors.white,
+            borderRadius: AppRadii.xl,
+            onPressed: confirmingReceipt ? null : onConfirmReceipt,
           ),
         ],
       ],

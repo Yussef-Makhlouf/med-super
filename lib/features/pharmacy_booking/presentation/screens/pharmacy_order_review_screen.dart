@@ -327,6 +327,12 @@ class _DeliveryMethodSection extends StatelessWidget {
   static const _mockHomeAddress =
       'حي العليا، الرياض، المملكة العربية السعودية. بالقرب من برج المملكة، مبنى رقم 4.';
 
+  static IconData _iconFor(DeliveryMethod method) => switch (method) {
+    DeliveryMethod.homeDelivery => Icons.delivery_dining_outlined,
+    DeliveryMethod.clinicHandover => Icons.local_hospital_outlined,
+    DeliveryMethod.pickup => Icons.storefront_outlined,
+  };
+
   @override
   Widget build(BuildContext context) {
     final isHome = method == DeliveryMethod.homeDelivery;
@@ -370,13 +376,7 @@ class _DeliveryMethodSection extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                isHome
-                    ? Icons.delivery_dining_outlined
-                    : Icons.storefront_outlined,
-                size: 20,
-                color: AppColors.tealAccent,
-              ),
+              Icon(_iconFor(method), size: 20, color: AppColors.tealAccent),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
