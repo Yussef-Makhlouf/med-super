@@ -53,10 +53,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             extra: {'phone': phone, 'requestId': value.requestId},
           );
         case Err(:final failure):
-          final key = failureMessage(failure);
-          final text = key.startsWith('auth.') || key.startsWith('errors.')
-              ? key.tr()
-              : key;
+          final text = authFailureMessage(failure);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(text)));

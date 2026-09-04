@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'error_banner.dart';
 import 'empty_state.dart';
 
@@ -32,17 +33,20 @@ class AsyncValueView<T> extends StatelessWidget {
   }
 
   Widget _buildError(BuildContext context, Object error) {
+    // A non-[Failure] used to be rendered as `error.toString()` — an English
+    // (often raw) exception string straight into the UI. Everything now goes
+    // through `failureMessage*`, which is Arabic-only by construction.
     if (error is! Failure) {
-      return ErrorBanner(message: error.toString(), onRetry: onRetry);
+      return ErrorBanner(message: failureMessageOf(error), onRetry: onRetry);
     }
 
     return switch (error) {
       NetworkFailure() => ErrorBanner(
-        message: 'errors.network'.tr(),
+        message: failureMessage(error),
         onRetry: onRetry,
       ),
-      ServerFailure(:final message) => ErrorBanner(
-        message: message ?? 'errors.server'.tr(),
+      ServerFailure() => ErrorBanner(
+        message: failureMessage(error),
         onRetry: onRetry,
       ),
       AuthFailure() => EmptyState(
@@ -50,16 +54,14 @@ class AsyncValueView<T> extends StatelessWidget {
         subtitle: 'errors.session_expired_subtitle'.tr(),
         icon: Icons.lock_outline,
       ),
-      ValidationFailure(:final fieldErrors) => ErrorBanner(
-        message: fieldErrors.values.first,
-      ),
-      ConflictFailure(:final reason) => _ConflictDialog(reason: reason),
+      ValidationFailure() => ErrorBanner(message: failureMessage(error)),
+      ConflictFailure() => _ConflictDialog(reason: failureMessage(error)),
       CacheFailure() => ErrorBanner(
-        message: 'errors.cache_load_failed'.tr(),
+        message: failureMessage(error),
         onRetry: onRetry,
       ),
       UnknownFailure() => ErrorBanner(
-        message: 'errors.unexpected'.tr(),
+        message: failureMessage(error),
         onRetry: onRetry,
       ),
     };

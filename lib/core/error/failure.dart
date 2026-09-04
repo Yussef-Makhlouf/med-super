@@ -14,11 +14,21 @@ sealed class Failure with _$Failure {
     String? correlationId,
   }) = ServerFailure;
   const factory Failure.auth() = AuthFailure;
-  const factory Failure.validation(Map<String, String> fieldErrors) =
-      ValidationFailure;
+  /// [code] is the backend envelope's `error.code` when the 422 came from a
+  /// business rule — it is what `failureMessage()` keys the Arabic copy on.
+  const factory Failure.validation(
+    Map<String, String> fieldErrors, {
+    String? code,
+  }) = ValidationFailure;
 
   /// Slot just taken, price changed, item OOS — not a generic error.
-  const factory Failure.conflict(String reason) = ConflictFailure;
+  ///
+  /// [code] carries the backend envelope's `error.code` (`SLOT_ALREADY_BOOKED`,
+  /// `APPOINTMENT_STATE_CHANGED`, ...). Screens map on the code, never on
+  /// [reason]'s wording — matching sentences was how this used to break every
+  /// time the backend reworded a message.
+  const factory Failure.conflict(String reason, {String? code}) =
+      ConflictFailure;
   const factory Failure.cache() = CacheFailure;
   const factory Failure.unknown(Object error, StackTrace stackTrace) =
       UnknownFailure;

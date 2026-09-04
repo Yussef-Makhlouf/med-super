@@ -50,7 +50,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         case Err(:final failure):
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(failureMessage(failure).tr())));
+          ).showSnackBar(SnackBar(content: Text(authFailureMessage(failure))));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

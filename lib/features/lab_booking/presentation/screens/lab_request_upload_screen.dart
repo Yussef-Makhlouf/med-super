@@ -38,13 +38,9 @@ class _LabRequestUploadScreenState
       );
     } catch (_) {
       if (!mounted) return;
-      // No translation key for this error exists in the Stage A3 contract
-      // and this screen has no other localized fallback text to reuse, so
-      // a plain literal is used here per the plan's placeholder rule —
-      // flagged in the final report as needing a real translation key.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open the image picker. Please try again.'),
+        SnackBar(
+          content: Text('errors.image_picker_failed'.tr()),
         ),
       );
       return;

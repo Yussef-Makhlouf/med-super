@@ -125,11 +125,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
             extra: {'requestId': _requestId, 'code': _code},
           );
         case Err(:final failure):
-          final key = failureMessage(failure);
-          // OTP_INVALID → prefer dedicated copy; raw API messages skip .tr()
-          final text = key.startsWith('auth.') || key.startsWith('errors.')
-              ? key.tr()
-              : key;
+          final text = authFailureMessage(failure);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(text)));
@@ -158,7 +154,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
         case Err(:final failure):
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(failureMessage(failure).tr())));
+          ).showSnackBar(SnackBar(content: Text(authFailureMessage(failure))));
       }
     } finally {
       if (mounted) setState(() => _resending = false);

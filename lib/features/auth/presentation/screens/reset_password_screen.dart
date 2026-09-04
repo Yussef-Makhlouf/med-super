@@ -86,10 +86,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             extra: {'successMessageKey': 'auth.reset_password_success'},
           );
         case Err(:final failure):
-          final key = failureMessage(failure);
-          final text = key.startsWith('auth.') || key.startsWith('errors.')
-              ? key.tr()
-              : key;
+          final text = authFailureMessage(failure);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(text)));

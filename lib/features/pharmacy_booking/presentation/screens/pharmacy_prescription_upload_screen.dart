@@ -47,12 +47,9 @@ class _PharmacyPrescriptionUploadScreenState
       );
     } catch (_) {
       if (!mounted) return;
-      // No translation key for this error exists in the contract and this
-      // screen has no other localized fallback text to reuse, so a plain
-      // literal is used here — mirrors the lab_booking template's approach.
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open the image picker. Please try again.'),
+        SnackBar(
+          content: Text('errors.image_picker_failed'.tr()),
         ),
       );
       return;

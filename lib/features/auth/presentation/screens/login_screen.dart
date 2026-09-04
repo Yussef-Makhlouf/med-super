@@ -167,10 +167,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           },
         );
       } else if (result is Err<OtpRequestResult>) {
-        final key = failureMessage(result.failure);
+        final message = authFailureMessage(result.failure);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(key.tr())));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _sending = false);

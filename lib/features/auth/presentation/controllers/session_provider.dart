@@ -1,6 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/auth/domain/entities/user.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
@@ -77,19 +79,35 @@ bool isValidEgyptPhone(String raw) {
       RegExp(r'^201[0125][0-9]{8}$').hasMatch(digits);
 }
 
-String failureMessage(Failure failure) => switch (failure) {
-  NetworkFailure() => 'errors.network',
-  AuthFailure() => 'errors.session_expired',
-  ServerFailure(:final code, :final message) =>
-    code == 'OTP_INVALID' || code == 'OTP_EXPIRED'
-        ? 'auth.otp_wrong'
-        : (message ?? 'errors.server'),
-  ValidationFailure(:final fieldErrors) =>
-    fieldErrors.isEmpty ? 'errors.server' : fieldErrors.values.first,
-  ConflictFailure(:final reason) => reason,
-  CacheFailure() => 'errors.server',
-  UnknownFailure() => 'errors.unexpected',
-};
+/// Arabic copy for an auth failure, already translated — callers render it
+/// directly.
+///
+/// This used to return *either* a translation key *or* the backend's raw
+/// `message`, leaving every screen to guess which with
+/// `key.startsWith('auth.') ? key.tr() : key`. That guess is what let English
+/// server text reach the screen. Now the shared mapper
+/// (`core/error/failure_message.dart`) resolves `error.code` to Arabic and
+/// this only adds the one auth-specific override.
+String authFailureMessage(Failure failure) {
+  final code = switch (failure) {
+    ServerFailure(:final code) => code,
+    ConflictFailure(:final code) => code,
+    ValidationFailure(:final code) => code,
+    _ => null,
+  };
+  // Mock mode answers `OTP_INVALID`/`OTP_EXPIRED`; the real backend answers
+  // `INVALID_CODE`/`CODE_EXPIRED`/`TOO_MANY_ATTEMPTS` (File 10 §2.3). Both
+  // mean the same thing to someone staring at an OTP box.
+  const otpCodes = {
+    'OTP_INVALID',
+    'OTP_EXPIRED',
+    'INVALID_CODE',
+    'CODE_EXPIRED',
+  };
+  if (code != null && otpCodes.contains(code)) return 'auth.otp_wrong'.tr();
+
+  return failureMessage(failure);
+}
 
 @riverpod
 class SessionController extends _$SessionController {

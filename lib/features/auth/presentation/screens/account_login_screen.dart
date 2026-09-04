@@ -156,10 +156,10 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
       if (result is Ok<Session>) {
         context.go('/');
       } else if (result is Err<Session>) {
-        final key = failureMessage(result.failure);
+        final message = authFailureMessage(result.failure);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(key.tr())));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

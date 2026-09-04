@@ -130,7 +130,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final role =
         options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
     if (phone == null || phone.isEmpty) {
-      return _error(422, 'VALIDATION_ERROR', 'phone is required');
+      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف مطلوب.');
     }
     _mockAuth.phone = phone;
     _mockAuth.role = role;
@@ -151,10 +151,10 @@ void registerFoundationMocks(MockInterceptor interceptor) {
         options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
 
     if (phone == null || code == null) {
-      return _error(422, 'VALIDATION_ERROR', 'phone and code are required');
+      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف ورمز التحقق مطلوبان.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
+      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
     }
 
     final isProvider = role != 'PATIENT';
@@ -183,13 +183,13 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(
         422,
         'VALIDATION_ERROR',
-        'Password must be at least 8 characters',
+        'كلمة المرور يجب ألا تقل عن 8 أحرف.',
       );
     }
 
     final phone = _mockAuth.phone;
     if (phone == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No active session');
+      return _error(401, 'UNAUTHENTICATED', 'لا توجد جلسة نشِطة. سجّل الدخول مرة أخرى.');
     }
 
     _passwordsByPhone[phone] = password;
@@ -213,7 +213,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
         options.uri.queryParameters['role']?.toUpperCase() ?? 'PATIENT';
 
     if (phone == null || password == null) {
-      return _error(422, 'VALIDATION_ERROR', 'phone and password are required');
+      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف وكلمة المرور مطلوبان.');
     }
 
     final storedPassword = _passwordsByPhone[phone];
@@ -221,14 +221,14 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(
         404,
         'ACCOUNT_NOT_FOUND',
-        'No account found for this number.',
+        'لا يوجد حساب مرتبط بهذا الرقم.',
       );
     }
     if (storedPassword != password) {
       return _error(
         401,
         'INVALID_CREDENTIALS',
-        'Incorrect phone number or password.',
+        'رقم الهاتف أو كلمة المرور غير صحيحة.',
       );
     }
 
@@ -248,7 +248,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
       return _error(
         403,
         'ACCOUNT_SUSPENDED',
-        'This assistant account has been suspended.',
+        'تم إيقاف حساب المساعد هذا.',
       );
     }
     final resolvedRole = assistantRecord != null ? 'CLINIC_STAFF' : role;
@@ -272,7 +272,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final body = _body(options);
     final phone = body?['phone'] as String?;
     if (phone == null || phone.isEmpty) {
-      return _error(422, 'VALIDATION_ERROR', 'phone is required');
+      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف مطلوب.');
     }
     // Remembered so the passwordReset mock below (which only gets
     // requestId/code/newPassword, no phone, matching the real endpoint)
@@ -297,10 +297,10 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final code = body?['code'] as String?;
 
     if (requestId == null || requestId.isEmpty || code == null) {
-      return _error(422, 'VALIDATION_ERROR', 'requestId and code are required');
+      return _error(422, 'VALIDATION_ERROR', 'رمز التحقق مطلوب.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
+      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
     }
 
     // Checks-only — no side effects, no tokens, unlike passwordReset below.
@@ -314,16 +314,16 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     final newPassword = body?['newPassword'] as String?;
 
     if (requestId == null || requestId.isEmpty || code == null) {
-      return _error(422, 'VALIDATION_ERROR', 'requestId and code are required');
+      return _error(422, 'VALIDATION_ERROR', 'رمز التحقق مطلوب.');
     }
     if (code != kMockOtpCode) {
-      return _error(401, 'OTP_INVALID', 'Invalid or expired OTP');
+      return _error(401, 'OTP_INVALID', 'رمز التحقق غير صحيح أو منتهي الصلاحية. اطلب رمزًا جديدًا.');
     }
     if (newPassword == null || newPassword.length < 8) {
       return _error(
         422,
         'VALIDATION_ERROR',
-        'Password must be at least 8 characters',
+        'كلمة المرور يجب ألا تقل عن 8 أحرف.',
       );
     }
 
@@ -347,7 +347,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     if (refresh == null ||
         _mockAuth.refreshToken == null ||
         refresh != _mockAuth.refreshToken) {
-      return _error(401, 'TOKEN_INVALID', 'Refresh token not recognised');
+      return _error(401, 'TOKEN_INVALID', 'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.');
     }
     final access = _mockAuth.accessToken ?? 'dev_patient_refreshed';
     return {
@@ -363,13 +363,13 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   interceptor.register('GET', ApiPaths.me, (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
 
     // Accept mock session tokens and legacy dev_ bypass tokens.
     final ok = token == _mockAuth.accessToken || token.startsWith('dev_');
     if (!ok) {
-      return _error(401, 'TOKEN_INVALID', 'Token not recognised in mock mode');
+      return _error(401, 'TOKEN_INVALID', 'جلستك غير معروفة أو منتهية. سجّل الدخول مرة أخرى.');
     }
 
     if (token.startsWith('dev_') && _mockAuth.accessToken == null) {
@@ -386,7 +386,7 @@ void registerFoundationMocks(MockInterceptor interceptor) {
   interceptor.register('PATCH', ApiPaths.me, (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
     final body = _body(options);
     final name = body?['display_name'] as String?;
@@ -608,7 +608,7 @@ void registerAvailabilityMocks(MockInterceptor interceptor) {
   interceptor.register('GET', '/slots', (options) {
     final clinicBranchId = options.queryParameters['clinicBranchId'] as String?;
     if (clinicBranchId == null || clinicBranchId.isEmpty) {
-      return _error(400, 'VALIDATION_ERROR', 'clinicBranchId is required.');
+      return _error(400, 'VALIDATION_ERROR', 'اختر فرع العيادة.');
     }
 
     final fromParam = options.queryParameters['from'] as String?;
@@ -710,7 +710,7 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       return _error(
         400,
         'VALIDATION_ERROR',
-        'doctorClinicAffiliationId, slotId and patientId are required.',
+        'بيانات الحجز غير مكتملة. أعد المحاولة.',
       );
     }
 
@@ -741,7 +741,7 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       return _error(
         410,
         'HOLD_EXPIRED',
-        'This hold has expired or was already used. Start a new hold.',
+        'انتهت مدة حجز هذا الموعد. اختر موعدًا آخر وابدأ من جديد.',
       );
     }
 
@@ -769,13 +769,13 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         : '';
     final appointment = _mockAppointments[appointmentId];
     if (appointment == null) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد غير موجود.');
     }
     if (appointment.status != 'CONFIRMED') {
       return _error(
         422,
         'APPOINTMENT_NOT_CANCELLABLE',
-        'Only a confirmed appointment can be cancelled.',
+        'لا يمكن إلغاء هذا الموعد إلا وهو مؤكّد.',
       );
     }
 
@@ -797,20 +797,20 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         : '';
     final appointment = _mockAppointments[appointmentId];
     if (appointment == null) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد غير موجود.');
     }
     if (appointment.status != 'CONFIRMED') {
       return _error(
         422,
         'APPOINTMENT_NOT_RESCHEDULABLE',
-        'Only a confirmed appointment can be rescheduled.',
+        'لا يمكن تغيير هذا الموعد إلا وهو مؤكّد.',
       );
     }
 
     final body = _body(options) ?? {};
     final newSlotId = body['newSlotId'] as String?;
     if (newSlotId == null) {
-      return _error(400, 'VALIDATION_ERROR', 'newSlotId is required.');
+      return _error(400, 'VALIDATION_ERROR', 'اختر الموعد الجديد.');
     }
 
     appointment.status = 'RESCHEDULED';
@@ -1020,7 +1020,7 @@ void registerSearchMocks(MockInterceptor interceptor) {
       }
     }
     if (doctor == null) {
-      return _error(404, 'NOT_FOUND', 'Doctor not found');
+      return _error(404, 'NOT_FOUND', 'الطبيب غير موجود.');
     }
     return {'statusCode': 200, 'data': _doctorProfileJson(doctor)};
   });
@@ -1256,7 +1256,7 @@ void registerPharmacyBranchMocks(MockInterceptor interceptor) {
       }
     }
     if (branch == null) {
-      return _error(404, 'NOT_FOUND', 'Pharmacy branch not found');
+      return _error(404, 'NOT_FOUND', 'فرع الصيدلية غير موجود.');
     }
     return {'statusCode': 200, 'data': branch};
   });
@@ -2085,7 +2085,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     // affiliated with — existence hiding. The mock does the same, so the
     // client's own error handling is exercised against the right status.
     if (index == -1) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'ClinicBranch not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'فرع العيادة غير موجود.');
     }
 
     final body = _body(options) ?? {};
@@ -2119,14 +2119,14 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         404,
         'RESOURCE_NOT_FOUND',
-        'DoctorClinicAffiliation not found.',
+        'ارتباط الطبيب بالفرع غير موجود.',
       );
     }
 
     final body = _body(options) ?? {};
     final status = body['status'] as String?;
     if (status != 'ACTIVE' && status != 'PAUSED') {
-      return _error(400, 'VALIDATION_ERROR', 'status must be ACTIVE or PAUSED.');
+      return _error(400, 'VALIDATION_ERROR', 'الحالة يجب أن تكون «نشِط» أو «موقوف».');
     }
 
     final updated = Map<String, dynamic>.from(
@@ -2157,7 +2157,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         404,
         'RESOURCE_NOT_FOUND',
-        'DoctorClinicAffiliation not found.',
+        'ارتباط الطبيب بالفرع غير موجود.',
       );
     }
 
@@ -2167,7 +2167,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         422,
         'INVALID_SCHEDULE_WINDOW',
-        'endTime must be after startTime.',
+        'وقت النهاية يجب أن يكون بعد وقت البداية.',
       );
     }
 
@@ -2199,7 +2199,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       (t) => t['id'] == templateId,
     );
     if (index == -1) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'ScheduleTemplate not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'قالب المواعيد غير موجود.');
     }
 
     final current = Map<String, dynamic>.from(
@@ -2214,7 +2214,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         409,
         'OPTIMISTIC_LOCK_CONFLICT',
-        'This schedule was changed since you loaded it. Reload and try again.',
+        'تم تعديل جدول المواعيد بعد فتحك للصفحة. حدّث الصفحة ثم أعد المحاولة.',
       );
     }
 
@@ -2224,7 +2224,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         422,
         'INVALID_SCHEDULE_WINDOW',
-        'endTime must be after startTime.',
+        'وقت النهاية يجب أن يكون بعد وقت البداية.',
       );
     }
 
@@ -2251,7 +2251,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       (t) => t['id'] == templateId,
     );
     if (index == -1) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'ScheduleTemplate not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'قالب المواعيد غير موجود.');
     }
 
     final version = options.queryParameters['version'];
@@ -2261,7 +2261,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       return _error(
         409,
         'OPTIMISTIC_LOCK_CONFLICT',
-        'This schedule was changed since you loaded it. Reload and try again.',
+        'تم تعديل جدول المواعيد بعد فتحك للصفحة. حدّث الصفحة ثم أعد المحاولة.',
       );
     }
 
@@ -2284,7 +2284,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         return _error(
           404,
           'RESOURCE_NOT_FOUND',
-          'DoctorClinicAffiliation not found.',
+          'ارتباط الطبيب بالفرع غير موجود.',
         );
       }
       items = items
@@ -2306,7 +2306,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       (p) => p == 'cancel' || p == 'reschedule',
     );
     if (actionIndex <= 0) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'Unknown action.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'إجراء غير معروف.');
     }
     final action = parts[actionIndex];
     final appointmentId = parts[actionIndex - 1];
@@ -2315,7 +2315,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       (a) => a['appointmentId'] == appointmentId,
     );
     if (index == -1) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد غير موجود.');
     }
 
     final appointment = Map<String, dynamic>.from(
@@ -2341,7 +2341,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         return _error(
           400,
           'VALIDATION_ERROR',
-          'reason must be PROVIDER_REQUEST.',
+          'سبب الإلغاء غير مسموح به في هذا الإجراء.',
         );
       }
       final note = body['note'] as String?;
@@ -2359,14 +2359,14 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
     final newSlotId = body['newSlotId'] as String?;
     if (newSlotId == null || newSlotId.isEmpty) {
-      return _error(400, 'VALIDATION_ERROR', 'newSlotId is required.');
+      return _error(400, 'VALIDATION_ERROR', 'اختر الموعد الجديد.');
     }
     // The slot must belong to the same branch — mirrors the backend's
     // same-affiliation 404 (Part 35.11), using the mock slot-id convention
     // `<branchId>-<startAtIso>` that `registerAvailabilityMocks` produces.
     final branchId = appointment['clinicBranchId'] as String;
     if (!newSlotId.startsWith('$branchId-')) {
-      return _error(404, 'RESOURCE_NOT_FOUND', 'AppointmentSlot not found.');
+      return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد المتاح غير موجود.');
     }
 
     final newStart =
@@ -2414,7 +2414,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         orElse: () => const {},
       );
       if (match.isEmpty) {
-        return _error(404, 'RESOURCE_NOT_FOUND', 'Appointment not found.');
+        return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد غير موجود.');
       }
       return {'statusCode': 200, 'data': match};
     }
@@ -2434,7 +2434,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         (c) => c['clinicBranchId'] == branchId,
       );
       if (!owned) {
-        return _error(404, 'RESOURCE_NOT_FOUND', 'ClinicBranch not found.');
+        return _error(404, 'RESOURCE_NOT_FOUND', 'فرع العيادة غير موجود.');
       }
       items = items.where((a) => a['clinicBranchId'] == branchId).toList();
     }
@@ -2795,7 +2795,7 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('GET', '/v1/provider/assistants', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
     return {
       'statusCode': 200,
@@ -2807,7 +2807,7 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('POST', '/v1/provider/assistants', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
     final body = _body(options);
     final phone = body?['phone'] as String?;
@@ -2815,10 +2815,10 @@ void registerAssistantMocks(MockInterceptor interceptor) {
         (body?['display_name'] ?? body?['displayName']) as String?;
 
     if (phone == null || phone.isEmpty) {
-      return _error(422, 'VALIDATION_ERROR', 'phone is required');
+      return _error(422, 'VALIDATION_ERROR', 'رقم الهاتف مطلوب.');
     }
     if (displayName == null || displayName.isEmpty) {
-      return _error(422, 'VALIDATION_ERROR', 'display_name is required');
+      return _error(422, 'VALIDATION_ERROR', 'الاسم المعروض مطلوب.');
     }
 
     final id = 'asst-${DateTime.now().millisecondsSinceEpoch}';
@@ -2851,13 +2851,13 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('PATCH', '/v1/provider/assistants/', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
     final segments = options.path.split('/');
     final id = segments.isNotEmpty ? segments.last.split('?').first : '';
     final record = _mockAssistants[id];
     if (record == null) {
-      return _error(404, 'NOT_FOUND', 'Assistant not found');
+      return _error(404, 'NOT_FOUND', 'المساعد غير موجود.');
     }
 
     final body = _body(options);
@@ -2877,12 +2877,12 @@ void registerAssistantMocks(MockInterceptor interceptor) {
   interceptor.register('DELETE', '/v1/provider/assistants/', (options) {
     final token = _bearer(options);
     if (token == null) {
-      return _error(401, 'UNAUTHENTICATED', 'No token provided');
+      return _error(401, 'UNAUTHENTICATED', 'يلزم تسجيل الدخول لإتمام هذا الإجراء.');
     }
     final segments = options.path.split('/');
     final id = segments.isNotEmpty ? segments.last.split('?').first : '';
     if (!_mockAssistants.containsKey(id)) {
-      return _error(404, 'NOT_FOUND', 'Assistant not found');
+      return _error(404, 'NOT_FOUND', 'المساعد غير موجود.');
     }
     _mockAssistants.remove(id);
     return {'statusCode': 200, 'data': <String, dynamic>{}};

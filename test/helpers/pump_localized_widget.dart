@@ -81,11 +81,25 @@ Future<void> pumpLocalizedWidget(
     await tester.pumpWidget(_shell(child: child, overrides: overrides));
     // Not `pumpAndSettle()`: some widgets under test (e.g. a submit
     // spinner) run a perpetual animation, which would make it spin until
-    // its internal timeout and fail the test. A bounded number of pumps
-    // (each a real async round trip inside `runAsync`) is enough to flush
-    // the translation-load future without waiting for "no more scheduled
-    // frames ever" on a widget that never reaches that.
-    for (var i = 0; i < 5; i++) {
+    // its internal timeout and fail the test.
+    //
+    // Pump until [child] is actually in the tree rather than a fixed number
+    // of times. A fixed budget silently measures "is the translation JSON
+    // small enough to load in N frames?" — growing `assets/translations`
+    // (as the Arabic error-code catalog did) pushed the load past it, and
+    // every one of these tests started failing on an empty tree with no
+    // hint that localization was the cause. The ceiling keeps a genuinely
+    // stuck load from hanging the suite.
+    for (var i = 0; i < 200 && !tester.any(find.byWidget(child)); i++) {
+      // A real `Future.delayed` (not just a fake-clock frame) is what lets
+      // `rootBundle.loadString` actually make progress — the translation
+      // files are ~100KB and do not resolve within a frame.
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    // A couple more frames so anything the child schedules on first build
+    // (layout, an initial fade) has run before assertions.
+    for (var i = 0; i < 3; i++) {
       await tester.pump(const Duration(milliseconds: 20));
     }
   });

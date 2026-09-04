@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/utils/formatters.dart';
@@ -299,28 +300,13 @@ class _SlotPickerBody extends ConsumerWidget {
     );
   }
 
-  String _errorMessage(Failure failure) => switch (failure) {
-    NetworkFailure() => 'errors.network'.tr(),
-    AuthFailure() => 'errors.session_expired'.tr(),
-    ConflictFailure(:final reason) => _conflictMessage(reason),
-    ServerFailure(:final message) => message ?? 'errors.server'.tr(),
-    ValidationFailure() => 'errors.server'.tr(),
-    CacheFailure() => 'errors.server'.tr(),
-    UnknownFailure() => 'errors.unexpected'.tr(),
-  };
-
-  /// `reason` is `ConflictError`'s raw English `message` from the backend
-  /// (`dio_failure_mapper.dart`'s `Failure.conflict(api.message ?? api.code)`)
-  /// — the exact strings mapped here match
-  /// `reschedule-appointment.use-case.ts` verbatim. Anything unrecognized
-  /// falls back to showing the raw string rather than a generic "error
-  /// occurred" that would hide real information.
-  String _conflictMessage(String reason) => switch (reason) {
-    'This slot is no longer open.' => 'appointments.slot_no_longer_open'.tr(),
-    'This appointment was modified concurrently. Reload and try again.' =>
-      'appointments.appointment_state_changed'.tr(),
-    _ => reason,
-  };
+  /// Delegates to the app-wide Arabic mapper — see
+  /// `core/error/failure_message.dart`. The old version matched the
+  /// backend's English conflict sentences verbatim; the mapper keys on
+  /// `error.code`, so rewording the API no longer silently drops this screen
+  /// back to a raw server string.
+  String _errorMessage(Failure failure) =>
+      failureMessage(failure, screenFallback: 'errors.server');
 }
 
 class _AvailabilitySection extends ConsumerWidget {

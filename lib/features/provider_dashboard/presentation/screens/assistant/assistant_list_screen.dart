@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant.dart';
@@ -120,12 +121,10 @@ class AssistantListScreen extends ConsumerWidget {
     );
   }
 
-  String _failureMessage(Failure failure) => switch (failure) {
-    NetworkFailure() => 'errors.network'.tr(),
-    AuthFailure() => 'errors.session_expired'.tr(),
-    ServerFailure(:final message) => message ?? 'errors.server'.tr(),
-    _ => 'errors.unexpected'.tr(),
-  };
+  /// Delegates to the app-wide Arabic mapper — see
+  /// `core/error/failure_message.dart`.
+  String _failureMessage(Failure failure) =>
+      failureMessage(failure, screenFallback: 'provider_dashboard.errors.generic');
 }
 
 class _AssistantEmptyState extends StatelessWidget {

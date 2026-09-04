@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
@@ -217,29 +218,13 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     );
   }
 
-  String _failureMessage(Failure failure) => switch (failure) {
-    NetworkFailure() => 'errors.network'.tr(),
-    AuthFailure() => 'errors.session_expired'.tr(),
-    ConflictFailure(:final reason) => _conflictMessage(reason),
-    ServerFailure(:final message) => message ?? 'errors.server'.tr(),
-    ValidationFailure() => 'errors.server'.tr(),
-    CacheFailure() => 'errors.server'.tr(),
-    UnknownFailure() => 'errors.unexpected'.tr(),
-  };
-
-  /// `reason` is `ConflictError`'s raw English `message` from the backend
-  /// (`dio_failure_mapper.dart`'s `Failure.conflict(api.message ?? api.code)`)
-  /// — the exact strings mapped here match `create-hold.use-case.ts`/
-  /// `reschedule-appointment.use-case.ts` verbatim. Anything unrecognized
-  /// falls back to showing the raw string rather than a generic "error
-  /// occurred" that would hide real information.
-  String _conflictMessage(String reason) => switch (reason) {
-    'appointments.hold_expired' => 'appointments.hold_expired'.tr(),
-    'This slot is no longer open.' => 'appointments.slot_no_longer_open'.tr(),
-    'This appointment was modified concurrently. Reload and try again.' =>
-      'appointments.appointment_state_changed'.tr(),
-    _ => reason,
-  };
+  /// Every branch delegates to the app-wide Arabic mapper
+  /// (`core/error/failure_message.dart`). This screen used to switch on the
+  /// backend's English sentences (`'This slot is no longer open.'`), which
+  /// broke the moment that copy changed — the mapper keys on `error.code`
+  /// instead, and falls back to this screen's own booking copy.
+  String _failureMessage(Failure failure) =>
+      failureMessage(failure, screenFallback: 'errors.server');
 }
 
 class _Header extends StatelessWidget {

@@ -20,10 +20,13 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
         return const Failure.auth();
       }
       if (api.isConflict) {
-        return Failure.conflict(api.message ?? api.code);
+        return Failure.conflict(api.message ?? api.code, code: api.code);
       }
       if (api.isValidation) {
-        return Failure.validation({'form': api.message ?? api.code});
+        // The backend sends one Arabic sentence per business rule; keep the
+        // code alongside it so `failureMessage()` can prefer app-local copy.
+        return Failure.validation({'form': api.message ?? api.code},
+            code: api.code);
       }
       return Failure.server(
         statusCode: api.statusCode,
@@ -47,6 +50,12 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
           if (envelope != null) {
             final code = envelope['code'] as String? ?? 'UNKNOWN';
             if (status == 401) return const Failure.auth();
+            if (status == 409) {
+              return Failure.conflict(
+                envelope['message'] as String? ?? code,
+                code: code,
+              );
+            }
             return Failure.server(
               statusCode: status,
               code: code,

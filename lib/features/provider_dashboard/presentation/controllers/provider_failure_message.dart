@@ -1,42 +1,45 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 
-/// Turns a [Failure] into a localized message for the Doctor Dashboard.
+/// Doctor-Dashboard wording for a [Failure].
 ///
-/// The backend's error envelope is uniform (`{code, message, ...}`), so the
-/// distinctions that actually matter to a doctor are the status classes:
+/// The shared mapper (`core/error/failure_message.dart`) already resolves
+/// `error.code` → Arabic and guarantees nothing English or raw reaches the
+/// screen. This layer only exists for the handful of codes where a doctor
+/// should read something different from a patient — a doctor cancelling
+/// someone else's appointment is told about *the appointment*, not about
+/// "your booking" — plus the dashboard's own generic line.
 ///
-///  * **401** — session gone. `mapDioToFailure` collapses this to
-///    `AuthFailure` before we ever see a code.
-///  * **403** — authenticated, but not a DOCTOR context.
-///  * **404** — the resource is not theirs, or no longer exists. The backend
-///    deliberately answers 404 rather than 403 for someone else's record, so
-///    "not found" and "not yours" are the same message on purpose.
-///  * **409** — an optimistic-lock or state race. Reload, don't retry blindly.
-///  * **422** — a business rule said no (e.g. cancelling a non-confirmed
-///    appointment). The server's own message is the useful one here.
-///
-/// Known business codes get a specific string; everything else falls back to
-/// the server message, and only then to a generic line — never a raw
-/// exception or stack trace.
+/// Anything not listed here falls through to the shared mapper unchanged.
 String providerFailureMessage(Failure failure) {
-  return switch (failure) {
-    NetworkFailure() => 'errors.network'.tr(),
-    AuthFailure() => 'provider_dashboard.errors.unauthorized'.tr(),
-    ConflictFailure(:final reason) =>
-      reason.isEmpty ? 'provider_dashboard.errors.conflict'.tr() : reason,
-    ValidationFailure(:final fieldErrors) =>
-      fieldErrors.values.firstOrNull ??
-          'provider_dashboard.errors.validation'.tr(),
-    ServerFailure(:final statusCode, :final code, :final message) =>
-      _serverMessage(statusCode, code, message),
-    CacheFailure() => 'errors.cache_load_failed'.tr(),
-    UnknownFailure() => 'provider_dashboard.errors.generic'.tr(),
-  };
+  final override = _doctorOverride(failure);
+  if (override != null) return override;
+  return failureMessage(
+    failure,
+    screenFallback: 'provider_dashboard.errors.generic',
+  );
 }
 
-String _serverMessage(int statusCode, String code, String? message) {
-  final businessMessage = switch (code) {
+/// Same mapping for an untyped error escaping an `AsyncValue`.
+String providerFailureMessageOf(Object error) => error is Failure
+    ? providerFailureMessage(error)
+    : 'provider_dashboard.errors.generic'.tr();
+
+/// Doctor-specific copy that differs from the patient-facing catalog.
+String? _doctorOverride(Failure failure) {
+  if (failure is AuthFailure) {
+    return 'provider_dashboard.errors.unauthorized'.tr();
+  }
+
+  final code = switch (failure) {
+    ServerFailure(:final code) => code,
+    ConflictFailure(:final code) => code,
+    ValidationFailure(:final code) => code,
+    _ => null,
+  };
+
+  return switch (code) {
     'APPOINTMENT_NOT_CANCELLABLE' =>
       'provider_dashboard.cancel.not_cancellable'.tr(),
     'APPOINTMENT_NOT_RESCHEDULABLE' =>
@@ -48,26 +51,10 @@ String _serverMessage(int statusCode, String code, String? message) {
     'SLOT_ALREADY_BOOKED' => 'errors.slot_taken'.tr(),
     'ROLE_NOT_PERMITTED' || 'FORBIDDEN' =>
       'provider_dashboard.errors.forbidden'.tr(),
-    'RESOURCE_NOT_FOUND' => 'provider_dashboard.errors.not_found'.tr(),
+    // The backend deliberately answers 404 rather than 403 for someone
+    // else's record, so "not found" and "not yours" are one message here.
+    'RESOURCE_NOT_FOUND' || 'RESOURCE_NOT_OWNED' =>
+      'provider_dashboard.errors.not_found'.tr(),
     _ => null,
   };
-  if (businessMessage != null) return businessMessage;
-
-  return switch (statusCode) {
-    401 => 'provider_dashboard.errors.unauthorized'.tr(),
-    403 => 'provider_dashboard.errors.forbidden'.tr(),
-    404 => 'provider_dashboard.errors.not_found'.tr(),
-    409 => 'provider_dashboard.errors.conflict'.tr(),
-    400 || 422 =>
-      message ?? 'provider_dashboard.errors.validation'.tr(),
-    _ => message ?? 'provider_dashboard.errors.generic'.tr(),
-  };
 }
-
-/// Same mapping for an untyped error escaping an `AsyncValue`. Anything that
-/// is not a [Failure] falls back to the generic line rather than leaking a
-/// raw exception string into the UI.
-String providerFailureMessageOf(Object error) =>
-    error is Failure
-        ? providerFailureMessage(error)
-        : 'provider_dashboard.errors.generic'.tr();
