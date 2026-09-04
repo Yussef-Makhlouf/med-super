@@ -848,6 +848,17 @@
     "delete_confirm_suffix": "؟ سيتم إلغاء صلاحيات الدخول فوراً ولا يمكن التراجع."
   },
   "provider_dashboard": {
+    "home": {
+      "title": "الجدول",
+      "today": "اليوم",
+      "day_off_title": "يوم إجازة",
+      "day_off_subtitle": "لا توجد أوقات عمل محددة في أي عيادة لهذا اليوم.",
+      "working_hours": "ساعات العمل",
+      "booked_count": "{} محجوز",
+      "no_appointments": "لا توجد مواعيد محجوزة بعد لهذه الفترة.",
+      "load_error": "تعذّر تحميل جدول اليوم.",
+      "retry": "إعادة المحاولة"
+    },
     "appointments": {
       "title": "المواعيد",
       "segment_upcoming": "القادمة",
@@ -863,7 +874,29 @@
       "branch": "الفرع",
       "status": "الحالة",
       "booked_on": "تم الحجز في",
-      "all_branches": "كل الفروع"
+      "all_branches": "كل الفروع",
+      "add_walk_in": "حجز موعد لمريض"
+    },
+    "walk_in": {
+      "title": "حجز موعد لمريض",
+      "step_branch": "اختر الفرع",
+      "no_branches_title": "لا توجد فروع تستقبل الحجوزات",
+      "no_branches_subtitle": "لا يوجد فرع مفعّل وموثّق حالياً لحجز موعد فيه.",
+      "step_slot": "اختر الموعد",
+      "choose_branch_first": "اختر فرعاً أولاً لعرض الأوقات المتاحة.",
+      "no_slots": "لا توجد أوقات متاحة في هذا الفرع.",
+      "step_patient": "بيانات المريض",
+      "phone_label": "رقم هاتف المريض",
+      "phone_hint": "مثال: ‎+201001234567",
+      "phone_required": "رقم الهاتف مطلوب",
+      "phone_invalid": "أدخل رقم هاتف صحيح بصيغة دولية، مثل ‎+201001234567",
+      "name_label": "اسم المريض",
+      "name_hint": "مثال: سارة أحمد",
+      "name_required": "اسم المريض مطلوب",
+      "submit": "تأكيد الحجز",
+      "success": "تم حجز الموعد بنجاح.",
+      "selected_slot": "الموعد المختار",
+      "change_slot": "تغيير"
     },
     "status": {
       "confirmed": "مؤكد",
@@ -892,18 +925,36 @@
       "success": "تم نقل الموعد، ويحتفظ المريض بحجزه.",
       "not_reschedulable": "لا يمكن تغيير إلا موعد مؤكد."
     },
+    "patients": {
+      "title": "قائمة المرضى",
+      "search_hint": "البحث بالاسم أو رقم الهاتف…",
+      "filter_all": "الكل",
+      "filter_today": "اليوم",
+      "filter_week": "هذا الأسبوع",
+      "count": "{} مرضى",
+      "count_placeholder": "-- مرضى",
+      "empty_title": "لا يوجد مرضى",
+      "empty_subtitle": "لم يتم العثور على مرضى يطابقون بحثك.",
+      "detail_title": "الملف الطبي للمريض",
+      "next_appointment": "الموعد القادم",
+      "appointment_history": "سجل مواعيد المريض",
+      "no_other_appointments": "لا توجد مواعيد مسجلة أخرى لهذا المريض"
+    },
     "clinics": {
       "title": "عياداتي",
       "empty_title": "لا توجد عيادات",
       "empty_subtitle": "لست مرتبطاً بأي فرع عيادة.",
+      "branch_label": "فرع مرتبط بالطبيب",
       "phone": "هاتف الفرع",
       "timezone": "المنطقة الزمنية",
       "address_line": "العنوان",
       "city": "المدينة",
       "consult_fee": "سعر الكشف",
+      "region_code": "رمز المنطقة",
+      "country_code": "رمز الدولة",
       "save": "حفظ التغييرات",
       "saved": "تم تحديث بيانات العيادة.",
-      "admin_only_note": "حالة التوثيق وسعر الكشف تُدار من إدارة MedSuper.",
+      "verification_admin_note": "حالة التوثيق تُدار من إدارة MedSuper.",
       "status_verified": "موثّق",
       "status_pending": "بانتظار التوثيق",
       "status_suspended": "موقوف",
@@ -914,7 +965,14 @@
       "paused_note": "متوقف مؤقتاً. لن تُنشأ أوقات جديدة، والمواعيد القائمة كما هي.",
       "unverified_note": "هذا الفرع غير موثّق بعد، لذلك لا تُنشأ له أوقات جديدة.",
       "pause_title": "إيقاف الحجوزات في هذا الفرع؟",
-      "pause_message": "ستتوقف إتاحة أوقات جديدة. المواعيد التي حجزها المرضى بالفعل لن تُلغى — تعامل معها كل على حدة."
+      "pause_message": "ستتوقف إتاحة أوقات جديدة. المواعيد التي حجزها المرضى بالفعل لن تُلغى — تعامل معها كل على حدة.",
+      "add_branch": "إضافة فرع",
+      "branch_added": "تمت إضافة الفرع.",
+      "new_branch_pending_note": "الفرع الجديد بانتظار التوثيق من إدارة MedSuper قبل أن يستقبل حجوزات.",
+      "delete": "حذف الفرع",
+      "deleted": "تم حذف الفرع.",
+      "delete_title": "هل تريد حذف هذا الفرع؟",
+      "delete_message": "سيتم حذفه فقط إذا لم يكن مرتبطًا بأطباء آخرين ولا توجد عليه مواعيد."
     },
     "schedule": {
       "title": "أوقات عملي",

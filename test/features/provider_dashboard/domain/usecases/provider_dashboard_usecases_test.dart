@@ -28,10 +28,14 @@ class _FakeRepo implements ProviderDashboardRepository {
   String? lastBranchId;
   String? lastAffiliationId;
   bool? lastActive;
+  double? lastConsultFee;
   String? lastCancelNote;
   String? lastRescheduleSlotId;
   DoctorScheduleTemplatePatch? lastPatch;
   int? lastDeleteVersion;
+  String? lastCreateClinicId;
+  double? lastCreateConsultFee;
+  String? lastDeletedBranchId;
   ({DateTime? from, DateTime? to, DoctorAppointmentStatus? status, String? branch})?
   lastQuery;
 
@@ -129,6 +133,28 @@ class _FakeRepo implements ProviderDashboardRepository {
   Future<Result<List<DoctorClinic>>> getMyClinics() async => _result([_clinic]);
 
   @override
+  Future<Result<DoctorClinic>> createMyClinicBranch({
+    required String clinicId,
+    required String phone,
+    required String ianaTimezone,
+    required String addressLine1,
+    required String addressCity,
+    required String regionCode,
+    required String countryCode,
+    required double consultFee,
+  }) async {
+    lastCreateClinicId = clinicId;
+    lastCreateConsultFee = consultFee;
+    return _result(
+      _clinic.copyWith(
+        phone: phone,
+        ianaTimezone: ianaTimezone,
+        address: _clinic.address.copyWith(line1: addressLine1, city: addressCity),
+      ),
+    );
+  }
+
+  @override
   Future<Result<DoctorClinic>> updateMyClinicBranch({
     required String branchId,
     String? phone,
@@ -153,15 +179,23 @@ class _FakeRepo implements ProviderDashboardRepository {
   Future<Result<DoctorClinic>> setMyAffiliationActive({
     required String affiliationId,
     required bool active,
+    double? consultFee,
   }) async {
     lastAffiliationId = affiliationId;
     lastActive = active;
+    lastConsultFee = consultFee;
     return _result(
       _clinic.copyWith(
         affiliationStatus:
             active ? AffiliationStatus.active : AffiliationStatus.paused,
       ),
     );
+  }
+
+  @override
+  Future<Result<void>> deleteMyClinicBranch({required String branchId}) async {
+    lastDeletedBranchId = branchId;
+    return _result(null);
   }
 
   @override
@@ -235,6 +269,28 @@ class _FakeRepo implements ProviderDashboardRepository {
         previousAppointmentId: appointmentId,
       ),
     );
+  }
+
+  String? lastWalkInBranchId;
+  String? lastWalkInPatientId;
+  String? lastWalkInPatientPhone;
+  String? lastWalkInPatientName;
+  String? lastWalkInSlotId;
+
+  @override
+  Future<Result<DoctorAppointment>> bookWalkInAppointment({
+    required String clinicBranchId,
+    required String slotId,
+    String? patientId,
+    String? patientPhone,
+    String? patientName,
+  }) async {
+    lastWalkInBranchId = clinicBranchId;
+    lastWalkInSlotId = slotId;
+    lastWalkInPatientId = patientId;
+    lastWalkInPatientPhone = patientPhone;
+    lastWalkInPatientName = patientName;
+    return _result(_appointment);
   }
 
   @override
@@ -317,6 +373,59 @@ void main() {
       );
 
       final result = await GetMyClinicsUseCase(failing).call();
+
+      expect(result.isOk, isFalse);
+    });
+
+    test('adding a branch forwards the clinic id and fee', () async {
+      final result = await CreateMyClinicBranchUseCase(repo).call(
+        clinicId: 'clinic-1',
+        phone: '+20222222222',
+        ianaTimezone: 'Africa/Cairo',
+        addressLine1: '1 New St',
+        addressCity: 'Giza',
+        regionCode: 'GIZ',
+        countryCode: 'EG',
+        consultFee: 300,
+      );
+
+      expect(repo.lastCreateClinicId, 'clinic-1');
+      expect(repo.lastCreateConsultFee, 300);
+      result.when(
+        ok: (clinic) => expect(clinic.phone, '+20222222222'),
+        err: (e) => fail(e.toString()),
+      );
+    });
+
+    test('the doctor can change the consult fee via the affiliation', () async {
+      final result = await SetMyAffiliationActiveUseCase(
+        repo,
+      ).call(affiliationId: 'aff-1', active: true, consultFee: 350);
+
+      expect(repo.lastConsultFee, 350);
+      result.when(
+        ok: (clinic) => expect(clinic.affiliationStatus, AffiliationStatus.active),
+        err: (e) => fail(e.toString()),
+      );
+    });
+
+    test('deleting a branch forwards the branch id', () async {
+      final result = await DeleteMyClinicBranchUseCase(
+        repo,
+      ).call(branchId: 'branch-1');
+
+      expect(repo.lastDeletedBranchId, 'branch-1');
+      expect(result.isOk, isTrue);
+    });
+
+    test('delete surfaces BRANCH_HAS_BOOKINGS rather than swallowing it', () async {
+      final failing = _FakeRepo(
+        failWith: const Failure.conflict('BRANCH_HAS_BOOKINGS'),
+      );
+
+      final result = await DeleteMyClinicBranchUseCase(
+        failing,
+      ).call(branchId: 'branch-1');
 
       expect(result.isOk, isFalse);
     });
@@ -418,6 +527,50 @@ void main() {
       final result = await CancelDoctorAppointmentUseCase(
         failing,
       ).call(appointmentId: 'apt-1');
+
+      expect(result.isOk, isFalse);
+    });
+  });
+
+  group('walk-in booking', () {
+    test('forwards clinicBranchId/slotId/patientId through unchanged', () async {
+      final result = await BookWalkInAppointmentUseCase(repo).call(
+        clinicBranchId: 'branch-1',
+        slotId: 'slot-9',
+        patientId: 'pat-1',
+      );
+
+      expect(repo.lastWalkInBranchId, 'branch-1');
+      expect(repo.lastWalkInSlotId, 'slot-9');
+      expect(repo.lastWalkInPatientId, 'pat-1');
+      expect(repo.lastWalkInPatientPhone, isNull);
+      expect(result.isOk, isTrue);
+    });
+
+    test('forwards the find-or-create-by-phone path', () async {
+      final result = await BookWalkInAppointmentUseCase(repo).call(
+        clinicBranchId: 'branch-1',
+        slotId: 'slot-9',
+        patientPhone: '+201009998887',
+        patientName: 'Sara',
+      );
+
+      expect(repo.lastWalkInPatientId, isNull);
+      expect(repo.lastWalkInPatientPhone, '+201009998887');
+      expect(repo.lastWalkInPatientName, 'Sara');
+      expect(result.isOk, isTrue);
+    });
+
+    test('surfaces a conflict when the slot is already booked', () async {
+      final failing = _FakeRepo(
+        failWith: const Failure.conflict('SLOT_ALREADY_BOOKED'),
+      );
+
+      final result = await BookWalkInAppointmentUseCase(failing).call(
+        clinicBranchId: 'branch-1',
+        slotId: 'slot-9',
+        patientId: 'pat-1',
+      );
 
       expect(result.isOk, isFalse);
     });

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
@@ -12,6 +13,16 @@ import 'package:med_super/features/provider_dashboard/presentation/screens/provi
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 
 /// Provider Patients Screen matching mockup `patients.png`.
+///
+/// The list is sourced from `providerPatientsProvider`, itself derived
+/// purely from `GET /v1/doctors/me/appointments` (there is no dedicated
+/// patients endpoint — see `STATUS.md`). Search is client-side over the
+/// already-fetched deduped list, since the appointments endpoint has no
+/// server-side patient search either. The "اليوم"/"هذا الأسبوع" chips filter
+/// on [Patient.nextAppointmentAt] — a real field the shared use-case computes
+/// from the same appointment set, not an invented one.
+enum _PatientFilter { all, today, week }
+
 class ProviderPatientsScreen extends ConsumerStatefulWidget {
   const ProviderPatientsScreen({super.key});
 
@@ -22,12 +33,10 @@ class ProviderPatientsScreen extends ConsumerStatefulWidget {
 
 class _ProviderPatientsScreenState
     extends ConsumerState<ProviderPatientsScreen> {
-  int _selectedFilter = 0;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   Timer? _debounceTimer;
-
-  static const _filters = ['الكل', 'اليوم', 'هذا الأسبوع'];
+  _PatientFilter _filter = _PatientFilter.all;
 
   @override
   void initState() {
@@ -54,21 +63,43 @@ class _ProviderPatientsScreenState
     });
   }
 
-  String _getFilterParam() {
-    return switch (_selectedFilter) {
-      1 => 'today',
-      2 => 'week',
-      _ => 'all',
-    };
+  List<Patient> _filtered(List<Patient> patients) {
+    var result = patients;
+
+    if (_filter != _PatientFilter.all) {
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final bound = _filter == _PatientFilter.today
+          ? todayStart.add(const Duration(days: 1))
+          : todayStart.add(const Duration(days: 7));
+      result = result
+          .where(
+            (p) =>
+                p.nextAppointmentAt != null &&
+                !p.nextAppointmentAt!.isBefore(todayStart) &&
+                p.nextAppointmentAt!.isBefore(bound),
+          )
+          .toList();
+    }
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      result = result
+          .where(
+            (p) =>
+                p.patientName.toLowerCase().contains(q) ||
+                p.patientPhone.toLowerCase().contains(q),
+          )
+          .toList();
+    }
+
+    return result;
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final filterParam = _getFilterParam();
-    final patientsAsync = ref.watch(
-      patientsProvider(query: _searchQuery, filter: filterParam),
-    );
+    final patientsAsync = ref.watch(providerPatientsProvider);
     final unreadNotifsCount = ref
         .watch(doctorNotificationsProvider)
         .maybeWhen(
@@ -84,7 +115,7 @@ class _ProviderPatientsScreenState
       body: Column(
         children: [
           ProviderPageHeader(
-            title: 'قائمة المرضى',
+            title: 'provider_dashboard.patients.title'.tr(),
             unreadNotificationsCount: unreadNotifsCount,
             avatarUrl: avatarUrl,
           ),
@@ -92,11 +123,10 @@ class _ProviderPatientsScreenState
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                // Search Field
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'البحث بالاسم أو رقم الملف (MED-1234)…',
+                    hintText: 'provider_dashboard.patients.search_hint'.tr(),
                     hintStyle: const TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 14,
@@ -122,44 +152,30 @@ class _ProviderPatientsScreenState
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Filter Chips
                 Row(
-                  children: List.generate(_filters.length, (index) {
-                    final selected = _selectedFilter == index;
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 10),
-                      child: ChoiceChip(
-                        label: Text(_filters[index]),
-                        selected: selected,
-                        selectedColor: const Color(0xFFCCFBF1),
-                        backgroundColor: Colors.white,
-                        labelStyle: TextStyle(
-                          color: selected
-                              ? const Color(0xFF0D9488)
-                              : const Color(0xFF64748B),
-                          fontWeight: FontWeight.w700,
-                        ),
-                        onSelected: (_) =>
-                            setState(() => _selectedFilter = index),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          side: BorderSide(
-                            color: selected
-                                ? const Color(0xFFCCFBF1)
-                                : const Color(0xFFE2E8F0),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                  children: [
+                    _buildFilterChip(
+                      'provider_dashboard.patients.filter_all'.tr(),
+                      _PatientFilter.all,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'provider_dashboard.patients.filter_today'.tr(),
+                      _PatientFilter.today,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'provider_dashboard.patients.filter_week'.tr(),
+                      _PatientFilter.week,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
-                // Section Title + Live Count
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'قائمة المرضى المؤكدين',
+                      'provider_dashboard.patients.title'.tr(),
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: AppColors.ink900,
@@ -167,14 +183,16 @@ class _ProviderPatientsScreenState
                     ),
                     patientsAsync.maybeWhen(
                       data: (items) => Text(
-                        '${items.length} مرضى',
+                        'provider_dashboard.patients.count'.tr(
+                          args: [_filtered(items).length.toString()],
+                        ),
                         style: textTheme.bodySmall?.copyWith(
                           color: AppColors.mutedText2,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       orElse: () => Text(
-                        '-- مرضى',
+                        'provider_dashboard.patients.count_placeholder'.tr(),
                         style: textTheme.bodySmall?.copyWith(
                           color: AppColors.mutedText2,
                           fontWeight: FontWeight.w700,
@@ -184,24 +202,27 @@ class _ProviderPatientsScreenState
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Patient Cards List via AsyncValueView
                 AsyncValueView<List<Patient>>(
                   value: patientsAsync,
                   loadingWidget: const CardSkeletonList(count: 3),
-                  onRetry: () => ref.invalidate(patientsProvider),
+                  onRetry: () => ref.invalidate(providerPatientsProvider),
                   data: (items) {
-                    if (items.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
+                    final filtered = _filtered(items);
+                    if (filtered.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
                         child: EmptyState(
-                          title: 'لا يوجد مرضى',
-                          subtitle: 'لم يتم العثور على مرضى يطابقون بحثك.',
+                          title: 'provider_dashboard.patients.empty_title'
+                              .tr(),
+                          subtitle:
+                              'provider_dashboard.patients.empty_subtitle'
+                                  .tr(),
                           icon: Icons.people_outline,
                         ),
                       );
                     }
                     return Column(
-                      children: items.map((patient) {
+                      children: filtered.map((patient) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 14),
                           child: _buildPatientCard(patient),
@@ -218,13 +239,43 @@ class _ProviderPatientsScreenState
     );
   }
 
+  Widget _buildFilterChip(String label, _PatientFilter value) {
+    final selected = _filter == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => setState(() => _filter = value),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.mutedText2,
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
+      ),
+      selectedColor: brandBlue,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: selected ? brandBlue : const Color(0xFFF1F5F9),
+        ),
+      ),
+      showCheckmark: false,
+    );
+  }
+
   Widget _buildPatientCard(Patient patient) {
-    final initials = patient.name.isNotEmpty
-        ? patient.name.trim().split(' ').take(2).map((e) => e[0]).join(' ')
+    final initials = patient.patientName.isNotEmpty
+        ? patient.patientName
+              .trim()
+              .split(' ')
+              .take(2)
+              .map((e) => e[0])
+              .join(' ')
         : 'م';
 
-    final dateTimeFormatted =
-        '${patient.nextAppointment.day}/${patient.nextAppointment.month}/${patient.nextAppointment.year} - ${_formatTime(patient.nextAppointment)}';
+    final nextAppointment = patient.nextAppointmentAt;
+    final dateTimeFormatted = nextAppointment != null
+        ? '${nextAppointment.day}/${nextAppointment.month}/${nextAppointment.year} - ${_formatTime(nextAppointment)}'
+        : null;
 
     return Material(
       color: Colors.transparent,
@@ -246,111 +297,82 @@ class _ProviderPatientsScreenState
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCCFBF1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_outline,
-                      size: 13,
-                      color: Color(0xFF0D9488),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      patient.status,
-                      style: const TextStyle(
-                        color: Color(0xFF0D9488),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: const Color(0xFFCCFBF1).withValues(alpha: 0.5),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Color(0xFF0D9488),
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-              const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    patient.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                      color: AppColors.ink900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.badge_outlined,
-                        size: 14,
-                        color: AppColors.mutedText2,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patient.patientName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.ink900,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        patient.medId,
-                        style: const TextStyle(
-                          color: AppColors.mutedText2,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
                     ),
-                    decoration: BoxDecoration(
-                      color: brandBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
+                    const SizedBox(height: 4),
+                    Row(
                       children: [
                         const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 12,
-                          color: brandBlue,
+                          Icons.phone_outlined,
+                          size: 14,
+                          color: AppColors.mutedText2,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
-                          dateTimeFormatted,
+                          patient.patientPhone,
                           style: const TextStyle(
-                            color: brandBlue,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                            color: AppColors.mutedText2,
+                            fontSize: 13,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: const Color(0xFFCCFBF1).withValues(alpha: 0.5),
-                backgroundImage: patient.avatarUrl != null
-                    ? NetworkImage(patient.avatarUrl!)
-                    : null,
-                child: patient.avatarUrl == null
-                    ? Text(
-                        initials,
-                        style: const TextStyle(
-                          color: Color(0xFF0D9488),
-                          fontWeight: FontWeight.w800,
+                    if (dateTimeFormatted != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
                         ),
-                      )
-                    : null,
+                        decoration: BoxDecoration(
+                          color: brandBlue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 12,
+                              color: brandBlue,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              dateTimeFormatted,
+                              style: const TextStyle(
+                                color: brandBlue,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),

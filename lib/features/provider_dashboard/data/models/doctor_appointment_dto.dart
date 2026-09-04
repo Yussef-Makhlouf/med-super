@@ -175,3 +175,50 @@ class RescheduleAppointmentResultDto {
   final String slotId;
   final String previousAppointmentId;
 }
+
+/// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` request
+/// body (backend `CreateClinicStaffAppointmentDto`). Exactly one of
+/// `patientId`/`patientPhone` must be set — the backend 400s otherwise.
+class CreateWalkInAppointmentRequestDto {
+  const CreateWalkInAppointmentRequestDto({
+    required this.slotId,
+    this.patientId,
+    this.patientPhone,
+    this.patientName,
+  });
+
+  final String slotId;
+  final String? patientId;
+  final String? patientPhone;
+  final String? patientName;
+
+  Map<String, dynamic> toJson() => {
+    'slotId': slotId,
+    if (patientId != null) 'patientId': patientId,
+    if (patientPhone != null) 'patientPhone': patientPhone,
+    if (patientName != null) 'patientName': patientName,
+  };
+}
+
+/// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create`
+/// response (backend `CreateClinicStaffAppointmentResult`) — deliberately
+/// thin: just the new id and its (always `CONFIRMED`) status. The screen
+/// re-fetches the full `DoctorAppointment` via [ProviderDashboardRepository
+/// .getMyAppointment] if it needs the rest of the fields, rather than this
+/// DTO inventing them.
+class CreateWalkInAppointmentResultDto {
+  const CreateWalkInAppointmentResultDto({
+    required this.appointmentId,
+    required this.status,
+  });
+
+  factory CreateWalkInAppointmentResultDto.fromJson(
+    Map<String, dynamic> json,
+  ) => CreateWalkInAppointmentResultDto(
+    appointmentId: json['appointmentId'] as String? ?? '',
+    status: json['status'] as String? ?? 'CONFIRMED',
+  );
+
+  final String appointmentId;
+  final String status;
+}

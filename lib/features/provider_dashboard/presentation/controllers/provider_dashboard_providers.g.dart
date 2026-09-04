@@ -255,6 +255,55 @@ final class GetMyClinicsUseCaseProvider
 String _$getMyClinicsUseCaseHash() =>
     r'ccbecf3171b2daded57b7f1d78227d2378a54094';
 
+@ProviderFor(createMyClinicBranchUseCase)
+final createMyClinicBranchUseCaseProvider =
+    CreateMyClinicBranchUseCaseProvider._();
+
+final class CreateMyClinicBranchUseCaseProvider
+    extends
+        $FunctionalProvider<
+          CreateMyClinicBranchUseCase,
+          CreateMyClinicBranchUseCase,
+          CreateMyClinicBranchUseCase
+        >
+    with $Provider<CreateMyClinicBranchUseCase> {
+  CreateMyClinicBranchUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'createMyClinicBranchUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$createMyClinicBranchUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<CreateMyClinicBranchUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CreateMyClinicBranchUseCase create(Ref ref) {
+    return createMyClinicBranchUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CreateMyClinicBranchUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CreateMyClinicBranchUseCase>(value),
+    );
+  }
+}
+
+String _$createMyClinicBranchUseCaseHash() =>
+    r'954ba0cf70a727538d2c9c466de0fde6fdcdb375';
+
 @ProviderFor(updateMyClinicBranchUseCase)
 final updateMyClinicBranchUseCaseProvider =
     UpdateMyClinicBranchUseCaseProvider._();
@@ -354,6 +403,55 @@ final class SetMyAffiliationActiveUseCaseProvider
 
 String _$setMyAffiliationActiveUseCaseHash() =>
     r'ee755180996193a9bbf5f2af77b801413141daeb';
+
+@ProviderFor(deleteMyClinicBranchUseCase)
+final deleteMyClinicBranchUseCaseProvider =
+    DeleteMyClinicBranchUseCaseProvider._();
+
+final class DeleteMyClinicBranchUseCaseProvider
+    extends
+        $FunctionalProvider<
+          DeleteMyClinicBranchUseCase,
+          DeleteMyClinicBranchUseCase,
+          DeleteMyClinicBranchUseCase
+        >
+    with $Provider<DeleteMyClinicBranchUseCase> {
+  DeleteMyClinicBranchUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'deleteMyClinicBranchUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deleteMyClinicBranchUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<DeleteMyClinicBranchUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DeleteMyClinicBranchUseCase create(Ref ref) {
+    return deleteMyClinicBranchUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DeleteMyClinicBranchUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DeleteMyClinicBranchUseCase>(value),
+    );
+  }
+}
+
+String _$deleteMyClinicBranchUseCaseHash() =>
+    r'dcffeb16b6ac8312f95e8be07a46aecc07144a3f';
 
 @ProviderFor(getMyScheduleTemplatesUseCase)
 final getMyScheduleTemplatesUseCaseProvider =

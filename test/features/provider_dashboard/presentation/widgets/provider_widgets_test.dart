@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:med_super/features/provider_dashboard/presentation/widgets/add_appointment_bottom_sheet.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_bottom_nav_bar.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import '../../../../helpers/pump_localized_widget.dart';
@@ -46,15 +45,5 @@ void main() {
     expect(find.text('عنوان الصفحة'), findsOneWidget);
     await tester.tap(find.byType(CircleAvatar));
     expect(avatarTapped, isTrue);
-  });
-
-  testWidgets('AddAppointmentBottomSheet renders input fields', (tester) async {
-    await pumpLocalizedWidget(
-      tester,
-      AddAppointmentBottomSheet(onAdd: (name, start, end) {}),
-    );
-
-    expect(find.text('إضافة موعد جديد'), findsOneWidget);
-    expect(find.text('اسم المريض'), findsAtLeastNWidgets(1));
   });
 }

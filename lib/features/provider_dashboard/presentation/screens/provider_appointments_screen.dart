@@ -12,6 +12,7 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_cli
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/book_walkin_appointment_sheet.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_cancel_appointment_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
@@ -176,6 +177,25 @@ class _ProviderAppointmentsScreenState
     );
   }
 
+  Future<void> _openBookWalkIn() async {
+    final doctorId = ref
+        .read(doctorAccountProvider)
+        .maybeWhen(data: (account) => account.id, orElse: () => null);
+    if (doctorId == null) {
+      _showSnack('provider_dashboard.errors.generic'.tr());
+      return;
+    }
+
+    final booked = await showBookWalkInAppointmentSheet(
+      context,
+      doctorId: doctorId,
+    );
+    if (booked == true && mounted) {
+      _showSnack('provider_dashboard.walk_in.success'.tr(), success: true);
+      await _reload();
+    }
+  }
+
   void _showSnack(String message, {bool success = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -201,6 +221,13 @@ class _ProviderAppointmentsScreenState
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openBookWalkIn,
+        backgroundColor: brandBlue,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: Text('provider_dashboard.appointments.add_walk_in'.tr()),
+      ),
       body: Column(
         children: [
           ProviderPageHeader(
@@ -372,7 +399,11 @@ class _ProviderAppointmentsScreenState
           ),
           for (final clinic in clinics)
             _branchChip(
-              label: clinic.clinicName,
+              // Branches have no name of their own, and two branches of the
+              // same clinic share clinicName — the city is what actually
+              // tells them apart (same convention as the clinics list/
+              // schedule-editor branch picker).
+              label: clinic.address.city,
               selected: _branchId == clinic.clinicBranchId,
               onTap: () => _onFilterChanged(
                 () => _branchId = clinic.clinicBranchId,

@@ -5,7 +5,6 @@ import '../../models/doctor_appointment_dto.dart';
 import '../../models/doctor_clinic_dto.dart';
 import '../../models/doctor_notification_dto.dart';
 import '../../models/doctor_schedule_template_dto.dart';
-import '../../models/patient_dto.dart';
 import '../../../domain/entities/doctor_appointment.dart';
 import '../../../domain/entities/doctor_schedule_template.dart';
 
@@ -35,6 +34,11 @@ abstract class ProviderDashboardRemoteDatasource {
 
   Future<List<DoctorClinicDto>> getMyClinics();
 
+  Future<DoctorClinicDto> createMyClinicBranch(
+    String clinicId,
+    CreateDoctorBranchRequestDto body,
+  );
+
   Future<DoctorClinicDto> updateMyClinicBranch(
     String branchId,
     UpdateDoctorBranchRequestDto body,
@@ -43,7 +47,10 @@ abstract class ProviderDashboardRemoteDatasource {
   Future<DoctorClinicDto> updateMyAffiliationStatus(
     String affiliationId, {
     required bool active,
+    double? consultFee,
   });
+
+  Future<void> deleteMyClinicBranch(String branchId);
 
   // --- Availability (/v1/doctors/me/schedule-templates) ---
 
@@ -85,9 +92,14 @@ abstract class ProviderDashboardRemoteDatasource {
     required String newSlotId,
   });
 
-  // --- Still mock-only: no backend route exists (see STATUS.md) ---
+  /// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` —
+  /// walk-in booking, callable by DOCTOR or CLINIC_STAFF.
+  Future<CreateWalkInAppointmentResultDto> createWalkInAppointment(
+    String clinicBranchId,
+    CreateWalkInAppointmentRequestDto body,
+  );
 
-  Future<List<PatientDto>> getPatients({String? query, String? filter});
+  // --- Still mock-only: no backend route exists (see STATUS.md) ---
 
   Future<List<DoctorNotificationDto>> getNotifications();
 
@@ -138,6 +150,18 @@ class ProviderDashboardRemoteDatasourceImpl
   }
 
   @override
+  Future<DoctorClinicDto> createMyClinicBranch(
+    String clinicId,
+    CreateDoctorBranchRequestDto body,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeClinics}/$clinicId/branches',
+      data: body.toJson(),
+    );
+    return DoctorClinicDto.fromJson(_obj(response));
+  }
+
+  @override
   Future<DoctorClinicDto> updateMyClinicBranch(
     String branchId,
     UpdateDoctorBranchRequestDto body,
@@ -153,12 +177,21 @@ class ProviderDashboardRemoteDatasourceImpl
   Future<DoctorClinicDto> updateMyAffiliationStatus(
     String affiliationId, {
     required bool active,
+    double? consultFee,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '${ApiPaths.doctorMeAffiliations}/$affiliationId',
-      data: {'status': active ? 'ACTIVE' : 'PAUSED'},
+      data: {
+        'status': active ? 'ACTIVE' : 'PAUSED',
+        if (consultFee != null) 'consultFee': consultFee,
+      },
     );
     return DoctorClinicDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<void> deleteMyClinicBranch(String branchId) async {
+    await _dio.delete<void>('${ApiPaths.doctorMeClinicBranches}/$branchId');
   }
 
   @override
@@ -274,19 +307,15 @@ class ProviderDashboardRemoteDatasourceImpl
   }
 
   @override
-  Future<List<PatientDto>> getPatients({String? query, String? filter}) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerPatients,
-      queryParameters: {
-        if (query != null && query.isNotEmpty) 'q': query,
-        if (filter != null && filter.isNotEmpty) 'filter': filter,
-      },
+  Future<CreateWalkInAppointmentResultDto> createWalkInAppointment(
+    String clinicBranchId,
+    CreateWalkInAppointmentRequestDto body,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/branch/$clinicBranchId/create',
+      data: body.toJson(),
     );
-
-    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
-    return items
-        .map((e) => PatientDto.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return CreateWalkInAppointmentResultDto.fromJson(_obj(response));
   }
 
   @override

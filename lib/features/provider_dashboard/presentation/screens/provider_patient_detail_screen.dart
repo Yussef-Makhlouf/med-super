@@ -19,23 +19,17 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // The real queue is date-ranged and paginated. A patient's history is a
-    // narrow read, so this asks for a wide window around today and filters
-    // client-side — `GET /v1/doctors/me/appointments` has no patientId
-    // filter, and inventing one on the client would not make it real.
-    final now = DateTime.now();
-    final appointmentsAsync = ref.watch(
-      doctorAppointmentsProvider(
-        from: now.subtract(const Duration(days: 90)),
-        to: now.add(const Duration(days: 90)),
-        limit: 50,
-      ),
-    );
+    // The list screen already paged the same ±90-day window over `GET
+    // /v1/doctors/me/appointments` and grouped every appointment by
+    // `patientId` while building the patient list — read that instead of
+    // running a second, independent lookup here (the endpoint has no
+    // `patientId` filter to query more narrowly anyway).
+    final patientsDataAsync = ref.watch(providerPatientsDataProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
       appBar: AppBar(
-        title: const Text('الملف الطبي للمريض'),
+        title: Text('provider_dashboard.patients.detail_title'.tr()),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.ink900,
         elevation: 0,
@@ -58,16 +52,11 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 36,
                     backgroundColor: brandBlue.withValues(alpha: 0.1),
-                    backgroundImage: patient.avatarUrl != null
-                        ? NetworkImage(patient.avatarUrl!)
-                        : null,
-                    child: patient.avatarUrl == null
-                        ? const Icon(Icons.person, color: brandBlue, size: 36)
-                        : null,
+                    child: const Icon(Icons.person, color: brandBlue, size: 36),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    patient.name,
+                    patient.patientName,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -76,76 +65,59 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'رقم الملف (MED): ${patient.medId}',
+                    patient.patientPhone,
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.mutedText2,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'الحالة: ${patient.status}',
-                      style: const TextStyle(
-                        color: Color(0xFF10B981),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                ],
+              ),
+            ),
+            if (patient.nextAppointmentAt != null) ...[
+              const SizedBox(height: 16),
+              // Next Appointment Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event, color: brandBlue, size: 24),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'provider_dashboard.patients.next_appointment'.tr(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.mutedText2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatDate(patient.nextAppointmentAt!),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink900,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Next Appointment Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.event, color: brandBlue, size: 24),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'الموعد القادم',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.mutedText2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatDate(patient.nextAppointment),
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
             const SizedBox(height: 20),
-            const Text(
-              'سجل المواعيد للشيخ/المريض',
+            Text(
+              'provider_dashboard.patients.appointment_history'.tr(),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -155,17 +127,12 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             // Appointment History List
             AsyncValueView(
-              value: appointmentsAsync,
-              onRetry: () => ref.invalidate(doctorAppointmentsProvider),
-              data: (page) {
-                final patientAppointments = page.items
-                    .where(
-                      (a) =>
-                          a.patientId == patient.id ||
-                          a.patientName.contains(patient.name) ||
-                          patient.name.contains(a.patientName),
-                    )
-                    .toList();
+              value: patientsDataAsync,
+              onRetry: () => ref.invalidate(providerPatientsDataProvider),
+              data: (data) {
+                final patientAppointments =
+                    data.appointmentsByPatientId[patient.patientId] ??
+                    const [];
 
                 if (patientAppointments.isEmpty) {
                   return Container(
@@ -174,10 +141,11 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'لا توجد مواعيد مسجلة أخرى لهذا المريض',
-                        style: TextStyle(color: AppColors.mutedText2),
+                        'provider_dashboard.patients.no_other_appointments'
+                            .tr(),
+                        style: const TextStyle(color: AppColors.mutedText2),
                       ),
                     ),
                   );

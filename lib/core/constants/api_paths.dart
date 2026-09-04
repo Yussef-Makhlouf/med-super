@@ -80,9 +80,8 @@ abstract final class ApiPaths {
 
   // Provider dashboard
   //
-  // Still frontend-invented / mock-only — no backend route exists for either
+  // Still frontend-invented / mock-only — no backend route exists for it
   // (see provider_dashboard/STATUS.md). Everything else in this block is real.
-  static const providerPatients = '/v1/provider/patients';
   static const providerNotifications = '/v1/provider/notifications';
 
   // Real backend route, replacing the invented `/v1/provider/me` (which
