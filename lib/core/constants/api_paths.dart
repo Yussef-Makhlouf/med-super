@@ -15,6 +15,11 @@ abstract final class ApiPaths {
   // comment on registerFoundationMocks' passwordReset mock).
   static const passwordResetVerifyCode = '/v1/auth/password/reset/verify-code';
   static const passwordReset = '/v1/auth/password/reset';
+  // S-2 fix (Sprint 2, 2026-09-05): moves the active JWT context to a
+  // different ACTIVE role_membership the same user already holds — e.g. a
+  // verified doctor switching back to PATIENT. Bearer-authenticated, not
+  // `@Public()`.
+  static const authContextSwitch = '/v1/auth/context/switch';
 
   // Provider directory
   // Real backend route is GET /v1/doctors/search (provider-directory module) —

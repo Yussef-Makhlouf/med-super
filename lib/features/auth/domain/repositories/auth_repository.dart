@@ -62,4 +62,11 @@ abstract class AuthRepository {
   });
 
   Future<Result<void>> logout();
+
+  /// S-2 fix — moves the active session to a *different* role the caller
+  /// already holds (e.g. a verified doctor switching back to PATIENT).
+  /// Saves the fresh tokens on success, same as [verifyOtp]/
+  /// [loginWithPassword]; the caller still needs to re-fetch
+  /// [getCurrentUser] afterward to pick up the new `activeRole`.
+  Future<Result<AuthTokens>> switchContext(UserRole role);
 }

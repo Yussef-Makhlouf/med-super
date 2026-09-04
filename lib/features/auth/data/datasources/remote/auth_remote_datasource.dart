@@ -150,4 +150,16 @@ class AuthRemoteDatasource {
       data: {'refreshToken': refreshToken, 'allDevices': allDevices},
     );
   }
+
+  /// S-2 fix: `role` here is one the caller already holds an ACTIVE
+  /// `role_membership` for (surfaced via `me()`'s `roles` list) — the
+  /// backend re-verifies that server-side and 403s otherwise
+  /// (`SwitchContextUseCase`), this is never trusted as proof by itself.
+  Future<AuthTokensDto> switchContext(UserRole role) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authContextSwitch,
+      data: {'contextType': role.apiValue},
+    );
+    return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
+  }
 }

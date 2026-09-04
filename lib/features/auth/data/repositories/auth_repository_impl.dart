@@ -169,6 +169,21 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<AuthTokens>> switchContext(UserRole role) async {
+    try {
+      final tokens = await _remote.switchContext(role);
+      final entity = tokens.toEntity();
+      await _storage.saveTokens(
+        accessToken: entity.accessToken,
+        refreshToken: entity.refreshToken,
+      );
+      return Result.ok(entity);
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
   Future<Result<void>> logout() async {
     try {
       final refreshToken = await _storage.refreshToken;

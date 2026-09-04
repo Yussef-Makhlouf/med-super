@@ -8,6 +8,7 @@ import 'package:med_super/features/auth/domain/usecases/login_with_password_usec
 import 'package:med_super/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:med_super/features/auth/domain/usecases/request_otp_usecase.dart';
 import 'package:med_super/features/auth/domain/usecases/set_password_usecase.dart';
+import 'package:med_super/features/auth/domain/usecases/switch_context_usecase.dart';
 import 'package:med_super/features/auth/domain/usecases/verify_otp_usecase.dart';
 
 part 'auth_providers.g.dart';
@@ -45,3 +46,7 @@ GetCurrentUserUseCase getCurrentUserUseCase(Ref ref) =>
 @riverpod
 LogoutUseCase logoutUseCase(Ref ref) =>
     LogoutUseCase(ref.watch(authRepositoryProvider));
+
+@riverpod
+SwitchContextUseCase switchContextUseCase(Ref ref) =>
+    SwitchContextUseCase(ref.watch(authRepositoryProvider));

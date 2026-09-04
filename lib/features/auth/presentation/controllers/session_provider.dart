@@ -351,6 +351,40 @@ class SessionController extends _$SessionController {
     }
   }
 
+  /// S-2 fix: moves the active session to a different role the current user
+  /// already holds (e.g. a verified doctor switching back to PATIENT to
+  /// book their own appointment) — see `SwitchContextUseCase`'s doc comment
+  /// on the backend for why `RoleMembershipRepository`'s most-recent-wins
+  /// ordering otherwise made that identity unreachable after verification.
+  /// Only meaningful when [role] is already present in the current
+  /// session's `user.roles` — the backend re-checks this and rejects an
+  /// unowned context regardless, but the caller (a role-switcher UI) should
+  /// never offer a role that isn't already in that list.
+  Future<Result<Session>> switchRole(UserRole role) async {
+    final current = state.asData?.value;
+    if (current == null) {
+      return const Result.err(Failure.auth());
+    }
+
+    final tokensResult = await ref.read(switchContextUseCaseProvider).call(role);
+    switch (tokensResult) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok():
+        break;
+    }
+
+    final userResult = await ref.read(getCurrentUserUseCaseProvider).call();
+    switch (userResult) {
+      case Err(:final failure):
+        return Result.err(failure);
+      case Ok(:final value):
+        final session = current.copyWith(user: value);
+        state = AsyncData(session);
+        return Result.ok(session);
+    }
+  }
+
   Future<Result<Session>> completeOnboarding({
     required String displayName,
     required String email,

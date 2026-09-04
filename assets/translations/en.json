@@ -293,7 +293,10 @@
     "address": "Address",
     "address_hint": "Street, city",
     "save_changes": "Save changes",
-    "saved": "Profile updated"
+    "saved": "Profile updated",
+    "switch_role_title": "Switch role",
+    "switch_role_hint": "This account also has another active role. Switch to use the app as:",
+    "switch_role_error": "Couldn't switch role. Try again."
   },
   "errors": {
     "network": "لا يوجد اتصال بالإنترنت. تحقق من شبكتك وحاول مرة أخرى.",
