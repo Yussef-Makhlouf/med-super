@@ -1,7 +1,8 @@
 # Feature status: provider_dashboard
 
-**Label:** `PARTIAL` — profile, clinics, availability and appointments are
-backed by real endpoints; patients and notifications are still mock-only.
+**Label:** `PARTIAL` — profile, clinics, availability, appointments and the
+patient list (derived from real appointment data) are backed by real
+endpoints; only notifications is still mock-only.
 
 Was `MOCKED` until 2026-09-04. See `clinic-reservations` File 12 **Part 49**
 and `clinic-reservations/docs/DOCTOR_DASHBOARD_ARCHITECTURE.md`.
@@ -32,6 +33,7 @@ Every route below exists in `clinic-reservations` and is exercised by
 | Appointments | `GET /v1/doctors/me/appointments[/{id}]` | filters + cursor paging |
 | Cancel | `POST /v1/doctors/me/appointments/{id}/cancel` | `PROVIDER_REQUEST`, full refund |
 | Reschedule | `POST /v1/doctors/me/appointments/{id}/reschedule` | completes in one transaction |
+| Walk-in booking | `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` | DOCTOR or CLINIC_STAFF; `{patientId}` or `{patientPhone, patientName?}` + `slotId` |
 
 ### What changed, and why the old shapes were wrong
 
@@ -53,13 +55,21 @@ Every route below exists in `clinic-reservations` and is exercised by
 * **`UploadAvatarUseCase` removed.** Dead code pointing at
   `/v1/provider/avatar`, which no screen called and no backend serves.
 
+* **`Patient` redefined, `/v1/provider/patients` removed.** There is no
+  "patients" module or endpoint at all — the old mock entity's `medId` and
+  free-text `status` never existed anywhere real. `Patient` is now derived
+  purely from `GET /v1/doctors/me/appointments`
+  (`GetProviderPatientsUseCase`, `providerPatientsProvider`): it pages
+  through the doctor's own appointments over a ±90-day window (mirroring
+  `ProviderPatientDetailScreen`'s existing fallback bound), dedupes by
+  `patientId`, and keeps only `patientId`/`patientName`/`patientPhone` plus
+  computed `lastAppointmentAt`/`nextAppointmentAt`.
+
 ### Still mock-only (no backend route exists)
 
-`/v1/provider/patients` and `/v1/provider/notifications`. Both remain
-frontend-invented. Notifications is Phase 8 and unbuilt; there is no
-"patients" module at all. `provider_patients_screen` and
-`provider_notifications_screen` are honest about being demo surfaces — do not
-present either as backend-ready.
+`/v1/provider/notifications`. Notifications is Phase 8 and unbuilt.
+`provider_notifications_screen` is honest about being a demo surface — do
+not present it as backend-ready.
 
 Avatar upload stays unavailable (`DEC-009`, no object-storage decision); the
 UI shows a "coming soon" message rather than faking an upload. Password

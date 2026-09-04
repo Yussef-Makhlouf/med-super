@@ -132,12 +132,10 @@ void main() {
     tester,
   ) async {
     final patient = Patient(
-      id: 'pat-101',
-      name: 'عبدالله خالد',
-      medId: 'MED-5544',
-      avatarUrl: null,
-      status: 'مؤكد',
-      nextAppointment: DateTime(2026, 8, 15, 14, 0),
+      patientId: 'pat-101',
+      patientName: 'عبدالله خالد',
+      patientPhone: '+201009998887',
+      nextAppointmentAt: DateTime(2026, 8, 15, 14, 0),
     );
 
     await pumpLocalizedWidget(
@@ -152,6 +150,6 @@ void main() {
 
     expect(find.text('الملف الطبي للمريض'), findsOneWidget);
     expect(find.text('عبدالله خالد'), findsOneWidget);
-    expect(find.text('رقم الملف (MED): MED-5544'), findsOneWidget);
+    expect(find.text('+201009998887'), findsWidgets);
   });
 }

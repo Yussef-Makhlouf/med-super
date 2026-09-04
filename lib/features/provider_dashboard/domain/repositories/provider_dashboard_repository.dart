@@ -4,7 +4,6 @@ import '../entities/doctor_appointment.dart';
 import '../entities/doctor_clinic.dart';
 import '../entities/doctor_notification.dart';
 import '../entities/doctor_schedule_template.dart';
-import '../entities/patient.dart';
 
 /// Result of a provider-initiated cancellation. `feeApplied` is always `0`
 /// for this path — the clinic cancelled, so the patient is refunded in full.
@@ -48,6 +47,17 @@ abstract class ProviderDashboardRepository {
 
   Future<Result<List<DoctorClinic>>> getMyClinics();
 
+  Future<Result<DoctorClinic>> createMyClinicBranch({
+    required String clinicId,
+    required String phone,
+    required String ianaTimezone,
+    required String addressLine1,
+    required String addressCity,
+    required String regionCode,
+    required String countryCode,
+    required double consultFee,
+  });
+
   Future<Result<DoctorClinic>> updateMyClinicBranch({
     required String branchId,
     String? phone,
@@ -59,7 +69,10 @@ abstract class ProviderDashboardRepository {
   Future<Result<DoctorClinic>> setMyAffiliationActive({
     required String affiliationId,
     required bool active,
+    double? consultFee,
   });
+
+  Future<Result<void>> deleteMyClinicBranch({required String branchId});
 
   // --- Availability ---
 
@@ -104,9 +117,20 @@ abstract class ProviderDashboardRepository {
     required String newSlotId,
   });
 
-  // --- Still mock-only (no backend route) ---
+  /// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` —
+  /// walk-in booking by DOCTOR or CLINIC_STAFF. Exactly one of [patientId]
+  /// or [patientPhone] must be given (the backend validates this itself);
+  /// [patientName] is only used on the find-or-create-by-phone path, and
+  /// only to name a brand-new patient — it never renames an existing one.
+  Future<Result<DoctorAppointment>> bookWalkInAppointment({
+    required String clinicBranchId,
+    required String slotId,
+    String? patientId,
+    String? patientPhone,
+    String? patientName,
+  });
 
-  Future<Result<List<Patient>>> getPatients({String? query, String? filter});
+  // --- Still mock-only (no backend route) ---
 
   Future<Result<List<DoctorNotification>>> getNotifications();
 

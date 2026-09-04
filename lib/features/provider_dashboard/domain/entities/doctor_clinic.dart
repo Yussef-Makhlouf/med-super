@@ -78,8 +78,9 @@ class DoctorClinic {
   final String affiliationId;
   final AffiliationStatus affiliationStatus;
 
-  /// Read-only here — the fee feeds the payments commission split, so it is
-  /// Admin-controlled (File 12 Part 49.4).
+  /// Editable by the doctor via `SetMyAffiliationActiveUseCase` (the doctor
+  /// owns the commercial fee; the Admin only verifies license/documents —
+  /// File 12 Part 49.4).
   final String consultFee;
   final String currency;
 
@@ -94,6 +95,13 @@ class DoctorClinic {
   final String phone;
   final String ianaTimezone;
   final ClinicAddress address;
+
+  /// `clinicName` alone is shared by every branch of the same clinic, so a
+  /// doctor with two branches of "عيادة النيل" would otherwise see the exact
+  /// same label twice in any list/dropdown. This appends the branch's own
+  /// city — real per-branch data (`address`), not something shared — to make
+  /// each entry distinct.
+  String get displayTitle => '$clinicName — ${address.city}';
 
   /// Slots are only generated for an ACTIVE affiliation at a VERIFIED branch
   /// of a VERIFIED clinic (the Part 32 visibility chain). Surfacing this lets

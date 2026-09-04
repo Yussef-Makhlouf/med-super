@@ -80,3 +80,32 @@ class RescheduleDoctorAppointmentUseCase {
     );
   }
 }
+
+/// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` —
+/// walk-in booking, callable by DOCTOR or CLINIC_STAFF.
+///
+/// Exactly one of [patientId] or [patientPhone] must be supplied (the
+/// backend validates this and 400s otherwise, via
+/// `ExactlyOnePatientIdentifierConstraint`); [patientName] only applies on
+/// the find-or-create-by-phone path and only names a *new* patient.
+class BookWalkInAppointmentUseCase {
+  const BookWalkInAppointmentUseCase(this._repository);
+
+  final ProviderDashboardRepository _repository;
+
+  Future<Result<DoctorAppointment>> call({
+    required String clinicBranchId,
+    required String slotId,
+    String? patientId,
+    String? patientPhone,
+    String? patientName,
+  }) {
+    return _repository.bookWalkInAppointment(
+      clinicBranchId: clinicBranchId,
+      slotId: slotId,
+      patientId: patientId,
+      patientPhone: patientPhone,
+      patientName: patientName,
+    );
+  }
+}

@@ -116,3 +116,35 @@ class UpdateDoctorBranchRequestDto {
     };
   }
 }
+
+class CreateDoctorBranchRequestDto {
+  const CreateDoctorBranchRequestDto({
+    required this.phone,
+    required this.ianaTimezone,
+    required this.line1,
+    required this.city,
+    required this.regionCode,
+    required this.countryCode,
+    required this.consultFee,
+  });
+
+  final String phone;
+  final String ianaTimezone;
+  final String line1;
+  final String city;
+  final String regionCode;
+  final String countryCode;
+  final double consultFee;
+
+  Map<String, dynamic> toJson() => {
+    'phone': phone,
+    'ianaTimezone': ianaTimezone,
+    'consultFee': consultFee,
+    'address': {
+      'line1': line1,
+      'city': city,
+      'regionCode': regionCode,
+      'countryCode': countryCode,
+    },
+  };
+}

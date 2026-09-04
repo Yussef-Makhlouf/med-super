@@ -1,13 +1,13 @@
 import 'package:med_super/core/error/dio_failure_mapper.dart';
 import 'package:med_super/core/error/result.dart';
 import '../datasources/remote/provider_dashboard_remote_datasource.dart';
+import '../models/doctor_appointment_dto.dart';
 import '../models/doctor_clinic_dto.dart';
 import '../../domain/entities/doctor_account_profile.dart';
 import '../../domain/entities/doctor_appointment.dart';
 import '../../domain/entities/doctor_clinic.dart';
 import '../../domain/entities/doctor_notification.dart';
 import '../../domain/entities/doctor_schedule_template.dart';
-import '../../domain/entities/patient.dart';
 import '../../domain/repositories/provider_dashboard_repository.dart';
 
 class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
@@ -51,6 +51,32 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
   });
 
   @override
+  Future<Result<DoctorClinic>> createMyClinicBranch({
+    required String clinicId,
+    required String phone,
+    required String ianaTimezone,
+    required String addressLine1,
+    required String addressCity,
+    required String regionCode,
+    required String countryCode,
+    required double consultFee,
+  }) => _guard(() async {
+    final dto = await _remote.createMyClinicBranch(
+      clinicId,
+      CreateDoctorBranchRequestDto(
+        phone: phone,
+        ianaTimezone: ianaTimezone,
+        line1: addressLine1,
+        city: addressCity,
+        regionCode: regionCode,
+        countryCode: countryCode,
+        consultFee: consultFee,
+      ),
+    );
+    return dto.toEntity();
+  });
+
+  @override
   Future<Result<DoctorClinic>> updateMyClinicBranch({
     required String branchId,
     String? phone,
@@ -72,13 +98,19 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
   Future<Result<DoctorClinic>> setMyAffiliationActive({
     required String affiliationId,
     required bool active,
+    double? consultFee,
   }) => _guard(() async {
     final dto = await _remote.updateMyAffiliationStatus(
       affiliationId,
       active: active,
+      consultFee: consultFee,
     );
     return dto.toEntity();
   });
+
+  @override
+  Future<Result<void>> deleteMyClinicBranch({required String branchId}) =>
+      _guard(() => _remote.deleteMyClinicBranch(branchId));
 
   @override
   Future<Result<List<DoctorScheduleTemplate>>> getMyScheduleTemplates({
@@ -169,11 +201,27 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
   });
 
   @override
-  Future<Result<List<Patient>>> getPatients({String? query, String? filter}) =>
-      _guard(() async {
-        final dtos = await _remote.getPatients(query: query, filter: filter);
-        return dtos.map((dto) => dto.toEntity()).toList();
-      });
+  Future<Result<DoctorAppointment>> bookWalkInAppointment({
+    required String clinicBranchId,
+    required String slotId,
+    String? patientId,
+    String? patientPhone,
+    String? patientName,
+  }) => _guard(() async {
+    final result = await _remote.createWalkInAppointment(
+      clinicBranchId,
+      CreateWalkInAppointmentRequestDto(
+        slotId: slotId,
+        patientId: patientId,
+        patientPhone: patientPhone,
+        patientName: patientName,
+      ),
+    );
+    // The create response is deliberately thin (id + status only) — fetch
+    // the full appointment so callers get every real field, not an
+    // invented reconstruction of one.
+    return (await _remote.getMyAppointment(result.appointmentId)).toEntity();
+  });
 
   @override
   Future<Result<List<DoctorNotification>>> getNotifications() =>

@@ -14,7 +14,8 @@ import '../../domain/usecases/doctor_clinic_usecases.dart';
 import '../../domain/usecases/doctor_schedule_template_usecases.dart';
 import '../../domain/usecases/get_doctor_account_usecase.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
-import '../../domain/usecases/get_patients_usecase.dart';
+import '../../domain/usecases/get_provider_patients_usecase.dart'
+    show GetProviderPatientsUseCase, ProviderPatientsData;
 import '../../domain/usecases/mark_notification_read_usecase.dart';
 import '../../domain/usecases/update_doctor_account_usecase.dart';
 
@@ -45,6 +46,10 @@ GetMyClinicsUseCase getMyClinicsUseCase(Ref ref) =>
     GetMyClinicsUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
+CreateMyClinicBranchUseCase createMyClinicBranchUseCase(Ref ref) =>
+    CreateMyClinicBranchUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
 UpdateMyClinicBranchUseCase updateMyClinicBranchUseCase(Ref ref) =>
     UpdateMyClinicBranchUseCase(ref.watch(providerDashboardRepositoryProvider));
 
@@ -53,6 +58,10 @@ SetMyAffiliationActiveUseCase setMyAffiliationActiveUseCase(Ref ref) =>
     SetMyAffiliationActiveUseCase(
       ref.watch(providerDashboardRepositoryProvider),
     );
+
+@riverpod
+DeleteMyClinicBranchUseCase deleteMyClinicBranchUseCase(Ref ref) =>
+    DeleteMyClinicBranchUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
 GetMyScheduleTemplatesUseCase getMyScheduleTemplatesUseCase(Ref ref) =>
@@ -99,8 +108,12 @@ RescheduleDoctorAppointmentUseCase rescheduleDoctorAppointmentUseCase(Ref ref) =
     );
 
 @riverpod
-GetPatientsUseCase getPatientsUseCase(Ref ref) =>
-    GetPatientsUseCase(ref.watch(providerDashboardRepositoryProvider));
+BookWalkInAppointmentUseCase bookWalkInAppointmentUseCase(Ref ref) =>
+    BookWalkInAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
+GetProviderPatientsUseCase getProviderPatientsUseCase(Ref ref) =>
+    GetProviderPatientsUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
 GetNotificationsUseCase getNotificationsUseCase(Ref ref) =>
@@ -178,12 +191,26 @@ Future<DoctorAppointment> doctorAppointmentDetail(
   return result.when(ok: (value) => value, err: (failure) => throw failure);
 }
 
+/// The doctor's patient list plus, for each `patientId`, every appointment
+/// seen for them within the same ±90-day window — both derived from the
+/// same single paged walk over `GET /v1/doctors/me/appointments` (see
+/// `GetProviderPatientsUseCase`; there is no dedicated patients endpoint).
+/// The detail screen reads [ProviderPatientsData.appointmentsByPatientId]
+/// instead of running its own separate lookup.
 @riverpod
-Future<List<Patient>> patients(Ref ref, {String? query, String? filter}) async {
+Future<ProviderPatientsData> providerPatientsData(Ref ref) async {
   final result = await ref
-      .watch(getPatientsUseCaseProvider)
-      .call(query: query, filter: filter);
+      .watch(getProviderPatientsUseCaseProvider)
+      .callWithAppointments();
   return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
+
+/// The patient list alone, for callers that don't need per-patient
+/// appointment histories.
+@riverpod
+Future<List<Patient>> providerPatients(Ref ref) async {
+  final data = await ref.watch(providerPatientsDataProvider.future);
+  return data.patients;
 }
 
 @riverpod

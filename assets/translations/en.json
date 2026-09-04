@@ -845,6 +845,17 @@
     "delete_confirm_suffix": "? Access will be revoked immediately and this cannot be undone."
   },
   "provider_dashboard": {
+    "home": {
+      "title": "Schedule",
+      "today": "Today",
+      "day_off_title": "Day off",
+      "day_off_subtitle": "You have no working hours set at any clinic for this day.",
+      "working_hours": "Working hours",
+      "booked_count": "{} booked",
+      "no_appointments": "No appointments booked yet for this window.",
+      "load_error": "Could not load today's schedule.",
+      "retry": "Retry"
+    },
     "appointments": {
       "title": "Appointments",
       "segment_upcoming": "Upcoming",
@@ -860,7 +871,29 @@
       "branch": "Branch",
       "status": "Status",
       "booked_on": "Booked on",
-      "all_branches": "All branches"
+      "all_branches": "All branches",
+      "add_walk_in": "Book for a patient"
+    },
+    "walk_in": {
+      "title": "Book appointment for a patient",
+      "step_branch": "Choose a branch",
+      "no_branches_title": "No branch is accepting bookings",
+      "no_branches_subtitle": "No branch is currently active and verified to book into.",
+      "step_slot": "Choose a time",
+      "choose_branch_first": "Choose a branch first to see its open times.",
+      "no_slots": "No open times available at this branch.",
+      "step_patient": "Patient details",
+      "phone_label": "Patient phone number",
+      "phone_hint": "e.g. +201001234567",
+      "phone_required": "Phone number is required",
+      "phone_invalid": "Enter a valid international phone number, e.g. +201001234567",
+      "name_label": "Patient name",
+      "name_hint": "e.g. Sara Ahmed",
+      "name_required": "Patient name is required",
+      "submit": "Confirm booking",
+      "success": "Appointment booked successfully.",
+      "selected_slot": "Selected time",
+      "change_slot": "Change"
     },
     "status": {
       "confirmed": "Confirmed",
@@ -889,18 +922,36 @@
       "success": "Appointment moved. The patient keeps their booking.",
       "not_reschedulable": "Only a confirmed appointment can be rescheduled."
     },
+    "patients": {
+      "title": "Patients",
+      "search_hint": "Search by name or phone number…",
+      "filter_all": "All",
+      "filter_today": "Today",
+      "filter_week": "This week",
+      "count": "{} patients",
+      "count_placeholder": "-- patients",
+      "empty_title": "No patients",
+      "empty_subtitle": "No patients matched your search.",
+      "detail_title": "Patient record",
+      "next_appointment": "Next appointment",
+      "appointment_history": "Patient's appointment history",
+      "no_other_appointments": "No other appointments recorded for this patient"
+    },
     "clinics": {
       "title": "My clinics",
       "empty_title": "No clinics yet",
       "empty_subtitle": "You are not affiliated with any clinic branch.",
+      "branch_label": "Doctor-affiliated branch",
       "phone": "Branch phone",
       "timezone": "Timezone",
       "address_line": "Street address",
       "city": "City",
       "consult_fee": "Consultation fee",
+      "region_code": "Region code",
+      "country_code": "Country code",
       "save": "Save changes",
       "saved": "Clinic details updated.",
-      "admin_only_note": "Verification status and the consultation fee are managed by MedSuper admin.",
+      "verification_admin_note": "Verification status is managed by MedSuper admin.",
       "status_verified": "Verified",
       "status_pending": "Pending verification",
       "status_suspended": "Suspended",
@@ -911,7 +962,14 @@
       "paused_note": "Paused. No new times will be generated; existing appointments still stand.",
       "unverified_note": "This branch is not verified yet, so no new times are generated for it.",
       "pause_title": "Pause bookings at this branch?",
-      "pause_message": "New times stop being generated. Appointments patients already booked are not cancelled - handle those individually."
+      "pause_message": "New times stop being generated. Appointments patients already booked are not cancelled - handle those individually.",
+      "add_branch": "Add branch",
+      "branch_added": "Branch added.",
+      "new_branch_pending_note": "The new branch is pending MedSuper admin verification before it can accept bookings.",
+      "delete": "Delete branch",
+      "deleted": "Branch deleted.",
+      "delete_title": "Delete this branch?",
+      "delete_message": "It will only be deleted if no other doctor is affiliated with it and it has no appointments."
     },
     "schedule": {
       "title": "My availability",
