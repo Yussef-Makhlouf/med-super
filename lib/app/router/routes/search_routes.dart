@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:med_super/features/provider_profile/presentation/screens/clinic_branch_details_screen.dart';
 import 'package:med_super/features/provider_profile/presentation/screens/doctor_details_screen.dart';
+import 'package:med_super/features/search_discovery/presentation/screens/all_specialties_screen.dart';
 import 'package:med_super/features/search_discovery/presentation/screens/doctor_search_screen.dart';
 
 /// Nested under `/patient/home` (see `app_router.dart`'s `_patientRoutes`),
@@ -18,6 +19,11 @@ import 'package:med_super/features/search_discovery/presentation/screens/doctor_
 /// `Navigator`, matching how `appointment_detail_screen.dart`'s reschedule
 /// flow (which never had this bug) is nested the same way.
 final searchRoutes = <RouteBase>[
+  GoRoute(
+    path: 'specialties',
+    name: 'patientSpecialties',
+    builder: (context, state) => const AllSpecialtiesScreen(),
+  ),
   GoRoute(
     path: 'search',
     name: 'patientSearch',

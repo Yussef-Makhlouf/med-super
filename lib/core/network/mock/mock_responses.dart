@@ -445,7 +445,7 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'name': 'د. سارة المنصور',
     'specialty': 'استشارية طب الأطفال - أمراض حديثي الولادة',
     'specialty_short': 'استشاري طب الأطفال',
-    'specialty_key': 'pediatrics',
+    'specialty_key': 'PEDIATRICS',
     'experience_years': 15,
     'rating': 4.9,
     'review_count': 120,
@@ -468,7 +468,7 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'name': 'د. أحمد خالد',
     'specialty': 'استشاري طب الأطفال',
     'specialty_short': 'استشاري طب الأطفال',
-    'specialty_key': 'pediatrics',
+    'specialty_key': 'PEDIATRICS',
     'experience_years': 12,
     'rating': 4.8,
     'review_count': 95,
@@ -491,7 +491,7 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'name': 'د. ليلى حسن',
     'specialty': 'استشارية طب الأطفال',
     'specialty_short': 'استشارية طب الأطفال',
-    'specialty_key': 'pediatrics',
+    'specialty_key': 'PEDIATRICS',
     'experience_years': 10,
     'rating': 4.7,
     'review_count': 78,
@@ -514,7 +514,7 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'name': 'د. محمود حامد',
     'specialty': 'استشاري جراحة القلب',
     'specialty_short': 'استشاري جراحة القلب',
-    'specialty_key': 'cardio',
+    'specialty_key': 'CARDIOLOGY',
     'experience_years': 18,
     'rating': 4.9,
     'review_count': 210,
@@ -530,6 +530,73 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
         'استشاري جراحة قلب وصدر بخبرة طويلة في العمليات المعقدة ومتابعة مرضى القلب المزمنين.',
     'qualifications': ['البورد الأوروبي في جراحة القلب'],
     'fellowships': ['زمالة جراحة القلب طفيفة التوغل'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-mona',
+    'name': 'د. منى فتحي',
+    'specialty': 'استشارية الأمراض الجلدية والتجميل',
+    'specialty_short': 'استشارية جلدية',
+    'specialty_key': 'DERMATOLOGY',
+    'experience_years': 11,
+    'rating': 4.8,
+    'review_count': 132,
+    'location_label': 'القاهرة، مدينة نصر',
+    'distance_km': 1.8,
+    'consultation_fee': 350,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': true,
+    'clinic_name': 'عيادة الجلدية والتجميل',
+    'languages': ['العربية', 'الإنجليزية'],
+    'bio':
+        'استشارية أمراض جلدية وتناسلية، متخصصة في علاج حب الشباب والتصبغات والليزر التجميلي.',
+    'qualifications': ['البورد المصري في الأمراض الجلدية'],
+    'fellowships': ['زمالة الجلدية التجميلية'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-khaled',
+    'name': 'د. خالد عبد الرحمن',
+    'specialty': 'استشاري طب وجراحة الأسنان',
+    'specialty_short': 'استشاري أسنان',
+    'specialty_key': 'DENTAL',
+    'experience_years': 9,
+    'rating': 4.6,
+    'review_count': 64,
+    'location_label': 'الإسكندرية، سموحة',
+    'distance_km': 3.6,
+    'consultation_fee': 220,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': false,
+    'clinic_name': 'مركز ابتسامة لطب الأسنان',
+    'languages': ['العربية'],
+    'bio': 'استشاري طب وجراحة الفم والأسنان، متخصص في زراعة وتقويم الأسنان.',
+    'qualifications': ['ماجستير طب وجراحة الفم والأسنان'],
+    'fellowships': ['زمالة زراعة الأسنان'],
+    'photo_url': null,
+  },
+  {
+    'id': 'doc-nourhan',
+    'name': 'د. نورهان سامي',
+    'specialty': 'استشارية طب وجراحة العيون',
+    'specialty_short': 'استشارية عيون',
+    'specialty_key': 'OPHTHALMOLOGY',
+    'experience_years': 13,
+    'rating': 4.7,
+    'review_count': 88,
+    'location_label': 'الجيزة، الدقي',
+    'distance_km': 5.1,
+    'consultation_fee': 300,
+    'currency': 'EGP',
+    'is_verified': true,
+    'is_online': true,
+    'clinic_name': 'مركز الرؤية لطب العيون',
+    'languages': ['العربية', 'الإنجليزية'],
+    'bio': 'استشارية طب وجراحة العيون، متخصصة في جراحات الليزك والمياه البيضاء.',
+    'qualifications': ['البورد المصري في طب وجراحة العيون'],
+    'fellowships': ['زمالة جراحات الشبكية'],
     'photo_url': null,
   },
 ];
@@ -965,7 +1032,7 @@ void registerSearchMocks(MockInterceptor interceptor) {
   interceptor.register('GET', ApiPaths.searchDoctors, (options) {
     final q = (options.queryParameters['q'] as String?)?.trim().toLowerCase();
     final specialty = options.queryParameters['specialty'] as String?;
-    final sort = options.queryParameters['sort'] as String? ?? 'top_rated';
+    final sort = options.queryParameters['sort'] as String? ?? 'rating:desc';
     // Cursor is just a stringified offset into the sorted/filtered list —
     // opaque to the client, matching 05_API_RULES.md's cursor contract.
     final cursor = int.tryParse(
@@ -996,11 +1063,11 @@ void registerSearchMocks(MockInterceptor interceptor) {
     list = [...list]
       ..sort((a, b) {
         switch (sort) {
-          case 'nearest':
+          case 'distance:asc':
             return ((a['distance_km'] as num).compareTo(
               b['distance_km'] as num,
             ));
-          case 'price_asc':
+          case 'price:asc':
             return ((a['consultation_fee'] as num).compareTo(
               b['consultation_fee'] as num,
             ));

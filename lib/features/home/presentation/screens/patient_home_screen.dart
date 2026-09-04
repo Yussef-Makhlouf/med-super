@@ -67,7 +67,8 @@ class PatientHomeScreen extends ConsumerWidget {
                       _SectionHeader(
                         title: 'home.specialties'.tr(),
                         actionLabel: 'common.view_all'.tr(),
-                        onAction: () => context.push('/patient/home/search'),
+                        onAction: () =>
+                            context.push('/patient/home/specialties'),
                       ),
                       const SizedBox(height: 12),
                     ],
