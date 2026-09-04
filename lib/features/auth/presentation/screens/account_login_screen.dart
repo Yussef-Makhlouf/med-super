@@ -91,8 +91,7 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
     // Snap to whichever side is closer, nudged by fling velocity so a
     // quick flick commits even from near the midpoint.
     final velocityBias = (details.primaryVelocity ?? 0) / 2000;
-    final target =
-        (_extentController.value - velocityBias) > 0.5 ? 1.0 : 0.0;
+    final target = (_extentController.value - velocityBias) > 0.5 ? 1.0 : 0.0;
     _animateExtentTo(target);
   }
 
@@ -209,7 +208,8 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                       AnimatedBuilder(
                         animation: _extentController,
                         builder: (context, child) {
-                          final fraction = _collapsedFraction +
+                          final fraction =
+                              _collapsedFraction +
                               (_expandedFraction - _collapsedFraction) *
                                   _extentController.value;
                           return Positioned(
@@ -416,7 +416,8 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                 ),
                                               ),
                                               Align(
-                                                alignment: Alignment.centerRight,
+                                                alignment:
+                                                    Alignment.centerRight,
                                                 child: TextButton(
                                                   onPressed: () => context.push(
                                                     '/forgot-password',
@@ -575,6 +576,13 @@ class _RoleToggle extends StatelessWidget {
               label: 'auth.role_doctor'.tr(),
               selected: value == UserRole.doctor,
               onTap: () => onChanged(UserRole.doctor),
+            ),
+          ),
+          Expanded(
+            child: _RoleChip(
+              label: 'auth.role_clinic_staff'.tr(),
+              selected: value == UserRole.clinicStaff,
+              onTap: () => onChanged(UserRole.clinicStaff),
             ),
           ),
           Expanded(

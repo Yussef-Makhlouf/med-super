@@ -29,8 +29,7 @@ class AuthRemoteDatasource {
     final data = response.data ?? const <String, dynamic>{};
     return OtpRequestResult(
       requestId:
-          (data['requestId'] ?? data['request_id']) as String? ??
-          'req-unknown',
+          (data['requestId'] ?? data['request_id']) as String? ?? 'req-unknown',
       expiresInSeconds:
           (data['expiresInSeconds'] ?? data['expires_in']) as int? ?? 60,
     );
@@ -73,8 +72,7 @@ class AuthRemoteDatasource {
     final data = response.data ?? const <String, dynamic>{};
     return OtpRequestResult(
       requestId:
-          (data['requestId'] ?? data['request_id']) as String? ??
-          'req-unknown',
+          (data['requestId'] ?? data['request_id']) as String? ?? 'req-unknown',
       expiresInSeconds:
           (data['expiresInSeconds'] ?? data['expires_in']) as int? ?? 60,
     );
@@ -104,11 +102,7 @@ class AuthRemoteDatasource {
   }) async {
     await _dio.post<void>(
       ApiPaths.passwordReset,
-      data: {
-        'requestId': requestId,
-        'code': code,
-        'newPassword': newPassword,
-      },
+      data: {'requestId': requestId, 'code': code, 'newPassword': newPassword},
     );
   }
 
@@ -117,13 +111,10 @@ class AuthRemoteDatasource {
     required String password,
     required UserRole role,
   }) async {
-    // `role` isn't part of the real `POST /v1/auth/password/login` request
-    // body ({phone, password} only) — the backend returns userId and the
-    // caller resolves the actual role via GET /v1/auth/me afterward. Sent
-    // as a query param (not body) purely so MockInterceptor can honor the
-    // role-toggle UI in dev — the real controller only reads `@Body()`, so
-    // an extra query param is silently ignored there, never validated or
-    // rejected.
+    // `role` is intentionally a query parameter because the login body keeps
+    // the stable {phone, password} contract. The backend validates it and
+    // selects the matching active membership; the mock interceptor reads the
+    // same parameter for local development.
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.passwordLogin,
       queryParameters: {'role': role.apiValue},
@@ -143,10 +134,7 @@ class AuthRemoteDatasource {
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       ApiPaths.me,
-      data: {
-        'display_name': displayName,
-        if (email != null) 'email': email,
-      },
+      data: {'display_name': displayName, if (email != null) 'email': email},
     );
     return UserDto.fromJson(response.data ?? const <String, dynamic>{});
   }

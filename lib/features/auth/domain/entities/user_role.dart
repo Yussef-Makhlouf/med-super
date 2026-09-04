@@ -7,8 +7,7 @@ enum UserRole {
   lab,
 
   /// Clinic assistant provisioned by a Doctor — maps to backend's
-  /// `CLINIC_STAFF` RoleContextType. Arrives from `/me` after login;
-  /// never offered in the login UI role toggle.
+  /// `CLINIC_STAFF` RoleContextType and is offered on password login.
   clinicStaff;
 
   String get apiValue => switch (this) {
@@ -29,7 +28,7 @@ enum UserRole {
     };
   }
 
-  /// Login UI only offers patient/doctor; other roles arrive from `/me`.
+  /// OTP signup only offers patient/doctor; staff roles use password login.
   static UserRole fromLogin(String name) => switch (name.toLowerCase()) {
     'doctor' => UserRole.doctor,
     _ => UserRole.patient,
