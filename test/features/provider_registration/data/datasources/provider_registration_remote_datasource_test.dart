@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/core/constants/api_paths.dart';
 import 'package:med_super/features/provider_registration/data/datasources/remote/provider_registration_remote_datasource.dart';
+import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
 import 'package:med_super/features/provider_registration/domain/entities/doctor_registration_draft.dart';
 import 'package:med_super/features/provider_registration/domain/entities/uploaded_document.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,8 +27,8 @@ void main() {
         degree: 'MD',
         experienceYears: 4,
         bio: 'bio',
-        documents: [
-          const UploadedDocument(
+        documents: const [
+          UploadedDocument(
             id: '1',
             fileName: 'license.pdf',
             sizeBytes: 10,
@@ -39,6 +40,15 @@ void main() {
         clinicAddress: 'addr',
         city: 'cairo',
         consultationFee: 150,
+        workingDays: [
+          const ClinicWorkingDay(
+            day: Weekday.monday,
+            isEnabled: true,
+            from: ClinicTime(hour: 9, minute: 0),
+            to: ClinicTime(hour: 17, minute: 0),
+          ),
+          const ClinicWorkingDay(day: Weekday.tuesday, isEnabled: false),
+        ],
       );
 
       when(
@@ -49,10 +59,12 @@ void main() {
             path: ApiPaths.providerRegistrationSubmit,
           ),
           statusCode: 200,
+          data: {'doctorId': 'doctor-1'},
         ),
       );
 
-      await datasource.submit(draft);
+      final doctorId = await datasource.submit(draft);
+      expect(doctorId, 'doctor-1');
 
       final captured = verify(
         () => dio.post<Map<String, dynamic>>(
@@ -68,11 +80,19 @@ void main() {
       expect(body['degree'], 'MD');
       expect(body['experience_years'], 4);
       expect(body['bio'], 'bio');
-      expect(body['documents'], ['license.pdf']);
       expect(body['clinic_name'], 'clinic');
       expect(body['clinic_address'], 'addr');
       expect(body['city'], 'cairo');
       expect(body['consultation_fee'], 150);
+      expect(body['working_days'], [
+        {
+          'weekday': 1,
+          'startTime': '09:00',
+          'endTime': '17:00',
+          'slotDurationMinutes': 30,
+          'bufferMinutes': 0,
+        },
+      ]);
     },
   );
 

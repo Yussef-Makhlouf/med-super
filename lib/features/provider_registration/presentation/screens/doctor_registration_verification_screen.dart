@@ -51,15 +51,10 @@ class _DoctorRegistrationVerificationScreenState
   /// Picks a file and enforces [maxMb]. On oversize, shows a clear SnackBar
   /// instead of silently dropping the file (resolved open decision #2).
   ///
-  /// file_picker's web implementation resolves the pick only after reading
-  /// the full file into memory (`withData: true` by default), racing a
-  /// hard-coded 1-second "was this a cancel?" timeout — on anything slower
-  /// than that it silently completes with null and the file is lost with
-  /// no error at all. We never touch the file's bytes (mock app, we only
-  /// need the name/size), so `withReadStream: true` skips that read and
-  /// resolves immediately after the native `change` event, avoiding the
-  /// race. The try/catch below still guards the separate null-check bug in
-  /// its own change handler (a known upstream web issue).
+  /// `withData: true` reads the full file into memory — needed now that
+  /// documents upload for real to `POST /v1/provider-verification-documents`
+  /// right after submission (previously `withData: false` since this was a
+  /// mock-only app that only needed the name/size).
   Future<void> _pickAndAdd(
     BuildContext context,
     WidgetRef ref,
@@ -71,8 +66,7 @@ class _DoctorRegistrationVerificationScreenState
       result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
-        withData: false,
-        withReadStream: true,
+        withData: true,
       );
     } catch (_) {
       if (!context.mounted) return;
@@ -120,11 +114,10 @@ class _DoctorRegistrationVerificationScreenState
             id: '${type.name}-${DateTime.now().microsecondsSinceEpoch}',
             fileName: file.name,
             sizeBytes: file.size,
-            // `PlatformFile.path` throws on web instead of returning null —
-            // never accessed here since this is a mock-only app (no real
-            // upload), so the filename alone is enough to identify it.
+            // `PlatformFile.path` throws on web instead of returning null.
             localPath: kIsWeb ? '' : (file.path ?? ''),
             type: type,
+            bytes: file.bytes,
           ),
         );
 

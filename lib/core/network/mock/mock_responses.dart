@@ -1584,8 +1584,24 @@ void registerProviderRegistrationMocks(MockInterceptor interceptor) {
     return {
       'statusCode': 200,
       'data': {
+        'doctorId': 'mock-doctor-id',
         'status': 'pending_review',
         'submitted_at': DateTime.now().toIso8601String(),
+      },
+    };
+  });
+
+  // Mirrors the real `POST /v1/provider-verification-documents` — accepts
+  // the multipart upload without inspecting it (mock mode has no real
+  // storage), returning just enough shape for the datasource to not throw.
+  interceptor.register('POST', ApiPaths.providerVerificationDocuments, (
+    options,
+  ) {
+    return {
+      'statusCode': 201,
+      'data': {
+        'id': 'mock-verification-document-id',
+        'status': 'PENDING_REVIEW',
       },
     };
   });

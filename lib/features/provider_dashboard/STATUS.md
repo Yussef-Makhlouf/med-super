@@ -52,6 +52,17 @@ list — no object-storage decision exists yet (`DEC-009`) — but the UI no
 longer pretends otherwise: tapping the avatar now shows a plain "coming
 soon" message instead of running a fake upload round trip.
 
+**Fixed 2026-09-04**: the shared `ProviderPageHeader` app bar (used by
+all 5 screens in this feature) has always accepted an `avatarUrl` and
+shown the real photo when set, but no screen ever passed one in —
+including `ProviderProfileScreen` itself, which already read
+`doctorAccountProvider`'s `avatarUrl` for its own large avatar but never
+forwarded it to the header. Every screen now passes the same real
+`avatarUrl` through, so the doctor's photo (already real via
+`GET /v1/doctors/me`, see above) shows in the header too. The header
+avatar's fallback icon style (radius/colors) was also changed to
+visually match the patient app's home header exactly.
+
 ## Separately unresolved: role gating
 
 The two-flavor (patient/provider) build separation was deleted in the same

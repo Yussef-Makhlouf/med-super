@@ -4,6 +4,7 @@ import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/features/provider_registration/data/datasources/remote/provider_registration_remote_datasource.dart';
 import 'package:med_super/features/provider_registration/data/repositories/provider_registration_repository_impl.dart';
 import 'package:med_super/features/provider_registration/domain/entities/doctor_registration_draft.dart';
+import 'package:med_super/features/provider_registration/domain/entities/uploaded_document.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockRemoteDatasource extends Mock
@@ -15,6 +16,15 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const DoctorRegistrationDraft());
+    registerFallbackValue(
+      const UploadedDocument(
+        id: 'fallback',
+        fileName: 'fallback',
+        sizeBytes: 0,
+        localPath: '',
+        type: DocumentType.medicalLicense,
+      ),
+    );
   });
 
   setUp(() {
@@ -25,13 +35,30 @@ void main() {
   const draft = DoctorRegistrationDraft(fullName: 'Dr. X');
 
   test('submit returns Result.ok(null) when the datasource succeeds', () async {
-    when(() => remote.submit(any())).thenAnswer((_) async {});
+    when(() => remote.submit(any())).thenAnswer((_) async => 'doctor-1');
 
     final result = await repository.submit(draft);
 
     expect(result.isOk, isTrue);
     verify(() => remote.submit(draft)).called(1);
   });
+
+  test(
+    'submit does not upload documents when the draft has none',
+    () async {
+      when(() => remote.submit(any())).thenAnswer((_) async => 'doctor-1');
+
+      final result = await repository.submit(draft);
+
+      expect(result.isOk, isTrue);
+      verifyNever(
+        () => remote.uploadVerificationDocument(
+          doctorId: any(named: 'doctorId'),
+          document: any(named: 'document'),
+        ),
+      );
+    },
+  );
 
   test('submit maps a generic exception to Failure.unknown', () async {
     final exception = Exception('boom');
@@ -107,7 +134,7 @@ void main() {
   );
 
   test('submit does not swallow success — passes the exact draft', () async {
-    when(() => remote.submit(any())).thenAnswer((_) async {});
+    when(() => remote.submit(any())).thenAnswer((_) async => 'doctor-1');
 
     await repository.submit(draft);
 

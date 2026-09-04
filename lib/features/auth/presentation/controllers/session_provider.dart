@@ -186,6 +186,7 @@ class SessionController extends _$SessionController {
               .settingsBox
               .put(SettingsKeys.choseDoctorRoleAtSignup, 'true');
         }
+        await _claimRegistrationDraft(value.id);
         await _resyncDoctorRegistrationStatus();
         final session = Session(
           user: value,
@@ -195,6 +196,22 @@ class SessionController extends _$SessionController {
         state = AsyncData(session);
         return Result.ok(session);
     }
+  }
+
+  /// Discards the in-progress doctor-registration draft if it belongs to a
+  /// *different* account, then claims it (or a fresh/no-op one) as this
+  /// user's own. Covers the gap `logout()`'s own draft-clear can't: a
+  /// previous session that ended without ever calling `logout()` (app
+  /// killed or closed mid-registration, a crash) leaves the draft on disk
+  /// with no owner recorded — the very next login on this device, by
+  /// *any* account, must not inherit that half-filled personal
+  /// data/documents. Called from both `verifyOtp` and `loginWithPassword`,
+  /// right after the account is confirmed (so `value.id` is known),
+  /// before the new `Session` is published.
+  Future<void> _claimRegistrationDraft(String userId) async {
+    final draftController = ref.read(registrationFormControllerProvider.notifier);
+    await draftController.discardIfOwnedByDifferentUser(userId);
+    await draftController.stampDraftOwner(userId);
   }
 
   /// One-time-per-login check against the real backend status
@@ -304,6 +321,7 @@ class SessionController extends _$SessionController {
         return Result.err(failure);
       case Ok(:final value):
         await _writePasswordComplete(true);
+        await _claimRegistrationDraft(value.id);
         await _resyncDoctorRegistrationStatus();
         final session = Session(
           user: value,

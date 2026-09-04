@@ -61,6 +61,11 @@ abstract final class ApiPaths {
   // /v1/doctors/:doctorId` 404s for a non-Admin caller while PENDING).
   static const providerRegistrationStatus =
       '/v1/provider/registration/status';
+  // Doctor self-service upload of their own verification documents (license,
+  // national ID, specialty certificate) — Admin can upload for any provider,
+  // a DOCTOR caller only for their own doctor record (File 12 Part 48).
+  static const providerVerificationDocuments =
+      '/v1/provider-verification-documents';
 
   // Prescriptions (Phase 6)
   static const prescriptions = '/v1/prescriptions';

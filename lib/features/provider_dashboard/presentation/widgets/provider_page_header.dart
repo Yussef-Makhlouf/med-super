@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
 
 /// Generic header bar for Provider screens (Dashboard, Notifications, Patients).
@@ -83,21 +84,20 @@ class ProviderPageHeader extends StatelessWidget
                   ),
                 ),
               ),
-              // Right: Doctor Avatar
+              // Right: Doctor Avatar — matches the patient home header's
+              // avatar style exactly (`patient_home_screen.dart`'s
+              // `_HomeHeader`: CircleAvatar radius 22, light-blue
+              // background, brandBlue person icon).
               GestureDetector(
                 onTap: onAvatarTap ?? () => context.go('/provider/profile'),
                 child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.surfaceCard,
+                  radius: 22,
+                  backgroundColor: const Color(0xFFDCE8FF),
                   backgroundImage: avatarUrl != null
                       ? resolveAvatarImage(avatarUrl!)
                       : null,
                   child: avatarUrl == null
-                      ? const Icon(
-                          Icons.person,
-                          size: 20,
-                          color: AppColors.mutedText,
-                        )
+                      ? const Icon(Icons.person, color: brandBlue)
                       : null,
                 ),
               ),

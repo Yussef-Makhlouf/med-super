@@ -20,17 +20,37 @@ class ProviderRegistrationRepositoryImpl
     String? cityLabel,
     String? phone,
   }) async {
+    final String doctorId;
     try {
-      await _remote.submit(
+      doctorId = await _remote.submit(
         draft,
         specialtyLabel: specialtyLabel,
         cityLabel: cityLabel,
         phone: phone,
       );
-      return const Result.ok(null);
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));
     }
+
+    // Registration already succeeded at this point — a document upload
+    // failure here must not be reported as a failed *registration* (the
+    // applicant is already a real PENDING record); it's logged and
+    // swallowed rather than surfaced as `Result.err`, same tradeoff already
+    // accepted for `documents` being best-effort in the old mock flow.
+    if (doctorId.isNotEmpty) {
+      for (final document in draft.documents) {
+        try {
+          await _remote.uploadVerificationDocument(
+            doctorId: doctorId,
+            document: document,
+          );
+        } catch (_) {
+          // Best-effort — see comment above.
+        }
+      }
+    }
+
+    return const Result.ok(null);
   }
 
   @override

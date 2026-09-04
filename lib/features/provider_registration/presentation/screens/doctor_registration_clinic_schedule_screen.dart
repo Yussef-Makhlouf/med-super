@@ -66,6 +66,17 @@ class _DoctorRegistrationClinicScheduleScreenState
         );
   }
 
+  /// `true` iff `from < to` as a same-day time-of-day comparison — mirrors
+  /// the backend's `isValidScheduleWindow` (`endTime > startTime` on the
+  /// `"HH:mm"` strings this eventually maps to, `provider_registration_
+  /// remote_datasource.dart`'s `_hhmm`), so a window rejected here would
+  /// have been rejected by `POST /v1/provider/registration` too
+  /// (`422 INVALID_SCHEDULE_WINDOW`) — validated at pick time instead of
+  /// only at submit time, so the applicant sees the problem on the exact
+  /// day/field that caused it.
+  bool _isValidWindow(ClinicTime from, ClinicTime to) =>
+      to.hour > from.hour || (to.hour == from.hour && to.minute > from.minute);
+
   Future<void> _pickTime(Weekday day, {required bool isFrom}) async {
     final picked = await showTimePicker(
       context: context,
@@ -78,11 +89,22 @@ class _DoctorRegistrationClinicScheduleScreenState
         .read(registrationFormControllerProvider)
         .workingDays
         .firstWhere((d) => d.day == day);
-    notifier.setWorkingHours(
-      day,
-      from: isFrom ? time : current.from,
-      to: isFrom ? current.to : time,
-    );
+    final from = isFrom ? time : current.from;
+    final to = isFrom ? current.to : time;
+
+    if (from != null && to != null && !_isValidWindow(from, to)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'provider_registration.clinic_schedule.invalid_time_window'.tr(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    notifier.setWorkingHours(day, from: from, to: to);
   }
 
   void _continue() {

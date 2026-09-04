@@ -903,14 +903,19 @@
                 { f: 'region_code', t: 'string', n: '' }, { f: 'clinic_name', t: 'string', n: '' },
                 { f: 'clinic_address', t: 'string', n: '' }, { f: 'city', t: 'string', n: '' },
                 { f: 'phone', t: 'string', n: '' }, { f: 'consultation_fee', t: 'number', n: '' },
-                { f: 'full_name, email, degree, bio, …', t: 'various', n: 'optional — accepted but not persisted (see response)' }
+                { f: 'full_name, email, degree, bio, experience_years, photo_data_uri', t: 'various', n: 'optional — persisted (User.first_name/last_name/email, Doctor.degree/bio/experience_years/photo_url — photo uploads for real to ImageKit)' },
+                { f: 'working_days', t: '{weekday, startTime, endTime, slotDurationMinutes, bufferMinutes}[]', n: 'optional — persisted as real ScheduleTemplate rows tied to the affiliation this call creates (updated 2026-09-04, File 12 Part 48). Same weekday/time validators as POST /v1/schedule-templates; an invalid window (endTime ≤ startTime) fails the whole registration with 422 INVALID_SCHEDULE_WINDOW.' },
+                { f: 'specialty_label, city_label, documents', t: 'various', n: 'optional — accepted but NOT persisted (display-only duplicates / verification docs go through POST /v1/provider-verification-documents instead, see below) — echoed in notPersisted' }
               ],
               response: `{
   <span class="k">doctorId</span>, <span class="k">clinicId</span>, <span class="k">clinicBranchId</span>, <span class="k">affiliationId</span>: <span class="t">string</span>,
   <span class="k">status</span>: <span class="t">string</span>, <span class="c">// doctor.status, 'PENDING'</span>
-  <span class="k">notPersisted</span>: <span class="t">string[]</span> <span class="c">// echoes which optional fields were dropped</span>
+  <span class="k">notPersisted</span>: <span class="t">string[]</span> <span class="c">// as of 2026-09-04: ['specialty_label', 'documents', 'city_label'] only</span>
 }`,
-              notes: ['Still requires a separate Admin <code>verify</code> call before the doctor becomes publicly visible.']
+              notes: [
+                'Still requires a separate Admin <code>verify</code> call before the doctor becomes publicly visible.',
+                'Updated 2026-09-04 (File 12 Part 48): the returned <code>doctorId</code> is used by the frontend to immediately upload verification documents via <code>POST /v1/provider-verification-documents</code> right after this call succeeds.'
+              ]
             }
           ]
         },
@@ -926,7 +931,7 @@
           ]
         },
         {
-          name: 'provider-verification-documents', prefix: '/v1/provider-verification-documents', note: 'Admin‑only, no public/provider read', endpoints: [
+          name: 'provider-verification-documents', prefix: '/v1/provider-verification-documents', note: 'Admin full access; DOCTOR may upload for their own record only (File 12 Part 48) — list/approve/reject stay Admin‑only', endpoints: [
             {
               method: 'GET', path: '/v1/provider-verification-documents', auth: 'ADMIN', status: 200,
               desc: 'Review queue — filterable, cursor‑paginated.',
@@ -942,14 +947,19 @@
 }`, notes: []
             },
             {
-              method: 'POST', path: '/v1/provider-verification-documents', auth: 'ADMIN', status: 201,
-              desc: 'Attach a verification document (fileUrl is pre‑hosted — no upload flow yet).',
+              method: 'POST', path: '/v1/provider-verification-documents', auth: 'ADMIN, DOCTOR', status: 201,
+              desc: 'Attach a verification document — multipart upload (jpeg/png/pdf, ImageKit, stored private). Admin may target any provider; a DOCTOR caller may only target their own doctor id.',
               request: [
+                { f: 'file', t: 'binary (multipart/form-data)', n: 'jpeg/png/pdf, max 15MB' },
                 { f: 'providerType', t: "'DOCTOR'|'CLINIC'|'PHARMACY'|'LAB'", n: '' },
-                { f: 'providerId', t: 'string (uuid)', n: '' }, { f: 'docType', t: 'string', n: '' }, { f: 'fileUrl', t: 'string (url)', n: '' }
+                { f: 'providerId', t: 'string (uuid)', n: '' }, { f: 'docType', t: 'string', n: '' }
               ],
-              response: `ProviderVerificationDocument <span class="c">// status starts 'PENDING'</span>`,
-              notes: ['<code>LAB</code> is always rejected — Laboratory is a postponed module.']
+              response: `ProviderVerificationDocument <span class="c">// status starts 'PENDING', file_url is a signed URL</span>`,
+              notes: [
+                '<code>LAB</code> is always rejected — Laboratory is a postponed module.',
+                'A <code>DOCTOR</code> caller gets <code>403 FORBIDDEN</code> if <code>providerType</code> is not <code>DOCTOR</code> or <code>providerId</code> is not their own doctor id.',
+                'Wired in med-super: <code>ProviderRegistrationRemoteDatasource.uploadVerificationDocument</code> uploads each registration document right after <code>POST /v1/provider/registration</code> returns a <code>doctorId</code>.'
+              ]
             },
             { method: 'POST', path: '/v1/provider-verification-documents/:documentId/approve', auth: 'ADMIN', status: 204, desc: 'Approve a document (does not itself verify the provider).', request: null, response: null, notes: [] },
             {
@@ -1347,10 +1357,10 @@
     'POST /v1/pharmacy-branches/:branchId/verify': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/pharmacy-branches/:branchId/suspend': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'GET /v1/provider/registration/lookups': { status: 'ok', note: 'Path and <code>{id,label}</code> shape match exactly.' },
-    'POST /v1/provider/registration': { status: 'ok', note: 'Was: backend accepted <code>full_name</code>/<code>degree</code>/<code>email</code>/<code>experience_years</code>/<code>bio</code> and silently discarded all five. Fixed and verified on clinic-reservations branch <code>feature/persist-self-registration-fields</code>: added <code>Doctor.degree</code>/<code>bio</code>/<code>experience_years</code> columns and a cross-module <code>UpdateUserProfileUseCase</code> that splits <code>full_name</code> into <code>User.first_name</code>/<code>last_name</code> and sets <code>User.email</code> (best-effort — a conflicting email is swallowed, not fatal). <b>Verified 2026-08-25</b>: two new Prisma migrations applied cleanly to a real Postgres instance, <code>tsc --noEmit</code> clean, and 54/54 identity-auth + self-registration unit tests pass. <code>photo_data_uri</code>/<code>documents</code> stay unpersisted (no object storage exists yet); <code>working_days</code> stays admin-only on purpose (ADR-005 Part 33.1) — not changed. The Flutter side still discards the response body (<code>status</code>/<code>notPersisted</code> unread) — that\'s unchanged and no longer hides real data loss now that the backend actually saves it.' },
+    'POST /v1/provider/registration': { status: 'ok', note: 'Was: backend accepted <code>full_name</code>/<code>degree</code>/<code>email</code>/<code>experience_years</code>/<code>bio</code> and silently discarded all five. Fixed and verified on clinic-reservations branch <code>feature/persist-self-registration-fields</code>: added <code>Doctor.degree</code>/<code>bio</code>/<code>experience_years</code> columns and a cross-module <code>UpdateUserProfileUseCase</code> that splits <code>full_name</code> into <code>User.first_name</code>/<code>last_name</code> and sets <code>User.email</code> (best-effort — a conflicting email is swallowed, not fatal). <b>Verified 2026-08-25</b>: two new Prisma migrations applied cleanly to a real Postgres instance, <code>tsc --noEmit</code> clean, and 54/54 identity-auth + self-registration unit tests pass. <b>Updated 2026-09-04 (File 12 Part 48, branch <code>feature/doctor-self-service-registration</code>)</b>: <code>working_days</code> is no longer discarded — it now persists as real <code>ScheduleTemplate</code> rows tied to the new <code>DoctorClinicAffiliation</code>, using the same <code>{weekday (1–7 ISO), startTime, endTime, slotDurationMinutes, bufferMinutes}</code> shape as <code>POST /v1/schedule-templates</code>. <code>documents</code> is no longer sent as bare filenames — the Flutter side now reads the response\'s <code>doctorId</code> and uploads each document for real via <code>POST /v1/provider-verification-documents</code> right after submit succeeds. <code>photo_data_uri</code> remains the only field still going through its own ImageKit path inside this same endpoint (unchanged).' },
     'GET /v1/specialties': { status: 'ok', note: 'Wired on <code>feature/phase-2-3-endpoint-wiring</code>: shared <code>lib/core/specialties/</code> providers replace the hardcoded home-screen specialty row and now feed <code>search_discovery</code>\'s specialty filter (via a new <code>title</code>/<code>initialSpecialtyName</code> param, since the filter previously matched an arbitrary backend <code>code</code> against a fixed 5-key translation catalog). <b>Verified 2026-08-25</b>: clean <code>flutter analyze</code>, unit tests pass. <b>Re-verified same day against a real local backend</b> — fixed the same <code>retry: null</code> no-op bug in this provider. Separately, the home screen also gained a real "featured doctors" row via <code>GET /v1/doctors/search</code> (<code>search_discovery</code>\'s existing <code>SearchDoctorsUseCase</code>, not this endpoint), replacing that screen\'s old hardcoded doctor list.' },
     'GET /v1/provider-verification-documents': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
-    'POST /v1/provider-verification-documents': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
+    'POST /v1/provider-verification-documents': { status: 'ok', note: 'Updated 2026-09-04 (File 12 Part 48): now callable by a <code>DOCTOR</code> for their own doctor record, not just Admin. Wired in <code>provider_registration</code>: <code>ProviderRegistrationRemoteDatasource.uploadVerificationDocument</code> uploads each picked document (real bytes, multipart) right after <code>POST /v1/provider/registration</code> returns the new <code>doctorId</code> — best-effort per document, a failed upload does not fail the already-submitted registration.' },
     'POST /v1/provider-verification-documents/:documentId/approve': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
     'POST /v1/provider-verification-documents/:documentId/reject': { status: 'admin', note: 'Admin-only — no admin surface in this app.' },
 

@@ -191,15 +191,19 @@ void main() {
       // '09:00' is the only morning slot whose formatted 12h label contains
       // this substring (see `lab_schedule_providers.dart`'s fixed morning
       // slot list). Match the exact chip label — computed the same way the
-      // widget itself computes it (`AppFormatters.time12h`), rather than a
-      // hand-typed literal, since `intl`'s AM/PM formatting can use a
-      // non-ASCII space that silently makes a plain `'9:00 AM'` string
-      // never match. A loose `textContaining` isn't safe either — the
-      // period label above the chips ("Morning (9:00 AM - 12:00 PM)") also
-      // contains "9:00" once real translations are loaded, and it renders
-      // before the chips in the tree, so a loose substring match's `.first`
-      // would hit that inert label instead.
-      final slotLabel = AppFormatters.time12h('09:00', locale: 'en');
+      // widget itself computes it (`TimeSlotPeriodSection` reads
+      // `Localizations.localeOf(context).languageCode`, which is `'ar'`
+      // here since `pumpLocalizedWidget`'s shell sets `startLocale:
+      // Locale('ar')` — not `'en'`, which produced a string the widget
+      // never actually renders), rather than a hand-typed literal, since
+      // `intl`'s AM/PM formatting can use a non-ASCII space that silently
+      // makes a plain `'9:00 AM'` string never match. A loose
+      // `textContaining` isn't safe either — the period label above the
+      // chips ("Morning (9:00 AM - 12:00 PM)") also contains "9:00" once
+      // real translations are loaded, and it renders before the chips in
+      // the tree, so a loose substring match's `.first` would hit that
+      // inert label instead.
+      final slotLabel = AppFormatters.time12h('09:00', locale: 'ar');
       await tester.tap(find.text(slotLabel));
       await tester.pump();
 

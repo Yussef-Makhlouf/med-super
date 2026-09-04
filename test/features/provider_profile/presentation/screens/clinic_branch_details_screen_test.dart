@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/features/provider_profile/domain/entities/clinic_branch.dart';
 import 'package:med_super/features/provider_profile/domain/repositories/clinic_branch_repository.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/clinic_branch_providers.dart';
@@ -98,7 +99,11 @@ void main() {
     expect(find.text('Nile Medical Group LLC'), findsOneWidget);
     expect(find.text('12 Tahrir St'), findsOneWidget);
     expect(find.text('Cairo, CAI'), findsOneWidget);
-    expect(find.text('+201234567890'), findsOneWidget);
+    // The widget wraps the phone in `AppFormatters.ltrIsolate` (U+2066/
+    // U+2069 isolate marks) so it renders left-to-right inside the
+    // Arabic-RTL shell `pumpLocalizedWidget` uses — a plain phone string
+    // never matches the actual `Text` widget.
+    expect(find.text(AppFormatters.ltrIsolate('+201234567890')), findsOneWidget);
     expect(find.text('Africa/Cairo'), findsOneWidget);
     expect(find.byIcon(Icons.verified), findsOneWidget);
 

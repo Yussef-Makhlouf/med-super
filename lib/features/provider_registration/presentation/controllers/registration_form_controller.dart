@@ -53,12 +53,65 @@ class RegistrationFormController extends _$RegistrationFormController {
   DoctorRegistrationDraft build() =>
       _loadDraft() ?? const DoctorRegistrationDraft();
 
+  String? _readOwnerUserId(dynamic box) {
+    final raw = box.get(providerRegistrationDraftKey) as String?;
+    if (raw == null) return null;
+    try {
+      return (jsonDecode(raw) as Map<String, dynamic>)['owner_user_id']
+          as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Called once, right after a successful login (`SessionController.
+  /// verifyOtp`/`loginWithPassword`) — stamps the on-disk draft with the
+  /// now-known current user id if it has none yet (a draft written before
+  /// this ownership check existed, or one already known to belong to this
+  /// same user). Call `discardIfOwnedByDifferentUser` first; only stamp
+  /// afterward, so a genuinely foreign draft is discarded rather than
+  /// silently re-owned.
+  Future<void> stampDraftOwner(String userId) async {
+    final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
+    if (_readOwnerUserId(box) != null) return;
+    if (box.get(providerRegistrationDraftKey) == null) return;
+    await _persistWithOwner(box, userId);
+  }
+
+  Future<void> _persistWithOwner(dynamic box, String ownerUserId) async {
+    final d = state;
+    await box.put(
+      providerRegistrationDraftKey,
+      jsonEncode({'owner_user_id': ownerUserId, ..._draftFields(d)}),
+    );
+  }
+
+  /// Discards the on-disk draft (and resets in-memory state) if it carries
+  /// an `owner_user_id` that doesn't match [userId] — the exact scenario a
+  /// bare `logout()`-only clear misses: the previous session ended without
+  /// ever calling `logout()` (app killed/closed mid-registration, crash),
+  /// so a *different* account logging in next would otherwise inherit that
+  /// half-filled draft (name, email, license, documents) untouched. A
+  /// draft with no `owner_user_id` recorded yet is left alone here — it's
+  /// stamped as this user's own by `stampDraftOwner` right after.
+  Future<void> discardIfOwnedByDifferentUser(String userId) async {
+    final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
+    final ownerId = _readOwnerUserId(box);
+    if (ownerId == null || ownerId == userId) return;
+    await box.delete(providerRegistrationDraftKey);
+    ref.invalidateSelf();
+  }
+
   DoctorRegistrationDraft? _loadDraft() {
     final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
     final raw = box.get(providerRegistrationDraftKey);
     if (raw == null) return null;
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
+      // Pre-existing drafts saved before `owner_user_id` was introduced have
+      // no such key — `owner_user_id == null` reads as "no owner recorded",
+      // never as "belongs to nobody"; only `SessionController`'s explicit
+      // ownership check treats an unowned or mismatched draft as stale.
       return DoctorRegistrationDraft(
         fullName: json['full_name'] as String? ?? '',
         specialty: json['specialty'] as String?,
@@ -93,38 +146,49 @@ class RegistrationFormController extends _$RegistrationFormController {
     }
   }
 
+  Map<String, dynamic> _draftFields(DoctorRegistrationDraft d) => {
+    'full_name': d.fullName,
+    'specialty': d.specialty,
+    'degree': d.degree,
+    'email': d.email,
+    'experience_years': d.experienceYears,
+    'bio': d.bio,
+    'license_number': d.licenseNumber,
+    'profile_photo_local_path': d.profilePhotoLocalPath,
+    'profile_photo_data_uri': d.profilePhotoDataUri,
+    'documents': d.documents
+        .map(
+          (doc) => {
+            'id': doc.id,
+            'file_name': doc.fileName,
+            'size_bytes': doc.sizeBytes,
+            'local_path': doc.localPath,
+            'type': doc.type.name,
+          },
+        )
+        .toList(),
+    'clinic_name': d.clinicName,
+    'clinic_address': d.clinicAddress,
+    'city': d.city,
+    'region_code': d.regionCode,
+    'consultation_fee': d.consultationFee,
+    'agreed_to_terms': d.agreedToTerms,
+  };
+
   Future<void> _persist() async {
     final box = ref.read(hiveServiceProvider).providerRegistrationDraftBox;
-    final d = state;
+    // Preserves whatever `owner_user_id` a prior `_persist()` (or
+    // `stampDraftOwner`) already wrote — this method never knows the
+    // current user id itself (avoiding an import cycle with
+    // `session_provider.dart`, which already imports this file for
+    // `logout()`'s draft-clear); ownership is stamped once, right after
+    // login, by `stampDraftOwner`/`discardIfOwnedByDifferentUser` below.
+    final existingOwnerId = _readOwnerUserId(box);
     await box.put(
       providerRegistrationDraftKey,
       jsonEncode({
-        'full_name': d.fullName,
-        'specialty': d.specialty,
-        'degree': d.degree,
-        'email': d.email,
-        'experience_years': d.experienceYears,
-        'bio': d.bio,
-        'license_number': d.licenseNumber,
-        'profile_photo_local_path': d.profilePhotoLocalPath,
-        'profile_photo_data_uri': d.profilePhotoDataUri,
-        'documents': d.documents
-            .map(
-              (doc) => {
-                'id': doc.id,
-                'file_name': doc.fileName,
-                'size_bytes': doc.sizeBytes,
-                'local_path': doc.localPath,
-                'type': doc.type.name,
-              },
-            )
-            .toList(),
-        'clinic_name': d.clinicName,
-        'clinic_address': d.clinicAddress,
-        'city': d.city,
-        'region_code': d.regionCode,
-        'consultation_fee': d.consultationFee,
-        'agreed_to_terms': d.agreedToTerms,
+        'owner_user_id': existingOwnerId,
+        ..._draftFields(state),
       }),
     );
   }

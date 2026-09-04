@@ -152,5 +152,45 @@
   </ul>
 </div>
 
+<div class="section-title">5. Doctor Self-Service Registration (added 2026-09-04)</div>
+<div class="sub">Backend branch <code>feature/doctor-self-service-registration</code> (clinic-reservations) + frontend branch <code>feature/doctor-self-service-registration</code> (med-super), tested live against a running local backend + real Postgres.</div>
+
+<div class="page-card">
+  <div class="page-title">Doctor self-registration (full form + photo + working hours + submit)</div>
+  <table>
+    <tr><th>Fields sent</th><td>Full name, specialty, degree, email, phone, experience years, bio, license number, real profile photo, clinic name/address/city/region, consultation fee, working days (enabled days with From/To times)</td></tr>
+    <tr><th>Current status</th><td>Persisted correctly end to end. Verified directly in the database: <code>Doctor</code>, <code>User</code>, <code>Clinic</code>, <code>Address</code>, <code>ClinicBranch</code>, and <code>DoctorClinicAffiliation</code> rows all created with the submitted values; the profile photo uploaded for real to ImageKit and its URL is stored on <code>Doctor.photo_url</code>; the submitted working day created a real <code>ScheduleTemplate</code> row tied to the new affiliation (weekday/start_time/end_time/slot_duration_minutes all correct).</td></tr>
+  </table>
+  <ul class="findings">
+    <li><b>Bug found and fixed:</b> submitting a real (non-tiny) profile photo failed with an opaque <code>500</code> — Express's default 100kb JSON body limit rejected the base64-encoded photo before the request ever reached the backend's own validation. Fixed by raising the body-parser limit in <code>src/main.ts</code> to safely exceed the max encoded photo size.</li>
+    <li><b>Bug found and fixed:</b> picking a working-hour "From" time later than "To" (or vice versa) saved silently with no warning, and only surfaced as a generic error at the very end of the multi-step form (<code>422 INVALID_SCHEDULE_WINDOW</code>, after clinic info, verification, and photo were already filled in). Fixed by validating the window immediately when the time is picked, with a clear inline message.</li>
+    <li><b>Bug found and fixed — real cross-account data leak:</b> starting a registration, then exiting the app without logging out (not the same as pressing "logout"), then logging in as a <i>different</i> phone number, surfaced the first applicant's half-filled draft (name, email, license number, documents) on the new account. The in-progress draft is Hive-persisted and was only ever cleared by an explicit <code>logout()</code> call — a session that ends without one (app killed, closed, crashed) left it on disk unowned. Fixed by tagging the draft with the owner's user id and discarding it on login if it belongs to someone else.</li>
+  </ul>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Doctor verification-document upload (self-service)</div>
+  <table>
+    <tr><th>Current status</th><td><code>POST /v1/provider-verification-documents</code> was Admin-only end to end; a doctor can now upload a document for their own record (ownership enforced server-side — a doctor cannot upload against another doctor's id or a non-doctor provider type). Wired into the registration flow: after submit returns a real <code>doctorId</code>, each picked document (license, national ID, specialty certificate) uploads for real, multipart, to ImageKit.</td></tr>
+  </table>
+  <ul class="findings">
+    <li>In this pass's test run no document was actually picked during the verification step, so the resulting doctor record has zero uploaded documents — confirmed by querying <code>provider_verification_documents</code> directly (empty result). The upload path itself was verified by code review and by the ownership/role-guard logic, not by an end-to-end file upload in this specific run.</li>
+  </ul>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Admin approval (verify)</div>
+  <table>
+    <tr><th>Current status</th><td><code>POST /v1/doctors/:doctorId/verify</code> (Admin-only) confirmed working — flips the doctor to <code>VERIFIED</code> and grants the real <code>DOCTOR</code> role membership (confirmed by the account's JWT <code>contextType</code> switching from <code>PATIENT</code> to <code>DOCTOR</code> after re-login).</td></tr>
+  </table>
+</div>
+
+<div class="page-card">
+  <div class="page-title">Doctor dashboard header — profile photo</div>
+  <table>
+    <tr><th>Current status</th><td>The shared <code>ProviderPageHeader</code> app bar has always supported showing the doctor's real photo, but none of its 5 call sites (home, appointments, patients, notifications, and even the profile screen itself) ever passed it in — the header always showed the placeholder icon regardless of whether a photo existed. Fixed: every screen now reads the same <code>avatarUrl</code> the profile screen's own large avatar already used, and passes it through. The header avatar's fallback icon style (size/colors) was also changed to visually match the patient app's header icon, per an explicit design request — the image-vs-icon switching logic itself was unchanged.</td></tr>
+  </table>
+</div>
+
 </body>
 </html>

@@ -60,6 +60,7 @@ class ProviderProfileScreen extends ConsumerWidget {
         children: [
           ProviderPageHeader(
             title: 'الملف الشخصي',
+            avatarUrl: avatarUrl,
             onAvatarTap: () {}, // already on the profile screen
           ),
           Expanded(

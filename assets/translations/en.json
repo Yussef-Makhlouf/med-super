@@ -545,7 +545,8 @@
       "map_label": "Location on map",
       "fee_title": "Consultation fee",
       "fee_currency": "EGP",
-      "working_hours_title": "Working hours"
+      "working_hours_title": "Working hours",
+      "invalid_time_window": "End time must be after start time."
     },
     "review": {
       "step_caption": "Step 4 of 4: Final review",

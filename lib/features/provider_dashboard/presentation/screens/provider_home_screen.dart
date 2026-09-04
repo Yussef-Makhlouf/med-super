@@ -44,12 +44,19 @@ class ProviderHomeScreen extends ConsumerWidget {
     final unreadNotifsCount = ref
         .watch(doctorNotificationsProvider)
         .maybeWhen(data: (list) => list.where((n) => n.isUnread).length, orElse: () => 0);
+    final avatarUrl = ref
+        .watch(doctorAccountProvider)
+        .maybeWhen(data: (acc) => acc.avatarUrl, orElse: () => null);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
       body: Column(
         children: [
-          ProviderPageHeader(title: 'الجدول', unreadNotificationsCount: unreadNotifsCount),
+          ProviderPageHeader(
+            title: 'الجدول',
+            unreadNotificationsCount: unreadNotifsCount,
+            avatarUrl: avatarUrl,
+          ),
           Expanded(
             child: Column(
               children: [

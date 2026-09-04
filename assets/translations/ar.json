@@ -545,7 +545,8 @@
       "map_label": "الموقع على الخريطة",
       "fee_title": "سعر الكشف",
       "fee_currency": "جنيه",
-      "working_hours_title": "مواعيد العمل"
+      "working_hours_title": "مواعيد العمل",
+      "invalid_time_window": "وقت النهاية يجب أن يكون بعد وقت البداية."
     },
     "review": {
       "step_caption": "الخطوة 4 من 4: المراجعة النهائية",
