@@ -378,7 +378,10 @@ void main() {
         find.text('pharmacy_booking.review.delivery_fee_label'.tr()),
         findsOneWidget,
       );
-      expect(find.text('15 ج.م'), findsOneWidget);
+      expect(
+        find.text('pharmacy_booking.review.delivery_fee_value'.tr()),
+        findsOneWidget,
+      );
       expect(
         find.text('pharmacy_booking.review.vat_label'.tr()),
         findsOneWidget,
@@ -392,9 +395,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(
-          'pharmacy_booking.review.total_value'.tr(args: const ['15 ج.م']),
-        ),
+        find.text('pharmacy_booking.review.total_value'.tr()),
         findsOneWidget,
       );
       expect(

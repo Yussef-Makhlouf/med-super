@@ -446,10 +446,6 @@ class _DeliveryMethodSection extends StatelessWidget {
 class _PaymentSummarySection extends StatelessWidget {
   const _PaymentSummarySection();
 
-  // Mock delivery fee — a hardcoded number, not a translation key, since
-  // this is placeholder pricing rather than real localized copy.
-  static const _mockDeliveryFee = '15 ج.م';
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -480,7 +476,7 @@ class _PaymentSummarySection extends StatelessWidget {
           const SizedBox(height: 10),
           _SummaryRow(
             label: 'pharmacy_booking.review.delivery_fee_label'.tr(),
-            value: _mockDeliveryFee,
+            value: 'pharmacy_booking.review.delivery_fee_value'.tr(),
           ),
           const SizedBox(height: 10),
           _SummaryRow(
@@ -493,9 +489,7 @@ class _PaymentSummarySection extends StatelessWidget {
           ),
           _SummaryRow(
             label: 'pharmacy_booking.review.total_label'.tr(),
-            value: 'pharmacy_booking.review.total_value'.tr(
-              args: [_mockDeliveryFee],
-            ),
+            value: 'pharmacy_booking.review.total_value'.tr(),
             emphasized: true,
           ),
           const SizedBox(height: 16),
