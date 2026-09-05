@@ -844,7 +844,11 @@
       "booked_count": "{} booked",
       "no_appointments": "No appointments booked yet for this window.",
       "load_error": "Could not load today's schedule.",
-      "retry": "Retry"
+      "retry": "Retry",
+      "tab_all": "All",
+      "slot_open": "Open",
+      "slot_past": "Past",
+      "minutes_short": "min"
     },
     "appointments": {
       "title": "Appointments",
@@ -874,9 +878,9 @@
       "no_slots": "No open times available at this branch.",
       "step_patient": "Patient details",
       "phone_label": "Patient phone number",
-      "phone_hint": "e.g. +201001234567",
+      "phone_hint": "e.g. 01001234567",
       "phone_required": "Phone number is required",
-      "phone_invalid": "Enter a valid international phone number, e.g. +201001234567",
+      "phone_invalid": "Enter a valid Egyptian phone number, e.g. 01001234567",
       "name_label": "Patient name",
       "name_hint": "e.g. Sara Ahmed",
       "name_required": "Patient name is required",

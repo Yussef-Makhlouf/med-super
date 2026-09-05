@@ -8,6 +8,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
@@ -65,6 +66,7 @@ class _BookWalkInAppointmentSheetState
   final _nameController = TextEditingController();
 
   DoctorClinic? _branch;
+  DateTime? _selectedDay;
   DoctorSlot? _slot;
   bool _submitting = false;
   String? _submitError;
@@ -117,6 +119,8 @@ class _BookWalkInAppointmentSheetState
           doctorOpenSlotsProvider((
             doctorId: widget.doctorId,
             clinicBranchId: branch.clinicBranchId,
+            from: null,
+            to: null,
           )),
         );
         setState(() {
@@ -157,8 +161,7 @@ class _BookWalkInAppointmentSheetState
               _sectionLabel('provider_dashboard.walk_in.step_branch'.tr()),
               const SizedBox(height: 8),
               clinicsAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => _chipRowSkeleton(),
                 error: (error, _) => ErrorBanner(
                   message: providerFailureMessageOf(error),
                   onRetry: () => ref.invalidate(myClinicsProvider),
@@ -217,6 +220,44 @@ class _BookWalkInAppointmentSheetState
     ),
   );
 
+  Widget _chipRowSkeleton() => SizedBox(
+    height: 72,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: 3,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (_, _) =>
+          const SkeletonLoader(width: 130, height: 72, borderRadius: 12),
+    ),
+  );
+
+  Widget _slotPickerSkeleton() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        height: 64,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, _) =>
+              const SkeletonLoader(width: 62, height: 64, borderRadius: 14),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: const [
+          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
+          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
+          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
+          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
+        ],
+      ),
+    ],
+  );
+
   Widget _branchPicker(List<DoctorClinic> clinics) {
     final acceptingBranches = clinics
         .where((clinic) => clinic.isAcceptingBookings)
@@ -230,47 +271,84 @@ class _BookWalkInAppointmentSheetState
       );
     }
 
-    return Column(
-      children: [
-        for (final clinic in acceptingBranches) ...[
-          _branchTile(clinic),
-          const SizedBox(height: 8),
-        ],
-      ],
+    // Auto-select the first branch as soon as the list loads, so the sheet
+    // never sits with an empty first step waiting for a tap — the user can
+    // still change it, same as the day/slot pickers below auto-select their
+    // own first option.
+    if (_branch == null ||
+        !acceptingBranches.any((c) => c.clinicBranchId == _branch!.clinicBranchId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _branch = acceptingBranches.first;
+            _selectedDay = null;
+            _slot = null;
+          });
+        }
+      });
+    }
+
+    return SizedBox(
+      height: 72,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: acceptingBranches.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) => _branchChip(acceptingBranches[index]),
+      ),
     );
   }
 
-  Widget _branchTile(DoctorClinic clinic) {
+  Widget _branchChip(DoctorClinic clinic) {
     final selected = _branch?.clinicBranchId == clinic.clinicBranchId;
-    return ListTile(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: selected ? brandBlue : const Color(0xFFE2E8F0),
-          width: selected ? 2 : 1,
-        ),
-      ),
-      tileColor: selected ? brandBlue.withValues(alpha: 0.06) : null,
-      leading: Icon(
-        Icons.store_mall_directory_outlined,
-        color: selected ? brandBlue : AppColors.mutedText2,
-      ),
-      title: Text(
-        clinic.displayAddressLine,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-      subtitle: Text(
-        clinic.displayTitle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: selected ? const Icon(Icons.check_circle, color: brandBlue) : null,
+    return GestureDetector(
       onTap: () => setState(() {
         _branch = clinic;
+        _selectedDay = null;
         _slot = null;
       }),
+      child: Container(
+        width: 130,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.store_mall_directory_outlined,
+                  size: 14,
+                  color: selected ? brandBlue : AppColors.mutedText2,
+                ),
+                const Spacer(),
+                if (selected) const Icon(Icons.check_circle, color: brandBlue, size: 16),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              clinic.address.city,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            ),
+            Text(
+              clinic.displayAddressLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10, color: AppColors.mutedText2),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -279,62 +357,137 @@ class _BookWalkInAppointmentSheetState
       doctorOpenSlotsProvider((
         doctorId: widget.doctorId,
         clinicBranchId: branch.clinicBranchId,
+        from: null,
+        to: null,
       )),
     );
 
     return async.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: _slotPickerSkeleton,
       error: (error, _) => ErrorBanner(
         message: providerFailureMessageOf(error),
         onRetry: () => ref.invalidate(
           doctorOpenSlotsProvider((
             doctorId: widget.doctorId,
             clinicBranchId: branch.clinicBranchId,
+            from: null,
+            to: null,
           )),
         ),
       ),
-      data: (slots) => slots.isEmpty
-          ? EmptyState(
-              title: 'provider_dashboard.walk_in.no_slots'.tr(),
-              icon: Icons.event_busy_outlined,
-            )
-          : ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: slots.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) =>
-                  _slotTile(slots[index]),
+      data: (slots) {
+        if (slots.isEmpty) {
+          return EmptyState(
+            title: 'provider_dashboard.walk_in.no_slots'.tr(),
+            icon: Icons.event_busy_outlined,
+          );
+        }
+
+        final byDay = <DateTime, List<DoctorSlot>>{};
+        for (final slot in slots) {
+          final local = slot.startAtUtc.toLocal();
+          final day = DateTime(local.year, local.month, local.day);
+          (byDay[day] ??= []).add(slot);
+        }
+        final days = byDay.keys.toList()..sort();
+
+        final selectedDay = (_selectedDay != null && byDay.containsKey(_selectedDay))
+            ? _selectedDay!
+            : days.first;
+        if (_selectedDay != selectedDay) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedDay = selectedDay);
+          });
+        }
+
+        final daySlots = (byDay[selectedDay] ?? const <DoctorSlot>[])
+          ..sort((a, b) => a.startAtUtc.compareTo(b.startAtUtc));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: days.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) => _dayChip(days[index], days[index] == selectedDay),
+              ),
             ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [for (final slot in daySlots) _slotChip(slot)],
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _slotTile(DoctorSlot slot) {
-    final selected = _slot?.slotId == slot.slotId;
-    final local = slot.startAtUtc.toLocal();
-    final dateLabel =
-        '${'provider_dashboard.weekday.${local.weekday}'.tr()} ${local.day}/${local.month}';
-
-    return ListTile(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: selected ? brandBlue : const Color(0xFFE2E8F0),
-          width: selected ? 2 : 1,
+  Widget _dayChip(DateTime day, bool selected) {
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedDay = day;
+        _slot = null;
+      }),
+      child: Container(
+        width: 62,
+        decoration: BoxDecoration(
+          color: selected ? brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: selected ? brandBlue : const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'provider_dashboard.weekday.${day.weekday}'.tr(),
+              style: TextStyle(
+                fontSize: 11,
+                color: selected ? Colors.white.withValues(alpha: 0.9) : AppColors.mutedText2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${day.day}/${day.month}',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.ink900,
+              ),
+            ),
+          ],
         ),
       ),
-      tileColor: selected ? brandBlue.withValues(alpha: 0.06) : null,
-      leading: Icon(
-        Icons.schedule,
-        color: selected ? brandBlue : AppColors.mutedText2,
-      ),
-      title: Text(
-        formatAppointmentTime(slot.startAtUtc),
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ),
-      subtitle: Text(dateLabel),
-      trailing: selected ? const Icon(Icons.check_circle, color: brandBlue) : null,
+    );
+  }
+
+  Widget _slotChip(DoctorSlot slot) {
+    final selected = _slot?.slotId == slot.slotId;
+    return GestureDetector(
       onTap: () => setState(() => _slot = slot),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          formatAppointmentTime(slot.startAtUtc),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: selected ? brandBlue : AppColors.ink900,
+          ),
+        ),
+      ),
     );
   }
 

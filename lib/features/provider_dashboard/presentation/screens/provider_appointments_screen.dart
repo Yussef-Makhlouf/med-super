@@ -45,11 +45,9 @@ class _ProviderAppointmentsScreenState
     DoctorAppointmentStatus.confirmed,
   ];
 
-  int _selectedDayIndex = 1; // Today
+  late DateTime _selectedDate; // Today, until the doctor picks another date
   int _selectedSegment = 2; // Upcoming
   String? _branchId; // null = every branch the doctor works at
-
-  late final List<DateTime> _dates;
 
   final List<DoctorAppointment> _items = [];
   String? _nextCursor;
@@ -64,14 +62,29 @@ class _ProviderAppointmentsScreenState
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _dates = [
-      for (var offset = -1; offset <= 3; offset++)
-        DateTime(now.year, now.month, now.day).add(Duration(days: offset)),
-    ];
+    _selectedDate = DateTime(now.year, now.month, now.day);
     WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
   }
 
-  DateTime get _selectedDate => _dates[_selectedDayIndex];
+  /// The 5-day quick-pick strip, always centered two days behind and two
+  /// days ahead of [_selectedDate] — so jumping to any date via the calendar
+  /// picker re-centers the strip on it instead of leaving the picked date
+  /// off-strip and unreachable by tapping.
+  List<DateTime> get _strip => [
+    for (var offset = -2; offset <= 2; offset++)
+      _selectedDate.add(Duration(days: offset)),
+  ];
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    _onFilterChanged(() => _selectedDate = DateTime(picked.year, picked.month, picked.day));
+  }
 
   DoctorAppointmentStatus get _selectedStatus =>
       _segmentStatuses[_selectedSegment];
@@ -134,16 +147,14 @@ class _ProviderAppointmentsScreenState
   }
 
   Future<void> _openDetail(DoctorAppointment appointment) async {
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ProviderAppointmentDetailScreen(
-          appointmentId: appointment.appointmentId,
-        ),
-      ),
+    await showProviderAppointmentDetailSheet(
+      context,
+      appointmentId: appointment.appointmentId,
     );
-    // The detail screen reports back whether it mutated anything, so the
-    // queue refetches only when it actually needs to.
-    if (changed == true && mounted) await _reload();
+    // A bottom sheet can be dismissed by swipe/backdrop-tap as well as its
+    // own close button, so the mutated-or-not result isn't reliable — always
+    // refetch on close instead of trusting the returned value.
+    if (mounted) await _reload();
   }
 
   Future<void> _cancel(DoctorAppointment appointment) async {
@@ -178,13 +189,19 @@ class _ProviderAppointmentsScreenState
   }
 
   Future<void> _openBookWalkIn() async {
-    final doctorId = ref
-        .read(doctorAccountProvider)
-        .maybeWhen(data: (account) => account.id, orElse: () => null);
-    if (doctorId == null) {
-      _showSnack('provider_dashboard.errors.generic'.tr());
+    // `doctorAccountProvider` is `autoDispose`, so if nothing else on screen
+    // is watching it right when the FAB is tapped, a stale `.read` here can
+    // see it re-fetching from scratch instead of the cached value — wait for
+    // the in-flight future rather than failing immediately on a transient
+    // loading state.
+    final String doctorId;
+    try {
+      doctorId = (await ref.read(doctorAccountProvider.future)).id;
+    } catch (_) {
+      if (mounted) _showSnack('provider_dashboard.errors.generic'.tr());
       return;
     }
+    if (!mounted) return;
 
     final booked = await showBookWalkInAppointmentSheet(
       context,
@@ -329,53 +346,74 @@ class _ProviderAppointmentsScreenState
   }
 
   Widget _dayPicker() {
+    final dates = _strip;
     return SizedBox(
       height: 76,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _dates.length,
-        itemBuilder: (context, index) {
-          final date = _dates[index];
-          final selected = _selectedDayIndex == index;
-          return GestureDetector(
-            onTap: () => _onFilterChanged(() => _selectedDayIndex = index),
-            child: Container(
-              width: 62,
-              margin: const EdgeInsetsDirectional.only(end: 10),
-              decoration: BoxDecoration(
-                color: selected ? brandBlue : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: selected ? brandBlue : const Color(0xFFF1F5F9),
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'provider_dashboard.weekday.${date.weekday}'.tr(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: selected
-                          ? Colors.white.withValues(alpha: 0.9)
-                          : AppColors.mutedText2,
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: dates.length,
+              itemBuilder: (context, index) {
+                final date = dates[index];
+                final selected = date == _selectedDate;
+                return GestureDetector(
+                  onTap: () => _onFilterChanged(() => _selectedDate = date),
+                  child: Container(
+                    width: 62,
+                    margin: const EdgeInsetsDirectional.only(end: 10),
+                    decoration: BoxDecoration(
+                      color: selected ? brandBlue : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected ? brandBlue : const Color(0xFFF1F5F9),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    date.day.toString(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: selected ? Colors.white : AppColors.ink900,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'provider_dashboard.weekday.${date.weekday}'.tr(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: selected
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : AppColors.mutedText2,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${date.day}/${date.month}',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: selected ? Colors.white : AppColors.ink900,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: _pickDate,
+            child: Container(
+              width: 48,
+              height: 76,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: const Icon(Icons.calendar_month_outlined, color: AppColors.mutedText2),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -386,12 +424,17 @@ class _ProviderAppointmentsScreenState
     if (clinics.length < 2) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 36,
+      height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
           _branchChip(
-            label: 'provider_dashboard.appointments.all_branches'.tr(),
+            label: Text(
+              'provider_dashboard.appointments.all_branches'.tr(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+            ),
             selected: _branchId == null,
             onTap: () => _onFilterChanged(() => _branchId = null),
           ),
@@ -400,8 +443,29 @@ class _ProviderAppointmentsScreenState
               // Branches have no name of their own, and two branches of the
               // same clinic share clinicName — the city is what actually
               // tells them apart (same convention as the clinics list/
-              // schedule-editor branch picker).
-              label: clinic.address.city,
+              // schedule-editor branch picker/home-screen branch tabs), with
+              // the street address as a muted subtitle underneath.
+              label: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 110),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      clinic.address.city,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                    ),
+                    Text(
+                      clinic.address.line1,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
               selected: _branchId == clinic.clinicBranchId,
               onTap: () => _onFilterChanged(
                 () => _branchId = clinic.clinicBranchId,
@@ -413,14 +477,14 @@ class _ProviderAppointmentsScreenState
   }
 
   Widget _branchChip({
-    required String label,
+    required Widget label,
     required bool selected,
     required VoidCallback onTap,
   }) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
       child: ChoiceChip(
-        label: Text(label, overflow: TextOverflow.ellipsis),
+        label: label,
         selected: selected,
         onSelected: (_) => onTap(),
       ),

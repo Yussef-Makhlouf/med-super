@@ -162,7 +162,7 @@ class ProviderAppointmentCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${appointment.clinicName} · ${appointment.clinicCity}',
+                      '${appointment.clinicCity} · ${appointment.clinicAddressLine1}',
                       style: const TextStyle(
                         color: AppColors.mutedText2,
                         fontSize: 12,

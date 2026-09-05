@@ -12,6 +12,26 @@ import 'package:med_super/features/provider_dashboard/presentation/widgets/provi
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_cancel_appointment_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_reschedule_sheet.dart';
 
+/// Opens [ProviderAppointmentDetailScreen] as a bottom sheet rather than a
+/// full page route — consistent with every other provider-dashboard action
+/// surface (walk-in booking, reschedule, add-branch). Resolves to `true` when
+/// the appointment was mutated (cancelled/rescheduled), same contract the
+/// screen itself used to return from `Navigator.pop`.
+Future<bool?> showProviderAppointmentDetailSheet(
+  BuildContext context, {
+  required String appointmentId,
+}) {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => ProviderAppointmentDetailScreen(appointmentId: appointmentId),
+  );
+}
+
 /// One appointment, read fresh from
 /// `GET /v1/doctors/me/appointments/{id}` rather than passed in from the
 /// list — so opening a detail after the list went stale shows the real
@@ -49,6 +69,7 @@ class _ProviderAppointmentDetailScreenState
 
   void _refresh() {
     ref.invalidate(doctorAppointmentDetailProvider(widget.appointmentId));
+    ref.invalidate(doctorAppointmentsProvider);
   }
 
   Future<void> _cancel(DoctorAppointment appointment) async {
@@ -134,6 +155,8 @@ class _ProviderAppointmentDetailScreenState
           doctorOpenSlotsProvider((
             doctorId: doctorId,
             clinicBranchId: appointment.clinicBranchId,
+            from: null,
+            to: null,
           )),
         );
         _refresh();
@@ -147,34 +170,52 @@ class _ProviderAppointmentDetailScreenState
       doctorAppointmentDetailProvider(widget.appointmentId),
     );
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) Navigator.of(context).pop(_changed);
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.surfaceApp,
-        appBar: AppBar(
-          title: Text('provider_dashboard.appointments.title'.tr()),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(_changed),
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'provider_dashboard.appointments.title'.tr(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.of(context).pop(_changed),
+                ),
+              ],
+            ),
           ),
-        ),
-        body: AsyncValueView<DoctorAppointment>(
-          value: async,
-          onRetry: _refresh,
-          data: (appointment) => _body(appointment),
-        ),
+          Expanded(
+            child: AsyncValueView<DoctorAppointment>(
+              value: async,
+              onRetry: _refresh,
+              data: (appointment) => _body(appointment, scrollController),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _body(DoctorAppointment appointment) {
+  Widget _body(DoctorAppointment appointment, ScrollController scrollController) {
     final status = doctorAppointmentStatusStyle(appointment.status);
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       children: [
         _card(
           children: [
@@ -224,7 +265,7 @@ class _ProviderAppointmentDetailScreenState
             _row(
               Icons.local_hospital_outlined,
               'provider_dashboard.appointments.branch'.tr(),
-              '${appointment.clinicName} · ${appointment.clinicAddressLine1}, ${appointment.clinicCity}',
+              '${appointment.clinicCity} · ${appointment.clinicAddressLine1}',
             ),
             _row(
               Icons.public,

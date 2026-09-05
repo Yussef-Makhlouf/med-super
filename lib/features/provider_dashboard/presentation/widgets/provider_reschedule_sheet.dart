@@ -56,6 +56,8 @@ class _ProviderRescheduleSheet extends ConsumerWidget {
       doctorOpenSlotsProvider((
         doctorId: doctorId,
         clinicBranchId: clinicBranchId,
+        from: null,
+        to: null,
       )),
     );
 
@@ -104,6 +106,8 @@ class _ProviderRescheduleSheet extends ConsumerWidget {
                     doctorOpenSlotsProvider((
                       doctorId: doctorId,
                       clinicBranchId: clinicBranchId,
+                      from: null,
+                      to: null,
                     )),
                   ),
                 ),
