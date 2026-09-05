@@ -36,10 +36,37 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
   String? _selectedDayLabel;
   String? _selectedSlotId;
   String? _selectedTimeLabel;
+  String? _selectedClinicBranchId;
   bool _favorited = false;
   bool _navigatingToConfirm = false;
 
-  void _book(DoctorProfile profile) {
+  /// The branch driving availability/booking: the one the patient explicitly
+  /// picked (when the doctor has more than one), falling back to the
+  /// profile's own primary affiliation otherwise.
+  DoctorAffiliation? _effectiveAffiliation(DoctorProfile profile) {
+    if (profile.affiliations.isEmpty) return null;
+    if (_selectedClinicBranchId != null) {
+      final match = profile.affiliations
+          .where((a) => a.clinicBranchId == _selectedClinicBranchId)
+          .firstOrNull;
+      if (match != null) return match;
+    }
+    return profile.affiliations.first;
+  }
+
+  void _onBranchSelected(String clinicBranchId) {
+    setState(() {
+      _selectedClinicBranchId = clinicBranchId;
+      // A different branch has its own independent day/slot list —
+      // whatever was selected under the previous branch no longer applies.
+      _selectedDayId = null;
+      _selectedDayLabel = null;
+      _selectedSlotId = null;
+      _selectedTimeLabel = null;
+    });
+  }
+
+  void _book(DoctorProfile profile, DoctorAffiliation affiliation) {
     // Guards against a double-tap/double-click on "Book Now" firing
     // `context.push` twice for the identical route before the first
     // navigation completes — go_router then ends up with two pages
@@ -53,14 +80,16 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
         .push(
           '/patient/home/appointments/confirm',
           extra: BookingRequest(
-            doctorClinicAffiliationId: profile.affiliationId!,
+            doctorClinicAffiliationId: affiliation.affiliationId,
             slotId: _selectedSlotId!,
             doctorName: profile.name,
             specialty: profile.specialty,
             dayLabel: _selectedDayLabel ?? '',
             timeLabel: _selectedTimeLabel ?? '',
-            consultationFee: profile.consultationFee,
-            currency: profile.currency,
+            consultationFee:
+                int.tryParse(affiliation.consultationFee) ??
+                profile.consultationFee,
+            currency: affiliation.currency,
           ),
         )
         .then((_) {
@@ -76,16 +105,13 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
           // refresh signal is deliberate: a provider mutation fired from
           // another widget's `dispose()` isn't guaranteed to still be
           // observed by this one by the time it runs.
-          final profile = ref.read(doctorProfileProvider(widget.doctorId)).asData?.value;
-          if (profile?.clinicBranchId != null) {
-            ref.invalidate(
-              doctorAvailabilityProvider((
-                doctorId: widget.doctorId,
-                clinicBranchId: profile!.clinicBranchId!,
-                ianaTimezone: profile.ianaTimezone,
-              )),
-            );
-          }
+          ref.invalidate(
+            doctorAvailabilityProvider((
+              doctorId: widget.doctorId,
+              clinicBranchId: affiliation.clinicBranchId,
+              ianaTimezone: affiliation.ianaTimezone,
+            )),
+          );
           setState(() {
             _navigatingToConfirm = false;
             // Clearing (rather than leaving it selected) prevents
@@ -142,10 +168,13 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
           final defaultDay = profile.availableDays.isNotEmpty
               ? profile.availableDays.first
               : null;
+          final affiliation = _effectiveAffiliation(profile);
           return _ProfileBody(
             profile: profile,
+            affiliation: affiliation,
             selectedDayId: _selectedDayId ?? defaultDay?.id,
             selectedSlotId: _selectedSlotId,
+            onBranchSelected: _onBranchSelected,
             onDaySelected: (id, label) => setState(() {
               _selectedDayId = id;
               _selectedDayLabel = label;
@@ -167,22 +196,26 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
         },
       ),
       bottomNavigationBar: asyncProfile.maybeWhen(
-        data: (profile) => _BottomBar(
-          fee: profile.consultationFee,
-          currency: profile.currency,
-          // Real Phase 4 booking (File 10 §2.3) needs both a selected slot
-          // and the affiliation id — null only when the doctor genuinely
-          // has no visible affiliation (see DoctorProfile.affiliationId's
-          // doc comment), so the button stays disabled rather than sending
-          // a request that's guaranteed to 404. Also disabled mid-navigation
-          // (see `_book`'s doc comment) to prevent a double-tap crash.
-          onBook:
-              (profile.affiliationId != null &&
-                  _selectedSlotId != null &&
-                  !_navigatingToConfirm)
-              ? () => _book(profile)
-              : null,
-        ),
+        data: (profile) {
+          final affiliation = _effectiveAffiliation(profile);
+          return _BottomBar(
+            fee: int.tryParse(affiliation?.consultationFee ?? '') ??
+                profile.consultationFee,
+            currency: affiliation?.currency ?? profile.currency,
+            // Real Phase 4 booking (File 10 §2.3) needs both a selected slot
+            // and a resolved branch affiliation — null only when the doctor
+            // genuinely has no visible affiliation, so the button stays
+            // disabled rather than sending a request that's guaranteed to
+            // 404. Also disabled mid-navigation (see `_book`'s doc comment)
+            // to prevent a double-tap crash.
+            onBook:
+                (affiliation != null &&
+                    _selectedSlotId != null &&
+                    !_navigatingToConfirm)
+                ? () => _book(profile, affiliation)
+                : null,
+          );
+        },
         orElse: () => null,
       ),
     );
@@ -192,15 +225,19 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
 class _ProfileBody extends StatelessWidget {
   const _ProfileBody({
     required this.profile,
+    required this.affiliation,
     required this.selectedDayId,
     required this.selectedSlotId,
+    required this.onBranchSelected,
     required this.onDaySelected,
     required this.onSlotSelected,
   });
 
   final DoctorProfile profile;
+  final DoctorAffiliation? affiliation;
   final String? selectedDayId;
   final String? selectedSlotId;
+  final ValueChanged<String> onBranchSelected;
   final _SlotSelection onDaySelected;
   final _SlotSelection onSlotSelected;
 
@@ -214,12 +251,24 @@ class _ProfileBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        _HeaderCard(profile: profile),
+        _HeaderCard(profile: profile, affiliation: affiliation),
         const SizedBox(height: 12),
         _AboutCard(profile: profile),
+        // Only worth showing a branch picker when there's an actual choice
+        // to make — a doctor affiliated with a single branch has nothing to
+        // pick between.
+        if (profile.affiliations.length > 1) ...[
+          const SizedBox(height: 12),
+          _BranchPickerCard(
+            affiliations: profile.affiliations,
+            selectedClinicBranchId: affiliation?.clinicBranchId,
+            onSelected: onBranchSelected,
+          ),
+        ],
         const SizedBox(height: 12),
         _AvailabilitySection(
           profile: profile,
+          affiliation: affiliation,
           selectedDayId: selectedDayId,
           selectedSlotId: selectedSlotId,
           onDaySelected: onDaySelected,
@@ -231,10 +280,128 @@ class _ProfileBody extends StatelessWidget {
   }
 }
 
+class _BranchPickerCard extends StatelessWidget {
+  const _BranchPickerCard({
+    required this.affiliations,
+    required this.selectedClinicBranchId,
+    required this.onSelected,
+  });
+
+  final List<DoctorAffiliation> affiliations;
+  final String? selectedClinicBranchId;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.local_hospital_outlined,
+                color: brandBlue,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'doctor_profile.choose_branch'.tr(),
+                style: textTheme.titleMedium?.copyWith(
+                  color: brandBlue,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...affiliations.map((a) {
+            final isSelected = a.clinicBranchId == selectedClinicBranchId;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onSelected(a.clinicBranchId),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? brandBlue.withValues(alpha: 0.08)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? brandBlue
+                          : const Color(0xFFE5EAF2),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? brandBlue : _muted,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              // The branch's own address, not the clinic
+                              // brand name — every branch of the same
+                              // doctor shares that name, so it can't tell
+                              // branches apart on its own.
+                              a.addressLine1.isNotEmpty
+                                  ? a.addressLine1
+                                  : a.clinicName,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: _ink,
+                                fontWeight: isSelected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                            if (a.addressLine1.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                a.city.isNotEmpty
+                                    ? '${a.clinicName} · ${a.city}'
+                                    : a.clinicName,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: _muted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
 class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.profile});
+  const _HeaderCard({required this.profile, required this.affiliation});
 
   final DoctorProfile profile;
+  final DoctorAffiliation? affiliation;
 
   @override
   Widget build(BuildContext context) {
@@ -295,15 +462,15 @@ class _HeaderCard extends StatelessWidget {
                   args: ['${profile.experienceYears}'],
                 ),
               ),
-              if (profile.clinicBranchId != null)
+              if (affiliation != null)
                 InkWell(
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => context.push(
-                    '/patient/home/clinic-branches/${profile.clinicBranchId}',
+                    '/patient/home/clinic-branches/${affiliation!.clinicBranchId}',
                   ),
                   child: _InfoChip(
                     icon: Icons.local_hospital_outlined,
-                    label: profile.clinicName,
+                    label: affiliation!.clinicName,
                     iconColor: brandBlue,
                   ),
                 )
@@ -398,15 +565,18 @@ class _AboutCard extends StatelessWidget {
   }
 }
 
-/// Real Phase 3 availability (`GET /v1/doctors/{doctorId}/slots`) when the
-/// resolved profile carries a `clinicBranchId`; falls back to the profile's
-/// own (mock-only) `availableDays` otherwise — see
-/// `DoctorProfile.clinicBranchId`'s doc comment for why that fallback still
-/// exists. Selecting a slot here feeds `_BottomBar`'s "Book Now," which
-/// additionally needs `profile.affiliationId` (Phase 4 is real now).
+/// Real Phase 3 availability (`GET /v1/doctors/{doctorId}/slots`) for
+/// whichever branch is currently resolved (the patient's explicit pick, or
+/// the profile's primary affiliation — see
+/// `_DoctorDetailsScreenState._effectiveAffiliation`); falls back to the
+/// profile's own (mock-only) `availableDays` only when the doctor has no
+/// visible affiliation at all. Selecting a slot here feeds `_BottomBar`'s
+/// "Book Now," which additionally needs the resolved affiliation's id
+/// (Phase 4 is real now).
 class _AvailabilitySection extends ConsumerWidget {
   const _AvailabilitySection({
     required this.profile,
+    required this.affiliation,
     required this.selectedDayId,
     required this.selectedSlotId,
     required this.onDaySelected,
@@ -414,6 +584,7 @@ class _AvailabilitySection extends ConsumerWidget {
   });
 
   final DoctorProfile profile;
+  final DoctorAffiliation? affiliation;
   final String? selectedDayId;
   final String? selectedSlotId;
   final _SlotSelection onDaySelected;
@@ -421,7 +592,7 @@ class _AvailabilitySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clinicBranchId = profile.clinicBranchId;
+    final clinicBranchId = affiliation?.clinicBranchId;
     if (clinicBranchId == null) {
       return _SlotsCard(
         days: profile.availableDays,
@@ -435,7 +606,7 @@ class _AvailabilitySection extends ConsumerWidget {
     final params = (
       doctorId: profile.id,
       clinicBranchId: clinicBranchId,
-      ianaTimezone: profile.ianaTimezone,
+      ianaTimezone: affiliation?.ianaTimezone ?? profile.ianaTimezone,
     );
     final asyncDays = ref.watch(doctorAvailabilityProvider(params));
 

@@ -1,5 +1,11 @@
 import 'package:med_super/features/provider_profile/domain/entities/clinic_branch.dart';
 
+double? _parseDecimal(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse('$value');
+}
+
 ClinicBranchStatus _statusFromJson(dynamic value) {
   switch ('$value'.toUpperCase()) {
     case 'VERIFIED':
@@ -30,14 +36,17 @@ class ClinicBranchAddressDto {
   final double? geoLng;
 
   /// Raw Prisma `Address` row, snake_case — see `prisma/schema/provider-directory.prisma`.
+  /// `geo_lat`/`geo_lng` are Prisma `Decimal` columns, serialized as JSON
+  /// strings (e.g. `"30.0561"`), not numbers — parse via `num.tryParse`
+  /// rather than an `as num?` cast, which throws on a `String` value.
   factory ClinicBranchAddressDto.fromJson(Map<String, dynamic> json) =>
       ClinicBranchAddressDto(
         line1: json['line1'] as String? ?? '',
         city: json['city'] as String? ?? '',
         regionCode: json['region_code'] as String? ?? '',
         countryCode: json['country_code'] as String? ?? '',
-        geoLat: (json['geo_lat'] as num?)?.toDouble(),
-        geoLng: (json['geo_lng'] as num?)?.toDouble(),
+        geoLat: _parseDecimal(json['geo_lat']),
+        geoLng: _parseDecimal(json['geo_lng']),
       );
 
   ClinicBranchAddress toEntity() => ClinicBranchAddress(

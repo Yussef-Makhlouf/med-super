@@ -243,6 +243,7 @@
     "title": "Search doctors",
     "placeholder": "Search for a doctor or clinic...",
     "sprint_note": "Sprint 2 — provider directory",
+    "specialty_all": "All",
     "sort_top_rated": "Top rated",
     "sort_nearest": "Nearest",
     "sort_price": "Price: low to high",
@@ -255,6 +256,7 @@
   },
   "doctor_profile": {
     "title": "Doctor details",
+    "choose_branch": "Choose branch",
     "about": "About the doctor",
     "qualifications": "Qualifications",
     "fellowships": "Fellowships",

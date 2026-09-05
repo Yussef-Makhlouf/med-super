@@ -243,6 +243,7 @@
     "title": "أطباء",
     "placeholder": "ابحث عن طبيب أو عيادة...",
     "sprint_note": "Sprint 2 — دليل مزودي الخدمة",
+    "specialty_all": "الكل",
     "sort_top_rated": "الأعلى تقييماً",
     "sort_nearest": "الأقرب",
     "sort_price": "السعر: من الأقل للأعلى",
@@ -255,6 +256,7 @@
   },
   "doctor_profile": {
     "title": "تفاصيل الطبيب",
+    "choose_branch": "اختر الفرع",
     "about": "نبذة عن الطبيب",
     "qualifications": "المؤهلات العلمية",
     "fellowships": "الزمالات",

@@ -683,8 +683,11 @@ Map<String, dynamic> _doctorProfileJson(Map<String, dynamic> d) => {
   'affiliationId': 'affiliation-${d['id']}',
   'affiliations': [
     {
+      'affiliationId': 'affiliation-${d['id']}',
       'clinicBranchId': 'branch-${d['id']}',
       'clinicName': d['clinic_name'],
+      'addressLine1': d['clinic_name'],
+      'city': '',
       'consultationFee': '${d['consultation_fee']}',
       'currency': d['currency'],
       'ianaTimezone': 'Africa/Cairo',

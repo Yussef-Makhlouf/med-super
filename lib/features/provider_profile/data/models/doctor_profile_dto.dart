@@ -4,15 +4,21 @@ import 'package:med_super/features/provider_profile/domain/entities/time_slot.da
 
 class DoctorAffiliationDto {
   const DoctorAffiliationDto({
+    required this.affiliationId,
     required this.clinicBranchId,
     required this.clinicName,
+    required this.addressLine1,
+    required this.city,
     required this.consultationFee,
     required this.currency,
     required this.ianaTimezone,
   });
 
+  final String affiliationId;
   final String clinicBranchId;
   final String clinicName;
+  final String addressLine1;
+  final String city;
   final String consultationFee;
   final String currency;
   final String ianaTimezone;
@@ -22,16 +28,22 @@ class DoctorAffiliationDto {
   /// flat camelCase with the same field names.
   factory DoctorAffiliationDto.fromJson(Map<String, dynamic> json) =>
       DoctorAffiliationDto(
+        affiliationId: json['affiliationId'] as String? ?? '',
         clinicBranchId: json['clinicBranchId'] as String? ?? '',
         clinicName: json['clinicName'] as String? ?? '',
+        addressLine1: json['addressLine1'] as String? ?? '',
+        city: json['city'] as String? ?? '',
         consultationFee: '${json['consultationFee'] ?? ''}',
         currency: json['currency'] as String? ?? 'EGP',
         ianaTimezone: json['ianaTimezone'] as String? ?? 'Africa/Cairo',
       );
 
   DoctorAffiliation toEntity() => DoctorAffiliation(
+    affiliationId: affiliationId,
     clinicBranchId: clinicBranchId,
     clinicName: clinicName,
+    addressLine1: addressLine1,
+    city: city,
     consultationFee: consultationFee,
     currency: currency,
     ianaTimezone: ianaTimezone,

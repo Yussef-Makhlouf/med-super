@@ -4,6 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/specialties/domain/entities/specialty.dart';
+import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
@@ -151,13 +153,29 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                _SortChips(
-                  selected: params.sort,
-                  onSelected: (sort) => ref
-                      .read(doctorSearchControllerProvider.notifier)
-                      .setSort(sort),
-                ),
+                // Arriving with a specialty already fixed (tapped from the
+                // home screen's specialties row) means the user has already
+                // chosen what they want to see — showing the filter chips
+                // here would let them silently drift off that specialty or
+                // re-sort a single-specialty list they didn't ask to sort.
+                // Both rows only make sense for the general, unfiltered
+                // search entry point (typed into the search input).
+                if (widget.initialSpecialty == null) ...[
+                  const SizedBox(height: 12),
+                  _SpecialtyChips(
+                    selected: params.specialty,
+                    onSelected: (specialty) => ref
+                        .read(doctorSearchControllerProvider.notifier)
+                        .setSpecialty(specialty),
+                  ),
+                  const SizedBox(height: 12),
+                  _SortChips(
+                    selected: params.sort,
+                    onSelected: (sort) => ref
+                        .read(doctorSearchControllerProvider.notifier)
+                        .setSort(sort),
+                  ),
+                ],
               ],
             ),
           ),
@@ -214,6 +232,87 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SpecialtyChips extends ConsumerWidget {
+  const _SpecialtyChips({required this.selected, required this.onSelected});
+
+  static const _muted = Color(0xFF8A94A6);
+
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final specialties = ref.watch(specialtiesProvider);
+    final languageCode = context.locale.languageCode;
+
+    return specialties.when(
+      data: (items) => _buildChips(context, items, languageCode),
+      loading: () => const SizedBox(height: 40),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildChips(
+    BuildContext context,
+    List<Specialty> items,
+    String languageCode,
+  ) {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            final isSelected = selected == null;
+            return ChoiceChip(
+              label: Text('search.specialty_all'.tr()),
+              selected: isSelected,
+              onSelected: (_) => onSelected(null),
+              selectedColor: brandBlue.withValues(alpha: 0.12),
+              backgroundColor: Colors.white,
+              labelStyle: TextStyle(
+                color: isSelected ? brandBlue : _muted,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+              side: BorderSide(
+                color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(22),
+              ),
+              showCheckmark: false,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            );
+          }
+          final specialty = items[index - 1];
+          final isSelected = specialty.code == selected;
+          return ChoiceChip(
+            label: Text(specialty.localizedName(languageCode)),
+            selected: isSelected,
+            onSelected: (_) => onSelected(specialty.code),
+            selectedColor: brandBlue.withValues(alpha: 0.12),
+            backgroundColor: Colors.white,
+            labelStyle: TextStyle(
+              color: isSelected ? brandBlue : _muted,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+            side: BorderSide(
+              color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+            ),
+            showCheckmark: false,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          );
+        },
       ),
     );
   }

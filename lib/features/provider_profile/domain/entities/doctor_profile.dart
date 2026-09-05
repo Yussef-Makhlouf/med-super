@@ -5,15 +5,26 @@ import 'available_day.dart';
 /// among more than one branch instead of only the top-level "primary" one.
 class DoctorAffiliation {
   const DoctorAffiliation({
+    required this.affiliationId,
     required this.clinicBranchId,
     required this.clinicName,
+    required this.addressLine1,
+    required this.city,
     required this.consultationFee,
     required this.currency,
     required this.ianaTimezone,
   });
 
+  final String affiliationId;
   final String clinicBranchId;
   final String clinicName;
+
+  /// The branch's own street address — distinct from [clinicName] (the
+  /// clinic brand, shared by every branch of the same doctor), used as the
+  /// branch picker's title so branches read as distinct places rather than
+  /// N identical-looking rows.
+  final String addressLine1;
+  final String city;
   final String consultationFee;
   final String currency;
   final String ianaTimezone;
