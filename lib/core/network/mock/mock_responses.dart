@@ -1517,93 +1517,149 @@ void registerSpecialtiesMocks(MockInterceptor interceptor) {
 }
 
 // ─── Lab Booking mocks ─────────────────────────────────────────────────────
+//
+// Rebuilt 2026-09-05 to mirror the real backend contract exactly (see
+// `lab_booking/STATUS.md`): `GET /v1/lab-branches/search`
+// (`SearchLabBranchItem`, new — nothing let a patient discover a branch
+// before this pass) and `POST`/`GET /v1/lab-orders` (`LabOrderDetail`). The
+// old `/v1/lab-partners`/`/v1/lab-bookings` invented endpoints and their
+// rating/price/status fields are gone — none of that exists on the real
+// backend.
 
-const _labPartnersJson = [
+const _mockLabBranchesCatalog = [
   {
-    'id': 'lab-al-borg',
-    'name': 'مختبرات البرج',
-    'address': 'شارع الجمهورية، مفاعية',
-    'distance_km': 2.5,
-    'rating': 4.8,
-    'rating_count': 124,
-    'starting_price': 150,
-    'latitude': 24.7136,
-    'longitude': 46.6753,
-    'status': 'open_now',
+    'id': 'aaaaaaaa-0000-4000-8000-000000000001',
+    'brandName': 'مختبرات نايل',
+    'homeCollectionCapable': true,
+    'address': {
+      'line1': '9 شارع قصر النيل',
+      'city': 'القاهرة',
+      'regionCode': 'EG',
+      'countryCode': 'EG',
+      'geoLat': 30.044420,
+      'geoLng': 31.235712,
+    },
   },
   {
-    'id': 'lab-alpha',
-    'name': 'مختبرات ألفا',
-    'address': 'شارع طه حسين، مفاعية',
-    'distance_km': 3.2,
-    'rating': 4.5,
-    'rating_count': 89,
-    'starting_price': 165,
-    'latitude': 24.7255,
-    'longitude': 46.6893,
-    'status': 'closed_now',
+    'id': 'aaaaaaaa-0000-4000-8000-000000000002',
+    'brandName': 'مختبرات البرج',
+    'homeCollectionCapable': true,
+    'address': {
+      'line1': 'كورنيش النيل، المعادي',
+      'city': 'القاهرة',
+      'regionCode': 'EG',
+      'countryCode': 'EG',
+      'geoLat': 29.9602,
+      'geoLng': 31.2569,
+    },
   },
   {
-    'id': 'lab-smart',
-    'name': 'المختبرات الذكية',
-    'address': 'شارع عبد العظيم',
-    'distance_km': 5.1,
-    'rating': 4.9,
-    'rating_count': 210,
-    'starting_price': 140,
-    'latitude': 24.6980,
-    'longitude': 46.6612,
-    'status': 'busy_now',
+    'id': 'aaaaaaaa-0000-4000-8000-000000000003',
+    'brandName': 'مختبرات ألفا',
+    'homeCollectionCapable': false,
+    'address': {
+      'line1': 'شارع الميرغني، مصر الجديدة',
+      'city': 'القاهرة',
+      'regionCode': 'EG',
+      'countryCode': 'EG',
+      'geoLat': 30.0808,
+      'geoLng': 31.3231,
+    },
   },
 ];
 
+const _mockLabOrderId = '44444444-4444-4444-8444-444444444444';
+
+/// Mirrors `LabOrderDetail` (`clinic-reservations`
+/// `lab-order-detail.mapper.ts`) — `QUOTED` with a real quote so the
+/// tracking screen has something to show in mock mode.
+const _mockLabOrderDetailJson = {
+  'id': _mockLabOrderId,
+  'status': 'QUOTED',
+  'collectionType': 'VISIT',
+  'createdAt': '2026-09-05T08:00:00.000Z',
+  'updatedAt': '2026-09-05T09:30:00.000Z',
+  'branchId': 'aaaaaaaa-0000-4000-8000-000000000001',
+  'items': [
+    {
+      'id': '55555555-5555-4555-8555-555555555555',
+      'catalogCode': 'CBC',
+      'displayName': 'صورة دم كاملة',
+      'unitPrice': '120.00',
+      'resultState': 'PENDING',
+    },
+  ],
+  'quote': {
+    'totalPrice': '120.00',
+    'currency': 'EGP',
+    'appointmentAt': '2026-09-06T10:00:00.000Z',
+    'prepInstructions': 'الصيام 8 ساعات قبل السحب',
+    'quotedAt': '2026-09-05T09:30:00.000Z',
+  },
+  'bookingCode': null,
+  'rejection': null,
+  'recollectionRequired': false,
+};
+
 /// Registers Lab Booking mock responses.
 void registerLabBookingMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', ApiPaths.labPartners, (options) {
-    final sort = options.uri.queryParameters['sort'] ?? 'nearest';
-    final partners = [..._labPartnersJson];
-    switch (sort) {
-      case 'price_asc':
-        partners.sort(
-          (a, b) => (a['starting_price'] as int).compareTo(
-            b['starting_price'] as int,
-          ),
-        );
-      case 'rating_desc':
-        partners.sort(
-          (a, b) => (b['rating'] as double).compareTo(a['rating'] as double),
-        );
-      default:
-        partners.sort(
-          (a, b) => (a['distance_km'] as double).compareTo(
-            b['distance_km'] as double,
-          ),
-        );
-    }
+  // Search — registered before the (nonexistent, in this mock) detail
+  // pattern is ever added, same ordering discipline
+  // `registerPharmacyBranchSearchMocks` documents.
+  interceptor.register('GET', '${ApiPaths.labBranches}/search', (options) {
+    final q = (options.queryParameters['q'] as String?)?.toLowerCase();
+    final hasLocation =
+        options.queryParameters['lat'] != null &&
+        options.queryParameters['lng'] != null;
+
+    final items = _mockLabBranchesCatalog
+        .where((b) {
+          if (q == null || q.isEmpty) return true;
+          return (b['brandName'] as String).toLowerCase().contains(q);
+        })
+        .toList()
+        .asMap()
+        .entries
+        .map((entry) {
+          final b = entry.value;
+          final address = b['address'] as Map<String, dynamic>;
+          return {
+            'branchId': b['id'],
+            'brandName': b['brandName'],
+            'homeCollectionCapable': b['homeCollectionCapable'],
+            'address': address,
+            // Fixed mock increments, not a real geo calculation — only
+            // meaningful to demonstrate nearest-first ordering in mock mode.
+            'distanceKm': hasLocation ? (entry.key + 1) * 1.5 : null,
+          };
+        })
+        .toList();
+
     return {
       'statusCode': 200,
-      'data': {'lab_partners': partners},
+      'data': {'items': items, 'nextCursor': null},
     };
   });
 
-  interceptor.register('POST', ApiPaths.labBookings, (options) {
-    final body = _body(options) ?? const {};
-    final labId = body['lab_id'] as String? ?? _labPartnersJson.first['id'];
-    final lab = _labPartnersJson.firstWhere(
-      (l) => l['id'] == labId,
-      orElse: () => _labPartnersJson.first,
-    );
-    final serviceType = body['service_type'] as String? ?? 'branch_visit';
+  // Create — registered before the bare list pattern below, same
+  // first-registered-wins ordering `registerPharmacyOrderMocks` documents.
+  interceptor.register('POST', ApiPaths.labOrders, (options) {
+    return {
+      'statusCode': 200,
+      'data': {'labOrderId': _mockLabOrderId, 'status': 'REQUESTED'},
+    };
+  });
+
+  interceptor.register('GET', '${ApiPaths.labOrders}/', (options) {
+    return {'statusCode': 200, 'data': _mockLabOrderDetailJson};
+  });
+
+  interceptor.register('GET', ApiPaths.labOrders, (options) {
     return {
       'statusCode': 200,
       'data': {
-        'booking_number': 'LAB-${88000 + lab['id'].hashCode.abs() % 999}',
-        'lab_name': lab['name'],
-        'lab_address': 'طريق الملك فهد، الرياض',
-        // The lab hasn't reviewed the uploaded request image yet, so the
-        // response is only an ETA — home-collection requests need a courier
-        // dispatched first, hence the slightly longer window.
-        'expected_response_hours': serviceType == 'home_collection' ? 3 : 2,
+        'orders': [_mockLabOrderDetailJson],
+        'nextCursor': null,
       },
     };
   });

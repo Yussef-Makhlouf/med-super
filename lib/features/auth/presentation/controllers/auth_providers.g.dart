@@ -375,3 +375,51 @@ final class LogoutUseCaseProvider
 }
 
 String _$logoutUseCaseHash() => r'c3c6c589cbff5a2f6618cc56b1f9faae632da27a';
+
+@ProviderFor(switchContextUseCase)
+final switchContextUseCaseProvider = SwitchContextUseCaseProvider._();
+
+final class SwitchContextUseCaseProvider
+    extends
+        $FunctionalProvider<
+          SwitchContextUseCase,
+          SwitchContextUseCase,
+          SwitchContextUseCase
+        >
+    with $Provider<SwitchContextUseCase> {
+  SwitchContextUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'switchContextUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$switchContextUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<SwitchContextUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SwitchContextUseCase create(Ref ref) {
+    return switchContextUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SwitchContextUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SwitchContextUseCase>(value),
+    );
+  }
+}
+
+String _$switchContextUseCaseHash() =>
+    r'599bef45a40069333f627db25865899bb1f44baa';

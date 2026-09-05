@@ -15,6 +15,7 @@ import 'package:med_super/features/home/presentation/screens/patient_home_screen
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/notifications_placeholder_screen.dart';
 import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
+import 'package:med_super/features/lab_booking/presentation/screens/lab_order_detail_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_detail_screen.dart';
 import 'package:med_super/features/profile_settings/presentation/screens/edit_profile_screen.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -260,19 +261,30 @@ List<RouteBase> _patientRoutes() => [
           GoRoute(
             path: '/patient/orders',
             name: 'patientOrders',
-            // `PatientOrdersScreen` now has two top tabs — الصيدلية (real
-            // `GET /v1/pharmacy-orders`, default) and المعمل (mock,
-            // lab_booking is BLOCKED) — restoring the original header/
-            // search-bar/card design instead of dropping it. Nested
-            // `:orderId` keeps the shell's bottom tab bar visible on the
-            // detail screen too, same pattern `/patient/home`'s
-            // `appointmentRoutes` already uses.
+            // `PatientOrdersScreen` has two top tabs — الصيدلية (real
+            // `GET /v1/pharmacy-orders`, default) and المعمل (real
+            // `GET /v1/lab-orders`, un-blocked 2026-09-05) — restoring the
+            // original header/search-bar/card design instead of dropping
+            // it. Nested `:orderId` keeps the shell's bottom tab bar visible
+            // on the detail screen too, same pattern `/patient/home`'s
+            // `appointmentRoutes` already uses. `lab/:orderId` is declared
+            // as its own literal-prefixed path (3 segments after `orders`)
+            // rather than reusing `:orderId` — a pharmacy order id and a lab
+            // order id are different UUID spaces, so the detail screen needs
+            // to know up front which datasource to call.
             builder: (context, state) => const PatientOrdersScreen(),
             routes: [
               GoRoute(
                 path: ':orderId',
                 name: 'patientOrderDetail',
                 builder: (context, state) => PharmacyOrderDetailScreen(
+                  orderId: state.pathParameters['orderId'] ?? '',
+                ),
+              ),
+              GoRoute(
+                path: 'lab/:orderId',
+                name: 'patientLabOrderDetail',
+                builder: (context, state) => LabOrderDetailScreen(
                   orderId: state.pathParameters['orderId'] ?? '',
                 ),
               ),

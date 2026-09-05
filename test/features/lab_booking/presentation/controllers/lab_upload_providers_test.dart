@@ -19,7 +19,7 @@ void main() {
     test('addImage appends a single image', () {
       container
           .read(uploadedLabRequestImagesProvider.notifier)
-          .addImage('/tmp/a.png');
+          .addImages([(path: '/tmp/a.png', bytes: null)]);
 
       final images = container.read(uploadedLabRequestImagesProvider);
       expect(images, hasLength(1));
@@ -30,8 +30,8 @@ void main() {
       final notifier = container.read(
         uploadedLabRequestImagesProvider.notifier,
       );
-      notifier.addImage('/tmp/a.png');
-      notifier.addImage('/tmp/b.png');
+      notifier.addImages([(path: '/tmp/a.png', bytes: null)]);
+      notifier.addImages([(path: '/tmp/b.png', bytes: null)]);
 
       final images = container.read(uploadedLabRequestImagesProvider);
       expect(images.map((i) => i.path), ['/tmp/a.png', '/tmp/b.png']);
@@ -57,7 +57,7 @@ void main() {
       final notifier = container.read(
         uploadedLabRequestImagesProvider.notifier,
       );
-      notifier.addImage('/tmp/a.png');
+      notifier.addImages([(path: '/tmp/a.png', bytes: null)]);
       notifier.addImages(const []);
 
       expect(container.read(uploadedLabRequestImagesProvider), hasLength(1));
@@ -87,7 +87,7 @@ void main() {
       final notifier = container.read(
         uploadedLabRequestImagesProvider.notifier,
       );
-      notifier.addImage('/tmp/a.png');
+      notifier.addImages([(path: '/tmp/a.png', bytes: null)]);
       notifier.removeImage('does-not-exist');
 
       expect(container.read(uploadedLabRequestImagesProvider), hasLength(1));
@@ -119,7 +119,7 @@ void main() {
     test('false with only an image attached', () {
       container
           .read(uploadedLabRequestImagesProvider.notifier)
-          .addImage('/tmp/a.png');
+          .addImages([(path: '/tmp/a.png', bytes: null)]);
 
       expect(container.read(canContinueFromUploadProvider), isFalse);
     });
@@ -135,7 +135,7 @@ void main() {
     test('true once both an image and a service type are set', () {
       container
           .read(uploadedLabRequestImagesProvider.notifier)
-          .addImage('/tmp/a.png');
+          .addImages([(path: '/tmp/a.png', bytes: null)]);
       container
           .read(selectedLabServiceTypeProvider.notifier)
           .select(LabServiceType.branchVisit);
@@ -145,7 +145,7 @@ void main() {
 
     test('goes back to false after the only image is removed', () {
       final images = container.read(uploadedLabRequestImagesProvider.notifier);
-      images.addImage('/tmp/a.png');
+      images.addImages([(path: '/tmp/a.png', bytes: null)]);
       container
           .read(selectedLabServiceTypeProvider.notifier)
           .select(LabServiceType.branchVisit);

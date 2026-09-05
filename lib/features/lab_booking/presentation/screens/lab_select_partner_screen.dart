@@ -4,22 +4,26 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import 'package:med_super/features/lab_booking/presentation/controllers/lab_partner_providers.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_confirm_bottom_bar.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_partner_card.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_partners_map_view.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_sort_chip_bar.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_branch_search_providers.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
+import 'package:med_super/features/lab_booking/presentation/widgets/lab_branch_card.dart';
+import 'package:med_super/features/lab_booking/presentation/widgets/lab_branches_map_view.dart';
 
-/// Step 2 of the lab booking flow — choose an accredited lab to fulfil the
-/// tests picked in step 1. Figma node 14:1099 ("اختيار المختبر").
+/// Step 2 of the lab booking flow — choose an accredited lab branch to
+/// fulfil the request uploaded in step 1. Rebuilt 2026-09-05 against the
+/// real `GET /v1/lab-branches/search` (previously a mock `GET
+/// /v1/lab-partners` invented endpoint) — mirrors `pharmacy_booking`'s
+/// `PharmacySelectScreen` structure closely.
 class LabSelectPartnerScreen extends ConsumerStatefulWidget {
   const LabSelectPartnerScreen({this.mapTileProvider, super.key});
 
-  /// Test-only override passed straight through to [LabPartnersMapView] —
-  /// see its own doc comment for why `flutter test` should never be left to
-  /// hit the real OSM tile servers.
+  /// Test-only override passed straight through to [LabBranchesMapView].
   final TileProvider? mapTileProvider;
 
   @override
@@ -34,13 +38,8 @@ class _LabSelectPartnerScreenState
   @override
   void initState() {
     super.initState();
-    // Initialized eagerly here (not via a lazy `late final` initializer
-    // read from `build()`) so the field is always safely populated before
-    // `dispose()` could ever run — a lazy initializer that first runs
-    // inside `dispose()` would touch `ref` after the widget is unmounted,
-    // which throws.
     _searchController = TextEditingController(
-      text: ref.read(labSearchQueryProvider),
+      text: ref.read(labBranchSearchQueryProvider),
     );
   }
 
@@ -50,28 +49,49 @@ class _LabSelectPartnerScreenState
     super.dispose();
   }
 
-  void _continue(String labId) {
-    ref.read(selectedLabPartnerProvider.notifier).select(labId);
+  void _select(String branchId) {
+    ref.read(selectedLabBranchProvider.notifier).select(branchId);
+  }
+
+  void _continue() {
     context.push('/patient/lab/review');
   }
 
   @override
   Widget build(BuildContext context) {
-    final partnersAsync = ref.watch(filteredLabPartnersProvider);
-    final selectedSort = ref.watch(labSortControllerProvider);
-    final openNowOnly = ref.watch(labOpenNowOnlyFilterProvider);
-    final explicitSelectedId = ref.watch(selectedLabPartnerProvider);
+    final branchesAsync = ref.watch(filteredLabBranchesProvider);
+    final searchState = ref.watch(labBranchSearchProvider).value;
+    final explicitSelectedId = ref.watch(selectedLabBranchProvider);
+    final loadedBranches = branchesAsync.value ?? const [];
+    // Home-collection only ever fulfils through a `homeCollectionCapable`
+    // branch — chosen back on step 1 (`selectedLabServiceTypeProvider`),
+    // still in force here since nothing resets it between steps.
+    final requiresHomeCollection =
+        ref.watch(selectedLabServiceTypeProvider) ==
+        LabServiceType.homeCollection;
+    bool isSelectable(LabBranch b) =>
+        !requiresHomeCollection || b.homeCollectionCapable;
+
+    final selectableIds = loadedBranches
+        .where(isSelectable)
+        .map((b) => b.id)
+        .toSet();
+    final selectedId =
+        (explicitSelectedId != null && selectableIds.contains(explicitSelectedId))
+        ? explicitSelectedId
+        : null;
+    final hasSelection = selectedId != null;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
       body: SafeArea(
         child: Column(
           children: [
-            _Header(),
+            const _Header(),
             StepProgressHeader(
               // Same step labels/order as the other two steps of this flow
               // — the stepper must read identically across all three
-              // screens, not per-screen wording.
+              // screens.
               stepLabels: [
                 'lab_booking.step_upload'.tr(),
                 'lab_booking.step_select_lab'.tr(),
@@ -81,122 +101,98 @@ class _LabSelectPartnerScreenState
               accentColor: AppColors.patientPrimary,
             ),
             Expanded(
-              child: AsyncValueView(
-                value: partnersAsync,
-                onRetry: () => ref.invalidate(labPartnersProvider),
-                data: (partners) {
-                  final selectedId =
-                      explicitSelectedId ??
-                      (partners.isEmpty ? null : partners.first.id);
-                  return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => ref
-                                .read(labOpenNowOnlyFilterProvider.notifier)
-                                .toggle(),
-                            icon: Icon(
-                              Icons.tune,
-                              color: openNowOnly
-                                  ? AppColors.patientPrimary
-                                  : AppColors.ink700,
-                            ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              textAlign: TextAlign.right,
-                              onChanged: (value) => ref
-                                  .read(labSearchQueryProvider.notifier)
-                                  .setQuery(value),
-                              decoration: InputDecoration(
-                                hintText: 'lab_booking.select_lab.search_hint'
-                                    .tr(),
-                                suffixIcon: const Icon(Icons.search),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.borderLight,
-                                  ),
-                                ),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    textAlign: TextAlign.right,
+                    onChanged: (value) => ref
+                        .read(labBranchSearchQueryProvider.notifier)
+                        .setQuery(value),
+                    decoration: InputDecoration(
+                      hintText: 'lab_booking.select_lab.search_hint'.tr(),
+                      suffixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  LabBranchesMapView(
+                    branches: loadedBranches,
+                    selectedId: selectedId,
+                    onSelect: (id) =>
+                        ref.read(selectedLabBranchProvider.notifier).select(id),
+                    tileProvider: widget.mapTileProvider,
+                  ),
+                  const SizedBox(height: 16),
+                  AsyncValueView(
+                    value: branchesAsync,
+                    onRetry: () => ref.invalidate(labBranchSearchProvider),
+                    data: (branches) => Column(
+                      children: branches
+                          .map(
+                            (branch) => Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: LabBranchCard(
+                                branch: branch,
+                                isSelected: branch.id == selectedId,
+                                onSelect: () => _select(branch.id),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      LabPartnersMapView(
-                        partners: partners,
-                        selectedId: selectedId,
-                        onSelect: (id) => ref
-                            .read(selectedLabPartnerProvider.notifier)
-                            .select(id),
-                        tileProvider: widget.mapTileProvider,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(17),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: AppColors.borderSubtle),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: LabSortChipBar(
-                          selected: selectedSort,
-                          onSelected: (sort) => ref
-                              .read(labSortControllerProvider.notifier)
-                              .select(sort),
-                          openNowOnly: openNowOnly,
-                          onToggleOpenNow: () => ref
-                              .read(labOpenNowOnlyFilterProvider.notifier)
-                              .toggle(),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  // Only rendered when the backend's own `nextCursor` says
+                  // there's actually another page.
+                  if (searchState?.hasMore ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Center(
+                        child: TextButton(
+                          onPressed: searchState!.isLoadingMore
+                              ? null
+                              : () => ref
+                                    .read(labBranchSearchProvider.notifier)
+                                    .loadMore(),
+                          child: searchState.isLoadingMore
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'lab_booking.select_lab.load_more'.tr(),
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: Text(
-                          'lab_booking.select_lab.available_labs_count'.tr(
-                            args: ['${partners.length}'],
-                          ),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...partners.map(
-                        (partner) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: LabPartnerCard(
-                            partner: partner,
-                            isSelected: partner.id == selectedId,
-                            onSelect: () => ref
-                                .read(selectedLabPartnerProvider.notifier)
-                                .select(partner.id),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                    ),
+                ],
               ),
             ),
-            LabConfirmBottomBar(
-              isSubmitting: false,
-              onContinue: () {
-                final partners = partnersAsync.value ?? const [];
-                final labId =
-                    explicitSelectedId ??
-                    (partners.isEmpty ? null : partners.first.id);
-                if (labId != null) _continue(labId);
-              },
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: AppColors.borderLight)),
+              ),
+              child: AppButton.filled(
+                label: 'lab_booking.select_lab.continue_cta'.tr(),
+                fullWidth: true,
+                backgroundColor: AppColors.patientPrimary,
+                foregroundColor: Colors.white,
+                borderRadius: AppRadii.xl,
+                onPressed: hasSelection ? _continue : null,
+              ),
             ),
           ],
         ),
@@ -206,6 +202,8 @@ class _LabSelectPartnerScreenState
 }
 
 class _Header extends StatelessWidget {
+  const _Header();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -213,8 +211,6 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Balances the trailing back button's width so the title stays
-          // visually centered now that nothing occupies the leading slot.
           const SizedBox(width: 48),
           Expanded(
             child: Text(

@@ -17,8 +17,12 @@ enum LabServiceType {
     LabServiceType.homeCollection => 'lab_booking.upload.service_home_subtitle',
   };
 
+  /// `POST /v1/lab-orders`'s `collectionType` enum values
+  /// (`clinic-reservations` `CollectionType` — `VISIT`/`HOME_COLLECTION`,
+  /// not the placeholder `branch_visit`/`home_collection` strings this used
+  /// to send before the real backend contract existed).
   String get apiValue => switch (this) {
-    LabServiceType.branchVisit => 'branch_visit',
-    LabServiceType.homeCollection => 'home_collection',
+    LabServiceType.branchVisit => 'VISIT',
+    LabServiceType.homeCollection => 'HOME_COLLECTION',
   };
 }

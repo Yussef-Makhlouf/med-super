@@ -414,22 +414,9 @@
   },
   "lab_booking": {
     "title": "Lab Test Booking",
-    "select_lab_cta": "Select lab",
-    "total_label": "Total ({} tests)",
-    "package_badge": "Package",
-    "fasting_required": "Fasting required ({}h)",
-    "no_fasting": "No fasting required",
-    "results_in_hours": "Results within {}h",
-    "includes_tests_count": "Includes {} tests",
     "step_upload": "Upload",
     "step_select_lab": "Lab",
     "step_review": "Review",
-    "categories": {
-      "liver": "Liver function",
-      "vitamins": "Vitamins",
-      "diabetes": "Diabetes",
-      "packages": "Comprehensive packages"
-    },
     "upload": {
       "title": "Upload lab request",
       "upload_cta": "Tap here to photograph or upload your lab request",
@@ -441,42 +428,24 @@
       "service_branch_subtitle": "Head to the nearest accredited lab branch",
       "service_home_title": "Home collection",
       "service_home_subtitle": "A team comes to your location to collect samples",
-      "continue_cta": "Select lab"
+      "continue_cta": "Select lab",
+      "submit_error": "Couldn't upload your request. Please try again."
     },
     "select_lab": {
       "search_hint": "Search for a lab...",
-      "filter_open_now": "Open now",
-      "available_labs_count": "Available labs ({})",
-      "sort_by": "Sort by",
-      "sort_price": "Lowest price",
-      "sort_rating": "Highest rated",
-      "sort_nearest": "Nearest",
       "distance_km": "{} km",
-      "rating_count": "({} reviews)",
+      "home_collection_available": "Home collection available",
       "choose_cta": "Select lab",
-      "starting_price_label": "Starting from",
-      "status_open": "Open now",
-      "status_closed": "Closed now",
-      "status_busy": "Busy right now",
+      "load_more": "Load more",
       "continue_cta": "Continue",
-      "confirm_error": "Something went wrong confirming your booking. Please try again."
+      "confirm_error": "Something went wrong sending your request. Please try again."
     },
     "review": {
       "title": "Review request",
       "summary_title": "Request summary",
-      "request_description": "Comprehensive test request (CBC, Vitamin D)",
-      "payment_method_title": "Payment method",
-      "payment_online": "Online payment",
-      "payment_online_sub": "Visa, Mastercard, Meeza",
-      "payment_at_service": "Pay at service",
-      "payment_at_service_sub": "Cash or via wallet",
+      "request_description": "Uploaded lab request",
+      "upload_success": "Uploaded successfully",
       "service_method_title": "Service method",
-      "edit_cta": "Edit",
-      "address_label": "Address",
-      "cost_estimate_title": "Cost estimate",
-      "tests_estimate_label": "Estimated tests value",
-      "home_fee_label": "Home service fee",
-      "total_estimate_label": "Estimated total",
       "estimate_disclaimer": "The final cost will be determined once the lab reviews your request and approves the attached tests on the invoice.",
       "terms_agreement": "By tapping confirm you agree to the Terms & Conditions",
       "submit_cta": "Confirm & send request"
@@ -484,18 +453,27 @@
     "confirmation": {
       "title": "Request sent successfully",
       "subtitle": "We'll notify you as soon as the lab reviews your request and responds.",
-      "booking_number_prefix": "Your booking number is",
-      "expected_response_label": "Expected response time",
-      "expected_response_value": "Within {} hours",
+      "order_number_label": "Your request number is",
       "track_cta": "Track request",
       "go_home_cta": "Home"
     },
-    "schedule_payment": {
-      "choose_day_title": "Choose a day",
-      "choose_time_title": "Choose a time",
-      "morning_period_label": "Morning (9:00 AM - 12:00 PM)",
-      "evening_period_label": "Evening (4:00 PM - 9:00 PM)",
-      "select_time_first": "Please choose a booking time first."
+    "orders": {
+      "detail_title": "Lab Request Details",
+      "back_to_list": "Back to all orders",
+      "status_requested": "Awaiting lab review",
+      "status_quoted": "Awaiting your visit",
+      "status_awaiting_sample": "Awaiting sample collection",
+      "status_in_analysis": "In analysis",
+      "status_results_ready": "Results ready",
+      "status_rejected": "Rejected",
+      "status_cancelled": "Cancelled",
+      "updated_at_label": "Last updated",
+      "booking_code_label": "Booking code",
+      "items_label": "Requested tests",
+      "quote_total_label": "Total",
+      "appointment_label": "Appointment",
+      "prep_instructions_label": "Preparation instructions",
+      "rejection_label": "Rejection reason"
     }
   },
   "pharmacy_booking": {

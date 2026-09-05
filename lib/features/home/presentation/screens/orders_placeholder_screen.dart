@@ -4,55 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
+import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_status_pill.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_order_status_pill.dart';
 
-// ─── lab mock model (unchanged — lab_booking is BLOCKED, see its STATUS.md;
-// this tab stays exactly the placeholder it always was) ────────────────────
+// ─── screen: two top tabs — الصيدلية / المعمل, both real data ──────────────
 
-enum _LabOrderStatus { processing, onTheWay, completed }
-
-class _LabOrder {
-  const _LabOrder({
-    required this.id,
-    required this.status,
-    required this.vendorName,
-    required this.summary,
-    required this.time,
-    required this.total,
-  });
-
-  final String id;
-  final _LabOrderStatus status;
-  final String vendorName;
-  final String summary;
-  final String time;
-  final double total;
-}
-
-const _mockLabOrders = [
-  _LabOrder(
-    id: '100242',
-    status: _LabOrderStatus.onTheWay,
-    vendorName: 'مختبرات الدقة',
-    summary: '2x تحليل دم شامل، خدمة سحب منزلي',
-    time: 'اليوم، 09:15 صباحاً',
-    total: 850,
-  ),
-];
-
-// ─── screen: two top tabs — الصيدلية (default, real data) / المعمل (mock) ──
-
-/// The "طلبات" bottom-nav tab. Pharmacy orders are real
-/// (`GET /v1/pharmacy-orders`); lab orders stay mock — `lab_booking` is
-/// `BLOCKED` (see its own `STATUS.md`), so there is nothing real to wire
-/// this tab to yet. Reuses this screen's original header/search-bar/card
-/// visual style (restored 2026-09-01 after being briefly deleted when the
-/// pharmacy tab took over this route entirely — the two-vendor-tab split
-/// is what actually replaces that, not losing the design).
+/// The "طلبات" bottom-nav tab. Pharmacy orders (`GET /v1/pharmacy-orders`)
+/// and lab orders (`GET /v1/lab-orders`, un-blocked 2026-09-05 — this tab
+/// used to show a hardcoded mock list, see `lab_booking/STATUS.md`) are both
+/// real now. Reuses this screen's original header/search-bar/card visual
+/// style (restored 2026-09-01 after being briefly deleted when the pharmacy
+/// tab took over this route entirely — the two-vendor-tab split is what
+/// actually replaces that, not losing the design).
 class PatientOrdersScreen extends ConsumerStatefulWidget {
   const PatientOrdersScreen({super.key});
 
@@ -63,7 +32,6 @@ class PatientOrdersScreen extends ConsumerStatefulWidget {
 
 class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
   static const _pageBg = Color(0xFFF3F6FB);
-  static const _muted = Color(0xFF8A94A6);
 
   int _selectedVendorTab = 0; // 0 = pharmacy (default), 1 = lab
   final _searchController = TextEditingController();
@@ -82,10 +50,6 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
     _searchController.dispose();
     super.dispose();
   }
-
-  List<_LabOrder> get _visibleLabOrders => _mockLabOrders
-      .where((o) => _query.isEmpty || o.id.contains(_query))
-      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -120,22 +84,7 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
             Expanded(
               child: _selectedVendorTab == 0
                   ? _PharmacyOrdersTab(query: _query)
-                  : _visibleLabOrders.isEmpty
-                  ? Center(
-                      child: Text(
-                        'orders.empty'.tr(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge?.copyWith(color: _muted),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-                      itemCount: _visibleLabOrders.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, i) =>
-                          _LabOrderCard(order: _visibleLabOrders[i]),
-                    ),
+                  : _LabOrdersTab(query: _query),
             ),
           ],
         ),
@@ -553,37 +502,110 @@ class _PharmacyOrderCard extends StatelessWidget {
   }
 }
 
-// ─── lab order card (unchanged mock design) ────────────────────────────────
+// ─── lab tab (real data, GET /v1/lab-orders) ───────────────────────────────
+
+class _LabOrdersTab extends ConsumerWidget {
+  const _LabOrdersTab({required this.query});
+
+  final String query;
+
+  static const _muted = Color(0xFF8A94A6);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordersAsync = ref.watch(labOrdersProvider);
+
+    return ordersAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'errors.unexpected'.tr(),
+              style: const TextStyle(color: _muted),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => ref.invalidate(labOrdersProvider),
+              child: Text('common.retry'.tr()),
+            ),
+          ],
+        ),
+      ),
+      data: (orders) {
+        final visible = orders
+            .where(
+              (o) =>
+                  query.isEmpty ||
+                  shortOrderId(o.id).toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+        if (visible.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(labOrdersProvider.future),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: Center(
+                    child: Text(
+                      'orders.empty'.tr(),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(color: _muted),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(labOrdersProvider.future),
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+            itemCount: visible.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, i) => _LabOrderCard(order: visible[i]),
+          ),
+        );
+      },
+    );
+  }
+}
 
 class _LabOrderCard extends StatelessWidget {
   const _LabOrderCard({required this.order});
 
-  final _LabOrder order;
+  final LabOrderDetail order;
 
   static const _ink = Color(0xFF1A2B4A);
   static const _muted = Color(0xFF8A94A6);
 
-  Color _statusColor(_LabOrderStatus s) => switch (s) {
-    _LabOrderStatus.processing => const Color(0xFFF59E0B),
-    _LabOrderStatus.onTheWay => const Color(0xFF0EA5E9),
-    _LabOrderStatus.completed => const Color(0xFF22C55E),
-  };
-
-  String _statusLabel(_LabOrderStatus s) => switch (s) {
-    _LabOrderStatus.processing => 'orders.status_processing'.tr(),
-    _LabOrderStatus.onTheWay => 'orders.status_on_the_way'.tr(),
-    _LabOrderStatus.completed => 'orders.status_completed'.tr(),
-  };
+  String _formatDate(String iso) {
+    final parsed = DateTime.tryParse(iso);
+    if (parsed == null) return iso;
+    return DateFormat('d MMM y, h:mm a').format(parsed.toLocal());
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final statusColor = _statusColor(order.status);
+    final quote = order.quote;
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border(
+          left: BorderSide(
+            width: 5,
+            color: LabOrderStatusPill.colorFor(order.status),
+          ),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -594,141 +616,92 @@ class _LabOrderCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 5, color: statusColor),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _StatusPill(
-                            label: _statusLabel(order.status),
-                            color: statusColor,
-                          ),
-                          const Spacer(),
-                          Text(
-                            '#${order.id}',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: _ink,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEF4FF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.science_outlined,
-                              size: 20,
-                              color: brandBlue,
-                            ),
-                          ),
-                        ],
+        child: InkWell(
+          onTap: () => context.push('/patient/orders/lab/${order.id}'),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    LabOrderStatusPill(status: order.status),
+                    const Spacer(),
+                    Text(
+                      '#${shortOrderId(order.id)}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: _ink,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        order.vendorName,
-                        style: textTheme.titleSmall?.copyWith(
-                          color: brandBlue,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEEF4FF),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        order.summary,
-                        style: textTheme.bodySmall?.copyWith(color: _ink),
+                      child: const Icon(
+                        Icons.biotech_outlined,
+                        size: 20,
+                        color: brandBlue,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        order.time,
-                        style: textTheme.bodySmall?.copyWith(color: _muted),
-                      ),
-                      const SizedBox(height: 12),
-                      const Divider(height: 1, color: Color(0xFFEFF2F7)),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          OutlinedButton(
-                            onPressed: () {},
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF6B7280),
-                              side: const BorderSide(color: Color(0xFFD1D5DB)),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              textStyle: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text('orders.details'.tr()),
-                          ),
-                          const Spacer(),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'orders.total'.tr(),
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: _muted,
-                                ),
-                              ),
-                              Text(
-                                '${order.total.toStringAsFixed(0)} ${'orders.currency'.tr()}',
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: _ink,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  _formatDate(order.createdAt),
+                  style: textTheme.bodySmall?.copyWith(color: _muted),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: Color(0xFFEFF2F7)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: () =>
+                          context.push('/patient/orders/lab/${order.id}'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: brandBlue,
+                        side: BorderSide(color: brandBlue.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text('orders.track'.tr()),
+                    ),
+                    const Spacer(),
+                    if (quote != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'orders.total'.tr(),
+                            style: textTheme.bodySmall?.copyWith(color: _muted),
+                          ),
+                          Text(
+                            '${quote.totalPrice} ${quote.currency}',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: _ink,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

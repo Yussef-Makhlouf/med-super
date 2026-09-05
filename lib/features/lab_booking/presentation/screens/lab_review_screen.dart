@@ -4,27 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
-import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_cost_estimate.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_partner.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_payment_method.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_request_image.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
-import 'package:med_super/features/lab_booking/presentation/controllers/lab_partner_providers.dart';
-import 'package:med_super/features/lab_booking/presentation/controllers/lab_schedule_providers.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_branch_search_providers.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_controller.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_cost_estimate_section.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/lab_schedule_edit_modal.dart';
-import 'package:med_super/features/lab_booking/presentation/widgets/payment_method_option.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 
-/// Step 3 (final) of the lab booking flow — review the uploaded request,
-/// pick a payment method, confirm/edit the service method, see an
-/// *estimated* cost, and submit the request for lab review.
+/// Step 3 (final) of the lab booking flow — review the uploaded request and
+/// chosen branch/service method, then submit the request for lab staff to
+/// review.
 ///
-/// Unlike the old schedule/payment step this replaces, nothing here is a
-/// final confirmed booking: the lab still has to review the uploaded
-/// image(s) before the price and any prep instructions are known.
+/// Rebuilt 2026-09-05 to match the real backend exactly: no payment method,
+/// no cost estimate, no home-collection day/time/address picker — none of
+/// that is accepted by `POST /v1/lab-orders` (price/appointment/prep
+/// instructions are only ever set later by lab staff via `SubmitLabQuoteUseCase`,
+/// and payment is explicitly out of scope, `DEC-002`). Shipping those
+/// controls anyway would mean fake pricing and inert selections; this
+/// screen shows only what the real order actually carries.
 class LabReviewScreen extends ConsumerStatefulWidget {
   const LabReviewScreen({super.key});
 
@@ -34,82 +34,54 @@ class LabReviewScreen extends ConsumerStatefulWidget {
 
 class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
   bool _agreedToTerms = false;
-  bool _confirming = false;
-
-  Future<void> _editServiceMethod(LabServiceType serviceType) async {
-    if (serviceType == LabServiceType.homeCollection) {
-      await showLabScheduleEditModal(context);
-    } else {
-      // Branch-visit has no day/time/address to edit here — "edit" means
-      // changing the service-type choice itself (branch visit vs. home
-      // collection), which is made on step 1, not re-picking a lab on
-      // step 2. Popping back to step 2 would edit the wrong thing.
-      context.push('/patient/lab/upload');
-    }
-  }
 
   Future<void> _confirm({
-    required LabPartner? partner,
-    required List<LabRequestImage> images,
+    required LabBranch? branch,
     required LabServiceType? serviceType,
   }) async {
-    if (partner == null || serviceType == null || images.isEmpty) return;
+    if (branch == null || serviceType == null) return;
+    final prescriptionId = ref
+        .read(prescriptionUploadControllerProvider)
+        .value
+        ?.prescriptionId;
+    if (prescriptionId == null) return;
 
-    setState(() => _confirming = true);
-    final paymentMethod = ref.read(selectedPaymentMethodProvider);
-    final isHome = serviceType == LabServiceType.homeCollection;
-    final result = await ref
-        .read(confirmLabBookingUseCaseProvider)
-        .call(
-          labId: partner.id,
-          images: images,
-          serviceType: serviceType,
-          paymentMethod: paymentMethod,
-          scheduledDate: isHome ? ref.read(selectedScheduleDayProvider) : null,
-          scheduledTime: isHome ? ref.read(selectedTimeSlotProvider) : null,
-          address: isHome ? ref.read(selectedLabAddressProvider) : null,
+    await ref
+        .read(labOrderControllerProvider.notifier)
+        .submit(
+          labBranchId: branch.id,
+          collectionType: serviceType.apiValue,
+          prescriptionId: prescriptionId,
         );
     if (!mounted) return;
-    setState(() => _confirming = false);
-    result.when(
-      ok: (confirmation) =>
-          context.push('/patient/lab/confirmation', extra: confirmation),
-      err: (failure) => ScaffoldMessenger.of(context).showSnackBar(
+
+    final result = ref.read(labOrderControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('lab_booking.select_lab.confirm_error'.tr())),
-      ),
+      );
+      return;
+    }
+    final confirmation = LabBookingConfirmation(
+      orderId: result.value!.labOrderId,
+      branchName: branch.name,
+      branchAddress: branch.address,
     );
+    context.push('/patient/lab/confirmation', extra: confirmation);
   }
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
     final images = ref.watch(uploadedLabRequestImagesProvider);
     final serviceType = ref.watch(selectedLabServiceTypeProvider);
+    final isConfirming = ref.watch(labOrderControllerProvider).isLoading;
 
-    final partners = ref.watch(labPartnersProvider).value ?? const [];
-    final explicitLabId = ref.watch(selectedLabPartnerProvider);
-    final selectedLabId =
-        explicitLabId ?? (partners.isEmpty ? null : partners.first.id);
-    final matchingPartners = partners.where((p) => p.id == selectedLabId);
-    final partner = matchingPartners.isEmpty ? null : matchingPartners.first;
-
-    final selectedPayment = ref.watch(selectedPaymentMethodProvider);
-    final selectedDay = ref.watch(selectedScheduleDayProvider);
-    final selectedTime = ref.watch(selectedTimeSlotProvider);
-    final selectedAddress = ref.watch(selectedLabAddressProvider);
-
-    final isHome = serviceType == LabServiceType.homeCollection;
-    // The tests estimate is the partner's `startingPrice` — the same
-    // number shown as "starting from" in step 2 — since the actual tests
-    // requested are only known once the lab manually reviews the uploaded
-    // image; see LAB_BOOKING_FLOW_TODO_AR.md open decision #1.
-    final testsEstimate = partner?.startingPrice ?? 0;
-    final homeFee = isHome ? kLabHomeServiceFeeEgp : 0;
-    final estimate = LabCostEstimate(
-      testsEstimate: testsEstimate,
-      homeFee: homeFee,
-      total: testsEstimate + homeFee,
-    );
+    final branches = ref.watch(labBranchesProvider).value ?? const [];
+    final explicitBranchId = ref.watch(selectedLabBranchProvider);
+    final selectedBranchId =
+        explicitBranchId ?? (branches.isEmpty ? null : branches.first.id);
+    final matchingBranches = branches.where((b) => b.id == selectedBranchId);
+    final branch = matchingBranches.isEmpty ? null : matchingBranches.first;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -133,58 +105,40 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
                   _OrderSummaryCard(
-                    labName: partner?.name,
-                    distanceKm: partner?.distanceKm,
+                    branchName: branch?.name,
+                    branchAddress: branch?.address,
                     image: images.isEmpty ? null : images.first,
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'lab_booking.review.payment_method_title'.tr(),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink900,
+                  _ServiceMethodSection(serviceType: serviceType),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceCard,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  RadioGroup<LabPaymentMethod>(
-                    groupValue: selectedPayment,
-                    onChanged: (method) {
-                      if (method != null) {
-                        ref
-                            .read(selectedPaymentMethodProvider.notifier)
-                            .select(method);
-                      }
-                    },
-                    child: Column(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final method in LabPaymentMethod.values)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: PaymentMethodOption(
-                              method: method,
-                              isSelected: method == selectedPayment,
-                              onSelected: () => ref
-                                  .read(selectedPaymentMethodProvider.notifier)
-                                  .select(method),
+                        const Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: AppColors.mutedText2,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'lab_booking.review.estimate_disclaimer'.tr(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.mutedText2,
                             ),
                           ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  _ServiceMethodSection(
-                    serviceType: serviceType,
-                    day: selectedDay,
-                    time: selectedTime,
-                    address: selectedAddress,
-                    locale: locale,
-                    onEdit: () => _editServiceMethod(
-                      serviceType ?? LabServiceType.branchVisit,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  LabCostEstimateSection(estimate: estimate),
                   const SizedBox(height: 24),
                   _TermsCheckbox(
                     value: _agreedToTerms,
@@ -195,17 +149,12 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
               ),
             ),
             _SubmitBar(
-              isSubmitting: _confirming,
-              // Disabled until the terms checkbox is ticked — payment
-              // method and service method always carry a value by the
-              // time this screen is reached, so the checkbox is the only
-              // genuinely-optional gate left.
+              isSubmitting: isConfirming,
+              // Disabled until the terms checkbox is ticked — service method
+              // always carries a value by the time this screen is reached,
+              // so the checkbox is the only genuinely-optional gate left.
               onConfirm: _agreedToTerms
-                  ? () => _confirm(
-                      partner: partner,
-                      images: images,
-                      serviceType: serviceType,
-                    )
+                  ? () => _confirm(branch: branch, serviceType: serviceType)
                   : null,
             ),
           ],
@@ -215,26 +164,16 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
   }
 }
 
-class _OrderSummaryCard extends StatefulWidget {
+class _OrderSummaryCard extends StatelessWidget {
   const _OrderSummaryCard({
-    required this.labName,
-    required this.distanceKm,
+    required this.branchName,
+    required this.branchAddress,
     required this.image,
   });
 
-  final String? labName;
-  final double? distanceKm;
-
-  /// The first image the patient uploaded on step 1 — shown as the
-  /// summary's thumbnail per the mockup.
-  final LabRequestImage? image;
-
-  @override
-  State<_OrderSummaryCard> createState() => _OrderSummaryCardState();
-}
-
-class _OrderSummaryCardState extends State<_OrderSummaryCard> {
-  bool _expanded = false;
+  final String? branchName;
+  final String? branchAddress;
+  final PrescriptionImage? image;
 
   @override
   Widget build(BuildContext context) {
@@ -260,15 +199,72 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Thumbnail(image: widget.image),
+              _Thumbnail(image: image),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.labName != null)
+                    Text(
+                      'lab_booking.review.request_description'.tr(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          size: 13,
+                          color: AppColors.tealAccent,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'lab_booking.review.upload_success'.tr(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.mutedText2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (branchName != null) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.borderLight),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.tealBg,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: const Icon(
+                    Icons.biotech_outlined,
+                    size: 16,
+                    color: AppColors.tealAccent,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        widget.labName!,
+                        branchName!,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -276,69 +272,22 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
                           decoration: TextDecoration.underline,
                         ),
                       ),
-                    if (widget.distanceKm != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.place_outlined,
-                            size: 13,
+                      if (branchAddress != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          branchAddress!,
+                          style: const TextStyle(
+                            fontSize: 12,
                             color: AppColors.mutedText2,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'lab_booking.select_lab.distance_km'.tr(
-                              args: ['${widget.distanceKm}'],
-                            ),
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.mutedText2,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.description_outlined,
-                  size: 16,
-                  color: AppColors.mutedText2,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'lab_booking.review.request_description'.tr(),
-                    maxLines: _expanded ? null : 1,
-                    overflow: _expanded
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.bodyText,
-                    ),
                   ),
-                ),
-                Icon(
-                  _expanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  size: 18,
-                  color: AppColors.mutedText2,
                 ),
               ],
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -348,7 +297,7 @@ class _OrderSummaryCardState extends State<_OrderSummaryCard> {
 class _Thumbnail extends StatelessWidget {
   const _Thumbnail({required this.image});
 
-  final LabRequestImage? image;
+  final PrescriptionImage? image;
 
   static const _size = 56.0;
 
@@ -394,21 +343,9 @@ class _Thumbnail extends StatelessWidget {
 }
 
 class _ServiceMethodSection extends StatelessWidget {
-  const _ServiceMethodSection({
-    required this.serviceType,
-    required this.day,
-    required this.time,
-    required this.address,
-    required this.locale,
-    required this.onEdit,
-  });
+  const _ServiceMethodSection({required this.serviceType});
 
   final LabServiceType? serviceType;
-  final DateTime day;
-  final String? time;
-  final String address;
-  final String locale;
-  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -424,39 +361,19 @@ class _ServiceMethodSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'lab_booking.review.service_method_title'.tr(),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-              ),
-              InkWell(
-                onTap: onEdit,
-                child: Text(
-                  'lab_booking.review.edit_cta'.tr(),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.patientPrimary,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'lab_booking.review.service_method_title'.tr(),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink900,
+            ),
           ),
           const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.borderLight),
+          const SizedBox(height: 12),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Home-collection icon rendered green per the mockup (no
-              // dedicated green token exists in AppColors yet, so the
-              // closest existing semantic accent — teal — is reused for
-              // both service types here).
               Icon(
                 isHome ? Icons.home_outlined : Icons.apartment_outlined,
                 size: 20,
@@ -464,53 +381,13 @@ class _ServiceMethodSection extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      resolvedType.titleKey.tr(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink900,
-                      ),
-                    ),
-                    if (isHome) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        [
-                          AppFormatters.shortDate(day, locale: locale),
-                          if (time != null)
-                            AppFormatters.time12h(time!, locale: locale),
-                        ].join(' - '),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.mutedText2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.place_outlined,
-                            size: 13,
-                            color: AppColors.mutedText2,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              address,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.mutedText2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  resolvedType.titleKey.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
                 ),
               ),
             ],

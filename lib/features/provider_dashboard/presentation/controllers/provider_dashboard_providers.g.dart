@@ -858,53 +858,103 @@ final class RescheduleDoctorAppointmentUseCaseProvider
 String _$rescheduleDoctorAppointmentUseCaseHash() =>
     r'8d5f0860613f61228f8d1ff71f1fe5cbb715487d';
 
-@ProviderFor(getPatientsUseCase)
-final getPatientsUseCaseProvider = GetPatientsUseCaseProvider._();
+@ProviderFor(bookWalkInAppointmentUseCase)
+final bookWalkInAppointmentUseCaseProvider =
+    BookWalkInAppointmentUseCaseProvider._();
 
-final class GetPatientsUseCaseProvider
+final class BookWalkInAppointmentUseCaseProvider
     extends
         $FunctionalProvider<
-          GetPatientsUseCase,
-          GetPatientsUseCase,
-          GetPatientsUseCase
+          BookWalkInAppointmentUseCase,
+          BookWalkInAppointmentUseCase,
+          BookWalkInAppointmentUseCase
         >
-    with $Provider<GetPatientsUseCase> {
-  GetPatientsUseCaseProvider._()
+    with $Provider<BookWalkInAppointmentUseCase> {
+  BookWalkInAppointmentUseCaseProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'getPatientsUseCaseProvider',
+        name: r'bookWalkInAppointmentUseCaseProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$getPatientsUseCaseHash();
+  String debugGetCreateSourceHash() => _$bookWalkInAppointmentUseCaseHash();
 
   @$internal
   @override
-  $ProviderElement<GetPatientsUseCase> $createElement(
+  $ProviderElement<BookWalkInAppointmentUseCase> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  GetPatientsUseCase create(Ref ref) {
-    return getPatientsUseCase(ref);
+  BookWalkInAppointmentUseCase create(Ref ref) {
+    return bookWalkInAppointmentUseCase(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GetPatientsUseCase value) {
+  Override overrideWithValue(BookWalkInAppointmentUseCase value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<GetPatientsUseCase>(value),
+      providerOverride: $SyncValueProvider<BookWalkInAppointmentUseCase>(value),
     );
   }
 }
 
-String _$getPatientsUseCaseHash() =>
-    r'00bc24cd375f0669aff4c205268b3b2233c798b2';
+String _$bookWalkInAppointmentUseCaseHash() =>
+    r'637975491734b066a59f52c6ac86fb1f68ce1431';
+
+@ProviderFor(getProviderPatientsUseCase)
+final getProviderPatientsUseCaseProvider =
+    GetProviderPatientsUseCaseProvider._();
+
+final class GetProviderPatientsUseCaseProvider
+    extends
+        $FunctionalProvider<
+          GetProviderPatientsUseCase,
+          GetProviderPatientsUseCase,
+          GetProviderPatientsUseCase
+        >
+    with $Provider<GetProviderPatientsUseCase> {
+  GetProviderPatientsUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'getProviderPatientsUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$getProviderPatientsUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<GetProviderPatientsUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GetProviderPatientsUseCase create(Ref ref) {
+    return getProviderPatientsUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GetProviderPatientsUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GetProviderPatientsUseCase>(value),
+    );
+  }
+}
+
+String _$getProviderPatientsUseCaseHash() =>
+    r'9af107707065db6fb8e95c07cd0b75526f54155e';
 
 @ProviderFor(getNotificationsUseCase)
 final getNotificationsUseCaseProvider = GetNotificationsUseCaseProvider._();
@@ -1425,10 +1475,78 @@ final class DoctorAppointmentDetailFamily extends $Family
   String toString() => r'doctorAppointmentDetailProvider';
 }
 
-@ProviderFor(patients)
-final patientsProvider = PatientsFamily._();
+/// The doctor's patient list plus, for each `patientId`, every appointment
+/// seen for them within the same ±90-day window — both derived from the
+/// same single paged walk over `GET /v1/doctors/me/appointments` (see
+/// `GetProviderPatientsUseCase`; there is no dedicated patients endpoint).
+/// The detail screen reads [ProviderPatientsData.appointmentsByPatientId]
+/// instead of running its own separate lookup.
 
-final class PatientsProvider
+@ProviderFor(providerPatientsData)
+final providerPatientsDataProvider = ProviderPatientsDataProvider._();
+
+/// The doctor's patient list plus, for each `patientId`, every appointment
+/// seen for them within the same ±90-day window — both derived from the
+/// same single paged walk over `GET /v1/doctors/me/appointments` (see
+/// `GetProviderPatientsUseCase`; there is no dedicated patients endpoint).
+/// The detail screen reads [ProviderPatientsData.appointmentsByPatientId]
+/// instead of running its own separate lookup.
+
+final class ProviderPatientsDataProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ProviderPatientsData>,
+          ProviderPatientsData,
+          FutureOr<ProviderPatientsData>
+        >
+    with
+        $FutureModifier<ProviderPatientsData>,
+        $FutureProvider<ProviderPatientsData> {
+  /// The doctor's patient list plus, for each `patientId`, every appointment
+  /// seen for them within the same ±90-day window — both derived from the
+  /// same single paged walk over `GET /v1/doctors/me/appointments` (see
+  /// `GetProviderPatientsUseCase`; there is no dedicated patients endpoint).
+  /// The detail screen reads [ProviderPatientsData.appointmentsByPatientId]
+  /// instead of running its own separate lookup.
+  ProviderPatientsDataProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'providerPatientsDataProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$providerPatientsDataHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<ProviderPatientsData> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<ProviderPatientsData> create(Ref ref) {
+    return providerPatientsData(ref);
+  }
+}
+
+String _$providerPatientsDataHash() =>
+    r'4adf960cfe8371f8d70a1ba326babdded29b34e0';
+
+/// The patient list alone, for callers that don't need per-patient
+/// appointment histories.
+
+@ProviderFor(providerPatients)
+final providerPatientsProvider = ProviderPatientsProvider._();
+
+/// The patient list alone, for callers that don't need per-patient
+/// appointment histories.
+
+final class ProviderPatientsProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<Patient>>,
@@ -1436,26 +1554,21 @@ final class PatientsProvider
           FutureOr<List<Patient>>
         >
     with $FutureModifier<List<Patient>>, $FutureProvider<List<Patient>> {
-  PatientsProvider._({
-    required PatientsFamily super.from,
-    required ({String? query, String? filter}) super.argument,
-  }) : super(
-         retry: null,
-         name: r'patientsProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
+  /// The patient list alone, for callers that don't need per-patient
+  /// appointment histories.
+  ProviderPatientsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'providerPatientsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
-  String debugGetCreateSourceHash() => _$patientsHash();
-
-  @override
-  String toString() {
-    return r'patientsProvider'
-        ''
-        '$argument';
-  }
+  String debugGetCreateSourceHash() => _$providerPatientsHash();
 
   @$internal
   @override
@@ -1465,44 +1578,11 @@ final class PatientsProvider
 
   @override
   FutureOr<List<Patient>> create(Ref ref) {
-    final argument = this.argument as ({String? query, String? filter});
-    return patients(ref, query: argument.query, filter: argument.filter);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is PatientsProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
+    return providerPatients(ref);
   }
 }
 
-String _$patientsHash() => r'3f52900b99ba1562367077c700b0b5af84b6ffb9';
-
-final class PatientsFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<List<Patient>>,
-          ({String? query, String? filter})
-        > {
-  PatientsFamily._()
-    : super(
-        retry: null,
-        name: r'patientsProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  PatientsProvider call({String? query, String? filter}) =>
-      PatientsProvider._(argument: (query: query, filter: filter), from: this);
-
-  @override
-  String toString() => r'patientsProvider';
-}
+String _$providerPatientsHash() => r'd4295407dbaea670c246e5898ca70ad8e346480b';
 
 @ProviderFor(doctorNotifications)
 final doctorNotificationsProvider = DoctorNotificationsProvider._();

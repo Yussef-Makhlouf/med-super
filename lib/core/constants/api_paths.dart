@@ -51,10 +51,10 @@ abstract final class ApiPaths {
   static const notificationPreferences = '/v1/notifications/preferences';
   static const fcmToken = '/v1/notifications/fcm-token';
 
-  // Lab booking
+  // Lab booking (Laboratory module, un-blocked 2026-09-05)
   static const labTests = '/v1/lab-tests';
-  static const labPartners = '/v1/lab-partners';
-  static const labBookings = '/v1/lab-bookings';
+  static const labBranches = '/v1/lab-branches';
+  static const labOrders = '/v1/lab-orders';
 
   // Provider registration
   static const providerRegistrationSubmit = '/v1/provider/registration';

@@ -28,9 +28,9 @@ void main() {
     }
   });
 
-  test('apiValue is a stable snake_case wire value per type', () {
-    expect(LabServiceType.branchVisit.apiValue, 'branch_visit');
-    expect(LabServiceType.homeCollection.apiValue, 'home_collection');
+  test('apiValue matches the backend CollectionType enum exactly', () {
+    expect(LabServiceType.branchVisit.apiValue, 'VISIT');
+    expect(LabServiceType.homeCollection.apiValue, 'HOME_COLLECTION');
   });
 
   test('each value has a distinct apiValue', () {

@@ -12,6 +12,12 @@ part of 'lab_upload_providers.dart';
 /// ("تحميل طلب المختبر"). Starts empty on purpose — at least one image is a
 /// hard requirement before the "اختيار المختبر" CTA activates (see
 /// [canContinueFromUploadProvider]).
+///
+/// Reuses `pharmacy_booking`'s `PrescriptionImage` value object rather than
+/// keeping a structurally-identical `LabRequestImage` of its own — both
+/// features upload through the same real endpoint
+/// (`POST /v1/prescriptions/upload`, `PrescriptionRemoteDatasource`), so this
+/// is the same picked-image shape either way.
 
 @ProviderFor(UploadedLabRequestImages)
 final uploadedLabRequestImagesProvider = UploadedLabRequestImagesProvider._();
@@ -20,12 +26,25 @@ final uploadedLabRequestImagesProvider = UploadedLabRequestImagesProvider._();
 /// ("تحميل طلب المختبر"). Starts empty on purpose — at least one image is a
 /// hard requirement before the "اختيار المختبر" CTA activates (see
 /// [canContinueFromUploadProvider]).
+///
+/// Reuses `pharmacy_booking`'s `PrescriptionImage` value object rather than
+/// keeping a structurally-identical `LabRequestImage` of its own — both
+/// features upload through the same real endpoint
+/// (`POST /v1/prescriptions/upload`, `PrescriptionRemoteDatasource`), so this
+/// is the same picked-image shape either way.
 final class UploadedLabRequestImagesProvider
-    extends $NotifierProvider<UploadedLabRequestImages, List<LabRequestImage>> {
+    extends
+        $NotifierProvider<UploadedLabRequestImages, List<PrescriptionImage>> {
   /// Images the patient has attached to the lab request on screen 1
   /// ("تحميل طلب المختبر"). Starts empty on purpose — at least one image is a
   /// hard requirement before the "اختيار المختبر" CTA activates (see
   /// [canContinueFromUploadProvider]).
+  ///
+  /// Reuses `pharmacy_booking`'s `PrescriptionImage` value object rather than
+  /// keeping a structurally-identical `LabRequestImage` of its own — both
+  /// features upload through the same real endpoint
+  /// (`POST /v1/prescriptions/upload`, `PrescriptionRemoteDatasource`), so this
+  /// is the same picked-image shape either way.
   UploadedLabRequestImagesProvider._()
     : super(
         from: null,
@@ -45,34 +64,41 @@ final class UploadedLabRequestImagesProvider
   UploadedLabRequestImages create() => UploadedLabRequestImages();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<LabRequestImage> value) {
+  Override overrideWithValue(List<PrescriptionImage> value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<LabRequestImage>>(value),
+      providerOverride: $SyncValueProvider<List<PrescriptionImage>>(value),
     );
   }
 }
 
 String _$uploadedLabRequestImagesHash() =>
-    r'e01bc6da2a9a4466603f424f39ebcd46178f92cb';
+    r'1b9c3dc97cc641932d46ec516659e0816a0ac1fe';
 
 /// Images the patient has attached to the lab request on screen 1
 /// ("تحميل طلب المختبر"). Starts empty on purpose — at least one image is a
 /// hard requirement before the "اختيار المختبر" CTA activates (see
 /// [canContinueFromUploadProvider]).
+///
+/// Reuses `pharmacy_booking`'s `PrescriptionImage` value object rather than
+/// keeping a structurally-identical `LabRequestImage` of its own — both
+/// features upload through the same real endpoint
+/// (`POST /v1/prescriptions/upload`, `PrescriptionRemoteDatasource`), so this
+/// is the same picked-image shape either way.
 
 abstract class _$UploadedLabRequestImages
-    extends $Notifier<List<LabRequestImage>> {
-  List<LabRequestImage> build();
+    extends $Notifier<List<PrescriptionImage>> {
+  List<PrescriptionImage> build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<List<LabRequestImage>, List<LabRequestImage>>;
+    final ref =
+        this.ref as $Ref<List<PrescriptionImage>, List<PrescriptionImage>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<LabRequestImage>, List<LabRequestImage>>,
-              List<LabRequestImage>,
+              AnyNotifier<List<PrescriptionImage>, List<PrescriptionImage>>,
+              List<PrescriptionImage>,
               Object?,
               Object?
             >;
@@ -81,23 +107,20 @@ abstract class _$UploadedLabRequestImages
 }
 
 /// Which service type ("نوع الخدمة") the patient picked. Deliberately has
-/// no default value — the Figma mockup shows a card pre-selected, but the
-/// plan explicitly calls for no default so the continue CTA stays disabled
-/// until the patient makes an explicit choice.
+/// no default value — the continue CTA stays disabled until the patient
+/// makes an explicit choice.
 
 @ProviderFor(SelectedLabServiceType)
 final selectedLabServiceTypeProvider = SelectedLabServiceTypeProvider._();
 
 /// Which service type ("نوع الخدمة") the patient picked. Deliberately has
-/// no default value — the Figma mockup shows a card pre-selected, but the
-/// plan explicitly calls for no default so the continue CTA stays disabled
-/// until the patient makes an explicit choice.
+/// no default value — the continue CTA stays disabled until the patient
+/// makes an explicit choice.
 final class SelectedLabServiceTypeProvider
     extends $NotifierProvider<SelectedLabServiceType, LabServiceType?> {
   /// Which service type ("نوع الخدمة") the patient picked. Deliberately has
-  /// no default value — the Figma mockup shows a card pre-selected, but the
-  /// plan explicitly calls for no default so the continue CTA stays disabled
-  /// until the patient makes an explicit choice.
+  /// no default value — the continue CTA stays disabled until the patient
+  /// makes an explicit choice.
   SelectedLabServiceTypeProvider._()
     : super(
         from: null,
@@ -126,12 +149,11 @@ final class SelectedLabServiceTypeProvider
 }
 
 String _$selectedLabServiceTypeHash() =>
-    r'7bb373864e5addd7d4fa130065d26c83f864c2bc';
+    r'3b1fb0b5bfc4accfa1b87a70a97cca9dcbfbdfb2';
 
 /// Which service type ("نوع الخدمة") the patient picked. Deliberately has
-/// no default value — the Figma mockup shows a card pre-selected, but the
-/// plan explicitly calls for no default so the continue CTA stays disabled
-/// until the patient makes an explicit choice.
+/// no default value — the continue CTA stays disabled until the patient
+/// makes an explicit choice.
 
 abstract class _$SelectedLabServiceType extends $Notifier<LabServiceType?> {
   LabServiceType? build();

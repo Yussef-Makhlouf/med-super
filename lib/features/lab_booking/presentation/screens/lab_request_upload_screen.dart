@@ -7,14 +7,21 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import 'package:med_super/features/lab_booking/domain/entities/lab_request_image.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 
 /// Step 1 of the lab booking flow — attach a photo of the paper/digital lab
-/// request and choose how the sample should be collected. Figma screen 1
-/// ("تحميل طلب المختبر"). Replaces the old test-catalog picker that used to
-/// live in this slot (`LabTestSelectionScreen`).
+/// request and choose how the sample should be collected. Replaces the old
+/// test-catalog picker that used to live in this slot (`LabTestSelectionScreen`).
+///
+/// Rebuilt 2026-09-05 to actually upload on "continue"
+/// (`POST /v1/prescriptions/upload` via the shared
+/// `PrescriptionRemoteDatasource` — the same real endpoint
+/// `pharmacy_booking` uploads through) rather than only holding the images
+/// as local state: `POST /v1/lab-orders` needs a real `prescriptionId`, not
+/// the raw images.
 class LabRequestUploadScreen extends ConsumerStatefulWidget {
   const LabRequestUploadScreen({super.key});
 
@@ -56,11 +63,30 @@ class _LabRequestUploadScreenState
         );
   }
 
+  Future<void> _continue() async {
+    final images = ref.read(uploadedLabRequestImagesProvider);
+    await ref
+        .read(prescriptionUploadControllerProvider.notifier)
+        .submit(images: images);
+    if (!mounted) return;
+    final result = ref.read(prescriptionUploadControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('lab_booking.upload.submit_error'.tr())),
+      );
+      return;
+    }
+    context.push('/patient/lab/select-lab');
+  }
+
   @override
   Widget build(BuildContext context) {
     final images = ref.watch(uploadedLabRequestImagesProvider);
     final selectedType = ref.watch(selectedLabServiceTypeProvider);
     final canContinue = ref.watch(canContinueFromUploadProvider);
+    final isSubmitting = ref
+        .watch(prescriptionUploadControllerProvider)
+        .isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -109,6 +135,7 @@ class _LabRequestUploadScreenState
               child: AppButton.filled(
                 label: 'lab_booking.upload.continue_cta'.tr(),
                 fullWidth: true,
+                isLoading: isSubmitting,
                 // Explicit brand color/radius — the shared ElevatedButton
                 // theme default is colorScheme.primary (brandBlue), which is
                 // a visibly different blue than AppColors.patientPrimary
@@ -121,9 +148,7 @@ class _LabRequestUploadScreenState
                 // near-invisible blue-on-blue label.
                 foregroundColor: Colors.white,
                 borderRadius: AppRadii.xl,
-                onPressed: canContinue
-                    ? () => context.push('/patient/lab/select-lab')
-                    : null,
+                onPressed: canContinue && !isSubmitting ? _continue : null,
               ),
             ),
           ],
@@ -248,7 +273,7 @@ class _ImageThumbnailRow extends StatelessWidget {
     required this.onRemove,
   });
 
-  final List<LabRequestImage> images;
+  final List<PrescriptionImage> images;
   final VoidCallback onAdd;
   final ValueChanged<String> onRemove;
 
@@ -316,7 +341,7 @@ class _ImageThumbnail extends StatelessWidget {
     super.key,
   });
 
-  final LabRequestImage image;
+  final PrescriptionImage image;
   final double size;
   final VoidCallback onRemove;
 
