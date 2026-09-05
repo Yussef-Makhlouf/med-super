@@ -364,6 +364,8 @@ class _BranchPickerCard extends StatelessWidget {
                               a.addressLine1.isNotEmpty
                                   ? a.addressLine1
                                   : a.clinicName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: _ink,
                                 fontWeight: isSelected
@@ -377,6 +379,8 @@ class _BranchPickerCard extends StatelessWidget {
                                 a.city.isNotEmpty
                                     ? '${a.clinicName} · ${a.city}'
                                     : a.clinicName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: textTheme.bodySmall?.copyWith(
                                   color: _muted,
                                 ),

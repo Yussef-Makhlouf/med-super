@@ -490,7 +490,9 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          clinic.displayTitle,
+                          clinic.displayAddressLine,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -499,7 +501,9 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'provider_dashboard.clinics.branch_label'.tr(),
+                          clinic.displayTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
                         ),
                       ],

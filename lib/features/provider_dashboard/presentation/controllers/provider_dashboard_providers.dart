@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:med_super/core/di/core_providers.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import '../../data/datasources/remote/provider_dashboard_remote_datasource.dart';
 import '../../data/repositories/provider_dashboard_repository_impl.dart';
 import '../../domain/entities/doctor_account_profile.dart';
@@ -129,6 +130,26 @@ MarkNotificationReadUseCase markNotificationReadUseCase(Ref ref) =>
 Future<DoctorAccountProfile> doctorAccount(Ref ref) async {
   final result = await ref.watch(getDoctorAccountUseCaseProvider).call();
   return result.when(ok: (value) => value, err: (failure) => throw failure);
+}
+
+/// The header avatar for every provider-dashboard screen — never the
+/// doctor's own photo for an assistant session: `doctorAccountProvider`
+/// resolves to the doctor the assistant is *provisioned under*, not the
+/// assistant's own identity, and `User` (the logged-in account) carries no
+/// `photoUrl` of its own. So an assistant always sees the header's generic
+/// person icon (`ProviderPageHeader` already falls back to that on `null`),
+/// while a doctor sees their real photo. Every screen using
+/// `ProviderPageHeader` should watch this instead of reading
+/// `doctorAccountProvider.avatarUrl` directly.
+@riverpod
+String? providerHeaderAvatarUrl(Ref ref) {
+  final isAssistant =
+      ref.watch(sessionControllerProvider).asData?.value?.user.isAssistant ??
+      false;
+  if (isAssistant) return null;
+  return ref
+      .watch(doctorAccountProvider)
+      .maybeWhen(data: (acc) => acc.avatarUrl, orElse: () => null);
 }
 
 /// The doctor's clinics/branches. Every mutation on this feature invalidates

@@ -104,10 +104,25 @@ class _BookWalkInAppointmentSheetState
         ref.invalidate(doctorAppointmentsProvider);
         Navigator.of(context).pop(true);
       },
-      err: (failure) => setState(() {
-        _submitting = false;
-        _submitError = providerFailureMessage(failure);
-      }),
+      err: (failure) {
+        // Someone else (or a stray double-submit) claimed this slot between
+        // when the list loaded and when this request landed — the slot
+        // picked from the now-stale list no longer exists as OPEN. Refresh
+        // the open-slots list and clear the dead selection so the user
+        // picks a genuinely still-open one instead of retrying the same
+        // 409 forever.
+        ref.invalidate(
+          doctorOpenSlotsProvider((
+            doctorId: widget.doctorId,
+            clinicBranchId: branch.clinicBranchId,
+          )),
+        );
+        setState(() {
+          _submitting = false;
+          _submitError = providerFailureMessage(failure);
+          _slot = null;
+        });
+      },
     );
   }
 
@@ -239,8 +254,15 @@ class _BookWalkInAppointmentSheetState
         color: selected ? brandBlue : AppColors.mutedText2,
       ),
       title: Text(
-        clinic.displayTitle,
+        clinic.displayAddressLine,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        clinic.displayTitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
       trailing: selected ? const Icon(Icons.check_circle, color: brandBlue) : null,
       onTap: () => setState(() {

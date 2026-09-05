@@ -54,7 +54,11 @@ class GetProviderPatientsUseCase {
         from: from,
         to: to,
         cursor: cursor,
-        limit: 100,
+        // Backend caps `limit` at 50 (`ListDoctorAppointmentsQueryDto`) —
+        // 100 here always 400'd; paging already walks `nextCursor` until
+        // exhausted, so the smaller page size just means more round trips,
+        // not fewer results.
+        limit: 50,
       );
 
       if (result.isErr) {

@@ -443,35 +443,42 @@ class _DeliveryMethodSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _DeliveryMethodCard(
-                method: DeliveryMethod.pickup,
-                isSelected: selected == DeliveryMethod.pickup,
-                icon: Icons.storefront_outlined,
-                onTap: () => onSelect(DeliveryMethod.pickup),
+        // `IntrinsicHeight` so all three cards match the tallest one's
+        // height — without it, each `_DeliveryMethodCard` sizes to only its
+        // own title's wrap (2 vs 3 Arabic words wrap differently), leaving
+        // the three cards visibly different heights side by side.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _DeliveryMethodCard(
+                  method: DeliveryMethod.pickup,
+                  isSelected: selected == DeliveryMethod.pickup,
+                  icon: Icons.storefront_outlined,
+                  onTap: () => onSelect(DeliveryMethod.pickup),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _DeliveryMethodCard(
-                method: DeliveryMethod.homeDelivery,
-                isSelected: selected == DeliveryMethod.homeDelivery,
-                icon: Icons.delivery_dining_outlined,
-                onTap: () => onSelect(DeliveryMethod.homeDelivery),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _DeliveryMethodCard(
+                  method: DeliveryMethod.homeDelivery,
+                  isSelected: selected == DeliveryMethod.homeDelivery,
+                  icon: Icons.delivery_dining_outlined,
+                  onTap: () => onSelect(DeliveryMethod.homeDelivery),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _DeliveryMethodCard(
-                method: DeliveryMethod.clinicHandover,
-                isSelected: selected == DeliveryMethod.clinicHandover,
-                icon: Icons.local_hospital_outlined,
-                onTap: () => onSelect(DeliveryMethod.clinicHandover),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _DeliveryMethodCard(
+                  method: DeliveryMethod.clinicHandover,
+                  isSelected: selected == DeliveryMethod.clinicHandover,
+                  icon: Icons.local_hospital_outlined,
+                  onTap: () => onSelect(DeliveryMethod.clinicHandover),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -509,7 +516,7 @@ class _DeliveryMethodCard extends StatelessWidget {
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -535,13 +542,23 @@ class _DeliveryMethodCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              method.titleKey.tr(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink900,
+            // Fixed to 2 lines regardless of actual wrap so all three cards
+            // reserve identical title height — "توصيل للمنزل" (2 words) vs
+            // "تسليم في العيادة"/"استلام من الصيدلية" (3 words) would
+            // otherwise wrap to a different number of lines and make this
+            // card visibly shorter than its siblings.
+            SizedBox(
+              height: 36,
+              child: Text(
+                method.titleKey.tr(),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink900,
+                ),
               ),
             ),
           ],

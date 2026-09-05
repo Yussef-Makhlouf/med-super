@@ -116,25 +116,30 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(
-                color: PatientHomeScreen._muted,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'home.welcome'.tr(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: PatientHomeScreen._muted,
+                ),
               ),
-            ),
-            Text(
-              displayName,
-              style: textTheme.titleMedium?.copyWith(
-                color: PatientHomeScreen._ink,
-                fontWeight: FontWeight.w800,
+              Text(
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleMedium?.copyWith(
+                  color: PatientHomeScreen._ink,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const Spacer(),
         IconButton(
           onPressed: () => context.go('/patient/notifications'),
           icon: const Badge(

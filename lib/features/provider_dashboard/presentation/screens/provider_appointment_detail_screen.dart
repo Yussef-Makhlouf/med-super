@@ -5,6 +5,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
+import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
@@ -124,6 +125,17 @@ class _ProviderAppointmentDetailScreenState
       },
       err: (failure) {
         _showSnack(providerFailureMessage(failure));
+        // Same staleness as the walk-in sheet: the picked slot came from a
+        // list fetched before this request landed, and may already be
+        // BOOKED by the time it does (SLOT_ALREADY_BOOKED). Invalidate so
+        // the next reschedule attempt on this branch shows a genuinely
+        // current list instead of offering the same dead slot again.
+        ref.invalidate(
+          doctorOpenSlotsProvider((
+            doctorId: doctorId,
+            clinicBranchId: appointment.clinicBranchId,
+          )),
+        );
         _refresh();
       },
     );

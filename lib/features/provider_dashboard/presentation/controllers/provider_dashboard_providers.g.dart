@@ -1094,6 +1094,77 @@ final class DoctorAccountProvider
 
 String _$doctorAccountHash() => r'21db78340eab948d3983b74b389b4997a5412829';
 
+/// The header avatar for every provider-dashboard screen — never the
+/// doctor's own photo for an assistant session: `doctorAccountProvider`
+/// resolves to the doctor the assistant is *provisioned under*, not the
+/// assistant's own identity, and `User` (the logged-in account) carries no
+/// `photoUrl` of its own. So an assistant always sees the header's generic
+/// person icon (`ProviderPageHeader` already falls back to that on `null`),
+/// while a doctor sees their real photo. Every screen using
+/// `ProviderPageHeader` should watch this instead of reading
+/// `doctorAccountProvider.avatarUrl` directly.
+
+@ProviderFor(providerHeaderAvatarUrl)
+final providerHeaderAvatarUrlProvider = ProviderHeaderAvatarUrlProvider._();
+
+/// The header avatar for every provider-dashboard screen — never the
+/// doctor's own photo for an assistant session: `doctorAccountProvider`
+/// resolves to the doctor the assistant is *provisioned under*, not the
+/// assistant's own identity, and `User` (the logged-in account) carries no
+/// `photoUrl` of its own. So an assistant always sees the header's generic
+/// person icon (`ProviderPageHeader` already falls back to that on `null`),
+/// while a doctor sees their real photo. Every screen using
+/// `ProviderPageHeader` should watch this instead of reading
+/// `doctorAccountProvider.avatarUrl` directly.
+
+final class ProviderHeaderAvatarUrlProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// The header avatar for every provider-dashboard screen — never the
+  /// doctor's own photo for an assistant session: `doctorAccountProvider`
+  /// resolves to the doctor the assistant is *provisioned under*, not the
+  /// assistant's own identity, and `User` (the logged-in account) carries no
+  /// `photoUrl` of its own. So an assistant always sees the header's generic
+  /// person icon (`ProviderPageHeader` already falls back to that on `null`),
+  /// while a doctor sees their real photo. Every screen using
+  /// `ProviderPageHeader` should watch this instead of reading
+  /// `doctorAccountProvider.avatarUrl` directly.
+  ProviderHeaderAvatarUrlProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'providerHeaderAvatarUrlProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$providerHeaderAvatarUrlHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return providerHeaderAvatarUrl(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$providerHeaderAvatarUrlHash() =>
+    r'78a71148bd47a8f43d0650de7bdd5fceb965cce4';
+
 /// The doctor's clinics/branches. Every mutation on this feature invalidates
 /// it rather than mutating a local copy, so what the UI shows after a save is
 /// always what the server returned.

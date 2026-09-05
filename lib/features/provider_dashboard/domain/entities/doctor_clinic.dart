@@ -101,7 +101,18 @@ class DoctorClinic {
   /// same label twice in any list/dropdown. This appends the branch's own
   /// city — real per-branch data (`address`), not something shared — to make
   /// each entry distinct.
+  ///
+  /// Kept for any caller still showing a single line; branch-picker lists
+  /// (walk-in booking, schedule editor, clinic settings) show
+  /// [displayAddressLine] as the title and this as the subtitle instead —
+  /// the address line, not the shared clinic name, is what actually tells
+  /// two branches of the same clinic apart at a glance.
   String get displayTitle => '$clinicName — ${address.city}';
+
+  /// The branch's own street address — distinct per branch, unlike
+  /// [clinicName]/[displayTitle] which repeat identically across every
+  /// branch of the same clinic. Used as a branch tile's title.
+  String get displayAddressLine => address.line1;
 
   /// Slots are only generated for an ACTIVE affiliation at a VERIFIED branch
   /// of a VERIFIED clinic (the Part 32 visibility chain). Surfacing this lets

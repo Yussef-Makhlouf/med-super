@@ -161,10 +161,13 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
                   for (final clinic in widget.clinics)
                     DropdownMenuItem(
                       value: clinic.affiliationId,
-                      // `displayTitle` appends the branch's city, since two
-                      // branches of the same clinic share `clinicName`.
+                      // A dropdown item is a single line, so this shows the
+                      // branch's own address rather than `displayTitle` —
+                      // `clinicName` alone is identical across every branch
+                      // of the same clinic and wouldn't distinguish them.
                       child: Text(
-                        clinic.displayTitle,
+                        '${clinic.displayAddressLine} — ${clinic.displayTitle}',
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

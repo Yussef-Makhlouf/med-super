@@ -106,9 +106,7 @@ class _ProviderPatientsScreenState
           data: (list) => list.where((n) => n.isUnread).length,
           orElse: () => 0,
         );
-    final avatarUrl = ref
-        .watch(doctorAccountProvider)
-        .maybeWhen(data: (acc) => acc.avatarUrl, orElse: () => null);
+    final avatarUrl = ref.watch(providerHeaderAvatarUrlProvider);
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,

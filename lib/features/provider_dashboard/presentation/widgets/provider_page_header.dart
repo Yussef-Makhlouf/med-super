@@ -77,6 +77,8 @@ class ProviderPageHeader extends StatelessWidget
                   child: Text(
                     title,
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink900,
