@@ -276,6 +276,9 @@
     <span><b>Routes</b> 97 backend / 59 client calls</span>
     <span><b>Verdict</b> not production-ready</span>
   </div>
+  <div class="note alarm" style="margin-bottom:0">
+    <p><strong>Update 2026-09-04.</strong> A new Flutter web launch attempt is blocked before application startup because the local Pub Cache is missing <code>meta-1.19.0</code>. The latest frontend commit also adds <code>.env.local</code> with <code>REDIS_ENABLED=true</code>; this is a configuration improvement, not yet proof that Redis-backed idempotency or rate limiting passed an executable test.</p>
+  </div>
 </header>
 
 <nav class="toc" aria-label="Report contents">
@@ -312,7 +315,7 @@
 
   <p>The backend is substantially further along than either repository's documentation claims, and the patient-facing half of the Flutter client is genuinely wired to it. The booking spine — search, doctor detail, slots, hold, confirm, cancel, reschedule, list — is real on both sides with matching contracts and server-enforced ownership. That is the strongest part of the system and it is close to done.</p>
 
-  <p>It is nonetheless <strong>not production-ready</strong>, for six independently disqualifying reasons, each verified in code today:</p>
+  <p>It is nonetheless <strong>not production-ready</strong>, for six independently disqualifying product or production reasons, plus one current development-build blocker:</p>
 
   <div class="find crit">
     <div class="hd"><span class="id">P0-1</span><span class="ti">No user can log in. OTP delivery is a logging stub.</span><span class="pill p-crit">Critical</span></div>
@@ -368,6 +371,16 @@
     </dl>
   </div>
 
+  <div class="find high">
+    <div class="hd"><span class="id">P1-DEV-1</span><span class="ti">Flutter web launch is blocked by a missing Pub Cache dependency.</span><span class="pill p-high">High</span></div>
+    <dl>
+      <dt>Evidence</dt><dd><code>flutter run -t lib/main.dart -d chrome --web-port=5000 --dart-define=BASE_URL=http://localhost:3000 --dart-define=ENV=dev</code> exits before application startup. The Dart compiler cannot read <code>meta-1.19.0/lib/meta.dart</code>, causing annotation errors in <code>hooks</code> and <code>record_use</code>; the <code>objective_c</code> native-assets hook then fails.</dd>
+      <dt>Impact</dt><dd>The app cannot currently be launched in the reported local environment, so no browser smoke test or live frontend integration can be performed from this checkout.</dd>
+      <dt>Classification</dt><dd><span class="mono">VERIFIED_BY_TEST</span> · environment/dependency-cache failure, not yet evidence of an application-code defect.</dd>
+      <dt>Fix</dt><dd>Restore the missing Pub Cache package with <code>flutter pub get</code> (or clear and rebuild the Pub Cache if necessary), then rerun the exact command. Do not change application code until the dependency resolution is healthy.</dd>
+    </dl>
+  </div>
+
   <p style="margin-top:1.4rem">Beyond these, roughly <strong>42% of the Flutter client's network surface is invented</strong> — 25 of 59 distinct calls hit endpoints that exist only in <code>MockInterceptor</code>. The provider dashboard (13 endpoints), the wallet (7 endpoints, 14 screens, and no route registered to reach them), and lab booking (2 endpoints, diverged from the real Laboratory module) are the three concentrations.</p>
 </section>
 
@@ -405,6 +418,7 @@
         <tr><td class="m">npx jest &lt;single spec&gt;</td><td>backend</td><td>isolated the <code>upload-prescription</code> failure</td></tr>
         <tr><td class="m">flutter analyze</td><td>frontend</td><td><span class="pill p-ok">0 errors</span>, 5 warnings, 64 infos</td></tr>
         <tr><td class="m">flutter test</td><td>frontend</td><td><span class="pill p-high">493 pass / 8 fail</span> — all 8 in <code>lab_booking</code> time-slot widgets</td></tr>
+        <tr><td class="m">flutter run -t lib/main.dart -d chrome --web-port=5000 --dart-define=BASE_URL=http://localhost:3000 --dart-define=ENV=dev</td><td>frontend</td><td><span class="pill p-high">BLOCKED</span> exit 1 — missing <code>meta-1.19.0/lib/meta.dart</code> in Pub Cache; <code>objective_c</code> native-assets hook fails before app startup</td></tr>
         <tr><td class="m">python — route inventory, l10n key symmetry</td><td>both</td><td>97 routes; <code>en.json</code>/<code>ar.json</code> symmetric at 648 keys each</td></tr>
       </tbody>
     </table>
@@ -420,6 +434,10 @@
 
   <div class="note alarm">
     <p><strong>Environment limitation that affects one finding.</strong> <code>node_modules</code> was last installed 2026-08-22; <code>package-lock.json</code> was updated 2026-09-03. Two declared dependencies — <code>@imagekit/nodejs</code> and <code>@types/multer</code> — are in the lockfile but not on disk. The 7 type errors above are almost certainly that staleness, not a repo defect, and are classified <span class="mono">UNKNOWN</span> pending an approved <code>npm install</code>. The <code>tsconfig.json</code> failure (P0-2) is <em>separate</em> and survives a fresh install, because the lockfile pins the TypeScript version that rejects the flag.</p>
+  </div>
+
+  <div class="note alarm">
+    <p><strong>New frontend environment limitation.</strong> The 2026-09-04 Chrome launch failure is caused by a missing cached Pub package, not by an application assertion. It remains unverified whether the command succeeds after dependency restoration; no live browser result is added to this report.</p>
   </div>
 
   <p><strong>Tooling note:</strong> the <code>github</code>, <code>pencil</code> and <code>serena</code> MCP servers all failed to connect this session. All inspection fell back to direct file reads and shell commands, which is sufficient for everything claimed here.</p>
