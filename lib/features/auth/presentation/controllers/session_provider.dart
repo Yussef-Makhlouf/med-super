@@ -452,7 +452,16 @@ class SessionController extends _$SessionController {
   }
 
   Future<void> logout() async {
-    await ref.read(logoutUseCaseProvider).call();
+    // Best-effort: the device must end up logged out even if the server
+    // call fails or times out (offline, expired token, slow network) —
+    // otherwise a failed network request would leave `state` never reset to
+    // `null`, so the app still looks/behaves as logged in while the user
+    // already tapped logout and expects to be signed out.
+    try {
+      await ref.read(logoutUseCaseProvider).call();
+    } catch (_) {
+      // Ignored — local session teardown below still proceeds.
+    }
     await _writeOnboardingComplete(false);
     await _writePasswordComplete(false);
     // Both are Hive-persisted local flags, not Riverpod providers, so they

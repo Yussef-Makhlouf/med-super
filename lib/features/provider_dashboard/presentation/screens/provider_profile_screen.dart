@@ -219,11 +219,16 @@ class ProviderProfileScreen extends ConsumerWidget {
                     foregroundColor: const Color(0xFFDC2626),
                     borderRadius: 16,
                     fullWidth: true,
-                    onPressed: () {
+                    onPressed: () async {
                       // '/account-login' (phone+password), not '/login'
                       // (OTP first-time signup) — same reasoning as the
-                      // patient profile's logout button.
-                      ref.read(sessionControllerProvider.notifier).logout();
+                      // patient profile's logout button. Must be awaited: an
+                      // un-awaited logout races the router's own
+                      // sessionControllerProvider-driven redirect, which can
+                      // send the user straight back into /provider/home
+                      // before the session is actually cleared.
+                      await ref.read(sessionControllerProvider.notifier).logout();
+                      if (!context.mounted) return;
                       context.go('/account-login');
                     },
                   ),
