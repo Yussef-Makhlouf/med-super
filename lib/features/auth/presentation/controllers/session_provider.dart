@@ -205,7 +205,14 @@ class SessionController extends _$SessionController {
               .put(SettingsKeys.choseDoctorRoleAtSignup, 'true');
         }
         await _claimRegistrationDraft(value.id);
-        await _resyncDoctorRegistrationStatus();
+        // Gated on the role the user picked at login, not `value.isDoctor`
+        // — the backend bug noted above means `value` always comes back
+        // PATIENT regardless of the chosen role, so `role` is the only
+        // reliable signal here. This also means a patient/assistant login
+        // never fires this doctor-only check.
+        if (role == UserRole.doctor) {
+          await _resyncDoctorRegistrationStatus();
+        }
         final session = Session(
           user: value,
           onboardingComplete: value.profileComplete || _readOnboardingComplete(),
@@ -238,12 +245,16 @@ class SessionController extends _$SessionController {
   /// `SettingsKeys.providerRegistrationSubmitted`, to stop one account's
   /// registration state leaking into the next login on this device) still
   /// lands back on the pending-approval screen after logging back in.
+  /// Both call sites gate this on the login-time `role` being
+  /// `UserRole.doctor` — a patient or clinic-staff (assistant) login never
+  /// reaches this method, since only a Doctor record can ever have a
+  /// `ProviderVerificationStatus` to resync.
   /// Deliberately NOT called from the router's `redirect` on every
-  /// navigation — that would mean every patient, not just doctors, firing a
-  /// request per screen change. `404` (never self-registered) always leaves
-  /// the flag untouched (a genuine patient). A network/server failure
-  /// retries once immediately (covers a transient blip without adding any
-  /// retry UI) before also leaving the flag untouched — better to
+  /// navigation — that would mean every doctor firing a request per screen
+  /// change. `404` (never self-registered) always leaves the flag untouched.
+  /// A network/server failure retries once immediately (covers a transient
+  /// blip without adding any retry UI) before also leaving the flag
+  /// untouched — better to
   /// occasionally miss a real PENDING doctor once in a rare double-failure
   /// than to ever block or fail the login itself over this check.
   Future<void> _resyncDoctorRegistrationStatus() async {
@@ -340,7 +351,12 @@ class SessionController extends _$SessionController {
       case Ok(:final value):
         await _writePasswordComplete(true);
         await _claimRegistrationDraft(value.id);
-        await _resyncDoctorRegistrationStatus();
+        // Only a doctor login can ever have a provider-registration status
+        // to resync — a patient or clinic-staff (assistant) account
+        // structurally never does.
+        if (role == UserRole.doctor) {
+          await _resyncDoctorRegistrationStatus();
+        }
         final session = Session(
           user: value,
           onboardingComplete: value.profileComplete || _readOnboardingComplete(),
