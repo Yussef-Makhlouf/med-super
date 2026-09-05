@@ -2,11 +2,13 @@ import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
@@ -85,7 +87,7 @@ class _BookWalkInAppointmentSheetState
       _submitError = null;
     });
 
-    final phone = _phoneController.text.trim();
+    final phone = normalizeEgyptPhone(_phoneController.text.trim());
     final name = _nameController.text.trim();
 
     final result = await ref
@@ -344,6 +346,10 @@ class _BookWalkInAppointmentSheetState
           keyboardType: TextInputType.phone,
           textDirection: ui.TextDirection.ltr,
           textAlign: TextAlign.left,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+          ],
           decoration: InputDecoration(
             labelText: 'provider_dashboard.walk_in.phone_label'.tr(),
             hintText: 'provider_dashboard.walk_in.phone_hint'.tr(),
@@ -355,7 +361,7 @@ class _BookWalkInAppointmentSheetState
             if (trimmed.isEmpty) {
               return 'provider_dashboard.walk_in.phone_required'.tr();
             }
-            if (!RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(trimmed)) {
+            if (!isValidEgyptPhone(trimmed)) {
               return 'provider_dashboard.walk_in.phone_invalid'.tr();
             }
             return null;

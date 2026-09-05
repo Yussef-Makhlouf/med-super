@@ -2,7 +2,9 @@ import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
 /// What the doctor filled in to add another branch under a clinic they
 /// already practise at (`POST /v1/doctors/me/clinics/{clinicId}/branches`).
@@ -84,7 +86,7 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.of(context).pop((
       clinicId: widget.clinicId,
-      phone: _phone.text.trim(),
+      phone: normalizeEgyptPhone(_phone.text.trim()),
       ianaTimezone: _timezone.text.trim(),
       addressLine1: _line1.text.trim(),
       addressCity: _city.text.trim(),
@@ -125,6 +127,20 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
                 keyboardType: TextInputType.phone,
                 textDirection: ui.TextDirection.ltr,
                 textAlign: TextAlign.left,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+                validator: (value) {
+                  final trimmed = (value ?? '').trim();
+                  if (trimmed.isEmpty) {
+                    return 'provider_dashboard.clinics.phone'.tr();
+                  }
+                  if (!isValidEgyptPhone(trimmed)) {
+                    return 'provider_dashboard.clinics.phone'.tr();
+                  }
+                  return null;
+                },
               ),
               _field(
                 controller: _line1,
@@ -203,6 +219,7 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
     TextInputType? keyboardType,
     ui.TextDirection? textDirection,
     TextAlign? textAlign,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -211,6 +228,7 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
       keyboardType: keyboardType,
       textDirection: textDirection,
       textAlign: textAlign ?? TextAlign.start,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
