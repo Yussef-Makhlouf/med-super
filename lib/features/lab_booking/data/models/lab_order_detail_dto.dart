@@ -17,12 +17,14 @@ class LabOrderDetailDto {
     required this.bookingCode,
     required this.rejection,
     required this.recollectionRequired,
+    required this.results,
   });
 
   factory LabOrderDetailDto.fromJson(Map<String, dynamic> json) {
     final quoteJson = json['quote'] as Map<String, dynamic>?;
     final rejectionJson = json['rejection'] as Map<String, dynamic>?;
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
+    final resultsJson = json['results'] as List<dynamic>? ?? const [];
     return LabOrderDetailDto(
       id: json['id'] as String? ?? '',
       status: json['status'] as String? ?? '',
@@ -60,6 +62,19 @@ class LabOrderDetailDto {
               at: rejectionJson['at'] as String? ?? '',
             ),
       recollectionRequired: json['recollectionRequired'] as bool? ?? false,
+      results: resultsJson
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (r) => LabOrderResultFile(
+              id: r['id'] as String? ?? '',
+              itemId: r['itemId'] as String?,
+              fileLabel: r['fileLabel'] as String? ?? '',
+              fileUrl: r['fileUrl'] as String?,
+              uploadedAt: r['uploadedAt'] as String? ?? '',
+              isCritical: r['isCritical'] as bool? ?? false,
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -74,6 +89,7 @@ class LabOrderDetailDto {
   final String? bookingCode;
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
+  final List<LabOrderResultFile> results;
 
   LabOrderDetail toEntity() => LabOrderDetail(
     id: id,
@@ -87,5 +103,6 @@ class LabOrderDetailDto {
     bookingCode: bookingCode,
     rejection: rejection,
     recollectionRequired: recollectionRequired,
+    results: results,
   );
 }

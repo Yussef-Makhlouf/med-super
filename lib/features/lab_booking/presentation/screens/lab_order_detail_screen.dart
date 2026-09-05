@@ -6,6 +6,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/result_file_thumbnail.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_status_pill.dart';
@@ -15,6 +16,19 @@ String _formatOrderDate(String iso) {
   final parsed = DateTime.tryParse(iso);
   if (parsed == null) return iso;
   return DateFormat('d MMM y, h:mm a').format(parsed.toLocal());
+}
+
+/// `LabOrderItem.resultState` is the backend's raw `ItemResultState` enum
+/// value (`PENDING`/`RECORDED`) — translated here rather than shown as-is.
+String _resultStateLabel(String resultState) {
+  switch (resultState) {
+    case 'RECORDED':
+      return 'lab_booking.orders.result_state_recorded'.tr();
+    case 'PENDING':
+      return 'lab_booking.orders.result_state_pending'.tr();
+    default:
+      return resultState;
+  }
 }
 
 /// `GET /v1/lab-orders/:id` — a single lab request's detail: status, the
@@ -191,7 +205,7 @@ class _OrderDetailBody extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          item.resultState,
+                          _resultStateLabel(item.resultState),
                           style: const TextStyle(
                             color: AppColors.mutedText2,
                             fontSize: 12,
@@ -200,6 +214,43 @@ class _OrderDetailBody extends StatelessWidget {
                       ],
                     ),
                   ),
+              ],
+            ),
+          ),
+        ],
+        if (order.results.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'lab_booking.orders.results_label'.tr(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: order.results
+                      .map(
+                        (r) => ResultFileThumbnail(
+                          fileUrl: r.fileUrl,
+                          fileLabel: r.fileLabel,
+                          isCritical: r.isCritical,
+                        ),
+                      )
+                      .toList(),
+                ),
               ],
             ),
           ),

@@ -29,6 +29,29 @@ class LabOrderRejection {
   final String at;
 }
 
+/// One uploaded result file — a lab-recorded result document
+/// (`LabResultDocument`, backend `lab-order-detail.mapper.ts`). `fileUrl` is
+/// a freshly signed, time-limited ImageKit URL (never persisted signed —
+/// backend re-signs on every read), so it's only valid for a few minutes
+/// and must not be cached across app sessions.
+class LabOrderResultFile {
+  const LabOrderResultFile({
+    required this.id,
+    required this.itemId,
+    required this.fileLabel,
+    required this.fileUrl,
+    required this.uploadedAt,
+    required this.isCritical,
+  });
+
+  final String id;
+  final String? itemId;
+  final String fileLabel;
+  final String? fileUrl;
+  final String uploadedAt;
+  final bool isCritical;
+}
+
 /// One requested test/analysis line on the order — either from direct
 /// catalog selection or (today, the only path `med-super` actually exercises)
 /// added later by staff after transcribing an uploaded prescription.
@@ -67,6 +90,7 @@ class LabOrderDetail {
     required this.bookingCode,
     required this.rejection,
     required this.recollectionRequired,
+    required this.results,
   });
 
   final String id;
@@ -89,4 +113,5 @@ class LabOrderDetail {
   final String? bookingCode;
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
+  final List<LabOrderResultFile> results;
 }
