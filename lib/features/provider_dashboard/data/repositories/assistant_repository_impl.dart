@@ -24,11 +24,17 @@ class AssistantRepositoryImpl implements AssistantRepository {
   Future<Result<ProvisionedAssistant>> createAssistant({
     required String phone,
     required String displayName,
+    String? title,
+    String? subtitle,
+    required List<String> clinicBranchIds,
   }) async {
     try {
       final dto = await _remote.createAssistant(
         phone: phone,
         displayName: displayName,
+        title: title,
+        subtitle: subtitle,
+        clinicBranchIds: clinicBranchIds,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {
@@ -42,6 +48,9 @@ class AssistantRepositoryImpl implements AssistantRepository {
     String? displayName,
     String? status,
     String? password,
+    String? title,
+    String? subtitle,
+    List<String>? clinicBranchIds,
   }) async {
     try {
       final dto = await _remote.updateAssistant(
@@ -49,6 +58,9 @@ class AssistantRepositoryImpl implements AssistantRepository {
         displayName: displayName,
         status: status,
         password: password,
+        title: title,
+        subtitle: subtitle,
+        clinicBranchIds: clinicBranchIds,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {

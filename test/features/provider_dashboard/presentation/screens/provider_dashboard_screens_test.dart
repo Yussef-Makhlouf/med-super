@@ -232,7 +232,7 @@ void main() {
     });
     await tester.pump();
 
-    expect(find.text('أوقات عملي'), findsOneWidget);
+    expect(find.text('جدول المواعيد'), findsOneWidget);
     // The "future generation only" warning must always be visible — a doctor
     // editing hours must never believe booked appointments moved with them.
     expect(

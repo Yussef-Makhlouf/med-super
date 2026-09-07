@@ -8,6 +8,9 @@ abstract class AssistantRepository {
   Future<Result<ProvisionedAssistant>> createAssistant({
     required String phone,
     required String displayName,
+    String? title,
+    String? subtitle,
+    required List<String> clinicBranchIds,
   });
 
   Future<Result<Assistant>> updateAssistant({
@@ -15,6 +18,9 @@ abstract class AssistantRepository {
     String? displayName,
     String? status,
     String? password,
+    String? title,
+    String? subtitle,
+    List<String>? clinicBranchIds,
   });
 
   Future<Result<void>> deleteAssistant(String id);

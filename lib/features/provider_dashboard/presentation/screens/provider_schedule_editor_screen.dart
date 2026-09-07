@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
@@ -9,6 +10,7 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_cli
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_tab.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/schedule_template_editor_sheet.dart';
 
 /// The doctor's weekly availability, backed by
@@ -19,11 +21,46 @@ import 'package:med_super/features/provider_dashboard/presentation/widgets/sched
 /// a slot length and a buffer, and its times are local to that branch's
 /// timezone. All three are now visible and editable.
 ///
+/// Branch tabs mirror the Home screen's `_BranchTimelineTabs` convention
+/// (an "All" tab plus one tab per branch, city as title / street as
+/// subtitle) — only shown when the caller has more than one branch, so a
+/// single-branch doctor or assistant sees a plain list with no redundant
+/// tab bar.
+///
 /// Changes affect **future** slot generation only — the banner says so,
 /// because a doctor deleting Monday hours must not believe Monday's already
 /// booked appointments just vanished. They did not.
-class ProviderScheduleEditorScreen extends ConsumerWidget {
+class ProviderScheduleEditorScreen extends ConsumerStatefulWidget {
   const ProviderScheduleEditorScreen({super.key});
+
+  @override
+  ConsumerState<ProviderScheduleEditorScreen> createState() =>
+      _ProviderScheduleEditorScreenState();
+}
+
+class _ProviderScheduleEditorScreenState
+    extends ConsumerState<ProviderScheduleEditorScreen>
+    with TickerProviderStateMixin {
+  TabController? _tabController;
+  List<String> _tabAffiliationIds = const [];
+
+  bool get _showAllTab => _tabAffiliationIds.length > 1;
+
+  void _syncTabController(List<DoctorClinic> clinics) {
+    final affiliationIds = clinics.map((c) => c.affiliationId).toList();
+    if (listEquals(affiliationIds, _tabAffiliationIds)) return;
+
+    _tabAffiliationIds = affiliationIds;
+    final length = affiliationIds.length + (affiliationIds.length > 1 ? 1 : 0);
+    _tabController?.dispose();
+    _tabController = length > 1 ? TabController(length: length, vsync: this) : null;
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
+  }
 
   void _showSnack(BuildContext context, String message, {bool success = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -149,15 +186,29 @@ class ProviderScheduleEditorScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final templatesAsync = ref.watch(myScheduleTemplatesProvider());
     final clinics = ref
         .watch(myClinicsProvider)
         .maybeWhen(data: (list) => list, orElse: () => const <DoctorClinic>[]);
+    _syncTabController(clinics);
+    final tabController = _tabController;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
-      appBar: AppBar(title: Text('provider_dashboard.schedule.title'.tr())),
+      appBar: AppBar(
+        title: Text('provider_dashboard.schedule.title'.tr()),
+        bottom: tabController == null
+            ? null
+            : TabBar(
+                controller: tabController,
+                isScrollable: true,
+                tabs: [
+                  if (_showAllTab) Tab(text: 'provider_dashboard.home.tab_all'.tr()),
+                  for (final clinic in clinics) BranchTab(branch: clinic),
+                ],
+              ),
+      ),
       floatingActionButton: clinics.isEmpty
           ? null
           : FloatingActionButton.extended(
@@ -180,25 +231,56 @@ class ProviderScheduleEditorScreen extends ConsumerWidget {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(myScheduleTemplatesProvider),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                _notRetroactiveBanner(),
-                const SizedBox(height: 16),
-                for (final template in templates)
-                  _templateCard(
-                    context,
-                    template,
-                    onEdit: () => _edit(context, ref, clinics, template),
-                    onDelete: () => _delete(context, ref, template),
-                  ),
-                const SizedBox(height: 80),
-              ],
-            ),
+          if (tabController == null) {
+            return _templateList(context, templates, clinics);
+          }
+
+          return TabBarView(
+            controller: tabController,
+            children: [
+              if (_showAllTab) _templateList(context, templates, clinics),
+              for (final clinic in clinics)
+                _templateList(
+                  context,
+                  templates.where((t) => t.doctorClinicAffiliationId == clinic.affiliationId).toList(),
+                  clinics,
+                ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _templateList(
+    BuildContext context,
+    List<DoctorScheduleTemplate> templates,
+    List<DoctorClinic> clinics,
+  ) {
+    if (templates.isEmpty) {
+      return EmptyState(
+        title: 'provider_dashboard.schedule.empty_title'.tr(),
+        subtitle: 'provider_dashboard.schedule.empty_subtitle'.tr(),
+        icon: Icons.schedule_outlined,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(myScheduleTemplatesProvider),
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _notRetroactiveBanner(),
+          const SizedBox(height: 16),
+          for (final template in templates)
+            _templateCard(
+              context,
+              template,
+              onEdit: () => _edit(context, ref, clinics, template),
+              onDelete: () => _delete(context, ref, template),
+            ),
+          const SizedBox(height: 80),
+        ],
       ),
     );
   }

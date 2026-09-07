@@ -9,5 +9,14 @@ class CreateAssistantUseCase {
   Future<Result<ProvisionedAssistant>> call({
     required String phone,
     required String displayName,
-  }) => _repository.createAssistant(phone: phone, displayName: displayName);
+    String? title,
+    String? subtitle,
+    required List<String> clinicBranchIds,
+  }) => _repository.createAssistant(
+    phone: phone,
+    displayName: displayName,
+    title: title,
+    subtitle: subtitle,
+    clinicBranchIds: clinicBranchIds,
+  );
 }

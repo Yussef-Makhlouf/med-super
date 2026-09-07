@@ -7,6 +7,8 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
     show isValidEgyptPhone, normalizeEgyptPhone;
 import 'package:med_super/features/provider_dashboard/domain/entities/provisioned_assistant.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/assistant_providers.dart';
+import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_multi_select.dart';
 
 /// Bottom sheet for adding a new clinic assistant.
 /// Returns [ProvisionedAssistant] (with generated password) on success,
@@ -24,18 +26,31 @@ class _AddAssistantBottomSheetState
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _subtitleController = TextEditingController();
+  final Set<String> _selectedBranchIds = {};
   bool _loading = false;
   String? _errorMessage;
+  String? _branchesErrorMessage;
 
   @override
   void dispose() {
     _phoneController.dispose();
     _nameController.dispose();
+    _titleController.dispose();
+    _subtitleController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final formValid = _formKey.currentState?.validate() ?? false;
+    final branchesValid = _selectedBranchIds.isNotEmpty;
+    setState(() {
+      _branchesErrorMessage = branchesValid
+          ? null
+          : 'assistants.branches_required'.tr();
+    });
+    if (!formValid || !branchesValid) return;
 
     setState(() {
       _loading = true;
@@ -44,10 +59,18 @@ class _AddAssistantBottomSheetState
 
     final phone = normalizeEgyptPhone(_phoneController.text.trim());
     final name = _nameController.text.trim();
+    final title = _titleController.text.trim();
+    final subtitle = _subtitleController.text.trim();
 
     final (provisioned, failure) = await ref
         .read(assistantsProvider.notifier)
-        .create(phone: phone, displayName: name);
+        .create(
+          phone: phone,
+          displayName: name,
+          title: title.isEmpty ? null : title,
+          subtitle: subtitle.isEmpty ? null : subtitle,
+          clinicBranchIds: _selectedBranchIds.toList(),
+        );
 
     if (!mounted) return;
 
@@ -77,7 +100,8 @@ class _AddAssistantBottomSheetState
       padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomInset),
       child: Form(
         key: _formKey,
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -144,6 +168,76 @@ class _AddAssistantBottomSheetState
                 return null;
               },
             ),
+            const SizedBox(height: 16),
+
+            // Title field
+            _FieldLabel(text: 'assistants.title_label'.tr()),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _titleController,
+              textDirection: TextDirection.rtl,
+              decoration: _inputDecoration(hint: 'assistants.title_hint'.tr()),
+              maxLength: 200,
+            ),
+            const SizedBox(height: 16),
+
+            // Subtitle field
+            _FieldLabel(text: 'assistants.subtitle_label'.tr()),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _subtitleController,
+              textDirection: TextDirection.rtl,
+              decoration: _inputDecoration(
+                hint: 'assistants.subtitle_hint'.tr(),
+              ),
+              maxLength: 200,
+            ),
+            const SizedBox(height: 16),
+
+            // Branch multi-select
+            _FieldLabel(text: 'assistants.branches_label'.tr()),
+            const SizedBox(height: 6),
+            Consumer(
+              builder: (context, ref, _) {
+                final clinicsAsync = ref.watch(myClinicsProvider);
+                return clinicsAsync.when(
+                  data: (clinics) => BranchMultiSelect(
+                    branches: clinics,
+                    selectedBranchIds: _selectedBranchIds,
+                    onChanged: (next) => setState(() {
+                      _selectedBranchIds
+                        ..clear()
+                        ..addAll(next);
+                      _branchesErrorMessage = null;
+                    }),
+                  ),
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (_, _) => Text(
+                    'assistants.branches_load_failed'.tr(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.errorRed,
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (_branchesErrorMessage != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                _branchesErrorMessage!,
+                style: const TextStyle(fontSize: 12, color: AppColors.errorRed),
+              ),
+            ],
 
             // Error banner
             if (_errorMessage != null) ...[
@@ -217,6 +311,7 @@ class _AddAssistantBottomSheetState
               ),
             ),
           ],
+          ),
         ),
       ),
     );

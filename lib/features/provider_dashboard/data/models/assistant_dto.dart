@@ -8,6 +8,9 @@ class AssistantDto {
     required this.displayName,
     required this.status,
     required this.createdAt,
+    this.title,
+    this.subtitle,
+    this.clinicBranchIds = const [],
     this.generatedPassword,
   });
 
@@ -16,6 +19,9 @@ class AssistantDto {
   final String displayName;
   final String status;
   final String createdAt;
+  final String? title;
+  final String? subtitle;
+  final List<String> clinicBranchIds;
   final String? generatedPassword;
 
   factory AssistantDto.fromJson(Map<String, dynamic> json) => AssistantDto(
@@ -24,6 +30,13 @@ class AssistantDto {
     displayName: (json['displayName'] ?? json['display_name'] ?? '') as String,
     status: (json['status'] ?? 'ACTIVE') as String,
     createdAt: (json['createdAt'] ?? json['created_at'] ?? '') as String,
+    title: json['title'] as String?,
+    subtitle: json['subtitle'] as String?,
+    clinicBranchIds:
+        ((json['clinicBranchIds'] ?? json['clinic_branch_ids']) as List<dynamic>?)
+            ?.map((e) => e as String)
+            .toList() ??
+        const [],
     generatedPassword:
         (json['generatedPassword'] ?? json['generated_password']) as String?,
   );
@@ -34,6 +47,9 @@ class AssistantDto {
     displayName: displayName,
     status: AssistantStatus.fromApi(status),
     createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
+    title: title,
+    subtitle: subtitle,
+    clinicBranchIds: clinicBranchIds,
     generatedPassword: generatedPassword,
   );
 }

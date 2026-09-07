@@ -139,9 +139,14 @@ class ProviderProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  // Assistant-only: two tabs mirroring the doctor's own
+                  // Appointments/Clinic surfaces — same screens, unmodified,
+                  // just naturally scoped to the assistant's assigned
+                  // branches (via the backend's doctor-scope resolution).
+                  if (isAssistant) const _AssistantAppointmentsClinicTabs(),
                   // Navigation Options List
                   if (!isAssistant)
-                    _buildNavTile(
+                    buildNavTile(
                       icon: Icons.person_outline,
                       iconBg: brandBlue.withValues(alpha: 0.1),
                       iconColor: brandBlue,
@@ -158,7 +163,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                   // Doctor-only tiles — hidden from assistants
                   if (!isAssistant) ...[
                     const SizedBox(height: 14),
-                    _buildNavTile(
+                    buildNavTile(
                       icon: Icons.domain_outlined,
                       iconBg: const Color(0xFFECFDF5),
                       iconColor: const Color(0xFF10B981),
@@ -171,7 +176,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _buildNavTile(
+                    buildNavTile(
                       icon: Icons.calendar_today_outlined,
                       iconBg: const Color(0xFFF3E8FF),
                       iconColor: const Color(0xFFA855F7),
@@ -184,7 +189,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _buildNavTile(
+                    buildNavTile(
                       icon: Icons.account_balance_wallet_outlined,
                       iconBg: const Color(0xFFEFF6FF),
                       iconColor: brandBlue,
@@ -201,7 +206,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 14),
                     // Doctor-only: manage clinic assistants
-                    _buildNavTile(
+                    buildNavTile(
                       icon: Icons.badge_outlined,
                       iconBg: const Color(0xFFFFF7ED),
                       iconColor: const Color(0xFFF97316),
@@ -249,7 +254,7 @@ class ProviderProfileScreen extends ConsumerWidget {
     );
   }
 
-  static Widget _buildNavTile({
+  static Widget buildNavTile({
     required IconData icon,
     required Color iconBg,
     required Color iconColor,
@@ -312,6 +317,49 @@ class ProviderProfileScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Assistant-only profile section: two tiles pushing to the doctor's own
+/// `ProviderScheduleEditorScreen`/`ProviderClinicSettingsScreen` unmodified —
+/// both already scope to only the assistant's assigned branches via
+/// `ResolveDoctorScopeUseCase` on the backend, so no separate assistant
+/// screens or extra filtering are needed here.
+class _AssistantAppointmentsClinicTabs extends StatelessWidget {
+  const _AssistantAppointmentsClinicTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ProviderProfileScreen.buildNavTile(
+          icon: Icons.calendar_today_outlined,
+          iconBg: const Color(0xFFF3E8FF),
+          iconColor: const Color(0xFFA855F7),
+          title: 'جدول المواعيد',
+          subtitle: 'ساعات العمل والحضور للفروع المخصصة لك',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProviderScheduleEditorScreen(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        ProviderProfileScreen.buildNavTile(
+          icon: Icons.domain_outlined,
+          iconBg: const Color(0xFFECFDF5),
+          iconColor: const Color(0xFF10B981),
+          title: 'العيادة',
+          subtitle: 'الفروع المخصصة لك',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProviderClinicSettingsScreen(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
     );
   }
 }

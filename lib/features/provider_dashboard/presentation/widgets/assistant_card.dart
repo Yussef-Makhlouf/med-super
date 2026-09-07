@@ -78,6 +78,17 @@ class AssistantCard extends StatelessWidget {
                       letterSpacing: 0.3,
                     ),
                   ),
+                  if (assistant.title != null && assistant.title!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      assistant.title!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -157,16 +157,18 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                 ),
+                isExpanded: true,
                 items: [
                   for (final clinic in widget.clinics)
                     DropdownMenuItem(
                       value: clinic.affiliationId,
-                      // A dropdown item is a single line, so this shows the
-                      // branch's own address rather than `displayTitle` —
-                      // `clinicName` alone is identical across every branch
-                      // of the same clinic and wouldn't distinguish them.
+                      // Address line + city only — no clinic/doctor name,
+                      // which added nothing (the doctor already knows whose
+                      // clinics these are) and made long items overflow.
+                      // `isExpanded: true` on the field above makes this
+                      // Text's own width constraint meaningful.
                       child: Text(
-                        '${clinic.displayAddressLine} — ${clinic.displayTitle}',
+                        '${clinic.displayAddressLine} — ${clinic.address.city}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -832,7 +832,15 @@
     "delete_failed": "Failed to delete the assistant. Please try again.",
     "delete_title": "Delete assistant",
     "delete_confirm_prefix": "Are you sure you want to delete the assistant ",
-    "delete_confirm_suffix": "? Access will be revoked immediately and this cannot be undone."
+    "delete_confirm_suffix": "? Access will be revoked immediately and this cannot be undone.",
+    "title_label": "Title (optional)",
+    "title_hint": "e.g. Front desk",
+    "subtitle_label": "Subtitle (optional)",
+    "subtitle_hint": "e.g. Reception & check-in",
+    "branches_label": "Assigned branches",
+    "branches_required": "Select at least one branch",
+    "branches_load_failed": "Failed to load branches. Please try again.",
+    "no_branches_available": "No branches available"
   },
   "provider_dashboard": {
     "home": {
@@ -966,7 +974,7 @@
       "delete_message": "It will only be deleted if no other doctor is affiliated with it and it has no appointments."
     },
     "schedule": {
-      "title": "My availability",
+      "title": "Schedule",
       "empty_title": "No weekly hours set",
       "empty_subtitle": "Add a working window so patients can book you.",
       "add": "Add hours",

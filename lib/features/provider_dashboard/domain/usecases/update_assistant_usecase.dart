@@ -11,10 +11,16 @@ class UpdateAssistantUseCase {
     String? displayName,
     String? status,
     String? password,
+    String? title,
+    String? subtitle,
+    List<String>? clinicBranchIds,
   }) => _repository.updateAssistant(
     id: id,
     displayName: displayName,
     status: status,
     password: password,
+    title: title,
+    subtitle: subtitle,
+    clinicBranchIds: clinicBranchIds,
   );
 }

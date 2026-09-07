@@ -10,6 +10,9 @@ class ProvisionedAssistant extends Assistant {
     required super.displayName,
     required super.status,
     required super.createdAt,
+    super.title,
+    super.subtitle,
+    super.clinicBranchIds,
     required this.generatedPassword,
   });
 
@@ -24,5 +27,8 @@ class ProvisionedAssistant extends Assistant {
     displayName: displayName,
     status: status,
     createdAt: createdAt,
+    title: title,
+    subtitle: subtitle,
+    clinicBranchIds: clinicBranchIds,
   );
 }

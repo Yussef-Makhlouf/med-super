@@ -69,7 +69,7 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _openBranch(BuildContext context, DoctorClinic clinic) {
+  void _openBranch(BuildContext context, DoctorClinic clinic, {required bool isAssistant}) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -87,7 +87,7 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
       ),
       builder: (_) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _ClinicBranchEditSheet(clinic: clinic),
+        child: _ClinicBranchEditSheet(clinic: clinic, isAssistant: isAssistant),
       ),
     );
   }
@@ -95,6 +95,12 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(myClinicsProvider);
+    final session = ref.watch(sessionControllerProvider).asData?.value;
+    // Assistants can edit a branch's operational details but cannot add a
+    // new branch or delete one — those stay doctor-only per the doctor's
+    // ownership of the clinic relationship, an assistant only manages the
+    // branches they're already assigned to.
+    final isAssistant = session?.user.isAssistant ?? false;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -118,19 +124,21 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: async.maybeWhen(
-        data: (clinics) => clinics.isEmpty
-            ? null
-            : FloatingActionButton.extended(
-                heroTag: 'provider_clinics_fab',
-                backgroundColor: brandBlue,
-                foregroundColor: Colors.white,
-                onPressed: () => _addBranch(context, ref, clinics),
-                icon: const Icon(Icons.add),
-                label: Text('provider_dashboard.clinics.add_branch'.tr()),
-              ),
-        orElse: () => null,
-      ),
+      floatingActionButton: isAssistant
+          ? null
+          : async.maybeWhen(
+              data: (clinics) => clinics.isEmpty
+                  ? null
+                  : FloatingActionButton.extended(
+                      heroTag: 'provider_clinics_fab',
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      onPressed: () => _addBranch(context, ref, clinics),
+                      icon: const Icon(Icons.add),
+                      label: Text('provider_dashboard.clinics.add_branch'.tr()),
+                    ),
+              orElse: () => null,
+            ),
       body: AsyncValueView<List<DoctorClinic>>(
         value: async,
         onRetry: () => ref.invalidate(myClinicsProvider),
@@ -151,7 +159,7 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
               itemBuilder: (context, index) =>
                   _ClinicBranchListTile(
                     clinic: clinics[index],
-                    onTap: () => _openBranch(context, clinics[index]),
+                    onTap: () => _openBranch(context, clinics[index], isAssistant: isAssistant),
                   ),
             ),
           );
@@ -211,7 +219,7 @@ class _ClinicBranchListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${clinic.clinicName} · ${clinic.address.line1} · ${clinic.phone}',
+                      clinic.address.line1,
                       style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -244,9 +252,17 @@ class _ClinicBranchListTile extends StatelessWidget {
 /// [_ClinicBranchListTile]. Save stays disabled until a field actually
 /// changes, so a tap-in-tap-out never fires a needless request.
 class _ClinicBranchEditSheet extends ConsumerStatefulWidget {
-  const _ClinicBranchEditSheet({required this.clinic});
+  const _ClinicBranchEditSheet({required this.clinic, required this.isAssistant});
 
   final DoctorClinic clinic;
+
+  /// An assistant can edit a branch's operational details (phone, address,
+  /// timezone) but not its commercial/ownership-level fields: the consult
+  /// fee, pausing/resuming the affiliation, or deleting the branch — all
+  /// three stay doctor-only both here (hidden/disabled) and on the backend
+  /// (`PATCH .../clinics/affiliations/:id` and the delete route are
+  /// `@Roles(DOCTOR)`-only, so these would 403 for an assistant regardless).
+  final bool isAssistant;
 
   @override
   ConsumerState<_ClinicBranchEditSheet> createState() =>
@@ -289,7 +305,8 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
 
   void _recomputeDirty() {
     final dirty =
-        _changedFields.values.any((v) => v != null) || _changedConsultFee != null;
+        _changedFields.values.any((v) => v != null) ||
+        (!widget.isAssistant && _changedConsultFee != null);
     if (dirty != _isDirty) setState(() => _isDirty = dirty);
   }
 
@@ -337,7 +354,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
       return;
     }
     final changed = _changedFields;
-    final changedFee = _changedConsultFee;
+    final changedFee = widget.isAssistant ? null : _changedConsultFee;
 
     setState(() => _saving = true);
 
@@ -566,13 +583,19 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textDirection: ui.TextDirection.ltr,
                 textAlign: TextAlign.left,
-                validator: (value) {
-                  final parsed = double.tryParse((value ?? '').trim());
-                  if (parsed == null || parsed <= 0) {
-                    return 'provider_dashboard.clinics.consult_fee'.tr();
-                  }
-                  return null;
-                },
+                // Consult fee is doctor-only (commercial term of the
+                // affiliation, not a branch operational field) — an
+                // assistant sees it for context but cannot change it.
+                readOnly: widget.isAssistant,
+                validator: widget.isAssistant
+                    ? null
+                    : (value) {
+                        final parsed = double.tryParse((value ?? '').trim());
+                        if (parsed == null || parsed <= 0) {
+                          return 'provider_dashboard.clinics.consult_fee'.tr();
+                        }
+                        return null;
+                      },
               ),
               const SizedBox(height: 4),
               Text(
@@ -609,36 +632,43 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: OutlinedButton(
-                        onPressed: _saving ? null : _togglePaused,
-                        child: Text(
-                          isActive
-                              ? 'provider_dashboard.clinics.pause'.tr()
-                              : 'provider_dashboard.clinics.resume'.tr(),
+                  // Pause/Resume changes the affiliation's commercial status —
+                  // doctor-only, same as the consult fee (backend
+                  // `PATCH .../clinics/affiliations/:id` is `@Roles(DOCTOR)`).
+                  if (!widget.isAssistant) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 46,
+                        child: OutlinedButton(
+                          onPressed: _saving ? null : _togglePaused,
+                          child: Text(
+                            isActive
+                                ? 'provider_dashboard.clinics.pause'.tr()
+                                : 'provider_dashboard.clinics.resume'.tr(),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 42,
-                child: OutlinedButton.icon(
-                  onPressed: _saving ? null : _delete,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.errorRed,
-                    side: const BorderSide(color: AppColors.errorRed),
+              if (!widget.isAssistant) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: OutlinedButton.icon(
+                    onPressed: _saving ? null : _delete,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.errorRed,
+                      side: const BorderSide(color: AppColors.errorRed),
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: Text('provider_dashboard.clinics.delete'.tr()),
                   ),
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: Text('provider_dashboard.clinics.delete'.tr()),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -697,6 +727,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
     TextAlign? textAlign,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
+    bool readOnly = false,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: TextFormField(
@@ -705,6 +736,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
       textDirection: textDirection,
       textAlign: textAlign ?? TextAlign.start,
       inputFormatters: inputFormatters,
+      readOnly: readOnly,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),

@@ -74,10 +74,19 @@ class AssistantsNotifier extends AsyncNotifier<List<Assistant>> {
   Future<(ProvisionedAssistant?, Failure?)> create({
     required String phone,
     required String displayName,
+    String? title,
+    String? subtitle,
+    required List<String> clinicBranchIds,
   }) async {
     final result = await ref
         .read(createAssistantUseCaseProvider)
-        .call(phone: phone, displayName: displayName);
+        .call(
+          phone: phone,
+          displayName: displayName,
+          title: title,
+          subtitle: subtitle,
+          clinicBranchIds: clinicBranchIds,
+        );
     return switch (result) {
       Ok(:final value) => (value, null),
       Err(:final failure) => (null, failure),
@@ -90,6 +99,9 @@ class AssistantsNotifier extends AsyncNotifier<List<Assistant>> {
     String? displayName,
     AssistantStatus? status,
     String? password,
+    String? title,
+    String? subtitle,
+    List<String>? clinicBranchIds,
   }) async {
     final result = await ref
         .read(updateAssistantUseCaseProvider)
@@ -98,6 +110,9 @@ class AssistantsNotifier extends AsyncNotifier<List<Assistant>> {
           displayName: displayName,
           status: status?.apiValue,
           password: password,
+          title: title,
+          subtitle: subtitle,
+          clinicBranchIds: clinicBranchIds,
         );
     switch (result) {
       case Ok(:final value):

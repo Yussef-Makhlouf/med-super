@@ -18,6 +18,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/d
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_tab.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
@@ -403,7 +404,7 @@ class _BranchTimelineTabsState extends State<_BranchTimelineTabs>
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             tabs: [
               if (_showAllTab) Tab(text: 'provider_dashboard.home.tab_all'.tr()),
-              for (final branch in widget.branches) _BranchTab(branch: branch),
+              for (final branch in widget.branches) BranchTab(branch: branch),
             ],
           ),
         ),
@@ -436,40 +437,6 @@ class _BranchTimelineTabsState extends State<_BranchTimelineTabs>
 /// "my clinics" list (`_ClinicBranchListTile`): the branch's city as the
 /// bold title, with the street address alone as a muted subtitle
 /// underneath.
-class _BranchTab extends StatelessWidget {
-  const _BranchTab({required this.branch});
-
-  final DoctorClinic branch;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tab(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 120),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              branch.address.city,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              branch.address.line1,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// All branches' rows merged into one time-sorted list, each row labelled
 /// with its branch name so it's unambiguous which clinic a slot belongs to.
 class _AllBranchesTimeline extends ConsumerWidget {
