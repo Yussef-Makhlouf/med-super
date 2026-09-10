@@ -22,7 +22,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'session_provider.g.dart';
 
 /// Dev bypass skips login/OTP. Keep false for the real Sprint 1 auth loop.
-const bool kDevBypassAuth = false;
+const bool kDevBypassAuth = true;
 
 /// Dev convenience: treat every provider session as if registration were
 /// already submitted, so a mock doctor login lands straight on

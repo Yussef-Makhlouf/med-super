@@ -5,8 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/specialties/domain/entities/specialty.dart';
 import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
 import 'package:med_super/core/specialties/presentation/utils/specialty_visuals.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/skeleton_loader.dart';
+import 'package:med_super/core/widgets/staggered_reveal.dart';
+import 'package:med_super/core/widgets/tap_scale.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/home/presentation/controllers/featured_doctors_provider.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
@@ -56,37 +61,53 @@ class PatientHomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Column(
                     children: [
-                      _HomeHeader(displayName: displayName),
+                      StaggeredReveal(
+                        index: 0,
+                        child: _HomeHeader(displayName: displayName),
+                      ),
                       const SizedBox(height: 16),
-                      const _HomeSearchBar(),
+                      const StaggeredReveal(index: 1, child: _HomeSearchBar()),
                       const SizedBox(height: 16),
-                      const _PromoBanner(),
+                      const StaggeredReveal(index: 2, child: _PromoBanner()),
                       const SizedBox(height: 16),
-                      const _QuickActions(),
+                      const StaggeredReveal(index: 3, child: _QuickActions()),
                       const SizedBox(height: 24),
-                      _SectionHeader(
-                        title: 'home.specialties'.tr(),
-                        actionLabel: 'common.view_all'.tr(),
-                        onAction: () =>
-                            context.push('/patient/home/specialties'),
+                      StaggeredReveal(
+                        index: 4,
+                        child: _SectionHeader(
+                          title: 'home.specialties'.tr(),
+                          actionLabel: 'common.view_all'.tr(),
+                          onAction: () =>
+                              context.push('/patient/home/specialties'),
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(child: _SpecialtiesRow()),
+              const SliverToBoxAdapter(
+                child: StaggeredReveal(index: 5, child: _SpecialtiesRow()),
+              ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SectionHeader(title: 'home.featured_doctors'.tr()),
+                  child: StaggeredReveal(
+                    index: 6,
+                    child: _SectionHeader(title: 'home.featured_doctors'.tr()),
+                  ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: const SliverToBoxAdapter(child: _FeaturedDoctorsList()),
+                sliver: const SliverToBoxAdapter(
+                  child: StaggeredReveal(
+                    index: 7,
+                    child: _FeaturedDoctorsList(),
+                  ),
+                ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 88)),
             ],
@@ -175,15 +196,15 @@ class _HomeSearchBar extends StatelessWidget {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           borderSide: const BorderSide(color: brandBlue, width: 1.5),
         ),
       ),
@@ -197,27 +218,53 @@ class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              begin: Alignment.centerRight,
-              end: Alignment.centerLeft,
-              colors: [Color(0xFF1E6FE8), Color(0xFF4AA3F5), Color(0xFFB8D9FF)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: brandBlue.withValues(alpha: 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        // `AlignmentDirectional`, not physical `Alignment` — the white
+        // headline below sits at `centerStart`, so the gradient's darkest
+        // stop (brandBlue) must resolve to that same logical edge in every
+        // locale. With a physical `Alignment.centerRight` this matched by
+        // coincidence in `ar` (start == right) but put the white text over
+        // the palest stop (#B8D9FF) in `en` — a contrast failure.
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.centerStart,
+          end: AlignmentDirectional.centerEnd,
+          colors: [brandBlue, const Color(0xFF4AA3F5), const Color(0xFFB8D9FF)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: brandBlue.withValues(alpha: 0.22),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: Column(
+        ],
+      ),
+      // `Clip.antiAlias` so the watermark icon below is clipped to the same
+      // rounded corners as the banner itself, rather than poking past them.
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // A flat gradient card with text on it isn't a hero — it's a
+          // placeholder (design-taste-frontend skill, 4.8). This gives the
+          // banner an actual visual identity (a lab-test icon, matching
+          // `promo_title`'s "labs" copy and the `biotech_outlined` icon
+          // already used for the same action on `_QuickActions`), pinned to
+          // the gradient's palest stop — the opposite edge from the white
+          // headline — so it never competes with the text for contrast.
+          PositionedDirectional(
+            end: -28,
+            top: -18,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.16,
+                child: Icon(Icons.biotech, size: 148, color: Colors.white),
+              ),
+            ),
+          ),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Align(
@@ -229,7 +276,7 @@ class _PromoBanner extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF22C55E),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
                   ),
                   child: Text(
                     'home.special_offer'.tr(),
@@ -269,7 +316,7 @@ class _PromoBanner extends StatelessWidget {
                       vertical: 10,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
                     ),
                   ),
                   child: Text(
@@ -280,30 +327,10 @@ class _PromoBanner extends StatelessWidget {
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _dot(false),
-            const SizedBox(width: 6),
-            _dot(true),
-            const SizedBox(width: 6),
-            _dot(false),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
-
-  static Widget _dot(bool active) => Container(
-    width: active ? 8 : 6,
-    height: active ? 8 : 6,
-    decoration: BoxDecoration(
-      color: active ? brandBlue : const Color(0xFFD0D7E2),
-      shape: BoxShape.circle,
-    ),
-  );
 }
 
 class _QuickActions extends ConsumerWidget {
@@ -380,36 +407,44 @@ class _QuickActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Material(
-      color: Colors.white,
-      elevation: 0,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: iconColor, size: 28),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: textTheme.titleSmall?.copyWith(
-                  color: PatientHomeScreen._ink,
-                  fontWeight: FontWeight.w800,
-                ),
+    return TapScale(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          boxShadow: AppShadows.resting,
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: textTheme.bodySmall?.copyWith(
-                  color: PatientHomeScreen._muted,
-                ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: textTheme.titleSmall?.copyWith(
+                color: PatientHomeScreen._ink,
+                fontWeight: FontWeight.w800,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: textTheme.bodySmall?.copyWith(
+                color: PatientHomeScreen._muted,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -447,12 +482,31 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         const Spacer(),
-        Text(
-          title,
-          style: textTheme.titleMedium?.copyWith(
-            color: PatientHomeScreen._ink,
-            fontWeight: FontWeight.w800,
-          ),
+        // A small accent bar ahead of the title reads as hierarchy (this is
+        // a section start) rather than ornament, and costs nothing visually
+        // busy. It's built as a nested `Row` — not a `Positioned`/hardcoded
+        // side — so it sits at the title's logical start (right before it
+        // in reading order) in both `en` and `ar` automatically.
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(
+                color: brandBlue,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                color: PatientHomeScreen._ink,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -475,21 +529,44 @@ class _SpecialtiesRow extends ConsumerWidget {
       child: AsyncValueView(
         value: specialties,
         onRetry: () => ref.invalidate(specialtiesProvider),
-        loadingWidget: const Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
+        // Matches the loaded row's own shape (circle + label) rather than a
+        // generic spinner, so the layout doesn't jump once data arrives.
+        loadingWidget: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 5,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (_, _) => const SizedBox(
+            width: 78,
+            child: Column(
+              children: [
+                SkeletonLoader(width: 64, height: 64, borderRadius: 32),
+                SizedBox(height: 8),
+                SkeletonLoader(width: 48, height: 12, borderRadius: 6),
+              ],
+            ),
           ),
         ),
         data: (items) {
           if (items.isEmpty) {
             return Center(
-              child: Text(
-                'home.specialties_empty'.tr(),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: PatientHomeScreen._muted,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.medical_services_outlined,
+                    size: 28,
+                    color: PatientHomeScreen._muted.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'home.specialties_empty'.tr(),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: PatientHomeScreen._muted,
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -519,28 +596,25 @@ class _SpecialtyItem extends StatelessWidget {
     final name = specialty.localizedName(context.locale.languageCode);
     return SizedBox(
       width: 78,
-      child: InkWell(
+      child: TapScale(
         onTap: () => context.push(
           '/patient/home/search'
           '?specialty=${Uri.encodeComponent(specialty.code)}'
           '&title=${Uri.encodeComponent(name)}',
         ),
-        borderRadius: BorderRadius.circular(12),
         child: Column(
           children: [
             Container(
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: Colors.white,
+                // Tinted with the specialty's own icon color rather than
+                // flat white — reinforces the per-specialty color coding
+                // already carried by the icon (see specialty_visuals.dart)
+                // instead of introducing a new one.
+                color: visual.color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: AppShadows.resting,
               ),
               child: Icon(visual.icon, color: visual.color, size: 28),
             ),

@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_summary.dart';
 
@@ -63,105 +65,114 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
         ? '${doctor.consultationFee} ج.م'
         : '${doctor.consultationFee} ${doctor.currency}';
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => _guardedTap(widget.onTap),
-        borderRadius: BorderRadius.circular(16),
-        hoverColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Avatar(photoUrl: doctor.photoUrl),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // `doctor.isVerified` is never true here — the real
-                        // `GET /v1/doctors/search` response
-                        // (`SearchDoctorItem`) has no verification field at
-                        // all, so this always defaulted to `false`. Removed
-                        // rather than kept as permanently-dead UI; doctor
-                        // detail (`GET /v1/doctors/{id}`) does carry a real
-                        // `status` and shows verification there instead.
-                        Text(
-                          doctor.name,
-                          style: textTheme.titleMedium?.copyWith(
-                            color: brandBlue,
-                            fontWeight: FontWeight.w800,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: InkWell(
+          onTap: () => _guardedTap(widget.onTap),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          hoverColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Avatar(photoUrl: doctor.photoUrl),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // `doctor.isVerified` is never true here — the real
+                          // `GET /v1/doctors/search` response
+                          // (`SearchDoctorItem`) has no verification field at
+                          // all, so this always defaulted to `false`. Removed
+                          // rather than kept as permanently-dead UI; doctor
+                          // detail (`GET /v1/doctors/{id}`) does carry a real
+                          // `status` and shows verification there instead.
+                          Text(
+                            doctor.name,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: brandBlue,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          doctor.specialty,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: brandBlue.withValues(alpha: 0.85),
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 2),
+                          Text(
+                            doctor.specialty,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: brandBlue.withValues(alpha: 0.85),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        // Experience-years row removed — `SearchDoctorItem`
-                        // (the real `GET /v1/doctors/search` shape) has no
-                        // `experience_years` field, so this always rendered
-                        // "0 سنوات خبرة" against a live backend. The doctor
-                        // detail screen shows the real value where it
-                        // exists (`Doctor.experience_years`, ADR-005 Part
-                        // 34.2).
-                      ],
+                          // Experience-years row removed — `SearchDoctorItem`
+                          // (the real `GET /v1/doctors/search` shape) has no
+                          // `experience_years` field, so this always rendered
+                          // "0 سنوات خبرة" against a live backend. The doctor
+                          // detail screen shows the real value where it
+                          // exists (`Doctor.experience_years`, ADR-005 Part
+                          // 34.2).
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Rating/review-count row removed: `rating_avg`/
-              // `rating_count` are real columns but no reviews feature
-              // exists to ever write a non-zero value to them (the
-              // `reviews` module is POSTPONEd) — every doctor shows
-              // "0.0 (0)" forever, not a meaningful signal.
-              _MetaRow(
-                icon: Icons.place_outlined,
-                iconColor: _teal,
-                // `distanceKm` is null when the search ran without the
-                // device's location (denied/unavailable) — show just the
-                // clinic name rather than a fabricated "0.0 km".
-                text: doctor.distanceKm == null
-                    ? doctor.locationLabel
-                    : '${doctor.locationLabel} (${doctor.distanceKm!.toStringAsFixed(1)} كم)',
-              ),
-              const SizedBox(height: 8),
-              _MetaRow(
-                icon: Icons.payments_outlined,
-                iconColor: _green,
-                text: 'search.consultation_fee'.tr(args: [feeLabel]),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 48,
-                child: FilledButton(
-                  onPressed: () => _guardedTap(widget.onBook),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: brandBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Rating/review-count row removed: `rating_avg`/
+                // `rating_count` are real columns but no reviews feature
+                // exists to ever write a non-zero value to them (the
+                // `reviews` module is POSTPONEd) — every doctor shows
+                // "0.0 (0)" forever, not a meaningful signal.
+                _MetaRow(
+                  icon: Icons.place_outlined,
+                  iconColor: _teal,
+                  // `distanceKm` is null when the search ran without the
+                  // device's location (denied/unavailable) — show just the
+                  // clinic name rather than a fabricated "0.0 km".
+                  text: doctor.distanceKm == null
+                      ? doctor.locationLabel
+                      : '${doctor.locationLabel} (${doctor.distanceKm!.toStringAsFixed(1)} كم)',
+                ),
+                const SizedBox(height: 8),
+                _MetaRow(
+                  icon: Icons.payments_outlined,
+                  iconColor: _green,
+                  text: 'search.consultation_fee'.tr(args: [feeLabel]),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: () => _guardedTap(widget.onBook),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    'home.book_now'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    child: Text(
+                      'home.book_now'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -217,7 +228,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadii.md),
       child: Container(
         width: 64,
         height: 64,

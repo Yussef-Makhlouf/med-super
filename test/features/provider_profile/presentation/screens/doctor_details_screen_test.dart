@@ -32,10 +32,22 @@ const _profile = DoctorProfile(
   ianaTimezone: 'Africa/Cairo',
 );
 
-/// A bounded stand-in for `pumpAndSettle()` — mirrors this feature's other
-/// screen tests' `_settle` helpers.
+/// A bounded stand-in for `pumpAndSettle()`.
+///
+/// Must interleave real `Future.delayed` waits with frame pumps, not just
+/// pump frames — `EasyLocalization`'s asset loader reads the translation
+/// JSON via real (non-fake-clock) `rootBundle.loadString` I/O, which
+/// `tester.pump()`/`pumpAndSettle()` alone never drives to completion (see
+/// `test/helpers/pump_localized_widget.dart`'s doc comment for the full
+/// explanation). A fixed pump-only loop races that load and silently
+/// renders an empty tree (`Localizations` still waiting on its delegate)
+/// when it loses.
 Future<void> _settle(WidgetTester tester) => tester.runAsync(() async {
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < 200 && find.byType(Scaffold).evaluate().isEmpty; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+  for (var i = 0; i < 3; i++) {
     await tester.pump(const Duration(milliseconds: 20));
   }
 });

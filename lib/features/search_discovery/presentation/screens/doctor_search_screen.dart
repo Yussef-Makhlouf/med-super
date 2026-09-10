@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/specialties/domain/entities/specialty.dart';
 import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
+import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_sort.dart';
 import 'package:med_super/features/search_discovery/presentation/controllers/search_providers.dart';
 import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
@@ -117,7 +119,9 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
       ),
       body: Column(
         children: [
-          Container(
+          StaggeredReveal(
+            index: 0,
+            child: Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Column(
@@ -137,15 +141,15 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                       vertical: 14,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
                       borderSide: const BorderSide(color: Color(0xFFE5EAF2)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
                       borderSide: const BorderSide(color: Color(0xFFE5EAF2)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
                       borderSide: const BorderSide(
                         color: brandBlue,
                         width: 1.5,
@@ -177,6 +181,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                   ),
                 ],
               ],
+            ),
             ),
           ),
           Expanded(
@@ -285,7 +290,7 @@ class _SpecialtyChips extends ConsumerWidget {
                 color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
               ),
               showCheckmark: false,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -307,7 +312,7 @@ class _SpecialtyChips extends ConsumerWidget {
               color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
             ),
             showCheckmark: false,
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -357,7 +362,7 @@ class _SortChips extends StatelessWidget {
               color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
             ),
             showCheckmark: false,
             padding: const EdgeInsets.symmetric(horizontal: 8),

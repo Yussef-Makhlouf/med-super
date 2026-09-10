@@ -8,7 +8,9 @@ import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
@@ -192,7 +194,10 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 children: [
-                  _SummaryCard(request: widget.request),
+                  StaggeredReveal(
+                    index: 0,
+                    child: _SummaryCard(request: widget.request),
+                  ),
                   const SizedBox(height: 20),
                   if (_stage == _Stage.held || _stage == _Stage.confirming)
                     _HoldTimer(remaining: _remaining),
@@ -272,8 +277,8 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +431,7 @@ class _ConfirmBar extends StatelessWidget {
               backgroundColor: AppColors.patientPrimary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.xl),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
               ),
             ),
             child: isBusy

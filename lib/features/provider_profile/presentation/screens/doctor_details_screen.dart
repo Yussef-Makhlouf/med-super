@@ -2,8 +2,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/skeleton_loader.dart';
+import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
@@ -199,7 +203,8 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
         data: (profile) {
           final affiliation = _effectiveAffiliation(profile);
           return _BottomBar(
-            fee: int.tryParse(affiliation?.consultationFee ?? '') ??
+            fee:
+                int.tryParse(affiliation?.consultationFee ?? '') ??
                 profile.consultationFee,
             currency: affiliation?.currency ?? profile.currency,
             // Real Phase 4 booking (File 10 §2.3) needs both a selected slot
@@ -251,28 +256,37 @@ class _ProfileBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        _HeaderCard(profile: profile, affiliation: affiliation),
+        StaggeredReveal(
+          index: 0,
+          child: _HeaderCard(profile: profile, affiliation: affiliation),
+        ),
         const SizedBox(height: 12),
-        _AboutCard(profile: profile),
+        StaggeredReveal(index: 1, child: _AboutCard(profile: profile)),
         // Only worth showing a branch picker when there's an actual choice
         // to make — a doctor affiliated with a single branch has nothing to
         // pick between.
         if (profile.affiliations.length > 1) ...[
           const SizedBox(height: 12),
-          _BranchPickerCard(
-            affiliations: profile.affiliations,
-            selectedClinicBranchId: affiliation?.clinicBranchId,
-            onSelected: onBranchSelected,
+          StaggeredReveal(
+            index: 2,
+            child: _BranchPickerCard(
+              affiliations: profile.affiliations,
+              selectedClinicBranchId: affiliation?.clinicBranchId,
+              onSelected: onBranchSelected,
+            ),
           ),
         ],
         const SizedBox(height: 12),
-        _AvailabilitySection(
-          profile: profile,
-          affiliation: affiliation,
-          selectedDayId: selectedDayId,
-          selectedSlotId: selectedSlotId,
-          onDaySelected: onDaySelected,
-          onSlotSelected: onSlotSelected,
+        StaggeredReveal(
+          index: 3,
+          child: _AvailabilitySection(
+            profile: profile,
+            affiliation: affiliation,
+            selectedDayId: selectedDayId,
+            selectedSlotId: selectedSlotId,
+            onDaySelected: onDaySelected,
+            onSlotSelected: onSlotSelected,
+          ),
         ),
         const SizedBox(height: 80),
       ],
@@ -321,9 +335,11 @@ class _BranchPickerCard extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadii.md),
                 onTap: () => onSelected(a.clinicBranchId),
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOut,
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -333,11 +349,9 @@ class _BranchPickerCard extends StatelessWidget {
                     color: isSelected
                         ? brandBlue.withValues(alpha: 0.08)
                         : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
                     border: Border.all(
-                      color: isSelected
-                          ? brandBlue
-                          : const Color(0xFFE5EAF2),
+                      color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -475,6 +489,18 @@ class _HeaderCard extends StatelessWidget {
                   child: _InfoChip(
                     icon: Icons.local_hospital_outlined,
                     label: affiliation!.clinicName,
+                    iconColor: brandBlue,
+                  ),
+                )
+              else if (profile.clinicBranchId != null)
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => context.push(
+                    '/patient/home/clinic-branches/${profile.clinicBranchId}',
+                  ),
+                  child: _InfoChip(
+                    icon: Icons.local_hospital_outlined,
+                    label: profile.clinicName,
                     iconColor: brandBlue,
                   ),
                 )
@@ -617,17 +643,65 @@ class _AvailabilitySection extends ConsumerWidget {
     return AsyncValueView(
       value: asyncDays,
       onRetry: () => ref.invalidate(doctorAvailabilityProvider(params)),
+      // Mirrors _SlotsCard's own shape (header, day strip, slot grid)
+      // instead of a bare spinner, so the card doesn't change height or
+      // layout once the real data lands.
       loadingWidget: const _Card(
-        child: SizedBox(
-          height: 120,
-          child: Center(child: CircularProgressIndicator()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SkeletonLoader(width: 20, height: 20, borderRadius: 6),
+                SizedBox(width: 8),
+                SkeletonLoader(width: 120, height: 16),
+              ],
+            ),
+            SizedBox(height: 14),
+            SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  SkeletonLoader(width: 88, height: 64, borderRadius: 12),
+                  SizedBox(width: 8),
+                  SkeletonLoader(width: 88, height: 64, borderRadius: 12),
+                  SizedBox(width: 8),
+                  SkeletonLoader(width: 88, height: 64, borderRadius: 12),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                SkeletonLoader(width: 84, height: 40, borderRadius: 10),
+                SkeletonLoader(width: 84, height: 40, borderRadius: 10),
+                SkeletonLoader(width: 84, height: 40, borderRadius: 10),
+                SkeletonLoader(width: 84, height: 40, borderRadius: 10),
+              ],
+            ),
+          ],
         ),
       ),
       data: (days) => days.isEmpty
           ? _Card(
               child: SizedBox(
-                height: 64,
-                child: Center(child: Text('doctor_profile.no_slots'.tr())),
+                height: 96,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event_busy_outlined,
+                        size: 26,
+                        color: _muted.withValues(alpha: 0.7),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('doctor_profile.no_slots'.tr()),
+                    ],
+                  ),
+                ),
               ),
             )
           : _SlotsCard(
@@ -697,15 +771,17 @@ class _SlotsCard extends StatelessWidget {
                 return InkWell(
                   onTap: () =>
                       onDaySelected(day.id, '${day.label} ${day.dayNumber}'),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOut,
                     width: 88,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isSelected
                           ? brandBlue.withValues(alpha: 0.12)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
                         color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
                         width: isSelected ? 1.5 : 1,
@@ -735,8 +811,10 @@ class _SlotsCard extends StatelessWidget {
                   onTap: enabled
                       ? () => onSlotSelected(slot.id, slot.label)
                       : null,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOut,
                     width: 84,
                     height: 40,
                     alignment: Alignment.center,
@@ -746,7 +824,7 @@ class _SlotsCard extends StatelessWidget {
                           : isSelected
                           ? brandBlue.withValues(alpha: 0.08)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                       border: Border.all(
                         color: !enabled
                             ? const Color(0xFFE5E7EB)
@@ -815,7 +893,7 @@ class _BottomBar extends StatelessWidget {
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
                     ),
                   ),
                   child: Text(
@@ -864,14 +942,8 @@ class _Card extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
       child: child,
     );
