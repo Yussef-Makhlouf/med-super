@@ -1,6 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import '../../domain/entities/wallet_transaction.dart';
+import '../utils/wallet_transaction_labels.dart';
 
 class TransactionListTile extends StatelessWidget {
   const TransactionListTile({
@@ -45,7 +47,7 @@ class TransactionListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction.title,
+                      walletTransactionTypeLabelKey(transaction.type).tr(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -56,7 +58,7 @@ class TransactionListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDate(transaction.timestamp),
+                      _formatDate(transaction.createdAt),
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.mutedText2,

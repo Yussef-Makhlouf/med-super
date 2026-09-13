@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/result.dart';
@@ -38,6 +41,7 @@ class _ProviderEditProfileScreenState
   bool _isSaving = false;
   bool _isDirty = false;
   bool _suppressDirtyTracking = true;
+  String? _pickedPhotoDataUri;
 
   @override
   void initState() {
@@ -62,6 +66,30 @@ class _ProviderEditProfileScreenState
   void _markDirty() {
     if (_suppressDirtyTracking || _isDirty) return;
     setState(() => _isDirty = true);
+  }
+
+  Future<void> _pickPhoto() async {
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذّر اختيار الصورة')));
+      return;
+    }
+    final file = result?.files.isEmpty ?? true ? null : result!.files.first;
+    final bytes = file?.bytes;
+    if (bytes == null) return;
+
+    setState(() {
+      _pickedPhotoDataUri = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      _isDirty = true;
+    });
   }
 
   Future<void> _submit({required bool isAssistant}) async {
@@ -117,6 +145,7 @@ class _ProviderEditProfileScreenState
       bio: _bioController.text,
       degree: _degreeController.text,
       yearsOfExperience: int.tryParse(_experienceController.text),
+      photoDataUri: _pickedPhotoDataUri,
     );
 
     if (!mounted) return;
@@ -169,7 +198,9 @@ class _ProviderEditProfileScreenState
             _suppressDirtyTracking = false;
           }
 
-          final ImageProvider? previewImage = account.avatarUrl != null
+          final ImageProvider? previewImage = _pickedPhotoDataUri != null
+              ? resolveAvatarImage(_pickedPhotoDataUri!)
+              : account.avatarUrl != null
               ? resolveAvatarImage(account.avatarUrl!)
               : null;
 
@@ -180,19 +211,56 @@ class _ProviderEditProfileScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Avatar is display-only until profile image storage exists.
+                  // Photo upload is doctor-only — an assistant has no
+                  // `Doctor` row for `PATCH /v1/doctors/me` to attach it to.
                   Center(
-                    child: CircleAvatar(
-                      radius: 48,
-                      backgroundColor: AppColors.surfaceCard,
-                      backgroundImage: previewImage,
-                      child: previewImage == null
-                          ? const Icon(
-                              Icons.account_circle,
-                              size: 96,
-                              color: AppColors.mutedText,
-                            )
-                          : null,
+                    child: GestureDetector(
+                      onTap: isAssistant ? null : _pickPhoto,
+                      child: Stack(
+                        children: [
+                          ClipOval(
+                            child: Container(
+                              width: 96,
+                              height: 96,
+                              color: AppColors.surfaceCard,
+                              alignment: Alignment.center,
+                              child: previewImage == null
+                                  ? const Icon(
+                                      Icons.account_circle,
+                                      size: 96,
+                                      color: AppColors.mutedText,
+                                    )
+                                  // Top-aligned crop — same fix as
+                                  // AvatarCircle, needed here too since a
+                                  // freshly picked photo isn't yet a URL.
+                                  : Image(
+                                      image: previewImage,
+                                      width: 96,
+                                      height: 96,
+                                      fit: BoxFit.cover,
+                                      alignment: Alignment.topCenter,
+                                    ),
+                            ),
+                          ),
+                          if (!isAssistant)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: brandBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),

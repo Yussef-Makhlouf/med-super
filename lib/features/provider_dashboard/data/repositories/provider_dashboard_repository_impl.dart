@@ -6,7 +6,6 @@ import '../models/doctor_clinic_dto.dart';
 import '../../domain/entities/doctor_account_profile.dart';
 import '../../domain/entities/doctor_appointment.dart';
 import '../../domain/entities/doctor_clinic.dart';
-import '../../domain/entities/doctor_notification.dart';
 import '../../domain/entities/doctor_schedule_template.dart';
 import '../../domain/repositories/provider_dashboard_repository.dart';
 
@@ -36,11 +35,13 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   }) => _guard(
     () async => (await _remote.updateDoctorAccount(
       bio: bio,
       degree: degree,
       yearsOfExperience: yearsOfExperience,
+      photoDataUri: photoDataUri,
     )).toEntity(),
   );
 
@@ -223,14 +224,4 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
     return (await _remote.getMyAppointment(result.appointmentId)).toEntity();
   });
 
-  @override
-  Future<Result<List<DoctorNotification>>> getNotifications() =>
-      _guard(() async {
-        final dtos = await _remote.getNotifications();
-        return dtos.map((dto) => dto.toEntity()).toList();
-      });
-
-  @override
-  Future<Result<void>> markNotificationRead(String id) =>
-      _guard(() => _remote.markNotificationRead(id));
 }

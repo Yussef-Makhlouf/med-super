@@ -1,5 +1,4 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -391,73 +390,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                         ),
                                                 ),
                                               ),
-                                              if (kDebugMode) ...[
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  'auth.mock_otp_hint'.tr(),
-                                                  textAlign: TextAlign.center,
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: const Color(
-                                                          0xFF8A94A6,
-                                                        ),
-                                                      ),
-                                                ),
-                                              ],
                                               const SizedBox(height: 24),
-                                              Row(
-                                                children: [
-                                                  const Expanded(
-                                                    child: Divider(),
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                        ),
-                                                    child: Text(
-                                                      'common.or'.tr(),
-                                                      style: textTheme.bodySmall
-                                                          ?.copyWith(
-                                                            color: const Color(
-                                                              0xFF8A94A6,
-                                                            ),
-                                                          ),
-                                                    ),
-                                                  ),
-                                                  const Expanded(
-                                                    child: Divider(),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 20),
-                                              Center(
-                                                child: Container(
-                                                  width: 56,
-                                                  height: 56,
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: brandBlue
-                                                          .withValues(
-                                                            alpha: 0.45,
-                                                          ),
-                                                      width: 1.5,
-                                                    ),
-                                                  ),
-                                                  child: IconButton(
-                                                    onPressed: () {
-                                                      // Biometric wired in a later sprint.
-                                                    },
-                                                    icon: const Icon(
-                                                      Icons.fingerprint,
-                                                      color: brandBlue,
-                                                      size: 28,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
                                               Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,

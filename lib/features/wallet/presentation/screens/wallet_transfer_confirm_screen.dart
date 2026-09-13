@@ -49,6 +49,8 @@ class _WalletTransferConfirmScreenState
         MaterialPageRoute(
           builder: (_) => WalletDepositSuccessScreen(
             transaction: transaction,
+            paymentMethodLabel:
+                walletDestinationAccountLabel(widget.destinationAccountId),
           ),
         ),
       );

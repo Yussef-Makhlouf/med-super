@@ -1,14 +1,19 @@
 import 'package:dio/dio.dart';
-import '../models/deposit_request_model.dart';
+import 'package:med_super/core/constants/api_paths.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
+import 'package:med_super/features/wallet/domain/entities/wallet_transaction.dart';
 import '../models/refund_request_model.dart';
 import '../models/wallet_balance_model.dart';
+import '../models/wallet_top_up_initiation_model.dart';
 import '../models/wallet_transaction_model.dart';
 
 abstract class WalletRemoteDatasource {
   Future<WalletBalanceModel> getBalance();
-  Future<List<WalletTransactionModel>> getTransactions();
-  Future<WalletTransactionModel> getTransactionById(String id);
-  Future<WalletTransactionModel> depositBalance(DepositRequestModel request);
+  Future<WalletTransactionPage> getTransactions({String? cursor, int? limit});
+  Future<WalletTopUpInitiationModel> initiateTopUp({
+    required String amount,
+    required PaymentCustomerInfo customer,
+  });
   Future<WalletTransactionModel> transferBalance({
     required double amount,
     required String destinationAccountId,
@@ -21,6 +26,9 @@ abstract class WalletRemoteDatasource {
   Future<RefundRequestModel> getRefundStatus(String refundId);
 }
 
+/// The two reads plus `initiateTopUp` below are the real File 12 Part 50.3
+/// wallet contract. The transfer/refund writes underneath them are
+/// mock-only — no such endpoint exists on the backend (see `STATUS.md`).
 class WalletRemoteDatasourceImpl implements WalletRemoteDatasource {
   final Dio dio;
 
@@ -28,50 +36,46 @@ class WalletRemoteDatasourceImpl implements WalletRemoteDatasource {
 
   @override
   Future<WalletBalanceModel> getBalance() async {
-    final response = await dio.get('/v1/wallet/balance');
-    final data = _extract(response.data);
-    return WalletBalanceModel.fromJson(data);
+    final response = await dio.get(ApiPaths.wallet);
+    return WalletBalanceModel.fromJson(_extract(response.data));
   }
 
   @override
-  Future<List<WalletTransactionModel>> getTransactions() async {
-    final response = await dio.get('/v1/wallet/transactions');
-    final raw = response.data;
-    List list = [];
-    if (raw is Map<String, dynamic>) {
-      final inner = raw['data'] ?? raw;
-      if (inner is List) {
-        list = inner;
-      } else if (inner is Map<String, dynamic>) {
-        final items = inner['items'];
-        if (items is List) list = items;
-      }
-    } else if (raw is List) {
-      list = raw;
-    }
-    return list
-        .map((e) => WalletTransactionModel.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<WalletTransactionModel> getTransactionById(String id) async {
-    final response = await dio.get('/v1/wallet/transactions/$id');
-    final data = _extract(response.data);
-    return WalletTransactionModel.fromJson(data);
-  }
-
-  @override
-  Future<WalletTransactionModel> depositBalance(DepositRequestModel request) async {
-    final response = await dio.post(
-      '/v1/wallet/deposits',
-      data: {
-        'amount': request.amount,
-        'payment_method_id': request.paymentMethodId,
+  Future<WalletTransactionPage> getTransactions({
+    String? cursor,
+    int? limit,
+  }) async {
+    final response = await dio.get(
+      ApiPaths.walletTransactions,
+      queryParameters: {
+        if (cursor != null) 'cursor': cursor,
+        if (limit != null) 'limit': limit,
       },
     );
     final data = _extract(response.data);
-    return WalletTransactionModel.fromJson(data);
+    final items = (data['transactions'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(WalletTransactionModel.fromJson)
+        .toList();
+    return WalletTransactionPage(
+      items: items,
+      nextCursor: data['nextCursor'] as String?,
+    );
+  }
+
+  /// Card-only by contract — the backend hardcodes `method: 'CARD'`, so
+  /// there is no payment-method parameter to pass. `amount` is a fixed
+  /// 2-decimal string (`@IsDecimal`), never a number.
+  @override
+  Future<WalletTopUpInitiationModel> initiateTopUp({
+    required String amount,
+    required PaymentCustomerInfo customer,
+  }) async {
+    final response = await dio.post(
+      ApiPaths.walletTopUp,
+      data: {'amount': amount, 'customer': customer.toJson()},
+    );
+    return WalletTopUpInitiationModel.fromJson(_extract(response.data));
   }
 
   @override

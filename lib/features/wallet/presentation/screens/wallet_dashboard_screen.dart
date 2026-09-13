@@ -8,7 +8,7 @@ import '../widgets/balance_card.dart';
 import '../widgets/quick_action_tile.dart';
 import '../widgets/transaction_list_tile.dart';
 import 'wallet_add_balance_screen.dart';
-import 'wallet_linked_cards_screen.dart';
+// import 'wallet_linked_cards_screen.dart'; // Unused while "بطاقات مرتبطة" is commented out below.
 import 'wallet_pay_bills_screen.dart';
 import 'wallet_transaction_detail_screen.dart';
 import 'wallet_transaction_history_screen.dart';
@@ -104,22 +104,28 @@ class WalletDashboardScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(
-                    child: WalletQuickActionTile(
-                      icon: Icons.credit_card,
-                      iconBg: const Color(0xFFFDECE4),
-                      iconColor: const Color(0xFFC2410C),
-                      title: 'wallet.linked_cards'.tr(),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const WalletLinkedCardsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
+                  // "بطاقات مرتبطة" isn't part of the real flow yet — no
+                  // linked-card management exists on the backend, it only
+                  // ever read from `WalletLinkedCardsScreen`'s own mock
+                  // data. Commented out rather than deleted: the screen and
+                  // route stay in place for when that flow is actually
+                  // built.
+                  // Expanded(
+                  //   child: WalletQuickActionTile(
+                  //     icon: Icons.credit_card,
+                  //     iconBg: const Color(0xFFFDECE4),
+                  //     iconColor: const Color(0xFFC2410C),
+                  //     title: 'wallet.linked_cards'.tr(),
+                  //     onTap: () {
+                  //       Navigator.of(context).push(
+                  //         MaterialPageRoute(
+                  //           builder: (_) => const WalletLinkedCardsScreen(),
+                  //         ),
+                  //       );
+                  //     },
+                  //   ),
+                  // ),
+                  // const SizedBox(width: 10),
                   Expanded(
                     child: WalletQuickActionTile(
                       icon: Icons.history,

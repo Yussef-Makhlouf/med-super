@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import 'package:med_super/features/appointments/data/models/appointment_hold_dto.dart';
 import 'package:med_super/features/appointments/data/models/appointment_summary_dto.dart';
 import 'package:med_super/features/appointments/data/models/cancelled_appointment_dto.dart';
 import 'package:med_super/features/appointments/data/models/confirmed_appointment_dto.dart';
+import 'package:med_super/features/appointments/data/models/online_payment_initiation_dto.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 
 /// One page of `GET /v1/appointments` — `nextCursor` is null once there's
 /// nothing more to load.
@@ -39,14 +42,34 @@ class AppointmentsRemoteDatasource {
     return AppointmentHoldDto.fromJson(response.data!);
   }
 
-  Future<ConfirmedAppointmentDto> confirmHold(String holdId) async {
+  /// The synchronous half of paying for a hold: `PAY_AT_CLINIC` and
+  /// `INTERNAL_WALLET` both create the `CONFIRMED` appointment in this one
+  /// call (File 12 Part 50.4). `ONLINE` is rejected here by the backend on
+  /// purpose — the async methods go through [initiateOnlinePayment].
+  Future<ConfirmedAppointmentDto> confirmHold(
+    String holdId, {
+    required AppointmentPaymentMethod paymentMethod,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '${ApiPaths.appointments}/$holdId/confirm',
-      // Pay-at-clinic only — Phase 4 doesn't have a Payments module to call
-      // for ONLINE yet (File 12 Part 35.4).
-      data: {'paymentMethod': 'PAY_AT_CLINIC'},
+      data: {'paymentMethod': paymentMethod.wireValue},
     );
     return ConfirmedAppointmentDto.fromJson(response.data!);
+  }
+
+  /// `POST /v1/appointments/{holdId}/payments` (File 12 Part 50.1) — starts
+  /// an async gateway payment. Returns the Fawry reference the patient pays
+  /// against; the appointment itself is confirmed later by the webhook.
+  Future<OnlinePaymentInitiationDto> initiateOnlinePayment(
+    String holdId, {
+    required AppointmentPaymentMethod method,
+    required PaymentCustomerInfo customer,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.appointments}/$holdId/payments',
+      data: {'method': method.wireValue, 'customer': customer.toJson()},
+    );
+    return OnlinePaymentInitiationDto.fromJson(response.data!);
   }
 
   Future<CancelledAppointmentDto> cancel({

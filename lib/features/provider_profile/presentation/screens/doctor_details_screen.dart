@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
@@ -41,7 +42,6 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
   String? _selectedSlotId;
   String? _selectedTimeLabel;
   String? _selectedClinicBranchId;
-  bool _favorited = false;
   bool _navigatingToConfirm = false;
 
   /// The branch driving availability/booking: the one the patient explicitly
@@ -151,19 +151,6 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: brandBlue),
-          ),
-          IconButton(
-            onPressed: () => setState(() => _favorited = !_favorited),
-            icon: Icon(
-              _favorited ? Icons.favorite : Icons.favorite_border,
-              color: brandBlue,
-            ),
-          ),
-        ],
       ),
       body: AsyncValueView(
         value: asyncProfile,
@@ -429,15 +416,10 @@ class _HeaderCard extends StatelessWidget {
         children: [
           Stack(
             children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: const Color(0xFFDCE8FF),
-                backgroundImage: profile.photoUrl != null
-                    ? NetworkImage(profile.photoUrl!)
-                    : null,
-                child: profile.photoUrl == null
-                    ? const Icon(Icons.person, size: 48, color: brandBlue)
-                    : null,
+              DoctorAvatar(
+                name: profile.name,
+                photoUrl: profile.photoUrl,
+                size: 96,
               ),
               // The "online now" dot (profile.isOnline) is removed here —
               // no backend column backs it at all

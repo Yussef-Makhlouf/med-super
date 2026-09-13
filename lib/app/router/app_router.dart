@@ -10,10 +10,11 @@ import 'package:med_super/app/router/routes/pharmacy_routes.dart';
 import 'package:med_super/app/router/routes/provider_dashboard_routes.dart';
 import 'package:med_super/app/router/routes/provider_registration_routes.dart';
 import 'package:med_super/app/router/routes/search_routes.dart';
+import 'package:med_super/app/router/routes/wallet_routes.dart';
 import 'package:med_super/features/home/presentation/screens/patient_shell_screen.dart';
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
-import 'package:med_super/features/home/presentation/screens/notifications_placeholder_screen.dart';
+import 'package:med_super/features/notifications/presentation/screens/patient_notifications_screen.dart';
 import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
 import 'package:med_super/features/lab_booking/presentation/screens/lab_order_detail_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_detail_screen.dart';
@@ -26,6 +27,11 @@ part 'app_router.g.dart';
 final _patientShellNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'patientShell',
 );
+
+/// Root navigator key, exposed so code outside the widget tree (e.g. an FCM
+/// notification-tap handler firing while no screen context is guaranteed to
+/// be mounted) can still navigate via `rootNavigatorKey.currentContext`.
+final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 /// Lets a pushed-under screen (e.g. LoginScreen, still alive beneath a
 /// pushed '/account-login') detect when it becomes visible again after a
@@ -62,6 +68,7 @@ GoRouter appRouter(Ref ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/account-login',
     refreshListenable: refresh,
     observers: [routeObserver],
@@ -243,7 +250,7 @@ List<RouteBase> _patientRoutes() => [
             path: '/patient/home',
             name: 'patientHome',
             builder: (context, state) => const PatientHomeScreen(),
-            routes: [...appointmentRoutes, ...searchRoutes],
+            routes: [...appointmentRoutes, ...searchRoutes, ...walletRoutes],
           ),
         ],
       ),

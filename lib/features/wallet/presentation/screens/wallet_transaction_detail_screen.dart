@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
-import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import '../../domain/entities/wallet_transaction.dart';
 import '../controllers/wallet_providers.dart';
+import '../utils/wallet_transaction_labels.dart';
 import 'wallet_refund_request_screen.dart';
 
 class WalletTransactionDetailScreen extends ConsumerWidget {
@@ -20,8 +20,6 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(walletTransactionDetailProvider(transactionId));
-    final isPatientView =
-        ref.watch(sessionControllerProvider).asData?.value?.user.isPatient ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -42,7 +40,7 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
         ),
       ),
       body: detailAsync.when(
-        data: (tx) => _buildDetailBody(context, tx, isPatientView: isPatientView),
+        data: (tx) => _buildDetailBody(context, tx),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('common.error'.tr())),
       ),
@@ -62,11 +60,7 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
         TransactionStatus.failed => 'wallet.transaction_failed',
       };
 
-  Widget _buildDetailBody(
-    BuildContext context,
-    WalletTransaction tx, {
-    required bool isPatientView,
-  }) {
+  Widget _buildDetailBody(BuildContext context, WalletTransaction tx) {
     final dateFormatted = DateFormat('d MMMM yyyy، hh:mm a', 'ar').format(tx.createdAt);
     final isPositive = tx.type == TransactionType.deposit || tx.type == TransactionType.refund;
     final statusColor = switch (tx.status) {
@@ -171,31 +165,19 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                if (tx.serviceName != null)
-                  _buildRow(
-                    'wallet.service'.tr(),
-                    tx.serviceName!,
-                    icon: Icons.medical_services_outlined,
-                  ),
-                if (tx.doctorName != null)
-                  _buildRow(
-                    (isPatientView ? 'wallet.doctor_name' : 'wallet.doctor').tr(),
-                    tx.doctorName!,
-                    icon: Icons.person_outline,
-                  ),
+                _buildRow(
+                  'wallet.transaction_type'.tr(),
+                  walletTransactionTypeLabelKey(tx.type).tr(),
+                  icon: Icons.receipt_long_outlined,
+                ),
                 _buildRow(
                   'wallet.date_and_time'.tr(),
                   dateFormatted,
                   icon: Icons.calendar_today_outlined,
                 ),
                 _buildRow(
-                  'wallet.payment_method'.tr(),
-                  tx.paymentMethod ?? 'المحفظة الالكترونية',
-                  icon: Icons.account_balance_wallet_outlined,
-                ),
-                _buildRow(
                   'wallet.reference_number'.tr(),
-                  '#${tx.referenceNumber ?? 'TXN-84920481'}',
+                  '#${tx.paymentIntentId ?? tx.id}',
                   icon: Icons.confirmation_number_outlined,
                   isLast: true,
                 ),
@@ -231,63 +213,47 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 _buildRow(
-                  'wallet.base_consultation_fee'.tr(),
+                  'wallet.gross_amount'.tr(),
                   '${tx.amount.toStringAsFixed(0)} ج.م',
+                  isLast: true,
                 ),
-                if (tx.fee != null && tx.fee! > 0)
-                  _buildRow(
-                    'wallet.platform_fee'.tr(),
-                    '-${tx.fee!.toStringAsFixed(0)} ج.م',
-                    isNegative: true,
-                  ),
-                _buildRow('wallet.vat_tax'.tr(), '0.00 ج.م', isLast: true),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'wallet.final_amount_added'.tr(),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink900,
+                if (tx.resultingBalance != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'wallet.resulting_balance'.tr(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink900,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${(tx.netAmount ?? tx.amount).toStringAsFixed(0)} ج.م',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF16A34A),
+                        Text(
+                          '${tx.resultingBalance!.toStringAsFixed(0)} ج.م',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF16A34A),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          AppButton.filled(
-            label: 'wallet.download_receipt'.tr(),
-            fullWidth: true,
-            borderRadius: 16,
-            backgroundColor: brandBlue,
-            foregroundColor: Colors.white,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم حفظ الإيصال في جهازك')),
-              );
-            },
-          ),
           if (tx.type == TransactionType.payment) ...[
             const SizedBox(height: 12),
             AppButton.outlined(
@@ -307,19 +273,6 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
               },
             ),
           ],
-          const SizedBox(height: 12),
-          AppButton.outlined(
-            label: 'wallet.need_help'.tr(),
-            fullWidth: true,
-            borderRadius: 16,
-            icon: const Icon(Icons.help_outline, size: 18),
-            foregroundColor: brandBlue,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم فتح محادثة الدعم الفني')),
-              );
-            },
-          ),
         ],
       ),
     );
@@ -329,7 +282,6 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
     String label,
     String value, {
     IconData? icon,
-    bool isNegative = false,
     bool isLast = false,
   }) {
     return Column(
@@ -354,12 +306,18 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isNegative ? const Color(0xFFDC2626) : AppColors.ink900,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
                 ),
               ),
             ],

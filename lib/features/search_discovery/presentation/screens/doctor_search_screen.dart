@@ -110,12 +110,6 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search, color: brandBlue),
-          ),
-        ],
       ),
       body: Column(
         children: [

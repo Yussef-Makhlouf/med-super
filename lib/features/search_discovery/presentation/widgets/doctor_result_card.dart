@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_summary.dart';
 
 const _ink = Color(0xFF1A2B4A);
@@ -91,7 +92,12 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Avatar(photoUrl: doctor.photoUrl),
+                    DoctorAvatar(
+                      name: doctor.name,
+                      photoUrl: doctor.photoUrl,
+                      size: 64,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -220,29 +226,3 @@ class _MetaRow extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({this.photoUrl});
-
-  final String? photoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFDCE8FF), Color(0xFFB8CFFC)],
-          ),
-        ),
-        child: photoUrl != null
-            ? Image.network(photoUrl!, fit: BoxFit.cover)
-            : const Icon(Icons.person, color: brandBlue, size: 32),
-      ),
-    );
-  }
-}

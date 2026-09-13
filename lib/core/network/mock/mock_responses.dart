@@ -428,6 +428,13 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     return {'statusCode': 200, 'data': _userPayload()};
   });
 
+  interceptor.register('POST', ApiPaths.authDevices, (_) {
+    return {
+      'statusCode': 200,
+      'data': {'deviceId': 'mock-device-1', 'registered': true},
+    };
+  });
+
   interceptor.register('POST', ApiPaths.logout, (options) {
     _mockAuth.clearSession();
     return {
@@ -767,7 +774,9 @@ class _MockHold {
   });
   final String slotId;
   final String doctorClinicAffiliationId;
-  final DateTime expiresAt;
+  /// Mutable so the Fawry mock can extend it the way
+  /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
+  DateTime expiresAt;
   final String? rescheduledFromAppointmentId;
 }
 
@@ -831,10 +840,18 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
     };
   });
 
-  interceptor.register('POST', '/confirm', (options) {
+  // Registered before `/confirm` only for readability — neither pattern is
+  // a substring of the other, so order is not load-bearing here.
+  //
+  // `POST /v1/appointments/{holdId}/payments` (File 12 Part 50.1): unlike
+  // confirm, this does NOT create an appointment. It extends the hold and
+  // hands back a Fawry reference; the real backend only books the slot once
+  // the gateway webhook arrives, which nothing in mock mode simulates — so
+  // a mock Fawry booking correctly never shows up in "My Appointments".
+  interceptor.register('POST', '/payments', (options) {
     final segments = options.path.split('/');
     final holdId = segments.length >= 2 ? segments[segments.length - 2] : '';
-    final hold = _mockHolds.remove(holdId);
+    final hold = _mockHolds[holdId];
     if (hold == null) {
       return _error(
         410,
@@ -843,6 +860,53 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       );
     }
 
+    final body = _body(options) ?? {};
+    final method = body['method'] as String? ?? 'FAWRY';
+    final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 15));
+    hold.expiresAt = expiresAt;
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'paymentIntentId': 'mock-pi-${DateTime.now().microsecondsSinceEpoch}',
+        'method': method,
+        'referenceCode':
+            '${DateTime.now().millisecondsSinceEpoch}'.padLeft(11, '0'),
+        'expiresAt': expiresAt.toIso8601String(),
+      },
+    };
+  });
+
+  interceptor.register('POST', '/confirm', (options) {
+    final segments = options.path.split('/');
+    final holdId = segments.length >= 2 ? segments[segments.length - 2] : '';
+    final hold = _mockHolds[holdId];
+    if (hold == null) {
+      return _error(
+        410,
+        'HOLD_EXPIRED',
+        'انتهت مدة حجز هذا الموعد. اختر موعدًا آخر وابدأ من جديد.',
+      );
+    }
+
+    // Wallet payment debits before anything else, and an insufficient
+    // balance leaves the hold untouched — mirroring the real use-case,
+    // where the debit is the first write and its failure rolls the whole
+    // confirm transaction back (File 12 Part 50.4).
+    final paymentMethod =
+        (_body(options) ?? {})['paymentMethod'] as String? ?? 'PAY_AT_CLINIC';
+    if (paymentMethod == 'INTERNAL_WALLET') {
+      if (_mockWalletStore.availableBalance < _kMockConsultFee) {
+        return _error(
+          422,
+          'INSUFFICIENT_WALLET_BALANCE',
+          'رصيد المحفظة غير كافٍ لإتمام هذه العملية.',
+        );
+      }
+      _mockWalletStore.debitForAppointment(_kMockConsultFee);
+    }
+
+    _mockHolds.remove(holdId);
     final now = DateTime.now().toUtc();
     _mockAppointmentSeq++;
     final appointmentId = 'mock-appointment-$_mockAppointmentSeq';
@@ -1990,54 +2054,88 @@ List<Map<String, dynamic>> _seedDoctorScheduleTemplates() {
   ];
 }
 
-List<Map<String, dynamic>> _seedNotifications() => [
-  {
-    'id': 'notif-1',
-    'type': 'newBookingRequest',
-    'title': 'طلب حجز جديد',
-    'subtitle': 'قامت سارة المحمد بحجز موعد جديد الساعة 09:00 ص',
-    'created_at': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(minutes: 45))
-        .toIso8601String(),
-    'is_unread': true,
-    'deep_link_route': '/provider/home',
-  },
-  {
-    'id': 'notif-2',
-    'type': 'appointmentConfirmed',
-    'title': 'تأكيد موعد',
-    'subtitle': 'تم تأكيد موعد أحمد العتيبي الساعة 10:00 ص',
-    'created_at': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(hours: 2))
-        .toIso8601String(),
-    'is_unread': true,
-    'deep_link_route': '/provider/home',
-  },
-  {
-    'id': 'notif-3',
-    'type': 'labReportReady',
-    'title': 'تقرير مختبر جاهز',
-    'subtitle': 'تقرير التحاليل الطبية الخاص بـ خالد بن فهد جاهز',
-    'created_at': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(hours: 5))
-        .toIso8601String(),
-    'is_unread': false,
-  },
-  {
-    'id': 'notif-4',
-    'type': 'reminder',
-    'title': 'تذكير بمؤتمر',
-    'subtitle': 'مؤتمر الطب الباطني يبدأ غداً الساعة 10:00 ص',
-    'created_at': DateTime.now()
-        .toLocal()
-        .subtract(const Duration(days: 1))
-        .toIso8601String(),
-    'is_unread': false,
-  },
-];
+List<Map<String, dynamic>> _seedBackendNotifications() {
+  String ts(Duration ago) =>
+      DateTime.now().toUtc().subtract(ago).toIso8601String();
+
+  Map<String, dynamic> row({
+    required String id,
+    required String templateCode,
+    required String title,
+    required String body,
+    required Duration ago,
+    Map<String, dynamic>? data,
+    String? readAt,
+  }) {
+    final created = ts(ago);
+    return {
+      'id': id,
+      'user_id': 'user-001',
+      'tier': 'TRANSACTIONAL',
+      'channel': 'PUSH',
+      'template_code': templateCode,
+      'title': title,
+      'body': body,
+      'data': data,
+      'status': 'SENT',
+      'attempts': 0,
+      'sent_at': created,
+      'read_at': readAt,
+      'created_at': created,
+      'updated_at': created,
+      'version': 1,
+    };
+  }
+
+  return [
+    row(
+      id: 'notif-1',
+      templateCode: 'AppointmentConfirmed',
+      title: 'تم تأكيد الموعد',
+      body: 'تم تأكيد موعدك بنجاح. يمكنك مراجعة التفاصيل داخل التطبيق.',
+      ago: const Duration(minutes: 45),
+      data: {'appointmentId': 'apt-mock-1'},
+    ),
+    row(
+      id: 'notif-2',
+      templateCode: 'PrescriptionUploaded',
+      title: 'تم استلام الروشتة',
+      body: 'تم استلام روشتتك وهي الآن قيد المراجعة.',
+      ago: const Duration(hours: 2),
+      data: {'prescriptionId': 'rx-mock-1'},
+    ),
+    row(
+      id: 'notif-3',
+      templateCode: 'LabResultReady',
+      title: 'النتيجة جاهزة',
+      body: 'نتيجة التحليل جاهزة. يمكنك الاطلاع عليها الآن داخل التطبيق.',
+      ago: const Duration(hours: 5),
+      data: {'labOrderId': 'lab-order-mock-1'},
+      readAt: ts(const Duration(hours: 4)),
+    ),
+    row(
+      id: 'notif-4',
+      templateCode: 'AppointmentCancelled',
+      title: 'تم إلغاء الموعد',
+      body: 'تم إلغاء موعدك. راجع التطبيق لإعادة الحجز إذا رغبت.',
+      ago: const Duration(days: 1),
+      data: {'appointmentId': 'apt-mock-2'},
+      readAt: ts(const Duration(hours: 20)),
+    ),
+  ];
+}
+
+class _MockNotificationStore {
+  _MockNotificationStore() {
+    rows = _loadOrSeed('backend_notifications', _seedBackendNotifications);
+  }
+
+  late List<Map<String, dynamic>> rows;
+
+  void persist() => _persist('backend_notifications', rows);
+}
+
+final _mockNotificationStore = _MockNotificationStore();
 
 // ─── Hive-backed mock store ────────────────────────────────────────────────────
 
@@ -2082,7 +2180,6 @@ void _persist(String key, List<Map<String, dynamic>> list) {
 class _MockProviderDashboardStore {
   _MockProviderDashboardStore() {
     appointments = _loadOrSeed('doctor_appointments', _seedDoctorAppointments);
-    notifications = _loadOrSeed('notifications', _seedNotifications);
     doctorAccount = _loadOrSeedSingle('doctor_account', _seedDoctorAccount);
     clinics = _loadOrSeed('doctor_clinics', _seedDoctorClinics);
     scheduleTemplates = _loadOrSeed(
@@ -2096,7 +2193,6 @@ class _MockProviderDashboardStore {
   /// `appointments` key holds rows in the abandoned invented shape, and
   /// reusing it would deserialize those into the new parser on first launch.
   late List<Map<String, dynamic>> appointments;
-  late List<Map<String, dynamic>> notifications;
   late Map<String, dynamic> doctorAccount;
   late List<Map<String, dynamic>> clinics;
   late List<Map<String, dynamic>> scheduleTemplates;
@@ -2139,7 +2235,6 @@ class _MockProviderDashboardStore {
   }
 
   void persistAppointments() => _persist('doctor_appointments', appointments);
-  void persistNotifications() => _persist('notifications', notifications);
   void persistDoctorAccount() =>
       _cacheBox?.put('doctor_account', jsonEncode(doctorAccount));
   void persistClinics() => _persist('doctor_clinics', clinics);
@@ -2159,9 +2254,6 @@ final _mockProviderDashboardStore = _MockProviderDashboardStore();
 /// are registered before `.../clinics`, and the appointment sub-actions before
 /// the list.
 ///
-/// `/v1/provider/notifications` stays here too and stays **invented** — no
-/// backend route exists for it (see `provider_dashboard/STATUS.md`).
-/// Everything else now mirrors a real one.
 void registerProviderDashboardMocks(MockInterceptor interceptor) {
   // --- Clinics and branches -------------------------------------------------
 
@@ -2708,205 +2800,208 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     };
   });
 
-  // --- Still invented: no backend route exists ------------------------------
+}
 
-  interceptor.register('GET', ApiPaths.providerNotifications, (options) {
-    if (_mockProviderDashboardStore.notifications.isEmpty) {
-      _mockProviderDashboardStore.notifications = _seedNotifications();
-      _mockProviderDashboardStore.persistNotifications();
+/// Phase 8 notifications — mirrors `GET/PATCH /v1/notifications`.
+void registerNotificationMocks(MockInterceptor interceptor) {
+  // More specific `/read` paths must register before the list route — both
+  // contain `/v1/notifications` and MockInterceptor is first-registered-wins.
+  interceptor.register('PATCH', '${ApiPaths.notifications}/', (options) {
+    final path = options.path;
+    if (!path.contains('/read')) {
+      return _error(404, 'NOT_FOUND', 'المسار غير موجود.');
+    }
+
+    final parts = path.split('/');
+    final readIndex = parts.indexWhere((p) => p == 'read');
+    final id = readIndex > 0 ? parts[readIndex - 1] : '';
+
+    final index = _mockNotificationStore.rows.indexWhere((n) => n['id'] == id);
+    if (index != -1) {
+      final updated = Map<String, dynamic>.from(_mockNotificationStore.rows[index]);
+      updated['read_at'] = DateTime.now().toUtc().toIso8601String();
+      _mockNotificationStore.rows[index] = updated;
+      _mockNotificationStore.persist();
     }
 
     return {
       'statusCode': 200,
-      'data': {'items': _mockProviderDashboardStore.notifications},
+      'data': {'id': id, 'status': 'READ'},
     };
   });
 
-  interceptor.register('POST', ApiPaths.providerNotifications, (options) {
-    final path = options.path;
-    if (path.contains('/read')) {
-      final parts = path.split('/');
-      final readIndex = parts.indexWhere((p) => p == 'read');
-      final id = readIndex > 0 ? parts[readIndex - 1] : '';
-
-      final index = _mockProviderDashboardStore.notifications.indexWhere(
-        (n) => n['id'] == id,
-      );
-      if (index != -1) {
-        final updated = Map<String, dynamic>.from(
-          _mockProviderDashboardStore.notifications[index],
-        );
-        updated['is_unread'] = false;
-        _mockProviderDashboardStore.notifications[index] = updated;
-        _mockProviderDashboardStore.persistNotifications();
-      }
+  interceptor.register('GET', ApiPaths.notifications, (options) {
+    if (_mockNotificationStore.rows.isEmpty) {
+      _mockNotificationStore.rows = _seedBackendNotifications();
+      _mockNotificationStore.persist();
     }
+
+    final unreadOnly =
+        options.uri.queryParameters['unreadOnly'] == 'true' ||
+        options.uri.queryParameters['unreadOnly'] == '1';
+    var items = _mockNotificationStore.rows;
+    if (unreadOnly) {
+      items = items.where((row) => row['read_at'] == null).toList();
+    }
+
+    final limit = int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
+    final page = items.take(limit).toList();
 
     return {
       'statusCode': 200,
-      'data': {'success': true},
+      'data': {
+        'notifications': page,
+        'nextCursor': items.length > limit ? 'mock-cursor-2' : null,
+      },
     };
   });
 }
 
+/// Mirrors the real payments-module wallet shapes (File 12 Part 50.3):
+/// camelCase keys, money as fixed 2-decimal strings, SCREAMING_SNAKE enums.
+/// `WITHDRAWAL` is the one invented type — it belongs to the mock-only
+/// transfer-out flow, which has no backend counterpart.
 class _MockWalletStore {
   double availableBalance = 2450.0;
   String currency = 'EGP';
+  final String walletId = 'wal-0001';
 
   final List<Map<String, dynamic>> transactions = [
     {
       'id': 'tx-101',
-      'title': 'استشارة عامة - د. أسامة علي',
-      'type': 'payment',
-      'amount': 350.0,
-      'currency': 'EGP',
-      'timestamp': '2026-08-18T14:30:00Z',
-      'status': 'completed',
-      'service_name': 'كشف عيادة (حجز أونلاين)',
-      'doctor_name': 'د. أسامة علي',
-      'fees': 15.0,
-      'net_amount': 335.0,
-      'reference_number': 'REF-2026818101',
+      'type': 'APPOINTMENT_PAYMENT',
+      'status': 'COMPLETED',
+      'amount': '350.00',
+      'resultingBalance': '2450.00',
+      'paymentIntentId': 'pi-101',
+      'appointmentId': 'apt-101',
+      'createdAt': '2026-08-18T14:30:00Z',
     },
     {
       'id': 'tx-102',
-      'title': 'شحن رصيد المحفظة',
-      'type': 'deposit',
-      'amount': 1000.0,
-      'currency': 'EGP',
-      'timestamp': '2026-08-15T10:15:00Z',
-      'status': 'completed',
-      'service_name': 'إيداع بطاقة ائتمان',
-      'doctor_name': null,
-      'fees': 0.0,
-      'net_amount': 1000.0,
-      'reference_number': 'REF-DEP-8892',
+      'type': 'TOP_UP',
+      'status': 'COMPLETED',
+      'amount': '1000.00',
+      'resultingBalance': '2800.00',
+      'paymentIntentId': 'pi-102',
+      'appointmentId': null,
+      'createdAt': '2026-08-15T10:15:00Z',
     },
     {
       'id': 'tx-103',
-      'title': 'مستحقات استشارة تحاليل - المختبر',
-      'type': 'payment',
-      'amount': 600.0,
-      'currency': 'EGP',
-      'timestamp': '2026-08-10T09:00:00Z',
-      'status': 'completed',
-      'service_name': 'تحليل شامل صائم',
-      'doctor_name': 'معمل النيل للتحاليل',
-      'fees': 25.0,
-      'net_amount': 575.0,
-      'reference_number': 'REF-LAB-3312',
+      'type': 'APPOINTMENT_PAYMENT',
+      'status': 'COMPLETED',
+      'amount': '600.00',
+      'resultingBalance': '1800.00',
+      'paymentIntentId': 'pi-103',
+      'appointmentId': 'apt-103',
+      'createdAt': '2026-08-10T09:00:00Z',
     },
     {
       'id': 'tx-104',
-      'title': 'استرداد مبلغ استشارة ملغاة',
-      'type': 'refund',
-      'amount': 250.0,
-      'currency': 'EGP',
-      'timestamp': '2026-08-05T16:45:00Z',
-      'status': 'completed',
-      'service_name': 'استرداد حجز ملغى',
-      'doctor_name': 'د. مروة سالم',
-      'fees': 0.0,
-      'net_amount': 250.0,
-      'reference_number': 'REF-RFD-0091',
+      'type': 'REFUND',
+      'status': 'COMPLETED',
+      'amount': '250.00',
+      'resultingBalance': '2400.00',
+      'paymentIntentId': 'pi-104',
+      'appointmentId': 'apt-104',
+      'createdAt': '2026-08-05T16:45:00Z',
     },
   ];
 
   final Map<String, Map<String, dynamic>> refunds = {};
+
+  /// The `INTERNAL_WALLET` confirm branch, as far as the mock models it:
+  /// balance down, a `COMPLETED` `APPOINTMENT_PAYMENT` row appended.
+  void debitForAppointment(double amount) {
+    availableBalance -= amount;
+    transactions.insert(0, {
+      'id': 'tx-${DateTime.now().millisecondsSinceEpoch}',
+      'type': 'APPOINTMENT_PAYMENT',
+      'status': 'COMPLETED',
+      'amount': amount.toStringAsFixed(2),
+      'resultingBalance': availableBalance.toStringAsFixed(2),
+      'paymentIntentId': 'pi-${DateTime.now().millisecondsSinceEpoch}',
+      'appointmentId': 'mock-appointment',
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
 }
+
+/// The mock confirm endpoint receives no fee (the real backend reads it off
+/// the affiliation), so wallet debits use one representative consult fee.
+const _kMockConsultFee = 350.0;
 
 final _mockWalletStore = _MockWalletStore();
 
 void registerWalletMocks(MockInterceptor interceptor) {
-  interceptor.register('GET', '/v1/wallet/balance', (_) {
+  // Ordering matters: MockInterceptor matches first-registered-wins by
+  // substring containment, and `/v1/wallet` is a prefix of every path below
+  // it — so the balance handler must be registered LAST of the wallet GETs.
+  interceptor.register('GET', '/v1/wallet/transactions', (options) {
+    final limit =
+        int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
+    final page = _mockWalletStore.transactions.take(limit).toList();
     return {
       'statusCode': 200,
       'data': {
-        'available_balance': _mockWalletStore.availableBalance,
-        'pending_balance': 350.0,
-        'currency': _mockWalletStore.currency,
+        'transactions': page,
+        'nextCursor': _mockWalletStore.transactions.length > limit
+            ? 'mock-wallet-cursor-2'
+            : null,
       },
     };
   });
 
-  // Specific detail before list
-  interceptor.register('GET', '/v1/wallet/transactions/', (options) {
-    final pathParts = options.path.split('/');
-    final id = pathParts.isNotEmpty ? pathParts.last : 'tx-101';
-    final tx = _mockWalletStore.transactions.firstWhere(
-      (element) => element['id'] == id,
-      orElse: () => _mockWalletStore.transactions.first,
-    );
-    return {
-      'statusCode': 200,
-      'data': {
-        ...tx,
-        'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
-        'fee': tx['fees'],
-      },
-    };
-  });
-
-  interceptor.register('GET', '/v1/wallet/transactions', (_) {
-    final mapped = _mockWalletStore.transactions
-        .map(
-          (tx) => {
-            ...tx,
-            'created_at': tx['timestamp'] ?? '2026-08-18T14:30:00Z',
-            'fee': tx['fees'],
-          },
-        )
-        .toList();
-    return {
-      'statusCode': 200,
-      'data': {'items': mapped},
-    };
-  });
-
-  interceptor.register('POST', '/v1/wallet/deposits', (options) {
+  // `POST /v1/wallet/top-up` (File 12 Part 50.3). Deliberately does NOT
+  // credit the balance: the real endpoint only opens a Paymob checkout and
+  // writes a PENDING row, and the balance moves on the capture webhook.
+  // Faking an instant credit here would make the mock the only place the
+  // top-up flow ever appears to work.
+  interceptor.register('POST', '/v1/wallet/top-up', (options) {
     final body = _body(options) ?? {};
-    final amount = (body['amount'] as num?)?.toDouble() ?? 100.0;
-    _mockWalletStore.availableBalance += amount;
-    final newTx = {
-      'id': 'tx-${DateTime.now().millisecondsSinceEpoch}',
-      'title': 'إيداع في المحفظة',
-      'type': 'deposit',
-      'amount': amount,
-      'currency': _mockWalletStore.currency,
-      'timestamp': DateTime.now().toIso8601String(),
-      'status': 'completed',
-      'service_name': 'إيداع إلكتروني',
-      'doctor_name': null,
-      'fees': 0.0,
-      'net_amount': amount,
-      'reference_number': 'REF-DEP-${DateTime.now().millisecondsSinceEpoch}',
-      'payment_method': body['payment_method_id'] ?? 'بطاقة ائتمانية',
+    final amount = double.tryParse('${body['amount']}') ?? 0.0;
+    if (amount <= 0) {
+      return _error(400, 'INVALID_AMOUNT', 'قيمة الشحن يجب أن تكون أكبر من صفر.');
+    }
+
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final walletTransactionId = 'tx-$stamp';
+    _mockWalletStore.transactions.insert(0, {
+      'id': walletTransactionId,
+      'type': 'TOP_UP',
+      'status': 'PENDING',
+      'amount': amount.toStringAsFixed(2),
+      'resultingBalance': null,
+      'paymentIntentId': 'pi-$stamp',
+      'appointmentId': null,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+
+    return {
+      'statusCode': 200,
+      'data': {
+        'walletTransactionId': walletTransactionId,
+        'paymentIntentId': 'pi-$stamp',
+        'redirectUrl':
+            'https://accept.paymob.com/api/acceptance/iframes/mock?payment_token=mock-$stamp',
+      },
     };
-    _mockWalletStore.transactions.insert(0, newTx);
-    return {'statusCode': 200, 'data': newTx};
   });
 
   interceptor.register('POST', '/v1/wallet/transfers', (options) {
     final body = _body(options) ?? {};
     final amount = (body['amount'] as num?)?.toDouble() ?? 0.0;
     _mockWalletStore.availableBalance -= amount;
-    final destinationLabel = body['destination_account_id'] == 'bank_nbe_5566'
-        ? 'البنك الأهلي المصري **** 5566'
-        : (body['destination_account_id'] ?? 'الحساب البنكي');
     final newTx = {
       'id': 'tx-${DateTime.now().millisecondsSinceEpoch}',
-      'title': 'تحويل إلى الحساب البنكي',
-      'type': 'withdrawal',
-      'amount': amount,
-      'currency': _mockWalletStore.currency,
-      'timestamp': DateTime.now().toIso8601String(),
-      'status': 'completed',
-      'service_name': 'تحويل بنكي',
-      'doctor_name': null,
-      'fees': 0.0,
-      'net_amount': amount,
-      'reference_number': 'REF-TRF-${DateTime.now().millisecondsSinceEpoch}',
-      'payment_method': destinationLabel,
+      'type': 'WITHDRAWAL',
+      'status': 'COMPLETED',
+      'amount': amount.toStringAsFixed(2),
+      'resultingBalance': _mockWalletStore.availableBalance.toStringAsFixed(2),
+      'paymentIntentId': null,
+      'appointmentId': null,
+      'createdAt': DateTime.now().toIso8601String(),
     };
     _mockWalletStore.transactions.insert(0, newTx);
     return {'statusCode': 200, 'data': newTx};
@@ -2950,6 +3045,19 @@ void registerWalletMocks(MockInterceptor interceptor) {
     _mockWalletStore.refunds[refundId] = refundObj;
 
     return {'statusCode': 200, 'data': refundObj};
+  });
+
+  // Registered last on purpose — see the ordering note at the top of this
+  // function.
+  interceptor.register('GET', '/v1/wallet', (_) {
+    return {
+      'statusCode': 200,
+      'data': {
+        'walletId': _mockWalletStore.walletId,
+        'balance': _mockWalletStore.availableBalance.toStringAsFixed(2),
+        'currency': _mockWalletStore.currency,
+      },
+    };
   });
 }
 

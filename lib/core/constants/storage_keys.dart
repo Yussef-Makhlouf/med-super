@@ -2,7 +2,6 @@
 abstract final class StorageKeys {
   static const accessToken = 'access_token';
   static const refreshToken = 'refresh_token';
-  static const biometricEnabled = 'biometric_enabled';
 }
 
 /// Hive settings box keys (non-sensitive UI/local flags).

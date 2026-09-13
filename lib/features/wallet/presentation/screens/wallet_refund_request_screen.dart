@@ -5,6 +5,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import '../controllers/wallet_providers.dart';
+import '../utils/wallet_transaction_labels.dart';
 import 'wallet_refund_status_screen.dart';
 
 class WalletRefundRequestScreen extends ConsumerStatefulWidget {
@@ -243,7 +244,7 @@ class _WalletRefundRequestScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          tx.title,
+                          walletTransactionTypeLabelKey(tx.type).tr(),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,

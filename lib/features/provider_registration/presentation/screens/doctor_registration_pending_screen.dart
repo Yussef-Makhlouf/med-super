@@ -2,7 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_registration/domain/entities/doctor_registration_status.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_status_providers.dart';
@@ -21,28 +23,58 @@ import 'package:med_super/features/provider_registration/presentation/controller
 /// real destination yet (the role membership stays PATIENT until verified,
 /// see `app_router.dart`'s redirect logic).
 ///
-/// Once VERIFIED, the CTA is "log in again," not "go home": an access token
-/// issued before Admin verification still carries the old PATIENT role, and
-/// nothing refreshes it in place — `VerifyDoctorUseCase` (backend) grants
-/// the DOCTOR role_membership, but the *current* token is unaffected. Only
-/// a fresh login (which re-resolves the active role, now DOCTOR — see
-/// `RoleMembershipRepository.findActiveByUser`'s most-recent-first
-/// ordering) actually picks it up. A "go home" button here would otherwise
-/// bounce forever between this screen and `/patient/home`.
-class DoctorRegistrationPendingScreen extends ConsumerWidget {
+/// Once VERIFIED, the primary action exchanges the stale PATIENT access
+/// token for a DOCTOR one in place, via the same `switch-context` endpoint
+/// the role-switcher UI uses (`SessionController.switchRole`) — an access
+/// token issued before Admin verification still carries the old PATIENT
+/// role, and nothing refreshes it automatically. `VerifyDoctorUseCase`
+/// (backend) grants the DOCTOR role_membership, but the *current* token is
+/// unaffected until this exchange runs, so a plain "go home" button here
+/// would otherwise bounce forever between this screen and `/patient/home`.
+class DoctorRegistrationPendingScreen extends ConsumerStatefulWidget {
   const DoctorRegistrationPendingScreen({super.key});
 
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<DoctorRegistrationPendingScreen> createState() =>
+      _DoctorRegistrationPendingScreenState();
+}
+
+class _DoctorRegistrationPendingScreenState
+    extends ConsumerState<DoctorRegistrationPendingScreen> {
+  bool _switchingRole = false;
+
+  Future<void> _logout() async {
     await ref.read(sessionControllerProvider.notifier).logout();
-    if (!context.mounted) return;
+    if (!mounted) return;
     context.go('/account-login');
   }
 
-  Future<void> _logoutAndSignInAgain(BuildContext context, WidgetRef ref) =>
-      _logout(context, ref);
+  /// Once verified, the account already holds an active DOCTOR
+  /// role_membership server-side — the only thing stale is the *current*
+  /// access token, still carrying PATIENT from before verification. Rather
+  /// than forcing a manual full sign-out/sign-in, exchange it in place via
+  /// the same `switch-context` endpoint the role-switcher UI uses
+  /// (`SessionController.switchRole`), so the doctor lands straight on
+  /// `/provider/home` without ever feeling logged out. Falls back to a
+  /// manual re-login only if the exchange itself fails (e.g. the backend
+  /// hasn't actually granted the membership yet, a race with verification).
+  Future<void> _claimDoctorAccess() async {
+    setState(() => _switchingRole = true);
+    final result = await ref
+        .read(sessionControllerProvider.notifier)
+        .switchRole(UserRole.doctor);
+    if (!mounted) return;
+    switch (result) {
+      case Ok():
+        context.go('/provider/home');
+      case Err():
+        setState(() => _switchingRole = false);
+        await _logout();
+    }
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final statusAsync = ref.watch(doctorRegistrationStatusProvider);
 
     return PopScope(
@@ -65,7 +97,7 @@ class DoctorRegistrationPendingScreen extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'provider_registration.review.logout_tooltip'.tr(),
-              onPressed: () => _logout(context, ref),
+              onPressed: _logout,
               icon: const Icon(Icons.logout_rounded, color: Color(0xFF8A94A6)),
             ),
           ],
@@ -101,8 +133,8 @@ class DoctorRegistrationPendingScreen extends ConsumerWidget {
                           primaryActionLabel:
                               'provider_registration.review.sign_in_again_cta'
                                   .tr(),
-                          onPrimaryAction: () =>
-                              _logoutAndSignInAgain(context, ref),
+                          onPrimaryAction: _claimDoctorAccess,
+                          isLoading: _switchingRole,
                         ),
                         // Distinct copy from PENDING — a suspended/rejected
                         // applicant must be told plainly, not left reading
@@ -159,6 +191,7 @@ class _StatusMessage extends StatelessWidget {
     required this.message,
     this.primaryActionLabel,
     this.onPrimaryAction,
+    this.isLoading = false,
   }) : assert(
          (primaryActionLabel == null) == (onPrimaryAction == null),
          'primaryActionLabel and onPrimaryAction must both be set or both be omitted',
@@ -170,6 +203,7 @@ class _StatusMessage extends StatelessWidget {
   final String message;
   final String? primaryActionLabel;
   final VoidCallback? onPrimaryAction;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +238,7 @@ class _StatusMessage extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: onPrimaryAction,
+              onPressed: isLoading ? null : onPrimaryAction,
               style: FilledButton.styleFrom(
                 backgroundColor: color,
                 minimumSize: const Size.fromHeight(52),
@@ -212,7 +246,16 @@ class _StatusMessage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              child: Text(primaryActionLabel!),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(primaryActionLabel!),
             ),
           ),
         ],

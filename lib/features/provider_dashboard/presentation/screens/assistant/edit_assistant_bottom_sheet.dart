@@ -41,7 +41,9 @@ class _EditAssistantBottomSheetState
     super.initState();
     _nameController = TextEditingController(text: widget.assistant.displayName);
     _passwordController = TextEditingController();
-    _titleController = TextEditingController(text: widget.assistant.title ?? '');
+    _titleController = TextEditingController(
+      text: widget.assistant.title ?? '',
+    );
     _subtitleController = TextEditingController(
       text: widget.assistant.subtitle ?? '',
     );
@@ -61,7 +63,9 @@ class _EditAssistantBottomSheetState
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_selectedBranchIds.isEmpty) {
-      setState(() => _branchesErrorMessage = 'assistants.branches_required'.tr());
+      setState(
+        () => _branchesErrorMessage = 'assistants.branches_required'.tr(),
+      );
       return;
     }
 
@@ -123,293 +127,310 @@ class _EditAssistantBottomSheetState
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    // Leaves room below the status bar even when the keyboard is open and
+    // every field is showing a validation error — see AddAssistantBottomSheet
+    // for the same fix and rationale.
+    final maxHeight =
+        MediaQuery.of(context).size.height -
+        MediaQuery.of(context).padding.top -
+        24;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomInset),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderMedium,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'assistants.edit_title'.tr(),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Display name field (pre-filled)
-            Text(
-              'profile.full_name'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _nameController,
-              textDirection: TextDirection.rtl,
-              decoration: _inputDecoration(
-                hint: 'assistants.name_hint_edit'.tr(),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'assistants.name_required'.tr();
-                }
-                if (v.trim().length < 2) {
-                  return 'assistants.name_too_short'.tr();
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'assistants.title_label'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _titleController,
-              textDirection: TextDirection.rtl,
-              decoration: _inputDecoration(hint: 'assistants.title_hint'.tr()),
-              maxLength: 200,
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'assistants.subtitle_label'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _subtitleController,
-              textDirection: TextDirection.rtl,
-              decoration: _inputDecoration(
-                hint: 'assistants.subtitle_hint'.tr(),
-              ),
-              maxLength: 200,
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'assistants.branches_label'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Consumer(
-              builder: (context, ref, _) {
-                final clinicsAsync = ref.watch(myClinicsProvider);
-                return clinicsAsync.when(
-                  data: (clinics) => BranchMultiSelect(
-                    branches: clinics,
-                    selectedBranchIds: _selectedBranchIds,
-                    onChanged: (next) => setState(() {
-                      _selectedBranchIds
-                        ..clear()
-                        ..addAll(next);
-                      _branchesErrorMessage = null;
-                    }),
-                  ),
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  ),
-                  error: (_, _) => Text(
-                    'assistants.branches_load_failed'.tr(),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.errorRed,
-                    ),
-                  ),
-                );
-              },
-            ),
-            if (_branchesErrorMessage != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                _branchesErrorMessage!,
-                style: const TextStyle(fontSize: 12, color: AppColors.errorRed),
-              ),
-            ],
-            const SizedBox(height: 20),
-
-            Text(
-              'assistants.password_label'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration:
-                  _inputDecoration(
-                    hint: 'assistants.password_hint_edit'.tr(),
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      tooltip: 'assistants.password_show'.tr(),
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                  ),
-            ),
-            const SizedBox(height: 20),
-
-            // Status toggle
-            Text(
-              'assistants.status_label'.tr(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink900,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomInset),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _StatusChip(
-                  label: 'assistants.status_active'.tr(),
-                  selected: _selectedStatus == AssistantStatus.active,
-                  selectedColor: const Color(0xFF059669),
-                  selectedBg: const Color(0xFFECFDF5),
-                  onTap: () =>
-                      setState(() => _selectedStatus = AssistantStatus.active),
-                ),
-                const SizedBox(width: 10),
-                _StatusChip(
-                  label: 'assistants.status_suspended'.tr(),
-                  selected: _selectedStatus == AssistantStatus.suspended,
-                  selectedColor: AppColors.errorRed,
-                  selectedBg: const Color(0xFFFEF2F2),
-                  onTap: () => setState(
-                    () => _selectedStatus = AssistantStatus.suspended,
-                  ),
-                ),
-              ],
-            ),
-
-            // Error banner
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.errorRed.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 16,
-                      color: AppColors.errorRed,
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderMedium,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'assistants.edit_title'.tr(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Display name field (pre-filled)
+                Text(
+                  'profile.full_name'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _nameController,
+                  textDirection: TextDirection.rtl,
+                  decoration: _inputDecoration(
+                    hint: 'assistants.name_hint_edit'.tr(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'assistants.name_required'.tr();
+                    }
+                    if (v.trim().length < 2) {
+                      return 'assistants.name_too_short'.tr();
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                Text(
+                  'assistants.title_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _titleController,
+                  textDirection: TextDirection.rtl,
+                  decoration: _inputDecoration(
+                    hint: 'assistants.title_hint'.tr(),
+                  ),
+                  maxLength: 200,
+                ),
+                const SizedBox(height: 20),
+
+                Text(
+                  'assistants.subtitle_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _subtitleController,
+                  textDirection: TextDirection.rtl,
+                  decoration: _inputDecoration(
+                    hint: 'assistants.subtitle_hint'.tr(),
+                  ),
+                  maxLength: 200,
+                ),
+                const SizedBox(height: 20),
+
+                Text(
+                  'assistants.branches_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final clinicsAsync = ref.watch(myClinicsProvider);
+                    return clinicsAsync.when(
+                      data: (clinics) => BranchMultiSelect(
+                        branches: clinics,
+                        selectedBranchIds: _selectedBranchIds,
+                        onChanged: (next) => setState(() {
+                          _selectedBranchIds
+                            ..clear()
+                            ..addAll(next);
+                          _branchesErrorMessage = null;
+                        }),
+                      ),
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      ),
+                      error: (_, _) => Text(
+                        'assistants.branches_load_failed'.tr(),
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.errorRed,
                         ),
                       ),
+                    );
+                  },
+                ),
+                if (_branchesErrorMessage != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _branchesErrorMessage!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.errorRed,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+
+                Text(
+                  'assistants.password_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration:
+                      _inputDecoration(
+                        hint: 'assistants.password_hint_edit'.tr(),
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          tooltip: 'assistants.password_show'.tr(),
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+                      ),
+                ),
+                const SizedBox(height: 20),
+
+                // Status toggle
+                Text(
+                  'assistants.status_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _StatusChip(
+                      label: 'assistants.status_active'.tr(),
+                      selected: _selectedStatus == AssistantStatus.active,
+                      selectedColor: const Color(0xFF059669),
+                      selectedBg: const Color(0xFFECFDF5),
+                      onTap: () => setState(
+                        () => _selectedStatus = AssistantStatus.active,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _StatusChip(
+                      label: 'assistants.status_suspended'.tr(),
+                      selected: _selectedStatus == AssistantStatus.suspended,
+                      selectedColor: AppColors.errorRed,
+                      selectedBg: const Color(0xFFFEF2F2),
+                      onTap: () => setState(
+                        () => _selectedStatus = AssistantStatus.suspended,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
 
-            const SizedBox(height: 24),
+                // Error banner
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.errorRed.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 16,
+                          color: AppColors.errorRed,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.errorRed,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandBlue,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                const SizedBox(height: 24),
+
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'profile.save_changes'.tr(),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
-                child: _loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'profile.save_changes'.tr(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-              ),
+              ],
             ),
-          ],
           ),
         ),
       ),

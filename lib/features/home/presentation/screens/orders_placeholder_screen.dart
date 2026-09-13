@@ -7,6 +7,7 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_status_pill.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
@@ -95,7 +96,7 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
 
 // ─── header ───────────────────────────────────────────────────────────────────
 
-class _OrdersHeader extends StatelessWidget {
+class _OrdersHeader extends ConsumerWidget {
   const _OrdersHeader({required this.displayName});
 
   final String displayName;
@@ -104,8 +105,9 @@ class _OrdersHeader extends StatelessWidget {
   static const _muted = Color(0xFF8A94A6);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
         GestureDetector(
@@ -136,10 +138,11 @@ class _OrdersHeader extends StatelessWidget {
         const Spacer(),
         IconButton(
           onPressed: () => context.go('/patient/notifications'),
-          icon: const Badge(
+          icon: Badge(
             smallSize: 8,
             backgroundColor: Colors.red,
-            child: Icon(Icons.notifications_outlined, color: _ink),
+            isLabelVisible: hasUnread,
+            child: const Icon(Icons.notifications_outlined, color: _ink),
           ),
         ),
       ],

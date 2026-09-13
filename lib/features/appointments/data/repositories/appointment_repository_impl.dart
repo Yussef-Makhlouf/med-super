@@ -1,9 +1,12 @@
 import 'package:med_super/core/error/dio_failure_mapper.dart';
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import 'package:med_super/features/appointments/data/datasources/remote/appointments_remote_datasource.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/confirmed_appointment.dart';
+import 'package:med_super/features/appointments/domain/entities/online_payment_initiation.dart';
 import 'package:med_super/features/appointments/domain/repositories/appointment_repository.dart';
 
 class AppointmentRepositoryImpl implements AppointmentRepository {
@@ -31,9 +34,33 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
-  Future<Result<ConfirmedAppointment>> confirmHold(String holdId) async {
+  Future<Result<ConfirmedAppointment>> confirmHold(
+    String holdId, {
+    required AppointmentPaymentMethod paymentMethod,
+  }) async {
     try {
-      final dto = await _remote.confirmHold(holdId);
+      final dto = await _remote.confirmHold(
+        holdId,
+        paymentMethod: paymentMethod,
+      );
+      return Result.ok(dto.toEntity());
+    } catch (e, st) {
+      return Result.err(mapDioToFailure(e, st));
+    }
+  }
+
+  @override
+  Future<Result<OnlinePaymentInitiation>> initiateOnlinePayment(
+    String holdId, {
+    required AppointmentPaymentMethod method,
+    required PaymentCustomerInfo customer,
+  }) async {
+    try {
+      final dto = await _remote.initiateOnlinePayment(
+        holdId,
+        method: method,
+        customer: customer,
+      );
       return Result.ok(dto.toEntity());
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));

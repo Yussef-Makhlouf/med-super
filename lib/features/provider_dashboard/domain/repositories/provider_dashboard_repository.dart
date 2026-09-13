@@ -2,7 +2,6 @@ import 'package:med_super/core/error/result.dart';
 import '../entities/doctor_account_profile.dart';
 import '../entities/doctor_appointment.dart';
 import '../entities/doctor_clinic.dart';
-import '../entities/doctor_notification.dart';
 import '../entities/doctor_schedule_template.dart';
 
 /// Result of a provider-initiated cancellation. `feeApplied` is always `0`
@@ -41,6 +40,7 @@ abstract class ProviderDashboardRepository {
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   });
 
   // --- Clinics and branches ---
@@ -130,9 +130,4 @@ abstract class ProviderDashboardRepository {
     String? patientName,
   });
 
-  // --- Still mock-only (no backend route) ---
-
-  Future<Result<List<DoctorNotification>>> getNotifications();
-
-  Future<Result<void>> markNotificationRead(String id);
 }

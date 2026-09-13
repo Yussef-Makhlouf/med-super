@@ -20,6 +20,8 @@ abstract final class ApiPaths {
   // verified doctor switching back to PATIENT. Bearer-authenticated, not
   // `@Public()`.
   static const authContextSwitch = '/v1/auth/context/switch';
+  // File 12 Part 53 — registers/refreshes the caller's FCM token.
+  static const authDevices = '/v1/auth/devices';
 
   // Provider directory
   // Real backend route is GET /v1/doctors/search (provider-directory module) —
@@ -44,12 +46,26 @@ abstract final class ApiPaths {
   // Payments
   static const paymentIntents = '/v1/payment-intents';
 
+  // Wallet — the internal prepaid MedSuper wallet (payments module, File 12
+  // Part 50.3). PATIENT-role only, bearer-authenticated. There is no
+  // per-transaction detail route: `walletTransactions` is the only read of
+  // the ledger the backend ships.
+  //
+  // MockInterceptor matches first-registered-wins by substring containment,
+  // so `walletTransactions`/`walletTopUp` must be registered BEFORE
+  // `wallet` — the latter is a prefix of every other wallet path.
+  static const wallet = '/v1/wallet';
+  static const walletTransactions = '/v1/wallet/transactions';
+  // Card-only, and asynchronous: returns a Paymob checkout URL, and the
+  // balance only moves once the capture webhook lands.
+  static const walletTopUp = '/v1/wallet/top-up';
+
   // Reviews
   static const reviews = '/v1/reviews';
 
-  // Notifications
+  // Notifications (Phase 8)
+  static const notifications = '/v1/notifications';
   static const notificationPreferences = '/v1/notifications/preferences';
-  static const fcmToken = '/v1/notifications/fcm-token';
 
   // Lab booking (Laboratory module, un-blocked 2026-09-05)
   static const labTests = '/v1/lab-tests';
@@ -80,10 +96,6 @@ abstract final class ApiPaths {
 
   // Provider dashboard
   //
-  // Still frontend-invented / mock-only — no backend route exists for it
-  // (see provider_dashboard/STATUS.md). Everything else in this block is real.
-  static const providerNotifications = '/v1/provider/notifications';
-
   // Real backend route, replacing the invented `/v1/provider/me` (which
   // never existed anywhere in clinic-reservations) — a DOCTOR-role-only
   // self-profile read/edit (File 12 Part 45).

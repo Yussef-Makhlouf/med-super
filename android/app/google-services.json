@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "221476713418",
+    "project_id": "clinic-dd7cc",
+    "storage_bucket": "clinic-dd7cc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221476713418:android:7380377d862cb824de5533",
+        "android_client_info": {
+          "package_name": "com.medsuper.med_super"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaLciv25JLVo2dZGnznSoe1ulwlv8NZw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

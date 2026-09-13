@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:med_super/core/constants/storage_keys.dart';
 import 'package:med_super/core/di/core_providers.dart';
@@ -16,13 +18,15 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pha
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
+import 'package:med_super/core/notifications/push_notification_coordinator.dart';
+import 'package:med_super/features/notifications/data/register_fcm_device.dart';
 import 'package:med_super/features/wallet/presentation/controllers/wallet_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_provider.g.dart';
 
 /// Dev bypass skips login/OTP. Keep false for the real Sprint 1 auth loop.
-const bool kDevBypassAuth = true;
+const bool kDevBypassAuth = false;
 
 /// Dev convenience: treat every provider session as if registration were
 /// already submitted, so a mock doctor login lands straight on
@@ -131,7 +135,7 @@ class SessionController extends _$SessionController {
     if (!await storage.hasSession) return null;
 
     final result = await ref.read(getCurrentUserUseCaseProvider).call();
-    return switch (result) {
+    final session = switch (result) {
       Ok(:final value) => Session(
         user: value,
         onboardingComplete: value.profileComplete || _readOnboardingComplete(),
@@ -139,6 +143,15 @@ class SessionController extends _$SessionController {
       ),
       Err() => null,
     };
+    if (session != null) {
+      _registerPushDevice();
+    }
+    return session;
+  }
+
+  void _registerPushDevice() {
+    registerFcmDeviceIfAvailable(ref);
+    unawaited(ref.read(pushNotificationCoordinatorProvider).start());
   }
 
   bool _readOnboardingComplete() {
@@ -219,6 +232,7 @@ class SessionController extends _$SessionController {
           passwordComplete: _readPasswordComplete(),
         );
         state = AsyncData(session);
+        _registerPushDevice();
         return Result.ok(session);
     }
   }
@@ -363,6 +377,7 @@ class SessionController extends _$SessionController {
           passwordComplete: true,
         );
         state = AsyncData(session);
+        _registerPushDevice();
         return Result.ok(session);
     }
   }

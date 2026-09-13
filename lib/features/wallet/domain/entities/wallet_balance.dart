@@ -1,11 +1,14 @@
+/// `GET /v1/wallet` (File 12 Part 50.3). A user who has never topped up has
+/// no wallet row yet — the backend reports that as a zero balance with an
+/// empty [walletId] rather than a 404.
 class WalletBalance {
+  final String walletId;
   final double availableBalance;
-  final double pendingBalance;
   final String currency;
 
   const WalletBalance({
+    required this.walletId,
     required this.availableBalance,
-    this.pendingBalance = 0.0,
     this.currency = 'EGP',
   });
 

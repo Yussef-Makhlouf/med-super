@@ -1,7 +1,10 @@
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/confirmed_appointment.dart';
+import 'package:med_super/features/appointments/domain/entities/online_payment_initiation.dart';
 
 abstract interface class AppointmentRepository {
   Future<Result<AppointmentHold>> createHold({
@@ -10,7 +13,16 @@ abstract interface class AppointmentRepository {
     required String patientId,
   });
 
-  Future<Result<ConfirmedAppointment>> confirmHold(String holdId);
+  Future<Result<ConfirmedAppointment>> confirmHold(
+    String holdId, {
+    required AppointmentPaymentMethod paymentMethod,
+  });
+
+  Future<Result<OnlinePaymentInitiation>> initiateOnlinePayment(
+    String holdId, {
+    required AppointmentPaymentMethod method,
+    required PaymentCustomerInfo customer,
+  });
 
   Future<Result<CancelledAppointment>> cancel({
     required String appointmentId,

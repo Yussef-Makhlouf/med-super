@@ -8,6 +8,7 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/patient.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_patient_detail_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
@@ -100,12 +101,7 @@ class _ProviderPatientsScreenState
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final patientsAsync = ref.watch(providerPatientsProvider);
-    final unreadNotifsCount = ref
-        .watch(doctorNotificationsProvider)
-        .maybeWhen(
-          data: (list) => list.where((n) => n.isUnread).length,
-          orElse: () => 0,
-        );
+    final unreadNotifsCount = ref.watch(unreadNotificationCountProvider);
     final avatarUrl = ref.watch(providerHeaderAvatarUrlProvider);
 
     return Scaffold(

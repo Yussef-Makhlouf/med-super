@@ -9,6 +9,7 @@ import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
@@ -30,7 +31,12 @@ import 'package:med_super/features/provider_dashboard/presentation/widgets/provi
 /// screen; the family provider still owns the *first* page of every distinct
 /// filter combination, and changing any filter resets the accumulator.
 class ProviderAppointmentsScreen extends ConsumerStatefulWidget {
-  const ProviderAppointmentsScreen({super.key});
+  const ProviderAppointmentsScreen({this.openAppointmentId, super.key});
+
+  /// Set when this screen was reached via a notification tap
+  /// (`?openAppointmentId=...` on the route) — opens that appointment's
+  /// detail sheet automatically once the screen is built.
+  final String? openAppointmentId;
 
   @override
   ConsumerState<ProviderAppointmentsScreen> createState() =>
@@ -58,12 +64,44 @@ class _ProviderAppointmentsScreenState
   /// Guards against a double-tapped action firing two mutations.
   bool _mutating = false;
 
+  // Tracks which notification-provided appointment id has already triggered
+  // the auto-open, so a rebuild of this screen (tab switch, go_router
+  // re-evaluating the route, a parent StatefulShellBranch restore) never
+  // reopens the same sheet a second time — `didUpdateWidget` alone isn't
+  // enough since `widget.openAppointmentId` doesn't change across those
+  // rebuilds, only `initState` would normally fire once, but a route
+  // re-entry with the same query param can still recreate this State.
+  String? _autoOpenedAppointmentId;
+
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reload();
+      _maybeAutoOpenFromNotification();
+    });
+  }
+
+  void _maybeAutoOpenFromNotification() {
+    final appointmentId = widget.openAppointmentId;
+    if (appointmentId == null ||
+        appointmentId.isEmpty ||
+        appointmentId == _autoOpenedAppointmentId) {
+      return;
+    }
+    _autoOpenedAppointmentId = appointmentId;
+    _openAppointmentFromNotification(appointmentId);
+  }
+
+  Future<void> _openAppointmentFromNotification(String appointmentId) async {
+    if (!mounted) return;
+    final mutated = await showProviderAppointmentDetailSheet(
+      context,
+      appointmentId: appointmentId,
+    );
+    if (mutated == true) _reload();
   }
 
   /// The 5-day quick-pick strip, always centered two days behind and two
@@ -226,12 +264,7 @@ class _ProviderAppointmentsScreenState
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final clinicsAsync = ref.watch(myClinicsProvider);
-    final unreadNotifsCount = ref
-        .watch(doctorNotificationsProvider)
-        .maybeWhen(
-          data: (list) => list.where((n) => n.isUnread).length,
-          orElse: () => 0,
-        );
+    final unreadNotifsCount = ref.watch(unreadNotificationCountProvider);
     final avatarUrl = ref.watch(providerHeaderAvatarUrlProvider);
 
     return Scaffold(

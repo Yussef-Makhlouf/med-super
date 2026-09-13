@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import '../../domain/entities/refund_request.dart';
 import '../controllers/wallet_providers.dart';
-import 'wallet_dashboard_screen.dart';
 
 class WalletRefundStatusScreen extends ConsumerWidget {
   final String refundId;
@@ -304,72 +304,13 @@ class WalletRefundStatusScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF1F5F9)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.info_outline, color: brandBlue, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'wallet.need_help'.tr(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppColors.ink900,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'wallet.need_help_desc'.tr(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.mutedText2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('تم فتح محادثة الدعم الفني')),
-                          );
-                        },
-                        child: Text(
-                          '${'wallet.talk_to_support'.tr()} ←',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: brandBlue,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
           AppButton.filled(
             label: 'wallet.return_to_wallet'.tr(),
             fullWidth: true,
             borderRadius: 16,
             backgroundColor: brandBlue,
             foregroundColor: Colors.white,
-            onPressed: () {
-              Navigator.of(context).popUntil(
-                (route) => route.settings.name == WalletDashboardScreen.routeName,
-              );
-            },
+            onPressed: () => context.go('/patient/home/wallet'),
           ),
           const SizedBox(height: 12),
           AppButton.outlined(

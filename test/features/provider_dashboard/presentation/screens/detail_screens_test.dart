@@ -3,7 +3,6 @@ import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_account_profile.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
-import 'package:med_super/features/provider_dashboard/domain/entities/doctor_notification.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/patient.dart';
 import 'package:med_super/features/provider_dashboard/domain/repositories/provider_dashboard_repository.dart';
@@ -47,10 +46,6 @@ class _StubRepo implements ProviderDashboardRepository {
 
   @override
   Future<Result<List<DoctorClinic>>> getMyClinics() async =>
-      const Result.ok([]);
-
-  @override
-  Future<Result<List<DoctorNotification>>> getNotifications() async =>
       const Result.ok([]);
 
   @override

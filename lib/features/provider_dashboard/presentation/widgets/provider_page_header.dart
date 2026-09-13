@@ -92,15 +92,11 @@ class ProviderPageHeader extends StatelessWidget
               // background, brandBlue person icon).
               GestureDetector(
                 onTap: onAvatarTap ?? () => context.go('/provider/profile'),
-                child: CircleAvatar(
+                child: AvatarCircle(
                   radius: 22,
                   backgroundColor: const Color(0xFFDCE8FF),
-                  backgroundImage: avatarUrl != null
-                      ? resolveAvatarImage(avatarUrl!)
-                      : null,
-                  child: avatarUrl == null
-                      ? const Icon(Icons.person, color: brandBlue)
-                      : null,
+                  imageUrl: avatarUrl,
+                  placeholderIconColor: brandBlue,
                 ),
               ),
             ],
