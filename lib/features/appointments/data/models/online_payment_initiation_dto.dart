@@ -24,7 +24,11 @@ class OnlinePaymentInitiationDto {
         method: json['method'] as String,
         expiresAt: DateTime.parse(json['expiresAt'] as String).toUtc(),
         redirectUrl: json['redirectUrl'] as String?,
-        referenceCode: json['referenceCode'] as String?,
+        // Paymob's Fawry `bill_reference` sometimes comes back as a JSON
+        // number rather than a string — `.toString()` handles both instead
+        // of throwing a cast error that silently surfaced as a generic
+        // "unexpected error" banner on this screen.
+        referenceCode: json['referenceCode']?.toString(),
       );
 
   OnlinePaymentInitiation toEntity() => OnlinePaymentInitiation(

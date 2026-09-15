@@ -95,6 +95,13 @@ class AuthRemoteDatasource {
   /// The real backend responds 204/no body and does not return tokens —
   /// unlike OTP-verify/password-login/password-set, resetting a password
   /// does not log the user in.
+  ///
+  /// [code] is accepted for call-site symmetry with [verifyResetCode] but
+  /// deliberately not sent here — `ResetPasswordDto` only accepts
+  /// `requestId`/`newPassword` (the code was already consumed by the
+  /// `verify-code` call), and the global pipe's `forbidNonWhitelisted: true`
+  /// rejects the whole request with `VALIDATION_ERROR` if an extra `code`
+  /// field is present.
   Future<void> resetPassword({
     required String requestId,
     required String code,
@@ -102,7 +109,7 @@ class AuthRemoteDatasource {
   }) async {
     await _dio.post<void>(
       ApiPaths.passwordReset,
-      data: {'requestId': requestId, 'code': code, 'newPassword': newPassword},
+      data: {'requestId': requestId, 'newPassword': newPassword},
     );
   }
 
