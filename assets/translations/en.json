@@ -213,6 +213,7 @@
     "appointment_state_changed": "This appointment was modified concurrently. Reload and try again.",
     "booking_confirmed": "Booking confirmed",
     "booking_confirmed_message": "Your appointment with {} at {} is confirmed. Payment is due at the clinic.",
+    "booking_confirmed_message_wallet": "Your appointment with {} at {} is confirmed. Payment was made from your wallet.",
     "view_my_appointments": "View My Appointments",
     "cancel_confirm_title": "Cancel this appointment?",
     "cancel_confirm_message": "This cannot be undone. You'll need to book a new slot if you change your mind.",

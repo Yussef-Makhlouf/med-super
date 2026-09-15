@@ -18,6 +18,7 @@ import 'package:med_super/features/appointments/domain/entities/appointment_hold
 import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:med_super/features/appointments/presentation/screens/booking_success_screen.dart';
 import 'package:med_super/features/appointments/presentation/screens/fawry_payment_screen.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/wallet/presentation/controllers/wallet_providers.dart';
@@ -235,7 +236,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
         // fresh detail screen.
         context.go(
           '/patient/home/appointments/success',
-          extra: widget.request,
+          extra: BookingSuccessArgs(request: widget.request, method: _method),
         );
       },
       err: (failure) => setState(() {

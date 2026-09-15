@@ -39,7 +39,7 @@ final appointmentRoutes = <RouteBase>[
     path: 'appointments/success',
     name: 'bookingSuccess',
     builder: (context, state) =>
-        BookingSuccessScreen(request: state.extra as BookingRequest),
+        BookingSuccessScreen(args: state.extra as BookingSuccessArgs),
   ),
   GoRoute(
     path: 'appointments/reschedule',
