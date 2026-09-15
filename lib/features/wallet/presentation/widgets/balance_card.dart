@@ -6,13 +6,15 @@ import '../../domain/entities/wallet_balance.dart';
 class WalletBalanceCard extends StatelessWidget {
   final WalletBalance balance;
   final VoidCallback onAddBalance;
-  final VoidCallback onTransfer;
+  // Kept as a field (not removed) alongside the commented-out "تحويل"
+  // button above — see that comment for why. Unused until that flow ships.
+  final VoidCallback? onTransfer;
 
   const WalletBalanceCard({
     super.key,
     required this.balance,
     required this.onAddBalance,
-    required this.onTransfer,
+    this.onTransfer,
   });
 
   @override
@@ -109,16 +111,21 @@ class WalletBalanceCard extends StatelessWidget {
                   onPressed: onAddBalance,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppButton.outlined(
-                  label: 'wallet.transfer'.tr(),
-                  icon: const Icon(Icons.swap_horiz, size: 18),
-                  foregroundColor: Colors.white,
-                  borderRadius: 14,
-                  onPressed: onTransfer,
-                ),
-              ),
+              // "تحويل" isn't part of the real flow yet — no wallet-to-wallet
+              // transfer endpoint exists on the backend, `onTransfer` only
+              // ever pushed `WalletTransferScreen`'s own mock flow.
+              // Commented out rather than deleted: the button and its
+              // callback stay in place for when that flow is actually built.
+              // const SizedBox(width: 12),
+              // Expanded(
+              //   child: AppButton.outlined(
+              //     label: 'wallet.transfer'.tr(),
+              //     icon: const Icon(Icons.swap_horiz, size: 18),
+              //     foregroundColor: Colors.white,
+              //     borderRadius: 14,
+              //     onPressed: onTransfer,
+              //   ),
+              // ),
             ],
           ),
         ],

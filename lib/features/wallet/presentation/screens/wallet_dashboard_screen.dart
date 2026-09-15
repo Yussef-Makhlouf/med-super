@@ -12,7 +12,7 @@ import 'wallet_add_balance_screen.dart';
 import 'wallet_pay_bills_screen.dart';
 import 'wallet_transaction_detail_screen.dart';
 import 'wallet_transaction_history_screen.dart';
-import 'wallet_transfer_screen.dart';
+// import 'wallet_transfer_screen.dart'; // Unused while "تحويل" is commented out below.
 
 class WalletDashboardScreen extends ConsumerWidget {
   const WalletDashboardScreen({super.key});
@@ -73,13 +73,16 @@ class WalletDashboardScreen extends ConsumerWidget {
                       ),
                     );
                   },
-                  onTransfer: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const WalletTransferScreen(),
-                      ),
-                    );
-                  },
+                  // "تحويل" isn't part of the real flow yet — see the
+                  // matching comment in `WalletBalanceCard` above the
+                  // commented-out button that used to call this.
+                  // onTransfer: () {
+                  //   Navigator.of(context).push(
+                  //     MaterialPageRoute(
+                  //       builder: (_) => const WalletTransferScreen(),
+                  //     ),
+                  //   );
+                  // },
                 ),
                 loading: () => Container(
                   height: 180,
