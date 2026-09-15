@@ -9,6 +9,7 @@ import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/app_spacing.dart';
+import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/section_header.dart';
@@ -22,6 +23,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pha
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Patient home — "Warm Clinical" design system v2.
 class PatientHomeScreen extends ConsumerWidget {
@@ -35,7 +37,7 @@ class PatientHomeScreen extends ConsumerWidget {
         : 'أحمد محمد';
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppPalette.primary,
@@ -157,9 +159,9 @@ class _HomeHeader extends ConsumerWidget {
             isLabelVisible: hasUnread,
             child: const Icon(
               Icons.notifications_outlined,
-              color: PatientHomeScreen._ink,
+              color: AppPalette.ink,
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -411,7 +413,7 @@ class _QuickActionCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleSmall?.copyWith(
-                color: PatientHomeScreen._ink,
+                color: AppPalette.ink,
                 fontWeight: FontWeight.w800,
               ),
             ),

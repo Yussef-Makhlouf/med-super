@@ -141,7 +141,7 @@ class _OrdersHeader extends ConsumerWidget {
             smallSize: 8,
             backgroundColor: Colors.red,
             isLabelVisible: hasUnread,
-            child: const Icon(Icons.notifications_outlined, color: _ink),
+            child: const Icon(Icons.notifications_outlined, color: AppPalette.ink),
           ),
         ),
       ],

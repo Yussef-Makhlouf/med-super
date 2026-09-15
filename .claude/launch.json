@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8766", "--directory", "build/web"],
       "port": 8766
+    },
+    {
+      "name": "med-super-web-dev",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8767", "-t", "lib/main.dart"],
+      "port": 8767
     }
   ]
 }

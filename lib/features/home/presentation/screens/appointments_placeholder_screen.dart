@@ -13,6 +13,7 @@ import 'package:med_super/features/appointments/domain/entities/reschedule_targe
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 // ─── screen ───────────────────────────────────────────────────────────────────
 
@@ -254,7 +255,7 @@ class _ApptHeader extends ConsumerWidget {
             smallSize: 8,
             backgroundColor: Colors.red,
             isLabelVisible: hasUnread,
-            child: const Icon(Icons.notifications_outlined, color: _ink),
+            child: const Icon(Icons.notifications_outlined, color: AppPalette.ink),
           ),
         ),
       ],
