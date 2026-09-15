@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
-import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 
 /// A small colored pill for a `LabOrderStatus` value (backend enum,
 /// `clinic-reservations` `prisma/schema/shared.prisma`) — shared between the
@@ -39,22 +39,10 @@ class LabOrderStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = colorFor(status);
     final labelKey = _labelKeys[status];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Text(
-        labelKey == null ? status : labelKey.tr(),
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
+    return AppBadge.soft(
+      label: labelKey == null ? status : labelKey.tr(),
+      color: colorFor(status),
     );
   }
 }

@@ -15,6 +15,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pha
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 2 of the pharmacy booking flow — choose a pharmacy to fulfil the
 /// prescription uploaded in step 1. Selecting a card only marks it as the
@@ -145,11 +146,11 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
                     decoration: InputDecoration(
                       hintText: 'pharmacy_booking.select_pharmacy.search_hint'
                           .tr(),
-                      suffixIcon: const Icon(Icons.search),
+                      suffixIcon: const Icon(SolarIconsOutline.magnifier),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadii.md),
                         borderSide: const BorderSide(
                           color: AppColors.borderLight,
                         ),
@@ -282,7 +283,7 @@ class _Header extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
+            icon: const Icon(SolarIconsOutline.arrowRight),
           ),
         ],
       ),

@@ -2,7 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
@@ -12,6 +16,7 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_ord
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_order_status_pill.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 // ─── screen: two top tabs — الصيدلية / المعمل, both real data ──────────────
 
@@ -31,8 +36,6 @@ class PatientOrdersScreen extends ConsumerStatefulWidget {
 }
 
 class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
-  static const _pageBg = Color(0xFFF3F6FB);
-
   int _selectedVendorTab = 0; // 0 = pharmacy (default), 1 = lab
   final _searchController = TextEditingController();
   String _query = '';
@@ -59,7 +62,7 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
         : 'أحمد محمد';
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -100,9 +103,6 @@ class _OrdersHeader extends StatelessWidget {
 
   final String displayName;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -112,8 +112,8 @@ class _OrdersHeader extends StatelessWidget {
           onTap: () => context.go('/patient/profile'),
           child: const CircleAvatar(
             radius: 22,
-            backgroundColor: Color(0xFFDCE8FF),
-            child: Icon(Icons.person, color: brandBlue),
+            backgroundColor: AppPalette.primarySoft,
+            child: Icon(SolarIconsBold.userRounded, color: AppPalette.primary),
           ),
         ),
         const SizedBox(width: 10),
@@ -122,25 +122,33 @@ class _OrdersHeader extends StatelessWidget {
           children: [
             Text(
               'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(color: _muted),
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppPalette.inkMuted,
+              ),
             ),
             Text(
               displayName,
-              style: textTheme.titleMedium?.copyWith(
-                color: _ink,
-                fontWeight: FontWeight.w800,
-              ),
+              style: textTheme.titleMedium?.copyWith(color: AppPalette.ink),
             ),
           ],
         ),
         const Spacer(),
-        IconButton(
-          onPressed: () => context.go('/patient/notifications'),
-          icon: const Badge(
-            smallSize: 8,
-            backgroundColor: Colors.red,
-            child: Icon(Icons.notifications_outlined, color: _ink),
-          ),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () => context.go('/patient/notifications'),
+              icon: const Icon(
+                SolarIconsOutline.bellBing,
+                color: AppPalette.ink,
+              ),
+            ),
+            PositionedDirectional(
+              end: 6,
+              top: 6,
+              child: IgnorePointer(child: AppBadge.dot()),
+            ),
+          ],
         ),
       ],
     );
@@ -154,16 +162,17 @@ class _OrderSearchBar extends StatelessWidget {
 
   final TextEditingController controller;
 
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
         hintText: 'orders.search_hint'.tr(),
-        hintStyle: const TextStyle(color: _muted),
-        prefixIcon: const Icon(Icons.search, color: _muted),
+        hintStyle: const TextStyle(color: AppPalette.inkFaint),
+        prefixIcon: const Icon(
+          SolarIconsOutline.magnifier,
+          color: AppPalette.inkMuted,
+        ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -171,16 +180,16 @@ class _OrderSearchBar extends StatelessWidget {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(28),
-          borderSide: const BorderSide(color: brandBlue, width: 1.5),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          borderSide: const BorderSide(color: AppPalette.primary, width: 1.5),
         ),
       ),
     );
@@ -201,7 +210,7 @@ class _VendorTabRow extends StatelessWidget {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EDF5),
+        color: AppPalette.surfaceSunken,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -241,12 +250,12 @@ class _TabButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? brandBlue : Colors.transparent,
+            color: isActive ? AppPalette.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: brandBlue.withValues(alpha: 0.25),
+                      color: AppPalette.primary.withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -257,7 +266,7 @@ class _TabButton extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isActive ? Colors.white : const Color(0xFF6B7280),
+              color: isActive ? Colors.white : AppPalette.inkFaint,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -274,8 +283,6 @@ class _PharmacyOrdersTab extends ConsumerWidget {
 
   final String query;
 
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(pharmacyOrdersProvider);
@@ -288,7 +295,7 @@ class _PharmacyOrdersTab extends ConsumerWidget {
           children: [
             Text(
               'errors.unexpected'.tr(),
-              style: const TextStyle(color: _muted),
+              style: const TextStyle(color: AppPalette.inkMuted),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -322,9 +329,9 @@ class _PharmacyOrdersTab extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'orders.empty'.tr(),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: _muted),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppPalette.inkMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -352,9 +359,6 @@ class _PharmacyOrderCard extends StatelessWidget {
 
   final PharmacyOrderDetail order;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   String _formatDate(String iso) {
     final parsed = DateTime.tryParse(iso);
     if (parsed == null) return iso;
@@ -375,23 +379,17 @@ class _PharmacyOrderCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border(
           left: BorderSide(
             width: 5,
             color: PharmacyOrderStatusPill.colorFor(order.status),
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.resting,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: InkWell(
           onTap: () => context.push('/patient/orders/${order.id}'),
           child: Padding(
@@ -406,23 +404,16 @@ class _PharmacyOrderCard extends StatelessWidget {
                     Text(
                       '#${shortOrderId(order.id)}',
                       style: textTheme.bodySmall?.copyWith(
-                        color: _ink,
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF4FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.local_pharmacy_outlined,
-                        size: 20,
-                        color: brandBlue,
-                      ),
+                    const AppIconTile(
+                      icon: SolarIconsOutline.pills,
+                      color: AppPalette.primary,
+                      size: 36,
+                      iconSize: 20,
                     ),
                   ],
                 ),
@@ -431,8 +422,7 @@ class _PharmacyOrderCard extends StatelessWidget {
                   order.pharmacyName ??
                       'pharmacy_booking.orders.pharmacy_label'.tr(),
                   style: textTheme.titleSmall?.copyWith(
-                    color: brandBlue,
-                    fontWeight: FontWeight.w700,
+                    color: AppPalette.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -440,15 +430,17 @@ class _PharmacyOrderCard extends StatelessWidget {
                   DeliveryMethod.fromApiValue(
                     order.fulfillmentType,
                   ).titleKey.tr(),
-                  style: textTheme.bodySmall?.copyWith(color: _ink),
+                  style: textTheme.bodySmall?.copyWith(color: AppPalette.ink),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _formatDate(order.createdAt),
-                  style: textTheme.bodySmall?.copyWith(color: _muted),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppPalette.inkMuted,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                const Divider(height: 1, color: Color(0xFFEFF2F7)),
+                Divider(height: 1, color: AppPalette.border),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -456,9 +448,9 @@ class _PharmacyOrderCard extends StatelessWidget {
                       onPressed: () =>
                           context.push('/patient/orders/${order.id}'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: brandBlue,
+                        foregroundColor: AppPalette.primary,
                         side: BorderSide(
-                          color: brandBlue.withValues(alpha: 0.5),
+                          color: AppPalette.primary.withValues(alpha: 0.3),
                         ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -480,12 +472,14 @@ class _PharmacyOrderCard extends StatelessWidget {
                         children: [
                           Text(
                             'orders.total'.tr(),
-                            style: textTheme.bodySmall?.copyWith(color: _muted),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppPalette.inkMuted,
+                            ),
                           ),
                           Text(
                             '${quote.totalPrice} ${quote.currency}',
                             style: textTheme.titleSmall?.copyWith(
-                              color: _ink,
+                              color: AppPalette.ink,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -509,8 +503,6 @@ class _LabOrdersTab extends ConsumerWidget {
 
   final String query;
 
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(labOrdersProvider);
@@ -523,7 +515,7 @@ class _LabOrdersTab extends ConsumerWidget {
           children: [
             Text(
               'errors.unexpected'.tr(),
-              style: const TextStyle(color: _muted),
+              style: const TextStyle(color: AppPalette.inkMuted),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -552,9 +544,9 @@ class _LabOrdersTab extends ConsumerWidget {
                   child: Center(
                     child: Text(
                       'orders.empty'.tr(),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyLarge?.copyWith(color: _muted),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppPalette.inkMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -582,9 +574,6 @@ class _LabOrderCard extends StatelessWidget {
 
   final LabOrderDetail order;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   String _formatDate(String iso) {
     final parsed = DateTime.tryParse(iso);
     if (parsed == null) return iso;
@@ -599,23 +588,17 @@ class _LabOrderCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border(
           left: BorderSide(
             width: 5,
             color: LabOrderStatusPill.colorFor(order.status),
           ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.resting,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: InkWell(
           onTap: () => context.push('/patient/orders/lab/${order.id}'),
           child: Padding(
@@ -630,33 +613,28 @@ class _LabOrderCard extends StatelessWidget {
                     Text(
                       '#${shortOrderId(order.id)}',
                       style: textTheme.bodySmall?.copyWith(
-                        color: _ink,
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF4FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.biotech_outlined,
-                        size: 20,
-                        color: brandBlue,
-                      ),
+                    const AppIconTile(
+                      icon: SolarIconsOutline.testTube,
+                      color: AppPalette.primary,
+                      size: 36,
+                      iconSize: 20,
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _formatDate(order.createdAt),
-                  style: textTheme.bodySmall?.copyWith(color: _muted),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: AppPalette.inkMuted,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                const Divider(height: 1, color: Color(0xFFEFF2F7)),
+                Divider(height: 1, color: AppPalette.border),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -664,8 +642,10 @@ class _LabOrderCard extends StatelessWidget {
                       onPressed: () =>
                           context.push('/patient/orders/lab/${order.id}'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: brandBlue,
-                        side: BorderSide(color: brandBlue.withValues(alpha: 0.5)),
+                        foregroundColor: AppPalette.primary,
+                        side: BorderSide(
+                          color: AppPalette.primary.withValues(alpha: 0.3),
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
@@ -686,12 +666,14 @@ class _LabOrderCard extends StatelessWidget {
                         children: [
                           Text(
                             'orders.total'.tr(),
-                            style: textTheme.bodySmall?.copyWith(color: _muted),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppPalette.inkMuted,
+                            ),
                           ),
                           Text(
                             '${quote.totalPrice} ${quote.currency}',
                             style: textTheme.titleSmall?.copyWith(
-                              color: _ink,
+                              color: AppPalette.ink,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

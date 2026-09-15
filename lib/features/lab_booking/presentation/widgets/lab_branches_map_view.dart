@@ -3,8 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/clinic_location_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Real interactive map (OpenStreetMap tiles via flutter_map — free, no API
 /// key) showing every candidate lab branch. Mirrors `pharmacy_booking`'s
@@ -59,13 +61,7 @@ class _LabBranchesMapViewState extends State<LabBranchesMapView> {
         decoration: BoxDecoration(
           border: Border.all(color: AppColors.borderSubtle),
           borderRadius: BorderRadius.circular(AppRadii.md),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.patientPrimary.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: AppShadows.raised,
         ),
         child: Stack(
           children: [
@@ -88,7 +84,7 @@ class _LabBranchesMapViewState extends State<LabBranchesMapView> {
                           child: GestureDetector(
                             onTap: () => widget.onSelect(branch.id),
                             child: Icon(
-                              Icons.location_pin,
+                              SolarIconsBold.mapPoint,
                               color: branch.id == widget.selectedId
                                   ? AppColors.patientPrimary
                                   : AppColors.mutedText2,
@@ -125,7 +121,7 @@ class _LabBranchesMapViewState extends State<LabBranchesMapView> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(
-                          Icons.my_location,
+                          SolarIconsBold.gps,
                           color: AppColors.patientPrimary,
                         ),
                 ),

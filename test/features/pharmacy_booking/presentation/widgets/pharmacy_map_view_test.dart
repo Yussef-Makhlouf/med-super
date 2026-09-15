@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart' show FlutterMap;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_map_view.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/fake_tile_provider.dart';
 import '../../../../helpers/pump_localized_widget.dart';
@@ -73,8 +73,8 @@ void main() {
     );
 
     expect(find.byType(FlutterMap), findsOneWidget);
-    expect(find.byIcon(Icons.location_pin), findsNWidgets(pharmacies.length));
-    expect(find.byIcon(Icons.my_location), findsOneWidget);
+    expect(find.byIcon(SolarIconsBold.mapPoint), findsNWidgets(pharmacies.length));
+    expect(find.byIcon(SolarIconsBold.gps), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -92,7 +92,7 @@ void main() {
     );
 
     expect(find.byType(FlutterMap), findsOneWidget);
-    expect(find.byIcon(Icons.location_pin), findsNothing);
+    expect(find.byIcon(SolarIconsBold.mapPoint), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -110,7 +110,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byIcon(Icons.location_pin).first);
+    await tester.tap(find.byIcon(SolarIconsBold.mapPoint).first);
     await tester.pump();
 
     expect(selectedId, isNotNull);

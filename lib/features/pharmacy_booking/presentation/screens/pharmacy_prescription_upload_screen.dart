@@ -12,6 +12,7 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/prescription
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 1 of the pharmacy booking flow — attach a photo of the prescription
 /// and choose how the medication should be received. Mirrors the structure
@@ -210,7 +211,7 @@ class _Header extends StatelessWidget {
             ),
             IconButton(
               onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_forward),
+              icon: const Icon(SolarIconsOutline.arrowRight),
             ),
           ],
         ),
@@ -254,7 +255,7 @@ class _UploadBox extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.add_a_photo_outlined,
+                  SolarIconsOutline.cameraAdd,
                   color: AppColors.patientPrimary,
                 ),
               ),
@@ -379,14 +380,14 @@ class _ImageThumbnail extends StatelessWidget {
             height: size,
             color: AppColors.surfaceMuted,
             child: image.bytes == null
-                ? const Icon(Icons.image_outlined, color: AppColors.mutedText)
+                ? const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText)
                 : Image.memory(
                     image.bytes!,
                     width: size,
                     height: size,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.image_outlined,
+                      SolarIconsOutline.gallery,
                       color: AppColors.mutedText,
                     ),
                   ),
@@ -455,7 +456,7 @@ class _DeliveryMethodSection extends StatelessWidget {
                 child: _DeliveryMethodCard(
                   method: DeliveryMethod.pickup,
                   isSelected: selected == DeliveryMethod.pickup,
-                  icon: Icons.storefront_outlined,
+                  icon: SolarIconsOutline.shop,
                   onTap: () => onSelect(DeliveryMethod.pickup),
                 ),
               ),
@@ -464,7 +465,7 @@ class _DeliveryMethodSection extends StatelessWidget {
                 child: _DeliveryMethodCard(
                   method: DeliveryMethod.homeDelivery,
                   isSelected: selected == DeliveryMethod.homeDelivery,
-                  icon: Icons.delivery_dining_outlined,
+                  icon: SolarIconsOutline.delivery,
                   onTap: () => onSelect(DeliveryMethod.homeDelivery),
                 ),
               ),
@@ -473,7 +474,7 @@ class _DeliveryMethodSection extends StatelessWidget {
                 child: _DeliveryMethodCard(
                   method: DeliveryMethod.clinicHandover,
                   isSelected: selected == DeliveryMethod.clinicHandover,
-                  icon: Icons.local_hospital_outlined,
+                  icon: SolarIconsOutline.hospital,
                   onTap: () => onSelect(DeliveryMethod.clinicHandover),
                 ),
               ),

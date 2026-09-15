@@ -10,6 +10,7 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_met
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_prescription_upload_screen.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/pump_localized_widget.dart';
 
@@ -84,7 +85,7 @@ void main() {
 
       // A single back-arrow IconButton (`context.pop()`), balanced by a
       // same-width leading SizedBox so the title stays centered.
-      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.arrowRight), findsOneWidget);
       expect(find.text('pharmacy_booking.upload.title'.tr()), findsOneWidget);
 
       final stepper = tester.widget<StepProgressHeader>(
@@ -97,7 +98,7 @@ void main() {
         'pharmacy_booking.step_delivery'.tr(),
       ]);
 
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.cameraAdd), findsOneWidget);
       expect(
         find.text('pharmacy_booking.upload.upload_cta'.tr()),
         findsOneWidget,
@@ -348,7 +349,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final uploadBox = find.ancestor(
-        of: find.byIcon(Icons.add_a_photo_outlined),
+        of: find.byIcon(SolarIconsOutline.cameraAdd),
         matching: find.byType(InkWell),
       );
       expect(uploadBox, findsOneWidget);

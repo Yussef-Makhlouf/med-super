@@ -4,13 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/widgets/app_button.dart';
-import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/flow_header.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 1 of the lab booking flow — attach a photo of the paper/digital lab
 /// request and choose how the sample should be collected. Replaces the old
@@ -93,10 +98,9 @@ class _LabRequestUploadScreenState
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
-            StepProgressHeader(
-              // Same step labels/order as the other two screens of this
-              // flow — the stepper must read identically everywhere.
+            FlowHeader(
+              title: 'lab_booking.upload.title'.tr(),
+              onBack: () => context.pop(),
               stepLabels: [
                 'lab_booking.step_upload'.tr(),
                 'lab_booking.step_select_lab'.tr(),
@@ -107,7 +111,7 @@ class _LabRequestUploadScreenState
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                 children: [
                   _UploadBox(onTap: _pickImages),
                   if (images.isNotEmpty) ...[
@@ -121,6 +125,8 @@ class _LabRequestUploadScreenState
                     ),
                   ],
                   const SizedBox(height: 32),
+                  SectionHeader(title: 'lab_booking.upload.service_type_title'.tr()),
+                  const SizedBox(height: 16),
                   _ServiceTypeSection(
                     selected: selectedType,
                     onSelect: (type) => ref
@@ -130,66 +136,34 @@ class _LabRequestUploadScreenState
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: AppButton.filled(
-                label: 'lab_booking.upload.continue_cta'.tr(),
-                fullWidth: true,
-                isLoading: isSubmitting,
-                // Explicit brand color/radius — the shared ElevatedButton
-                // theme default is colorScheme.primary (brandBlue), which is
-                // a visibly different blue than AppColors.patientPrimary
-                // used everywhere else in this flow (stepper accent, price
-                // text, every other CTA). Must match the mockup exactly.
-                backgroundColor: AppColors.patientPrimary,
-                // Without this, ElevatedButton's default M3 style computes
-                // the label color against the *theme's* primary rather
-                // than this explicit override, landing on a low-contrast
-                // near-invisible blue-on-blue label.
-                foregroundColor: Colors.white,
-                borderRadius: AppRadii.xl,
-                onPressed: canContinue && !isSubmitting ? _continue : null,
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: AppShadows.resting,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surfaceApp,
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Balances the trailing back button's width so the title
-            // stays visually centered now that nothing occupies the
-            // leading slot (the mockup's help icon was dropped — no help
-            // content exists for this screen).
-            const SizedBox(width: 48),
-            Expanded(
-              child: Text(
-                'lab_booking.upload.title'.tr(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink900,
+              child: SizedBox(
+                height: 56,
+                child: AppButton.filled(
+                  label: 'lab_booking.upload.continue_cta'.tr(),
+                  fullWidth: true,
+                  isLoading: isSubmitting,
+                  // Explicit brand color/radius — the shared ElevatedButton
+                  // theme default is colorScheme.primary (brandBlue), which is
+                  // a visibly different blue than AppColors.patientPrimary
+                  // used everywhere else in this flow (stepper accent, price
+                  // text, every other CTA). Must match the mockup exactly.
+                  backgroundColor: AppColors.patientPrimary,
+                  // Without this, ElevatedButton's default M3 style computes
+                  // the label color against the *theme's* primary rather
+                  // than this explicit override, landing on a low-contrast
+                  // near-invisible blue-on-blue label.
+                  foregroundColor: Colors.white,
+                  borderRadius: AppRadii.pill,
+                  onPressed: canContinue && !isSubmitting ? _continue : null,
                 ),
               ),
             ),
-            IconButton(
-              onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_forward),
-            ),
           ],
         ),
       ),
@@ -197,8 +171,9 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Big dashed-border tap target — the primary way to attach the first
-/// image(s) of the lab request.
+/// Big dashed-border tap target on a tinted panel — the primary way to
+/// attach the first image(s) of the lab request. Sized and tinted to read
+/// as an inviting drop-zone rather than a bare bordered box.
 class _UploadBox extends StatelessWidget {
   const _UploadBox({required this.onTap});
 
@@ -208,32 +183,33 @@ class _UploadBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
+      borderRadius: BorderRadius.circular(AppRadii.xl),
       child: CustomPaint(
         painter: const _DashedRRectPainter(
-          color: AppColors.borderMedium,
-          radius: AppRadii.lg,
+          color: AppPalette.primary,
+          radius: AppRadii.xl,
         ),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
+            color: AppPalette.primarySoft,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.patientPrimary.withValues(alpha: 0.1),
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.add_a_photo_outlined,
+                  SolarIconsOutline.cameraAdd,
                   color: AppColors.patientPrimary,
+                  size: 32,
                 ),
               ),
               const SizedBox(height: 16),
@@ -241,8 +217,8 @@ class _UploadBox extends StatelessWidget {
                 'lab_booking.upload.upload_cta'.tr(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.ink900,
                 ),
               ),
@@ -251,7 +227,7 @@ class _UploadBox extends StatelessWidget {
                 'lab_booking.upload.upload_hint'.tr(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   color: AppColors.mutedText,
                 ),
               ),
@@ -325,7 +301,7 @@ class _AddImageTile extends StatelessWidget {
           child: SizedBox(
             width: size,
             height: size,
-            child: const Icon(Icons.add, color: AppColors.patientPrimary),
+            child: const Icon(SolarIconsOutline.plus, color: AppColors.patientPrimary),
           ),
         ),
       ),
@@ -357,14 +333,14 @@ class _ImageThumbnail extends StatelessWidget {
             height: size,
             color: AppColors.surfaceMuted,
             child: image.bytes == null
-                ? const Icon(Icons.image_outlined, color: AppColors.mutedText)
+                ? const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText)
                 : Image.memory(
                     image.bytes!,
                     width: size,
                     height: size,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.image_outlined,
+                      SolarIconsOutline.gallery,
                       color: AppColors.mutedText,
                     ),
                   ),
@@ -402,9 +378,8 @@ class _ServiceTypeSection extends StatelessWidget {
   final LabServiceType? selected;
   final ValueChanged<LabServiceType> onSelect;
 
-  // Purple tokens for the home-collection icon badge — not part of the
+  // Purple token for the home-collection icon tile — not part of the
   // shared AppColors palette (only this card uses purple), so kept local.
-  static const _homeIconBg = Color(0xFFF3E8FF);
   static const _homeIconColor = Color(0xFF9333EA);
 
   @override
@@ -412,33 +387,10 @@ class _ServiceTypeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 20,
-              decoration: BoxDecoration(
-                color: AppColors.patientPrimary,
-                borderRadius: BorderRadius.circular(AppRadii.pill),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'lab_booking.upload.service_type_title'.tr(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink900,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
         _ServiceTypeCard(
           type: LabServiceType.branchVisit,
           isSelected: selected == LabServiceType.branchVisit,
-          icon: Icons.apartment_outlined,
-          iconBg: AppColors.tealBg,
+          icon: SolarIconsOutline.buildings,
           iconColor: AppColors.tealAccent,
           onTap: () => onSelect(LabServiceType.branchVisit),
         ),
@@ -446,8 +398,7 @@ class _ServiceTypeSection extends StatelessWidget {
         _ServiceTypeCard(
           type: LabServiceType.homeCollection,
           isSelected: selected == LabServiceType.homeCollection,
-          icon: Icons.medical_services_outlined,
-          iconBg: _homeIconBg,
+          icon: SolarIconsOutline.medicalKit,
           iconColor: _homeIconColor,
           onTap: () => onSelect(LabServiceType.homeCollection),
         ),
@@ -461,7 +412,6 @@ class _ServiceTypeCard extends StatelessWidget {
     required this.type,
     required this.isSelected,
     required this.icon,
-    required this.iconBg,
     required this.iconColor,
     required this.onTap,
   });
@@ -469,7 +419,6 @@ class _ServiceTypeCard extends StatelessWidget {
   final LabServiceType type;
   final bool isSelected;
   final IconData icon;
-  final Color iconBg;
   final Color iconColor;
   final VoidCallback onTap;
 
@@ -479,9 +428,9 @@ class _ServiceTypeCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadii.lg),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? AppPalette.primarySoft : Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(
             color: isSelected
@@ -489,15 +438,11 @@ class _ServiceTypeCard extends StatelessWidget {
                 : AppColors.borderLight,
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected ? AppShadows.resting : null,
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
-              child: Icon(icon, color: iconColor),
-            ),
+            AppIconTile(icon: icon, color: iconColor, size: 56, iconSize: 26),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -506,7 +451,7 @@ class _ServiceTypeCard extends StatelessWidget {
                   Text(
                     type.titleKey.tr(),
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink900,
                     ),
@@ -515,7 +460,7 @@ class _ServiceTypeCard extends StatelessWidget {
                   Text(
                     type.subtitleKey.tr(),
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: AppColors.mutedText,
                     ),
                   ),
@@ -524,8 +469,8 @@ class _ServiceTypeCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Container(
-              width: 22,
-              height: 22,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isSelected ? AppColors.patientPrimary : Colors.white,
@@ -537,7 +482,7 @@ class _ServiceTypeCard extends StatelessWidget {
                 ),
               ),
               child: isSelected
-                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  ? const Icon(Icons.check, size: 15, color: Colors.white)
                   : null,
             ),
           ],

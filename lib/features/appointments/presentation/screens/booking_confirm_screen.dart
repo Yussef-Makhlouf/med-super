@@ -6,15 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
-import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
-import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 enum _Stage { holding, held, confirming, error }
 
@@ -185,7 +186,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceApp,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -252,11 +253,14 @@ class _Header extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.patientPrimary,
+                color: AppPalette.primary,
               ),
             ),
           ),
-          IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_forward)),
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(SolarIconsOutline.arrowRight),
+          ),
         ],
       ),
     );
@@ -273,13 +277,7 @@ class _SummaryCard extends StatelessWidget {
     final feeLabel = request.currency == 'EGP'
         ? '${request.consultationFee} ج.م'
         : '${request.consultationFee} ${request.currency}';
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: AppShadows.resting,
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -288,30 +286,30 @@ class _SummaryCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.ink900,
+              color: AppPalette.ink,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             request.specialty,
-            style: const TextStyle(fontSize: 13, color: AppColors.mutedText),
+            style: const TextStyle(fontSize: 13, color: AppPalette.inkMuted),
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: AppColors.borderLight),
+          Divider(height: 1, color: AppPalette.border),
           const SizedBox(height: 14),
           _InfoRow(
-            icon: Icons.calendar_today_outlined,
+            icon: SolarIconsOutline.calendarMinimalistic,
             label: request.dayLabel,
           ),
           const SizedBox(height: 8),
-          _InfoRow(icon: Icons.access_time_outlined, label: request.timeLabel),
+          _InfoRow(icon: SolarIconsOutline.clockCircle, label: request.timeLabel),
           const SizedBox(height: 8),
           _InfoRow(
-            icon: Icons.payments_outlined,
+            icon: SolarIconsOutline.walletMoney,
             label: 'appointments.pay_at_clinic'.tr(),
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: AppColors.borderLight),
+          Divider(height: 1, color: AppPalette.border),
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -320,7 +318,7 @@ class _SummaryCard extends StatelessWidget {
                 'appointments.consultation_fee'.tr(),
                 style: const TextStyle(
                   fontSize: 14,
-                  color: AppColors.mutedText,
+                  color: AppPalette.inkMuted,
                 ),
               ),
               Text(
@@ -328,7 +326,7 @@ class _SummaryCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.patientPrimary,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
@@ -349,11 +347,11 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.mutedText2),
+        Icon(icon, size: 18, color: AppPalette.inkMuted),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: AppColors.bodyText),
+          style: const TextStyle(fontSize: 14, color: AppPalette.ink),
         ),
       ],
     );
@@ -370,7 +368,7 @@ class _HoldTimer extends StatelessWidget {
     final minutes = remaining.inMinutes.toString().padLeft(2, '0');
     final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
     final low = remaining.inSeconds <= 60;
-    final color = low ? AppColors.errorRed : AppColors.tealAccent;
+    final color = low ? AppPalette.error : AppPalette.secondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -380,7 +378,7 @@ class _HoldTimer extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.timer_outlined, size: 18, color: color),
+          Icon(SolarIconsOutline.clockCircle, size: 18, color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -419,7 +417,7 @@ class _ConfirmBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
+        border: Border(top: BorderSide(color: AppPalette.border)),
       ),
       child: SafeArea(
         top: false,
@@ -428,7 +426,7 @@ class _ConfirmBar extends StatelessWidget {
           child: FilledButton(
             onPressed: canConfirm ? onConfirm : null,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.patientPrimary,
+              backgroundColor: AppPalette.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadii.pill),

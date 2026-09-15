@@ -4,6 +4,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// A single pharmacy branch card in the step-2 selection list: logo +
 /// name/address, a distance row (hidden when the device's location isn't
@@ -71,7 +72,7 @@ class PharmacyCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadii.sm),
                   ),
                   child: const Icon(
-                    Icons.local_pharmacy,
+                    SolarIconsBold.pills,
                     color: Color(0xFF15803D),
                     size: 22,
                   ),
@@ -103,7 +104,7 @@ class PharmacyCard extends StatelessWidget {
                 ),
                 if (onViewDetails != null)
                   const Icon(
-                    Icons.chevron_right,
+                    SolarIconsOutline.altArrowRight,
                     color: AppColors.mutedText2,
                   ),
               ],
@@ -114,7 +115,7 @@ class PharmacyCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(
-                  Icons.directions_car,
+                  SolarIconsOutline.routing,
                   size: 14,
                   color: AppColors.mutedText2,
                 ),
@@ -168,13 +169,13 @@ class _DeliveryBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.tealBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.delivery_dining_outlined,
+            SolarIconsOutline.delivery,
             size: 16,
             color: AppColors.tealAccent,
           ),
@@ -209,13 +210,13 @@ class _NoDeliveryBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.do_not_disturb_alt_outlined,
+            SolarIconsOutline.forbidden,
             size: 14,
             color: AppColors.mutedText2,
           ),

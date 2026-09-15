@@ -12,6 +12,7 @@ import 'package:med_super/features/provider_profile/presentation/controllers/cli
 import 'package:med_super/features/provider_profile/presentation/screens/clinic_branch_details_screen.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/misc.dart' show Override;
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/pump_localized_widget.dart';
 
@@ -105,7 +106,7 @@ void main() {
     // never matches the actual `Text` widget.
     expect(find.text(AppFormatters.ltrIsolate('+201234567890')), findsOneWidget);
     expect(find.text('Africa/Cairo'), findsOneWidget);
-    expect(find.byIcon(Icons.verified), findsOneWidget);
+    expect(find.byIcon(SolarIconsBold.shieldCheck), findsOneWidget);
 
     expect(tester.takeException(), isNull);
   });

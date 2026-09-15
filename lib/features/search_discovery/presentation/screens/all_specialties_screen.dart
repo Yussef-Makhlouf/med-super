@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/specialties/domain/entities/specialty.dart';
 import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
 import 'package:med_super/core/specialties/presentation/utils/specialty_visuals.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Full "all categories" grid, reached from the patient home screen's
 /// specialties row via "عرض الكل" — previously that link just opened
@@ -17,31 +19,27 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 class AllSpecialtiesScreen extends ConsumerWidget {
   const AllSpecialtiesScreen({super.key});
 
-  static const _pageBg = Color(0xFFF3F6FB);
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final specialties = ref.watch(specialtiesProvider);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: brandBlue),
+          icon: const Icon(
+            SolarIconsOutline.arrowLeft,
+            color: AppPalette.primary,
+          ),
         ),
         title: Text(
           'home.specialties'.tr(),
-          style: textTheme.titleLarge?.copyWith(
-            color: brandBlue,
-            fontWeight: FontWeight.w800,
-          ),
+          style: textTheme.titleLarge?.copyWith(color: AppPalette.primary),
         ),
         centerTitle: true,
       ),
@@ -54,7 +52,9 @@ class AllSpecialtiesScreen extends ConsumerWidget {
               return Center(
                 child: Text(
                   'home.specialties_empty'.tr(),
-                  style: textTheme.bodyMedium?.copyWith(color: _muted),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppPalette.inkMuted,
+                  ),
                 ),
               );
             }
@@ -104,13 +104,7 @@ class _CategoryTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: AppShadows.resting,
             ),
             child: Icon(visual.icon, color: visual.color, size: 28),
           ),
@@ -120,10 +114,7 @@ class _CategoryTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: textTheme.labelMedium?.copyWith(
-              color: AllSpecialtiesScreen._ink,
-              fontWeight: FontWeight.w700,
-            ),
+            style: textTheme.labelMedium?.copyWith(color: AppPalette.ink),
           ),
         ],
       ),

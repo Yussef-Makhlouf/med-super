@@ -17,6 +17,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmac
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_search_skeleton.dart';
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/fake_tile_provider.dart';
 import '../../../../helpers/pump_localized_widget.dart';
@@ -174,7 +175,7 @@ void main() {
       );
       await _settle(tester);
 
-      expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.arrowRight), findsOneWidget);
       expect(
         find.text('pharmacy_booking.select_pharmacy.title'.tr()),
         findsOneWidget,
@@ -343,7 +344,7 @@ void main() {
 
     final backButton = tester.widget<IconButton>(
       find.ancestor(
-        of: find.byIcon(Icons.arrow_forward),
+        of: find.byIcon(SolarIconsOutline.arrowRight),
         matching: find.byType(IconButton),
       ),
     );

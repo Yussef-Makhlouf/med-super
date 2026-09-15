@@ -12,6 +12,7 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_ord
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_order_status_pill.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// `order.createdAt` is a raw ISO-8601 string straight off the wire — shown
 /// formatted, never as the literal `2026-09-01T01:08:15.961Z`. Falls back to
@@ -139,7 +140,7 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
         // orders list keeps this screen from ever being a dead end
         // regardless of how the patient got here.
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(SolarIconsOutline.arrowLeft),
           tooltip: 'pharmacy_booking.orders.back_to_list'.tr(),
           onPressed: () => context.canPop()
               ? context.pop()
@@ -234,7 +235,7 @@ class _OrderDetailBody extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
-                        Icons.local_pharmacy_outlined,
+                        SolarIconsOutline.pills,
                         size: 20,
                         color: brandBlue,
                       ),
@@ -358,7 +359,7 @@ class _OrderDetailBody extends StatelessWidget {
                                 height: 72,
                                 color: AppColors.surfaceMuted,
                                 child: const Icon(
-                                  Icons.image_outlined,
+                                  SolarIconsOutline.gallery,
                                   color: AppColors.mutedText2,
                                 ),
                               ),

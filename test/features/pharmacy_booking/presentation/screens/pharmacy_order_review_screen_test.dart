@@ -20,6 +20,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pre
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_review_screen.dart';
 import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/pump_localized_widget.dart';
 
@@ -310,8 +311,8 @@ void main() {
         find.text(DeliveryMethod.homeDelivery.titleKey.tr()),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.delivery_dining_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.storefront_outlined), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.delivery), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.shop), findsOneWidget);
       expect(
         find.text('pharmacy_booking.review.home_label'.tr()),
         findsOneWidget,
@@ -351,7 +352,7 @@ void main() {
         find.text(DeliveryMethod.clinicHandover.titleKey.tr()),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.local_hospital_outlined), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.hospital), findsOneWidget);
       expect(
         find.text('pharmacy_booking.review.home_label'.tr()),
         findsNothing,

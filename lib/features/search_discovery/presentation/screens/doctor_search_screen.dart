@@ -6,14 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/specialties/domain/entities/specialty.dart';
 import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_filter_chip.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_sort.dart';
 import 'package:med_super/features/search_discovery/presentation/controllers/search_providers.dart';
 import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Doctor search results — matches Figma RTL search screen.
 class DoctorSearchScreen extends ConsumerStatefulWidget {
@@ -39,9 +41,6 @@ class DoctorSearchScreen extends ConsumerStatefulWidget {
 }
 
 class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
-  static const _pageBg = Color(0xFFF3F6FB);
-  static const _muted = Color(0xFF8A94A6);
-
   late final TextEditingController _queryController;
   Timer? _debounce;
 
@@ -93,27 +92,30 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: brandBlue),
+          icon: const Icon(
+            SolarIconsOutline.arrowLeft,
+            color: AppPalette.primary,
+          ),
         ),
         title: Text(
           _title,
-          style: textTheme.titleLarge?.copyWith(
-            color: brandBlue,
-            fontWeight: FontWeight.w800,
-          ),
+          style: textTheme.titleLarge?.copyWith(color: AppPalette.primary),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.search, color: brandBlue),
+            icon: const Icon(
+              SolarIconsOutline.magnifier,
+              color: AppPalette.primary,
+            ),
           ),
         ],
       ),
@@ -132,8 +134,11 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                   onChanged: _onQueryChanged,
                   decoration: InputDecoration(
                     hintText: 'search.placeholder'.tr(),
-                    hintStyle: const TextStyle(color: _muted),
-                    prefixIcon: const Icon(Icons.search, color: _muted),
+                    hintStyle: const TextStyle(color: AppPalette.inkFaint),
+                    prefixIcon: const Icon(
+                      SolarIconsOutline.magnifier,
+                      color: AppPalette.inkMuted,
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
@@ -142,16 +147,16 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadii.lg),
-                      borderSide: const BorderSide(color: Color(0xFFE5EAF2)),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadii.lg),
-                      borderSide: const BorderSide(color: Color(0xFFE5EAF2)),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadii.lg),
                       borderSide: const BorderSide(
-                        color: brandBlue,
+                        color: AppPalette.primary,
                         width: 1.5,
                       ),
                     ),
@@ -193,7 +198,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                   return EmptyState(
                     title: 'search.empty_title'.tr(),
                     subtitle: 'search.empty_subtitle'.tr(),
-                    icon: Icons.search_off,
+                    icon: SolarIconsOutline.magnifierBug,
                   );
                 }
                 // 1 header row + N doctors + (1 load-more row only if the
@@ -207,7 +212,9 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                     if (index == 0) {
                       return Text(
                         'search.results_count'.tr(args: ['${data.totalCount}']),
-                        style: textTheme.bodyMedium?.copyWith(color: _muted),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppPalette.inkMuted,
+                        ),
                       );
                     }
                     if (index == itemCount - 1 && data.hasMore) {
@@ -245,8 +252,6 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
 class _SpecialtyChips extends ConsumerWidget {
   const _SpecialtyChips({required this.selected, required this.onSelected});
 
-  static const _muted = Color(0xFF8A94A6);
-
   final String? selected;
   final ValueChanged<String?> onSelected;
 
@@ -275,47 +280,17 @@ class _SpecialtyChips extends ConsumerWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           if (index == 0) {
-            final isSelected = selected == null;
-            return ChoiceChip(
-              label: Text('search.specialty_all'.tr()),
-              selected: isSelected,
+            return AppFilterChip(
+              label: 'search.specialty_all'.tr(),
+              selected: selected == null,
               onSelected: (_) => onSelected(null),
-              selectedColor: brandBlue.withValues(alpha: 0.12),
-              backgroundColor: Colors.white,
-              labelStyle: TextStyle(
-                color: isSelected ? brandBlue : _muted,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-              side: BorderSide(
-                color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.pill),
-              ),
-              showCheckmark: false,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
             );
           }
           final specialty = items[index - 1];
-          final isSelected = specialty.code == selected;
-          return ChoiceChip(
-            label: Text(specialty.localizedName(languageCode)),
-            selected: isSelected,
+          return AppFilterChip(
+            label: specialty.localizedName(languageCode),
+            selected: specialty.code == selected,
             onSelected: (_) => onSelected(specialty.code),
-            selectedColor: brandBlue.withValues(alpha: 0.12),
-            backgroundColor: Colors.white,
-            labelStyle: TextStyle(
-              color: isSelected ? brandBlue : _muted,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-            side: BorderSide(
-              color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-            ),
-            showCheckmark: false,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
           );
         },
       ),
@@ -325,8 +300,6 @@ class _SpecialtyChips extends ConsumerWidget {
 
 class _SortChips extends StatelessWidget {
   const _SortChips({required this.selected, required this.onSelected});
-
-  static const _muted = Color(0xFF8A94A6);
 
   final DoctorSort selected;
   final ValueChanged<DoctorSort> onSelected;
@@ -347,25 +320,10 @@ class _SortChips extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final (sort, key) = items[index];
-          final isSelected = sort == selected;
-          return ChoiceChip(
-            label: Text(key.tr()),
-            selected: isSelected,
+          return AppFilterChip(
+            label: key.tr(),
+            selected: sort == selected,
             onSelected: (_) => onSelected(sort),
-            selectedColor: brandBlue.withValues(alpha: 0.12),
-            backgroundColor: Colors.white,
-            labelStyle: TextStyle(
-              color: isSelected ? brandBlue : _muted,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            ),
-            side: BorderSide(
-              color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-            ),
-            showCheckmark: false,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
           );
         },
       ),

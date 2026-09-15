@@ -7,6 +7,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_confirmation_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Pumps the confirmation screen behind a real [GoRouter] so `context.go(...)`
 /// works. The initial route is a placeholder with a recognizable label; the
@@ -129,7 +130,7 @@ void main() {
   ) async {
     await pumpConfirmationScreen(tester, confirmation);
 
-    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    expect(find.byIcon(SolarIconsBold.checkCircle), findsOneWidget);
     expect(_anyTextContains(tester, '#PH-2048'), isTrue);
     expect(_anyTextContains(tester, 'Order sent successfully'), isTrue);
     expect(
@@ -185,13 +186,13 @@ void main() {
     (tester) async {
       await pumpConfirmationScreen(tester, confirmation);
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle));
+      final icon = tester.widget<Icon>(find.byIcon(SolarIconsBold.checkCircle));
       expect(icon.color, AppColors.tealAccent);
 
       final badge = tester.widget<Container>(
         find
             .ancestor(
-              of: find.byIcon(Icons.check_circle),
+              of: find.byIcon(SolarIconsBold.checkCircle),
               matching: find.byType(Container),
             )
             .first,
@@ -208,8 +209,8 @@ void main() {
     (tester) async {
       await pumpConfirmationScreen(tester, confirmation);
 
-      expect(find.byIcon(Icons.local_shipping_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.home_outlined), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.delivery), findsOneWidget);
+      expect(find.byIcon(SolarIconsOutline.home), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

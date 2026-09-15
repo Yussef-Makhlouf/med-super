@@ -1,16 +1,20 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/app/router/app_router.dart';
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/auth_hero_illustration.dart';
+import 'package:med_super/core/widgets/auth_phone_field.dart';
+import 'package:med_super/core/widgets/auth_role_toggle.dart';
 import 'package:med_super/features/auth/domain/entities/otp_request_result.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Send-OTP / login screen — matches Figma (light, Arabic RTL).
 class LoginScreen extends ConsumerStatefulWidget {
@@ -186,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         builder: (context) {
           final textTheme = Theme.of(context).textTheme;
           return Scaffold(
-            backgroundColor: const Color(0xFFF3F6FB),
+            backgroundColor: AppPalette.paper,
             body: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -206,9 +210,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: AspectRatio(
+                            child: const AspectRatio(
                               aspectRatio: 1,
-                              child: const _LoginHeroIllustration(),
+                              child: AuthBlobHeroIllustration(
+                                icon: SolarIconsBold.health,
+                              ),
                             ),
                           ),
                         ),
@@ -256,7 +262,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                           width: 40,
                                           height: 4,
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFD8DEE8),
+                                            color: AppPalette.border,
                                             borderRadius: BorderRadius.circular(
                                               2,
                                             ),
@@ -289,9 +295,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                     ?.copyWith(
                                                       fontWeight:
                                                           FontWeight.w800,
-                                                      color: const Color(
-                                                        0xFF1A2B4A,
-                                                      ),
+                                                      color: AppPalette.ink,
                                                     ),
                                               ),
                                               const SizedBox(height: 6),
@@ -300,13 +304,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                 textAlign: TextAlign.center,
                                                 style: textTheme.bodyMedium
                                                     ?.copyWith(
-                                                      color: const Color(
-                                                        0xFF8A94A6,
-                                                      ),
+                                                      color:
+                                                          AppPalette.inkMuted,
                                                     ),
                                               ),
                                               const SizedBox(height: 22),
-                                              _RoleToggle(
+                                              AuthRoleToggle<UserRole>(
+                                                entries: [
+                                                  (
+                                                    'auth.role_doctor'.tr(),
+                                                    UserRole.doctor,
+                                                  ),
+                                                  (
+                                                    'auth.role_patient'.tr(),
+                                                    UserRole.patient,
+                                                  ),
+                                                ],
                                                 value: _role,
                                                 onChanged: (role) => setState(
                                                   () => _role = role,
@@ -319,14 +332,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                     ?.copyWith(
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: const Color(
-                                                        0xFF1A2B4A,
-                                                      ),
+                                                      color: AppPalette.ink,
                                                     ),
                                               ),
                                               const SizedBox(height: 8),
-                                              _PhoneField(
+                                              AuthPhoneField(
                                                 controller: _phoneController,
+                                                validator: (_) {
+                                                  final digits =
+                                                      _phoneController.text
+                                                          .replaceAll(
+                                                            RegExp(r'\D'),
+                                                            '',
+                                                          );
+                                                  if (digits.isEmpty) {
+                                                    return 'auth.phone_required'
+                                                        .tr();
+                                                  }
+                                                  if (!isValidEgyptPhone(
+                                                    digits,
+                                                  )) {
+                                                    return 'auth.phone_invalid'
+                                                        .tr();
+                                                  }
+                                                  return null;
+                                                },
                                               ),
                                               const SizedBox(height: 24),
                                               SizedBox(
@@ -344,12 +374,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                           alpha: 0.5,
                                                         ),
                                                     elevation: 0,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            14,
-                                                          ),
-                                                    ),
+                                                    shape:
+                                                        const StadiumBorder(),
                                                   ),
                                                   child: _sending
                                                       ? const SizedBox(
@@ -384,7 +410,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                               width: 8,
                                                             ),
                                                             const Icon(
-                                                              Icons.arrow_back,
+                                                              SolarIconsOutline
+                                                                  .arrowLeft,
                                                               size: 20,
                                                             ),
                                                           ],
@@ -398,9 +425,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                   textAlign: TextAlign.center,
                                                   style: textTheme.bodySmall
                                                       ?.copyWith(
-                                                        color: const Color(
-                                                          0xFF8A94A6,
-                                                        ),
+                                                        color: AppPalette
+                                                            .inkMuted,
                                                       ),
                                                 ),
                                               ],
@@ -419,9 +445,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                       'common.or'.tr(),
                                                       style: textTheme.bodySmall
                                                           ?.copyWith(
-                                                            color: const Color(
-                                                              0xFF8A94A6,
-                                                            ),
+                                                            color: AppPalette
+                                                                .inkMuted,
                                                           ),
                                                     ),
                                                   ),
@@ -467,9 +492,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                         .tr(),
                                                     style: textTheme.bodyMedium
                                                         ?.copyWith(
-                                                          color: const Color(
-                                                            0xFF8A94A6,
-                                                          ),
+                                                          color: AppPalette
+                                                              .inkMuted,
                                                         ),
                                                   ),
                                                   TextButton(
@@ -511,230 +535,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-class _RoleToggle extends StatelessWidget {
-  const _RoleToggle({required this.value, required this.onChanged});
-
-  final UserRole value;
-  final ValueChanged<UserRole> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F2F5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _RoleChip(
-              label: 'auth.role_doctor'.tr(),
-              selected: value == UserRole.doctor,
-              onTap: () => onChanged(UserRole.doctor),
-            ),
-          ),
-          Expanded(
-            child: _RoleChip(
-              label: 'auth.role_patient'.tr(),
-              selected: value == UserRole.patient,
-              onTap: () => onChanged(UserRole.patient),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? Colors.white : Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      elevation: selected ? 1 : 0,
-      shadowColor: Colors.black12,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: selected ? brandBlue : const Color(0xFF8A94A6),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PhoneField extends StatelessWidget {
-  const _PhoneField({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormField<String>(
-      validator: (_) {
-        final digits = controller.text.replaceAll(RegExp(r'\D'), '');
-        if (digits.isEmpty) return 'auth.phone_required'.tr();
-        if (!isValidEgyptPhone(digits)) return 'auth.phone_invalid'.tr();
-        return null;
-      },
-      builder: (field) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              height: 56,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: field.hasError
-                      ? Theme.of(context).colorScheme.error
-                      : const Color(0xFFD8DEE8),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.done,
-                      textAlign: TextAlign.start,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(11),
-                      ],
-                      onChanged: field.didChange,
-                      decoration: InputDecoration(
-                        hintText: 'auth.phone_hint'.tr(),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 28,
-                    color: const Color(0xFFD8DEE8),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'auth.country_code'.tr(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A2B4A),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text('🇪🇬', style: TextStyle(fontSize: 18)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (field.hasError) ...[
-              const SizedBox(height: 6),
-              Text(
-                field.errorText!,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _LoginHeroIllustration extends StatelessWidget {
-  const _LoginHeroIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F1FF),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned(
-            top: 28,
-            left: 36,
-            child: _blob(36, brandBlue.withValues(alpha: 0.25)),
-          ),
-          Positioned(
-            top: 48,
-            right: 40,
-            child: _blob(22, brandBlue.withValues(alpha: 0.35)),
-          ),
-          Positioned(
-            bottom: 56,
-            left: 48,
-            child: _blob(18, brandBlue.withValues(alpha: 0.2)),
-          ),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: brandBlue,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: brandBlue.withValues(alpha: 0.35),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.medical_services_rounded,
-              color: Colors.white,
-              size: 64,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _blob(double size, Color color) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-  );
-}

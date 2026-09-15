@@ -1,8 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 // ─── model ────────────────────────────────────────────────────────────────────
 
@@ -84,8 +88,6 @@ class PatientNotificationsScreen extends ConsumerStatefulWidget {
 
 class _PatientNotificationsScreenState
     extends ConsumerState<PatientNotificationsScreen> {
-  static const _pageBg = Color(0xFFF3F6FB);
-
   bool _allRead = false;
 
   @override
@@ -96,7 +98,7 @@ class _PatientNotificationsScreenState
         : 'أحمد محمد';
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -116,7 +118,7 @@ class _PatientNotificationsScreenState
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
                 children: [
-                  _SectionHeader(label: 'notifications.today'.tr()),
+                  SectionHeader(title: 'notifications.today'.tr()),
                   const SizedBox(height: 8),
                   ..._todayNotifs.map(
                     (n) => Padding(
@@ -125,7 +127,7 @@ class _PatientNotificationsScreenState
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _SectionHeader(label: 'notifications.yesterday'.tr()),
+                  SectionHeader(title: 'notifications.yesterday'.tr()),
                   const SizedBox(height: 8),
                   ..._yesterdayNotifs.map(
                     (n) => Padding(
@@ -150,37 +152,25 @@ class _NotifHeader extends StatelessWidget {
 
   final String displayName;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: brandBlue,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.notifications, color: Colors.white, size: 20),
-        ),
+        const AppIconTile(icon: SolarIconsBold.bellBing, color: AppPalette.primary),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
               'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(color: _muted),
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppPalette.inkMuted,
+              ),
             ),
             Text(
               displayName,
-              style: textTheme.titleMedium?.copyWith(
-                color: _ink,
-                fontWeight: FontWeight.w800,
-              ),
+              style: textTheme.titleMedium?.copyWith(color: AppPalette.ink),
             ),
           ],
         ),
@@ -197,8 +187,6 @@ class _TitleRow extends StatelessWidget {
 
   final VoidCallback onMarkAllRead;
 
-  static const _ink = Color(0xFF1A2B4A);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -206,16 +194,13 @@ class _TitleRow extends StatelessWidget {
       children: [
         Text(
           'notifications.title'.tr(),
-          style: textTheme.headlineSmall?.copyWith(
-            color: _ink,
-            fontWeight: FontWeight.w800,
-          ),
+          style: textTheme.headlineSmall?.copyWith(color: AppPalette.ink),
         ),
         const Spacer(),
         TextButton(
           onPressed: onMarkAllRead,
           style: TextButton.styleFrom(
-            foregroundColor: brandBlue,
+            foregroundColor: AppPalette.primary,
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -223,34 +208,12 @@ class _TitleRow extends StatelessWidget {
           child: Text(
             'notifications.mark_all_read'.tr(),
             style: textTheme.bodySmall?.copyWith(
-              color: brandBlue,
+              color: AppPalette.primary,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─── section header ───────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: const Color(0xFF1A2B4A),
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 }
@@ -265,46 +228,36 @@ class _NotifCard extends StatelessWidget {
 
   bool get _isRead => notif.isRead || forceRead;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
-  Color _iconBg(_NotifType t, bool isRead) {
-    if (isRead) return const Color(0xFFE5E7EB);
+  Color _iconColor(_NotifType t, bool isRead) {
+    if (isRead) return AppPalette.inkFaint;
     return switch (t) {
-      _NotifType.appointment => brandBlue,
-      _NotifType.orderUpdate => const Color(0xFF0891B2),
-      _NotifType.labResults => const Color(0xFFF59E0B),
-      _NotifType.appointmentConfirmed => const Color(0xFF6B7280),
-      _NotifType.prescription => const Color(0xFF6B7280),
+      _NotifType.appointment => AppPalette.primary,
+      _NotifType.orderUpdate => AppPalette.secondary,
+      _NotifType.labResults => AppPalette.warning,
+      _NotifType.appointmentConfirmed => AppPalette.success,
+      _NotifType.prescription => AppPalette.secondary,
     };
   }
 
-  Color _iconFg(bool isRead) => isRead ? const Color(0xFF9CA3AF) : Colors.white;
-
   IconData _icon(_NotifType t) => switch (t) {
-    _NotifType.appointment => Icons.calendar_month_outlined,
-    _NotifType.orderUpdate => Icons.local_pharmacy_outlined,
-    _NotifType.labResults => Icons.science_outlined,
-    _NotifType.appointmentConfirmed => Icons.check_circle_outline,
-    _NotifType.prescription => Icons.description_outlined,
+    _NotifType.appointment => SolarIconsOutline.calendarMinimalistic,
+    _NotifType.orderUpdate => SolarIconsOutline.bag2,
+    _NotifType.labResults => SolarIconsOutline.testTube,
+    _NotifType.appointmentConfirmed => SolarIconsOutline.checkCircle,
+    _NotifType.prescription => SolarIconsOutline.documentMedicine,
   };
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final isRead = _isRead;
+    final iconColor = _iconColor(notif.type, isRead);
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.resting,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -314,7 +267,7 @@ class _NotifCard extends StatelessWidget {
             children: [
               Container(
                 width: 4,
-                color: isRead ? Colors.transparent : brandBlue,
+                color: isRead ? Colors.transparent : AppPalette.primary,
               ),
               Expanded(
                 child: Padding(
@@ -325,18 +278,11 @@ class _NotifCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: _iconBg(notif.type, isRead),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _icon(notif.type),
-                          size: 22,
-                          color: _iconFg(isRead),
-                        ),
+                      AppIconTile(
+                        icon: _icon(notif.type),
+                        color: iconColor,
+                        size: 44,
+                        iconSize: 22,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -350,7 +296,7 @@ class _NotifCard extends StatelessWidget {
                                   child: Text(
                                     notif.title,
                                     style: textTheme.bodyMedium?.copyWith(
-                                      color: _ink,
+                                      color: AppPalette.ink,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -359,7 +305,7 @@ class _NotifCard extends StatelessWidget {
                                 Text(
                                   notif.time,
                                   style: textTheme.bodySmall?.copyWith(
-                                    color: _muted,
+                                    color: AppPalette.inkMuted,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -369,7 +315,7 @@ class _NotifCard extends StatelessWidget {
                             Text(
                               notif.body,
                               style: textTheme.bodySmall?.copyWith(
-                                color: _muted,
+                                color: AppPalette.inkMuted,
                                 height: 1.4,
                               ),
                               maxLines: 2,

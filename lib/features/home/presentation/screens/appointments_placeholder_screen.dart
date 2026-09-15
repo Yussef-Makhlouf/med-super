@@ -2,13 +2,17 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/utils/formatters.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 // ─── screen ───────────────────────────────────────────────────────────────────
 
@@ -29,9 +33,6 @@ class PatientAppointmentsScreen extends ConsumerStatefulWidget {
 
 class _PatientAppointmentsScreenState
     extends ConsumerState<PatientAppointmentsScreen> {
-  static const _pageBg = Color(0xFFF3F6FB);
-  static const _muted = Color(0xFF8A94A6);
-
   int _selectedTab = 0; // 0 = upcoming, 1 = past
   String? _cancellingId;
   bool _navigatingToReschedule = false;
@@ -51,7 +52,7 @@ class _PatientAppointmentsScreenState
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               'appointments.cancel'.tr(),
-              style: const TextStyle(color: Color(0xFFEF4444)),
+              style: const TextStyle(color: AppPalette.error),
             ),
           ),
         ],
@@ -109,7 +110,7 @@ class _PatientAppointmentsScreenState
     final asyncAppointments = ref.watch(myAppointmentsProvider);
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -124,10 +125,9 @@ class _PatientAppointmentsScreenState
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   'appointments.title'.tr(),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: brandBlue,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(color: AppPalette.primary),
                 ),
               ),
             ),
@@ -157,9 +157,9 @@ class _PatientAppointmentsScreenState
                     return Center(
                       child: Text(
                         'appointments.empty'.tr(),
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge?.copyWith(color: _muted),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppPalette.inkMuted,
+                        ),
                       ),
                     );
                   }
@@ -217,9 +217,6 @@ class _ApptHeader extends StatelessWidget {
 
   final String displayName;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -229,8 +226,8 @@ class _ApptHeader extends StatelessWidget {
           onTap: () => context.go('/patient/profile'),
           child: const CircleAvatar(
             radius: 22,
-            backgroundColor: Color(0xFFDCE8FF),
-            child: Icon(Icons.person, color: brandBlue),
+            backgroundColor: AppPalette.primarySoft,
+            child: Icon(SolarIconsBold.userRounded, color: AppPalette.primary),
           ),
         ),
         const SizedBox(width: 10),
@@ -239,25 +236,33 @@ class _ApptHeader extends StatelessWidget {
           children: [
             Text(
               'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(color: _muted),
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppPalette.inkMuted,
+              ),
             ),
             Text(
               displayName,
-              style: textTheme.titleMedium?.copyWith(
-                color: _ink,
-                fontWeight: FontWeight.w800,
-              ),
+              style: textTheme.titleMedium?.copyWith(color: AppPalette.ink),
             ),
           ],
         ),
         const Spacer(),
-        IconButton(
-          onPressed: () => context.go('/patient/notifications'),
-          icon: const Badge(
-            smallSize: 8,
-            backgroundColor: Colors.red,
-            child: Icon(Icons.notifications_outlined, color: _ink),
-          ),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () => context.go('/patient/notifications'),
+              icon: const Icon(
+                SolarIconsOutline.bellBing,
+                color: AppPalette.ink,
+              ),
+            ),
+            PositionedDirectional(
+              end: 6,
+              top: 6,
+              child: IgnorePointer(child: AppBadge.dot()),
+            ),
+          ],
         ),
       ],
     );
@@ -280,13 +285,7 @@ class _TabRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.resting,
       ),
       child: Row(
         children: [
@@ -325,14 +324,14 @@ class _TabBtn extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isActive ? brandBlue : Colors.transparent,
+            color: isActive ? AppPalette.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isActive ? Colors.white : const Color(0xFF9CA3AF),
+              color: isActive ? Colors.white : AppPalette.inkFaint,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -361,17 +360,13 @@ class _AppointmentCard extends StatelessWidget {
   final VoidCallback onReschedule;
   final VoidCallback onTap;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-  static const _divider = Color(0xFFEFF2F7);
-
   Color get _statusColor => switch (appt.status) {
-    'CONFIRMED' => brandBlue,
-    'CANCELLED' => const Color(0xFFEF4444),
-    'RESCHEDULED' => const Color(0xFFF59E0B),
-    'COMPLETED' => brandBlue,
-    'NO_SHOW' => const Color(0xFFEF4444),
-    _ => _muted,
+    'CONFIRMED' => AppPalette.primary,
+    'CANCELLED' => AppPalette.error,
+    'RESCHEDULED' => AppPalette.warning,
+    'COMPLETED' => AppPalette.primary,
+    'NO_SHOW' => AppPalette.error,
+    _ => AppPalette.inkMuted,
   };
 
   String get _statusLabel => switch (appt.status) {
@@ -398,14 +393,8 @@ class _AppointmentCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -422,10 +411,10 @@ class _AppointmentCard extends StatelessWidget {
                   children: [
                     const CircleAvatar(
                       radius: 30,
-                      backgroundColor: Color(0xFFE8F0FE),
+                      backgroundColor: AppPalette.primarySoft,
                       child: Icon(
-                        Icons.medical_services_outlined,
-                        color: brandBlue,
+                        SolarIconsOutline.stethoscope,
+                        color: AppPalette.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -440,8 +429,7 @@ class _AppointmentCard extends StatelessWidget {
                                     args: [appt.appointmentId.substring(0, 8)],
                                   ),
                             style: textTheme.titleMedium?.copyWith(
-                              color: _ink,
-                              fontWeight: FontWeight.w800,
+                              color: AppPalette.ink,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -450,7 +438,7 @@ class _AppointmentCard extends StatelessWidget {
                             Text(
                               appt.clinicName,
                               style: textTheme.bodySmall?.copyWith(
-                                color: _muted,
+                                color: AppPalette.inkMuted,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -459,49 +447,57 @@ class _AppointmentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _StatusPill(label: _statusLabel, color: _statusColor),
+                    AppBadge.soft(
+                      label: _statusLabel,
+                      color: _statusColor,
+                      bordered: true,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
-                const Divider(height: 1, color: _divider),
+                Divider(height: 1, color: AppPalette.border),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     const Icon(
-                      Icons.calendar_today_outlined,
+                      SolarIconsOutline.calendarMinimalistic,
                       size: 16,
-                      color: Color(0xFF6B7280),
+                      color: AppPalette.inkMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       dateLabel,
-                      style: textTheme.bodySmall?.copyWith(color: _muted),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppPalette.inkMuted,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Container(
                       width: 4,
                       height: 4,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFD1D5DB),
+                        color: AppPalette.inkFaint,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 12),
                     const Icon(
-                      Icons.access_time_outlined,
+                      SolarIconsOutline.clockCircle,
                       size: 16,
-                      color: Color(0xFF6B7280),
+                      color: AppPalette.inkMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       timeLabel,
-                      style: textTheme.bodySmall?.copyWith(color: _muted),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppPalette.inkMuted,
+                      ),
                     ),
                   ],
                 ),
                 if (appt.isCancellable) ...[
                   const SizedBox(height: 14),
-                  const Divider(height: 1, color: _divider),
+                  Divider(height: 1, color: AppPalette.border),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -511,11 +507,13 @@ class _AppointmentCard extends StatelessWidget {
                               ? null
                               : onReschedule,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: brandBlue,
-                            side: const BorderSide(color: Color(0xFFC7D7FE)),
+                            foregroundColor: AppPalette.primary,
+                            side: BorderSide(
+                              color: AppPalette.primary.withValues(alpha: 0.3),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadii.md),
                             ),
                             textStyle: const TextStyle(
                               fontSize: 14,
@@ -530,11 +528,13 @@ class _AppointmentCard extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: isCancelling ? null : onCancel,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFEF4444),
-                            side: const BorderSide(color: Color(0xFFFECACA)),
+                            foregroundColor: AppPalette.error,
+                            side: BorderSide(
+                              color: AppPalette.error.withValues(alpha: 0.3),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadii.md),
                             ),
                             textStyle: const TextStyle(
                               fontSize: 14,
@@ -558,32 +558,6 @@ class _AppointmentCard extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

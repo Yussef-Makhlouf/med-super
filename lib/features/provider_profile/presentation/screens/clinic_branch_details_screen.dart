@@ -2,14 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/utils/formatters.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_profile/domain/entities/clinic_branch.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/clinic_branch_providers.dart';
-
-const _ink = Color(0xFF1A2B4A);
-const _muted = Color(0xFF8A94A6);
+import 'package:solar_icons/solar_icons.dart';
 
 /// Clinic branch detail — mirrors `doctor_details_screen.dart`'s
 /// card/section design language for the same feature family.
@@ -27,21 +27,23 @@ class ClinicBranchDetailsScreen extends ConsumerWidget {
     final asyncBranch = ref.watch(clinicBranchProvider(branchId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: brandBlue),
+          icon: const Icon(
+            SolarIconsOutline.arrowLeft,
+            color: AppPalette.primary,
+          ),
         ),
         title: Text(
           'clinic_branch.title'.tr(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: _ink,
-            fontWeight: FontWeight.w800,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: AppPalette.ink),
         ),
         centerTitle: true,
       ),
@@ -82,7 +84,7 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -90,10 +92,10 @@ class _HeaderCard extends StatelessWidget {
             children: [
               const CircleAvatar(
                 radius: 28,
-                backgroundColor: Color(0xFFDCE8FF),
+                backgroundColor: AppPalette.primarySoft,
                 child: Icon(
-                  Icons.local_hospital_outlined,
-                  color: brandBlue,
+                  SolarIconsOutline.hospital,
+                  color: AppPalette.primary,
                   size: 28,
                 ),
               ),
@@ -108,16 +110,15 @@ class _HeaderCard extends StatelessWidget {
                           child: Text(
                             branch.clinic.brandName,
                             style: textTheme.titleLarge?.copyWith(
-                              color: brandBlue,
-                              fontWeight: FontWeight.w800,
+                              color: AppPalette.primary,
                             ),
                           ),
                         ),
                         if (branch.status == ClinicBranchStatus.verified) ...[
                           const SizedBox(width: 4),
                           const Icon(
-                            Icons.verified,
-                            color: brandBlue,
+                            SolarIconsBold.shieldCheck,
+                            color: AppPalette.primary,
                             size: 20,
                           ),
                         ],
@@ -126,7 +127,9 @@ class _HeaderCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       branch.clinic.legalName,
-                      style: textTheme.bodyMedium?.copyWith(color: _muted),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppPalette.inkMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -149,19 +152,22 @@ class _AddressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.place_outlined, color: brandBlue, size: 20),
+              const Icon(
+                SolarIconsOutline.mapPointHospital,
+                color: AppPalette.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'clinic_branch.address'.tr(),
                 style: textTheme.titleMedium?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
@@ -170,14 +176,14 @@ class _AddressCard extends StatelessWidget {
           Text(
             address.line1,
             style: textTheme.bodyMedium?.copyWith(
-              color: _ink.withValues(alpha: 0.8),
+              color: AppPalette.ink.withValues(alpha: 0.8),
               height: 1.5,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '${address.city}, ${address.regionCode}',
-            style: textTheme.bodyMedium?.copyWith(color: _muted),
+            style: textTheme.bodyMedium?.copyWith(color: AppPalette.inkMuted),
           ),
         ],
       ),
@@ -193,31 +199,34 @@ class _ContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.call_outlined, color: brandBlue, size: 20),
+              const Icon(
+                SolarIconsOutline.phoneCalling,
+                color: AppPalette.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'clinic_branch.contact'.tr(),
                 style: textTheme.titleMedium?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           _InfoRow(
-            icon: Icons.phone_outlined,
+            icon: SolarIconsOutline.phone,
             label: AppFormatters.ltrIsolate(branch.phone),
           ),
           const SizedBox(height: 8),
           _InfoRow(
-            icon: Icons.schedule_outlined,
+            icon: SolarIconsOutline.clockCircle,
             label: branch.ianaTimezone,
           ),
         ],
@@ -236,31 +245,19 @@ class _StatusChip extends StatelessWidget {
     final (label, color) = switch (status) {
       ClinicBranchStatus.verified => (
         'clinic_branch.status_verified'.tr(),
-        const Color(0xFF22C55E),
+        AppPalette.success,
       ),
       ClinicBranchStatus.pending => (
         'clinic_branch.status_pending'.tr(),
-        const Color(0xFFF59E0B),
+        AppPalette.warning,
       ),
       ClinicBranchStatus.suspended => (
         'clinic_branch.status_suspended'.tr(),
-        const Color(0xFFEF4444),
+        AppPalette.error,
       ),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(color: color, fontWeight: FontWeight.w700),
-      ),
-    );
+    return AppBadge.soft(label: label, color: color);
   }
 }
 
@@ -274,43 +271,17 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: brandBlue),
+        Icon(icon, size: 18, color: AppPalette.primary),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: _ink.withValues(alpha: 0.8)),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppPalette.ink.withValues(alpha: 0.8),
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: child,
     );
   }
 }

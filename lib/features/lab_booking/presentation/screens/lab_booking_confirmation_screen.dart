@@ -2,9 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
-import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 3 result — lab request "submitted" screen (not a confirmed booking:
 /// lab staff still has to review the request and respond with a quote).
@@ -40,16 +44,16 @@ class LabBookingConfirmationScreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 96,
-                      height: 96,
+                      width: 112,
+                      height: 112,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.tealAccent.withValues(alpha: 0.12),
                       ),
                       child: const Icon(
-                        Icons.check_circle,
+                        SolarIconsBold.checkCircle,
                         color: AppColors.tealAccent,
-                        size: 64,
+                        size: 72,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -68,15 +72,15 @@ class LabBookingConfirmationScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.bodyText),
                     ),
+                    const SizedBox(height: 14),
+                    AppBadge.soft(
+                      label: 'lab_booking.orders.status_requested'.tr(),
+                      color: AppPalette.warning,
+                      bordered: true,
+                    ),
                     const SizedBox(height: 24),
-                    Container(
-                      width: double.infinity,
+                    AppSurfaceCard(
                       padding: const EdgeInsets.all(17),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceApp,
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
                       child: Column(
                         children: [
                           Row(
@@ -110,21 +114,11 @@ class LabBookingConfirmationScreen extends StatelessWidget {
                           ),
                           Row(
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: AppColors.patientPrimary.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadii.sm,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.biotech_outlined,
-                                  color: AppColors.patientPrimary,
-                                ),
+                              const AppIconTile(
+                                icon: SolarIconsOutline.testTube,
+                                color: AppColors.patientPrimary,
+                                size: 48,
+                                iconSize: 24,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -156,34 +150,30 @@ class LabBookingConfirmationScreen extends StatelessWidget {
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
+                      height: 56,
                       child: FilledButton.icon(
                         onPressed: () => context.go(
                           '/patient/orders/lab/${confirmation.orderId}',
                         ),
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.patientPrimary,
-                          minimumSize: const Size.fromHeight(52),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadii.xl),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
-                        icon: const Icon(Icons.assignment_outlined),
+                        icon: const Icon(SolarIconsOutline.clipboard),
                         label: Text('lab_booking.confirmation.track_cta'.tr()),
                       ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
+                      height: 56,
                       child: OutlinedButton(
                         onPressed: () => context.go('/patient/home'),
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(52),
                           side: const BorderSide(
                             color: AppColors.borderMedium,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadii.xl),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
                         child: Text(
                           'lab_booking.confirmation.go_home_cta'.tr(),

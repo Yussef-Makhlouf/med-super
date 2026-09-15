@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/widgets/pharmacy_card.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 import '../../../../helpers/pump_localized_widget.dart';
 
@@ -59,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(Icons.directions_car), findsNothing);
+    expect(find.byIcon(SolarIconsOutline.routing), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -79,7 +80,7 @@ void main() {
       find.text('pharmacy_booking.select_pharmacy.delivery_available'.tr()),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.delivery_dining_outlined), findsOneWidget);
+    expect(find.byIcon(SolarIconsOutline.delivery), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

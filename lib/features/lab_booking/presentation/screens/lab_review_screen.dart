@@ -3,9 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
-import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
+import 'package:med_super/core/widgets/flow_header.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_booking_confirmation.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_branch_search_providers.dart';
@@ -88,10 +94,9 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
-            StepProgressHeader(
-              // Same step labels/order as the other two screens of this
-              // flow — the stepper must read identically across all three.
+            FlowHeader(
+              title: 'lab_booking.review.title'.tr(),
+              onBack: () => context.pop(),
               stepLabels: [
                 'lab_booking.step_upload'.tr(),
                 'lab_booking.step_select_lab'.tr(),
@@ -102,44 +107,44 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                 children: [
                   _OrderSummaryCard(
                     branchName: branch?.name,
                     branchAddress: branch?.address,
                     image: images.isEmpty ? null : images.first,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _ServiceMethodSection(serviceType: serviceType),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceCard,
-                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      color: AppPalette.primarySoft,
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: AppColors.mutedText2,
+                          SolarIconsOutline.infoCircle,
+                          size: 18,
+                          color: AppColors.patientPrimary,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'lab_booking.review.estimate_disclaimer'.tr(),
                             style: const TextStyle(
                               fontSize: 12,
-                              color: AppColors.mutedText2,
+                              color: AppColors.ink900,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   _TermsCheckbox(
                     value: _agreedToTerms,
                     onChanged: (value) =>
@@ -177,25 +182,12 @@ class _OrderSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.borderLight),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'lab_booking.review.summary_title'.tr(),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink900,
-            ),
-          ),
-          const SizedBox(height: 12),
+          SectionHeader(title: 'lab_booking.review.summary_title'.tr()),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -218,7 +210,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.check_circle,
+                          SolarIconsBold.checkCircle,
                           size: 13,
                           color: AppColors.tealAccent,
                         ),
@@ -244,19 +236,11 @@ class _OrderSummaryCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.tealBg,
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: const Icon(
-                    Icons.biotech_outlined,
-                    size: 16,
-                    color: AppColors.tealAccent,
-                  ),
+                const AppIconTile(
+                  icon: SolarIconsOutline.testTube,
+                  color: AppColors.tealAccent,
+                  size: 40,
+                  iconSize: 20,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -337,7 +321,7 @@ class _Thumbnail extends StatelessWidget {
         color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
-      child: const Icon(Icons.image_outlined, color: AppColors.mutedText2),
+      child: const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText2),
     );
   }
 }
@@ -351,35 +335,25 @@ class _ServiceMethodSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedType = serviceType ?? LabServiceType.branchVisit;
     final isHome = resolvedType == LabServiceType.homeCollection;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.borderLight),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'lab_booking.review.service_method_title'.tr(),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink900,
-            ),
-          ),
+          SectionHeader(title: 'lab_booking.review.service_method_title'.tr()),
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.borderLight),
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(
-                isHome ? Icons.home_outlined : Icons.apartment_outlined,
-                size: 20,
+              AppIconTile(
+                icon: isHome
+                    ? SolarIconsOutline.medicalKit
+                    : SolarIconsOutline.buildings,
                 color: AppColors.tealAccent,
+                size: 40,
+                iconSize: 20,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   resolvedType.titleKey.tr(),
@@ -408,21 +382,33 @@ class _TermsCheckbox extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => onChanged(!value),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Checkbox(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.patientPrimary,
-          ),
-          Expanded(
-            child: Text(
-              'lab_booking.review.terms_agreement'.tr(),
-              style: const TextStyle(fontSize: 13, color: AppColors.bodyText),
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppPalette.surfaceSunken,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Checkbox(
+              value: value,
+              onChanged: onChanged,
+              activeColor: AppColors.patientPrimary,
             ),
-          ),
-        ],
+            Expanded(
+              child: Text(
+                'lab_booking.review.terms_agreement'.tr(),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.bodyText,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
       ),
     );
   }
@@ -437,23 +423,21 @@ class _SubmitBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
+        boxShadow: AppShadows.resting,
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
           width: double.infinity,
+          height: 56,
           child: FilledButton(
             onPressed: isSubmitting ? null : onConfirm,
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.patientPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.xl),
-              ),
+              shape: const StadiumBorder(),
             ),
             child: isSubmitting
                 ? const SizedBox(
@@ -474,40 +458,6 @@ class _SubmitBar extends StatelessWidget {
                   ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          // Balances the trailing back button's width so the title stays
-          // visually centered now that nothing occupies the leading slot.
-          const SizedBox(width: 48),
-          Expanded(
-            child: Text(
-              'lab_booking.review.title'.tr(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.patientPrimary,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
-          ),
-        ],
       ),
     );
   }

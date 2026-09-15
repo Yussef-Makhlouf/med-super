@@ -1,19 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/features/search_discovery/domain/entities/doctor_summary.dart';
-
-const _ink = Color(0xFF1A2B4A);
-const _muted = Color(0xFF8A94A6);
-
-// Small semantic accent set — one color per meta-row kind instead of a
-// single flat gray, so the card reads as a modern dashboard row rather
-// than plain muted text. Kept local (not AppColors) per this file's own
-// established palette, matching every other Sprint 0/1/2 screen.
-const _teal = Color(0xFF0F766E);
-const _green = Color(0xFF16A34A);
+import 'package:solar_icons/solar_icons.dart';
 
 class DoctorResultCard extends StatefulWidget {
   const DoctorResultCard({
@@ -107,15 +99,14 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                           Text(
                             doctor.name,
                             style: textTheme.titleMedium?.copyWith(
-                              color: brandBlue,
-                              fontWeight: FontWeight.w800,
+                              color: AppPalette.primary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             doctor.specialty,
                             style: textTheme.bodyMedium?.copyWith(
-                              color: brandBlue.withValues(alpha: 0.85),
+                              color: AppPalette.primary.withValues(alpha: 0.85),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -138,8 +129,8 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                 // `reviews` module is POSTPONEd) — every doctor shows
                 // "0.0 (0)" forever, not a meaningful signal.
                 _MetaRow(
-                  icon: Icons.place_outlined,
-                  iconColor: _teal,
+                  icon: SolarIconsOutline.mapPointHospital,
+                  iconColor: AppPalette.secondary,
                   // `distanceKm` is null when the search ran without the
                   // device's location (denied/unavailable) — show just the
                   // clinic name rather than a fabricated "0.0 km".
@@ -149,8 +140,8 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                 ),
                 const SizedBox(height: 8),
                 _MetaRow(
-                  icon: Icons.payments_outlined,
-                  iconColor: _green,
+                  icon: SolarIconsOutline.walletMoney,
+                  iconColor: AppPalette.success,
                   text: 'search.consultation_fee'.tr(args: [feeLabel]),
                 ),
                 const SizedBox(height: 14),
@@ -159,7 +150,7 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                   child: FilledButton(
                     onPressed: () => _guardedTap(widget.onBook),
                     style: FilledButton.styleFrom(
-                      backgroundColor: brandBlue,
+                      backgroundColor: AppPalette.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -167,7 +158,7 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                     ),
                     child: Text(
                       'home.book_now'.tr(),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -184,7 +175,7 @@ class _MetaRow extends StatelessWidget {
   const _MetaRow({
     required this.icon,
     required this.text,
-    this.iconColor = _muted,
+    this.iconColor = AppPalette.inkMuted,
   });
 
   final IconData icon;
@@ -195,22 +186,13 @@ class _MetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 24,
-          height: 24,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 14, color: iconColor),
-        ),
+        AppIconTile(icon: icon, color: iconColor, size: 24, iconSize: 14),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: _ink.withValues(alpha: 0.8),
+              color: AppPalette.ink.withValues(alpha: 0.8),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -232,16 +214,14 @@ class _Avatar extends StatelessWidget {
       child: Container(
         width: 64,
         height: 64,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFDCE8FF), Color(0xFFB8CFFC)],
-          ),
-        ),
+        decoration: const BoxDecoration(color: AppPalette.primarySoft),
         child: photoUrl != null
             ? Image.network(photoUrl!, fit: BoxFit.cover)
-            : const Icon(Icons.person, color: brandBlue, size: 32),
+            : const Icon(
+                SolarIconsBold.userRounded,
+                color: AppPalette.primary,
+                size: 32,
+              ),
       ),
     );
   }

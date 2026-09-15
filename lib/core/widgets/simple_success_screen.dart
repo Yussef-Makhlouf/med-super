@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Generic "action succeeded" confirmation screen — reused by any future
 /// flow (lab booking confirmation, registration submitted, etc.).
@@ -36,7 +38,11 @@ class SimpleSuccessScreen extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: color.withValues(alpha: 0.12),
                   ),
-                  child: Icon(Icons.check_circle, color: color, size: 48),
+                  child: Icon(
+                    SolarIconsBold.checkCircle,
+                    color: color,
+                    size: 48,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -61,7 +67,7 @@ class SimpleSuccessScreen extends StatelessWidget {
                       backgroundColor: color,
                       minimumSize: const Size.fromHeight(52),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadii.md),
                       ),
                     ),
                     child: Text(primaryActionLabel),

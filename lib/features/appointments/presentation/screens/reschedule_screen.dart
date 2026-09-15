@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
-import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/utils/formatters.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
@@ -17,6 +18,7 @@ import 'package:med_super/features/provider_profile/domain/entities/available_da
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_profile_providers.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 typedef _SlotSelection = void Function(String id, String label);
 
@@ -95,7 +97,7 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     final resolvedProfile = asyncProfile?.asData?.value;
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceApp,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -157,11 +159,14 @@ class _Header extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.patientPrimary,
+                color: AppPalette.primary,
               ),
             ),
           ),
-          IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_forward)),
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(SolarIconsOutline.arrowRight),
+          ),
         ],
       ),
     );
@@ -181,18 +186,12 @@ class _UnavailableBody extends StatelessWidget {
       children: [
         _CurrentSlotCard(currentStartAt: currentStartAt, locale: locale),
         const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: AppColors.borderLight),
-          ),
+        AppSurfaceCard(
           child: Row(
             children: [
               const Icon(
-                Icons.info_outline,
-                color: AppColors.mutedText2,
+                SolarIconsOutline.infoCircle,
+                color: AppPalette.inkMuted,
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -201,7 +200,7 @@ class _UnavailableBody extends StatelessWidget {
                   'appointments.reschedule_unavailable'.tr(),
                   style: const TextStyle(
                     fontSize: 13,
-                    color: AppColors.bodyText,
+                    color: AppPalette.ink,
                   ),
                 ),
               ),
@@ -222,19 +221,13 @@ class _CurrentSlotCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final local = currentStartAt.toLocal();
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.borderLight),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'appointments.reschedule_current_slot'.tr(),
-            style: const TextStyle(fontSize: 13, color: AppColors.mutedText),
+            style: const TextStyle(fontSize: 13, color: AppPalette.inkMuted),
           ),
           const SizedBox(height: 6),
           Text(
@@ -242,7 +235,7 @@ class _CurrentSlotCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.ink900,
+              color: AppPalette.ink,
             ),
           ),
         ],
@@ -388,13 +381,7 @@ class _SlotsCard extends StatelessWidget {
         days.where((d) => d.id == selectedDayId).firstOrNull ??
         days.firstOrNull;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.borderLight),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -403,7 +390,7 @@ class _SlotsCard extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.ink900,
+              color: AppPalette.ink,
             ),
           ),
           const SizedBox(height: 12),
@@ -419,19 +406,19 @@ class _SlotsCard extends StatelessWidget {
                 return InkWell(
                   onTap: () =>
                       onDaySelected(day.id, '${day.label} ${day.dayNumber}'),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                   child: Container(
                     width: 88,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.patientPrimary.withValues(alpha: 0.12)
+                          ? AppPalette.primary.withValues(alpha: 0.12)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
                         color: isSelected
-                            ? AppColors.patientPrimary
-                            : AppColors.borderLight,
+                            ? AppPalette.primary
+                            : AppPalette.border,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
@@ -441,8 +428,8 @@ class _SlotsCard extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: isSelected
-                            ? AppColors.patientPrimary
-                            : AppColors.ink900,
+                            ? AppPalette.primary
+                            : AppPalette.ink,
                       ),
                     ),
                   ),
@@ -476,24 +463,24 @@ class _SlotsCard extends StatelessWidget {
                           onSlotSelected(slot.id, slot.label);
                         }
                       : null,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
                   child: Container(
                     width: 84,
                     height: 40,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: !enabled
-                          ? AppColors.surfaceMuted
+                          ? AppPalette.surfaceSunken
                           : isSelected
-                          ? AppColors.patientPrimary.withValues(alpha: 0.08)
+                          ? AppPalette.primary.withValues(alpha: 0.08)
                           : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
                       border: Border.all(
                         color: !enabled
-                            ? AppColors.borderLight
+                            ? AppPalette.border
                             : isSelected
-                            ? AppColors.patientPrimary
-                            : AppColors.borderLight,
+                            ? AppPalette.primary
+                            : AppPalette.border,
                       ),
                     ),
                     child: Text(
@@ -502,10 +489,10 @@ class _SlotsCard extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: !enabled
-                            ? AppColors.mutedText
+                            ? AppPalette.inkMuted
                             : isSelected
-                            ? AppColors.patientPrimary
-                            : AppColors.ink900,
+                            ? AppPalette.primary
+                            : AppPalette.ink,
                         decoration: enabled ? null : TextDecoration.lineThrough,
                       ),
                     ),
@@ -536,7 +523,7 @@ class _SubmitBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
+        border: Border(top: BorderSide(color: AppPalette.border)),
       ),
       child: SafeArea(
         top: false,
@@ -545,10 +532,10 @@ class _SubmitBar extends StatelessWidget {
           child: FilledButton(
             onPressed: canSubmit ? onSubmit : null,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.patientPrimary,
+              backgroundColor: AppPalette.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.xl),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
               ),
             ),
             child: isBusy

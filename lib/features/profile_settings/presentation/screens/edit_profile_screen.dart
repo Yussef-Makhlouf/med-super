@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/theme/app_spacing.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
-/// Patient edit-profile form — matches Figma (light, Arabic RTL).
+/// Patient edit-profile form — "Warm Clinical" design system v2, Arabic RTL.
 ///
 /// Date of birth, gender, and address were removed 2026-08-31 — none of
 /// them has a backing column on the real `User` model (`clinic-reservations`
@@ -118,24 +122,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF3F6FB),
+        backgroundColor: AppPalette.paper,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
         title: Text(
           'profile.edit_title'.tr(),
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1A2B4A),
-          ),
+          style: textTheme.titleLarge?.copyWith(color: AppPalette.ink),
         ),
         actions: [
           IconButton(
             tooltip: 'profile.logout'.tr(),
             onPressed: _onLogout,
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF8A94A6)),
+            icon: const Icon(
+              SolarIconsOutline.logout,
+              color: AppPalette.inkMuted,
+            ),
           ),
         ],
       ),
@@ -150,23 +154,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   children: [
                     const CircleAvatar(
                       radius: 32,
-                      backgroundColor: Color(0xFFDCE8FF),
-                      child: Icon(Icons.person, color: brandBlue, size: 32),
+                      backgroundColor: AppPalette.primarySoft,
+                      child: Icon(
+                        SolarIconsBold.userRounded,
+                        color: AppPalette.primary,
+                        size: 32,
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        boxShadow: AppShadows.resting,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -176,7 +178,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             child: _ProfileTextField(
                               controller: _nameController,
                               hint: 'profile.full_name_hint'.tr(),
-                              icon: Icons.person_outline_rounded,
+                              icon: SolarIconsOutline.userRounded,
                               textInputAction: TextInputAction.next,
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
@@ -186,23 +188,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           _LabeledField(
                             label: 'profile.mobile'.tr(),
                             child: _ProfileTextField(
                               controller: _phoneController,
-                              icon: Icons.smartphone_outlined,
+                              icon: SolarIconsOutline.smartphone,
                               keyboardType: TextInputType.phone,
                               readOnly: true,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           _LabeledField(
                             label: 'profile.email'.tr(),
                             child: _ProfileTextField(
                               controller: _emailController,
                               hint: 'profile.email_hint'.tr(),
-                              icon: Icons.mail_outline_rounded,
+                              icon: SolarIconsOutline.letter,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               validator: (value) {
@@ -235,12 +237,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: ElevatedButton(
                   onPressed: (_saving || !_dirty) ? null : _onSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: brandBlue,
+                    backgroundColor: AppPalette.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: brandBlue.withValues(alpha: 0.5),
+                    disabledBackgroundColor: AppPalette.primary.withValues(
+                      alpha: 0.5,
+                    ),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
                   ),
                   child: _saving
@@ -256,14 +260,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // RTL places the first child on the right → icon
-                            // sits to the right of the label, matching Figma.
-                            const Icon(Icons.save_outlined, size: 20),
-                            const SizedBox(width: 8),
+                            // sits to the right of the label.
+                            const Icon(SolarIconsOutline.diskette, size: 20),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               'profile.save_changes'.tr(),
                               style: textTheme.titleMedium?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -291,12 +294,11 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF8A94A6),
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(color: AppPalette.inkMuted),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         child,
       ],
     );
@@ -331,13 +333,13 @@ class _ProfileTextField extends StatelessWidget {
       readOnly: readOnly,
       validator: validator,
       style: const TextStyle(
-        color: Color(0xFF1A2B4A),
+        color: AppPalette.ink,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(
-          color: Color(0xFFB0B8C5),
+          color: AppPalette.inkFaint,
           fontWeight: FontWeight.w400,
         ),
         filled: true,
@@ -349,21 +351,21 @@ class _ProfileTextField extends StatelessWidget {
         // Icons sit on the visual left in the RTL mockup → trailing/suffix.
         suffixIcon: icon == null
             ? null
-            : Icon(icon, color: const Color(0xFF8A94A6), size: 22),
+            : Icon(icon, color: AppPalette.inkMuted, size: 22),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppPalette.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppPalette.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: brandBlue, width: 1.5),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderSide: const BorderSide(color: AppPalette.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadii.md),
           borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
         ),
       ),

@@ -2,9 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
@@ -13,14 +14,12 @@ import 'package:med_super/features/provider_profile/domain/entities/available_da
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_profile_providers.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// `(id, displayLabel)` — the display label travels with the id selection so
 /// the booking summary (`BookingRequest`) can show it without re-resolving
 /// against whichever slot list (mock or real) happened to render it.
 typedef _SlotSelection = void Function(String id, String label);
-
-const _ink = Color(0xFF1A2B4A);
-const _muted = Color(0xFF8A94A6);
 
 /// Doctor details — matches Figma RTL profile screen.
 class DoctorDetailsScreen extends ConsumerStatefulWidget {
@@ -34,8 +33,6 @@ class DoctorDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
-  static const _pageBg = Color(0xFFF3F6FB);
-
   String? _selectedDayId;
   String? _selectedDayLabel;
   String? _selectedSlotId;
@@ -134,33 +131,38 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
     final asyncProfile = ref.watch(doctorProfileProvider(widget.doctorId));
 
     return Scaffold(
-      backgroundColor: _pageBg,
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back, color: brandBlue),
+          icon: const Icon(
+            SolarIconsOutline.arrowLeft,
+            color: AppPalette.primary,
+          ),
         ),
         title: Text(
           'doctor_profile.title'.tr(),
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: _ink,
-            fontWeight: FontWeight.w800,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: AppPalette.ink),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: brandBlue),
+            icon: const Icon(
+              SolarIconsOutline.share,
+              color: AppPalette.primary,
+            ),
           ),
           IconButton(
             onPressed: () => setState(() => _favorited = !_favorited),
             icon: Icon(
-              _favorited ? Icons.favorite : Icons.favorite_border,
-              color: brandBlue,
+              _favorited ? SolarIconsBold.heart : SolarIconsOutline.heart,
+              color: AppPalette.primary,
             ),
           ),
         ],
@@ -308,23 +310,22 @@ class _BranchPickerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(
-                Icons.local_hospital_outlined,
-                color: brandBlue,
+                SolarIconsOutline.hospital,
+                color: AppPalette.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'doctor_profile.choose_branch'.tr(),
                 style: textTheme.titleMedium?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
@@ -347,11 +348,13 @@ class _BranchPickerCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? brandBlue.withValues(alpha: 0.08)
+                        ? AppPalette.primarySoft
                         : Colors.white,
                     borderRadius: BorderRadius.circular(AppRadii.md),
                     border: Border.all(
-                      color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
+                      color: isSelected
+                          ? AppPalette.primary
+                          : AppPalette.border,
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -362,7 +365,9 @@ class _BranchPickerCard extends StatelessWidget {
                         isSelected
                             ? Icons.radio_button_checked
                             : Icons.radio_button_unchecked,
-                        color: isSelected ? brandBlue : _muted,
+                        color: isSelected
+                            ? AppPalette.primary
+                            : AppPalette.inkMuted,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
@@ -381,7 +386,7 @@ class _BranchPickerCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: textTheme.bodyMedium?.copyWith(
-                                color: _ink,
+                                color: AppPalette.ink,
                                 fontWeight: isSelected
                                     ? FontWeight.w700
                                     : FontWeight.w500,
@@ -396,7 +401,7 @@ class _BranchPickerCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: textTheme.bodySmall?.copyWith(
-                                  color: _muted,
+                                  color: AppPalette.inkMuted,
                                 ),
                               ),
                             ],
@@ -424,26 +429,26 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: const Color(0xFFDCE8FF),
-                backgroundImage: profile.photoUrl != null
-                    ? NetworkImage(profile.photoUrl!)
-                    : null,
-                child: profile.photoUrl == null
-                    ? const Icon(Icons.person, size: 48, color: brandBlue)
-                    : null,
-              ),
-              // The "online now" dot (profile.isOnline) is removed here —
-              // no backend column backs it at all
-              // (`GetDoctorUseCase`'s doc comment), so it always defaulted
-              // to false and never rendered against a real backend.
-            ],
+          CircleAvatar(
+            radius: 48,
+            backgroundColor: AppPalette.primarySoft,
+            backgroundImage: profile.photoUrl != null
+                ? NetworkImage(profile.photoUrl!)
+                : null,
+            child: profile.photoUrl == null
+                ? const Icon(
+                    SolarIconsBold.userRounded,
+                    size: 48,
+                    color: AppPalette.primary,
+                  )
+                : null,
+            // The "online now" dot (profile.isOnline) is removed here —
+            // no backend column backs it at all
+            // (`GetDoctorUseCase`'s doc comment), so it always defaulted
+            // to false and never rendered against a real backend.
           ),
           const SizedBox(height: 12),
           Row(
@@ -452,13 +457,16 @@ class _HeaderCard extends StatelessWidget {
               Text(
                 profile.name,
                 style: textTheme.titleLarge?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
               if (profile.isVerified) ...[
                 const SizedBox(width: 4),
-                const Icon(Icons.verified, color: brandBlue, size: 20),
+                const Icon(
+                  SolarIconsBold.shieldCheck,
+                  color: AppPalette.primary,
+                  size: 20,
+                ),
               ],
             ],
           ),
@@ -466,7 +474,7 @@ class _HeaderCard extends StatelessWidget {
           Text(
             profile.specialty,
             textAlign: TextAlign.center,
-            style: textTheme.bodyMedium?.copyWith(color: _muted),
+            style: textTheme.bodyMedium?.copyWith(color: AppPalette.inkMuted),
           ),
           const SizedBox(height: 14),
           Wrap(
@@ -475,7 +483,7 @@ class _HeaderCard extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               _InfoChip(
-                icon: Icons.work_outline,
+                icon: SolarIconsOutline.suitcase,
                 label: 'search.experience_years'.tr(
                   args: ['${profile.experienceYears}'],
                 ),
@@ -487,9 +495,9 @@ class _HeaderCard extends StatelessWidget {
                     '/patient/home/clinic-branches/${affiliation!.clinicBranchId}',
                   ),
                   child: _InfoChip(
-                    icon: Icons.local_hospital_outlined,
+                    icon: SolarIconsOutline.hospital,
                     label: affiliation!.clinicName,
-                    iconColor: brandBlue,
+                    iconColor: AppPalette.primary,
                   ),
                 )
               else if (profile.clinicBranchId != null)
@@ -499,16 +507,16 @@ class _HeaderCard extends StatelessWidget {
                     '/patient/home/clinic-branches/${profile.clinicBranchId}',
                   ),
                   child: _InfoChip(
-                    icon: Icons.local_hospital_outlined,
+                    icon: SolarIconsOutline.hospital,
                     label: profile.clinicName,
-                    iconColor: brandBlue,
+                    iconColor: AppPalette.primary,
                   ),
                 )
               else
                 _InfoChip(
-                  icon: Icons.local_hospital_outlined,
+                  icon: SolarIconsOutline.hospital,
                   label: profile.clinicName,
-                  iconColor: brandBlue,
+                  iconColor: AppPalette.primary,
                 ),
               // Rating/review-count chip removed: `rating_avg`/
               // `rating_count` are real columns but no reviews feature
@@ -542,19 +550,22 @@ class _AboutCard extends StatelessWidget {
     if (!hasBio && !hasCredentials) return const SizedBox.shrink();
 
     final textTheme = Theme.of(context).textTheme;
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.person_outline, color: brandBlue, size: 20),
+              const Icon(
+                SolarIconsOutline.userRounded,
+                color: AppPalette.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'doctor_profile.about'.tr(),
                 style: textTheme.titleMedium?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
@@ -564,7 +575,7 @@ class _AboutCard extends StatelessWidget {
             Text(
               profile.bio,
               style: textTheme.bodyMedium?.copyWith(
-                color: _ink.withValues(alpha: 0.8),
+                color: AppPalette.ink.withValues(alpha: 0.8),
                 height: 1.5,
               ),
             ),
@@ -583,7 +594,7 @@ class _AboutCard extends StatelessWidget {
             (q) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _CredentialRow(
-                icon: Icons.school_outlined,
+                icon: SolarIconsOutline.diploma,
                 title: 'doctor_profile.qualifications'.tr(),
                 value: q,
               ),
@@ -646,7 +657,7 @@ class _AvailabilitySection extends ConsumerWidget {
       // Mirrors _SlotsCard's own shape (header, day strip, slot grid)
       // instead of a bare spinner, so the card doesn't change height or
       // layout once the real data lands.
-      loadingWidget: const _Card(
+      loadingWidget: const AppSurfaceCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -685,7 +696,7 @@ class _AvailabilitySection extends ConsumerWidget {
         ),
       ),
       data: (days) => days.isEmpty
-          ? _Card(
+          ? AppSurfaceCard(
               child: SizedBox(
                 height: 96,
                 child: Center(
@@ -693,9 +704,9 @@ class _AvailabilitySection extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.event_busy_outlined,
+                        SolarIconsOutline.calendarMinimalistic,
                         size: 26,
-                        color: _muted.withValues(alpha: 0.7),
+                        color: AppPalette.inkMuted.withValues(alpha: 0.7),
                       ),
                       const SizedBox(height: 8),
                       Text('doctor_profile.no_slots'.tr()),
@@ -737,23 +748,22 @@ class _SlotsCard extends StatelessWidget {
         days.where((d) => d.id == selectedDayId).firstOrNull ??
         days.firstOrNull;
 
-    return _Card(
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(
-                Icons.calendar_month_outlined,
-                color: brandBlue,
+                SolarIconsOutline.calendarMinimalistic,
+                color: AppPalette.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 'doctor_profile.available_slots'.tr(),
                 style: textTheme.titleMedium?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w800,
+                  color: AppPalette.primary,
                 ),
               ),
             ],
@@ -779,19 +789,20 @@ class _SlotsCard extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? brandBlue.withValues(alpha: 0.12)
+                          ? AppPalette.primarySoft
                           : Colors.white,
                       borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
-                        color: isSelected ? brandBlue : const Color(0xFFE5EAF2),
+                        color: isSelected
+                            ? AppPalette.primary
+                            : AppPalette.border,
                         width: isSelected ? 1.5 : 1,
                       ),
                     ),
                     child: Text(
                       '${day.label} ${day.dayNumber}',
                       style: textTheme.labelLarge?.copyWith(
-                        color: isSelected ? brandBlue : _ink,
-                        fontWeight: FontWeight.w700,
+                        color: isSelected ? AppPalette.primary : AppPalette.ink,
                       ),
                     ),
                   ),
@@ -820,29 +831,28 @@ class _SlotsCard extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: !enabled
-                          ? const Color(0xFFF3F4F6)
+                          ? AppPalette.surfaceSunken
                           : isSelected
-                          ? brandBlue.withValues(alpha: 0.08)
+                          ? AppPalette.primarySoft
                           : Colors.white,
                       borderRadius: BorderRadius.circular(AppRadii.sm),
                       border: Border.all(
                         color: !enabled
-                            ? const Color(0xFFE5E7EB)
+                            ? AppPalette.border
                             : isSelected
-                            ? brandBlue
-                            : const Color(0xFFE5EAF2),
+                            ? AppPalette.primary
+                            : AppPalette.border,
                       ),
                     ),
                     child: Text(
                       slot.label,
                       style: textTheme.labelLarge?.copyWith(
                         color: !enabled
-                            ? _muted
+                            ? AppPalette.inkMuted
                             : isSelected
-                            ? brandBlue
-                            : _ink,
+                            ? AppPalette.primary
+                            : AppPalette.ink,
                         decoration: enabled ? null : TextDecoration.lineThrough,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -872,15 +882,9 @@ class _BottomBar extends StatelessWidget {
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
+          boxShadow: AppShadows.raised,
         ),
         child: Row(
           children: [
@@ -890,7 +894,7 @@ class _BottomBar extends StatelessWidget {
                 child: FilledButton(
                   onPressed: onBook,
                   style: FilledButton.styleFrom(
-                    backgroundColor: brandBlue,
+                    backgroundColor: AppPalette.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -898,7 +902,7 @@ class _BottomBar extends StatelessWidget {
                   ),
                   child: Text(
                     'home.book_now'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -912,13 +916,12 @@ class _BottomBar extends StatelessWidget {
                   'doctor_profile.fee_label'.tr(),
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: _muted),
+                  ).textTheme.bodySmall?.copyWith(color: AppPalette.inkMuted),
                 ),
                 Text(
                   feeLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: brandBlue,
-                    fontWeight: FontWeight.w800,
+                    color: AppPalette.primary,
                   ),
                 ),
               ],
@@ -930,31 +933,11 @@ class _BottomBar extends StatelessWidget {
   }
 }
 
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: AppShadows.resting,
-      ),
-      child: child,
-    );
-  }
-}
-
 class _InfoChip extends StatelessWidget {
   const _InfoChip({
     required this.icon,
     required this.label,
-    this.iconColor = _muted,
+    this.iconColor = AppPalette.inkMuted,
   });
 
   final IconData icon;
@@ -970,9 +953,9 @@ class _InfoChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: _ink.withValues(alpha: 0.8)),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppPalette.ink.withValues(alpha: 0.8),
+          ),
         ),
       ],
     );
@@ -996,7 +979,7 @@ class _CredentialRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: brandBlue),
+        Icon(icon, size: 18, color: AppPalette.primary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -1005,14 +988,13 @@ class _CredentialRow extends StatelessWidget {
               Text(
                 title,
                 style: textTheme.labelLarge?.copyWith(
-                  color: brandBlue,
-                  fontWeight: FontWeight.w700,
+                  color: AppPalette.primary,
                 ),
               ),
               Text(
                 value,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: _ink.withValues(alpha: 0.75),
+                  color: AppPalette.ink.withValues(alpha: 0.75),
                 ),
               ),
             ],

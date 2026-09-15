@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Mandatory profile completion — name and email are both required before
 /// a patient can proceed past this screen (no skip path).
@@ -63,7 +66,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final session = ref.watch(sessionControllerProvider).asData?.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -75,8 +78,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 const Center(
                   child: CircleAvatar(
                     radius: 32,
-                    backgroundColor: Color(0xFFDCE8FF),
-                    child: Icon(Icons.person, color: brandBlue, size: 32),
+                    backgroundColor: AppPalette.primarySoft,
+                    child: Icon(
+                      SolarIconsBold.userRounded,
+                      color: brandBlue,
+                      size: 32,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -84,14 +91,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   'onboarding.title'.tr(),
                   style: textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1A2B4A),
+                    color: AppPalette.ink,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'onboarding.subtitle'.tr(),
                   style: textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF8A94A6),
+                    color: AppPalette.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -108,7 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   'onboarding.name_label'.tr(),
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A2B4A),
+                    color: AppPalette.ink,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -123,12 +130,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                   ),
                 ),
@@ -137,7 +144,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   'onboarding.email_label'.tr(),
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF1A2B4A),
+                    color: AppPalette.ink,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -159,12 +166,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFD8DEE8)),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      borderSide: const BorderSide(color: AppPalette.border),
                     ),
                   ),
                 ),
@@ -177,9 +184,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       backgroundColor: brandBlue,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: _saving
                         ? const SizedBox(

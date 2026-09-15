@@ -6,6 +6,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/provider_registration/presentation/controllers/clinic_location_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Real interactive map (OpenStreetMap tiles via flutter_map — free, no API
 /// key) showing every candidate pharmacy, mirroring `LabPartnersMapView`'s
@@ -98,7 +99,7 @@ class _PharmacyMapViewState extends State<PharmacyMapView> {
                           child: GestureDetector(
                             onTap: () => widget.onSelect(pharmacy.id),
                             child: Icon(
-                              Icons.location_pin,
+                              SolarIconsBold.mapPoint,
                               color: pharmacy.id == widget.selectedId
                                   ? AppColors.patientPrimary
                                   : AppColors.mutedText2,
@@ -189,7 +190,7 @@ class _PharmacyMapViewState extends State<PharmacyMapView> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(
-                          Icons.my_location,
+                          SolarIconsBold.gps,
                           color: AppColors.patientPrimary,
                         ),
                 ),

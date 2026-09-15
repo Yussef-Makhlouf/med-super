@@ -4,10 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/auth/presentation/utils/auth_validators.dart';
+import 'package:med_super/features/auth/presentation/widgets/password_strength_indicator.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Set-password screen — shown after OTP verification, before onboarding/home.
 class SetPasswordScreen extends ConsumerStatefulWidget {
@@ -91,7 +95,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
             backgroundColor: Colors.white,
             appBar: AppBar(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1A2B4A),
+              foregroundColor: AppPalette.ink,
               elevation: 0,
               centerTitle: true,
               title: Text(
@@ -118,7 +122,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                         'auth.set_password_title'.tr(),
                         textAlign: TextAlign.center,
                         style: textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF1A2B4A),
+                          color: AppPalette.ink,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -127,14 +131,14 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                         'auth.set_password_subtitle'.tr(),
                         textAlign: TextAlign.center,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF8A94A6),
+                          color: AppPalette.inkMuted,
                         ),
                       ),
                       const SizedBox(height: 28),
                       Text(
                         'auth.password_requirements_hint'.tr(),
                         style: textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8A94A6),
+                          color: AppPalette.inkMuted,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -160,27 +164,27 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                                  ? SolarIconsOutline.eye
+                                  : SolarIconsOutline.eyeClosed,
                             ),
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
-                              color: Color(0xFFD8DEE8),
+                              color: AppPalette.border,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
-                              color: Color(0xFFD8DEE8),
+                              color: AppPalette.border,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
                               color: brandBlue,
                               width: 2,
@@ -189,7 +193,7 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _PasswordStrengthAndRequirements(
+                      PasswordStrengthIndicator(
                         password: _passwordController.text,
                       ),
                       const SizedBox(height: 16),
@@ -217,27 +221,27 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirm
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                                  ? SolarIconsOutline.eye
+                                  : SolarIconsOutline.eyeClosed,
                             ),
                             onPressed: () => setState(
                               () => _obscureConfirm = !_obscureConfirm,
                             ),
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
-                              color: Color(0xFFD8DEE8),
+                              color: AppPalette.border,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
-                              color: Color(0xFFD8DEE8),
+                              color: AppPalette.border,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
                             borderSide: const BorderSide(
                               color: brandBlue,
                               width: 2,
@@ -289,118 +293,3 @@ class _SetPasswordScreenState extends ConsumerState<SetPasswordScreen> {
   }
 }
 
-/// Live strength label + requirement chips shown under the password field,
-/// updating on every keystroke via [SetPasswordScreen]'s controller listener.
-class _PasswordStrengthAndRequirements extends StatelessWidget {
-  const _PasswordStrengthAndRequirements({required this.password});
-
-  final String password;
-
-  static const _weakColor = Color(0xFFE0553F);
-  static const _mediumColor = Color(0xFFE0A02E);
-  static const _strongColor = Color(0xFF1D9A6C);
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final strength = passwordStrength(password);
-    final (strengthLabel, strengthColor) = switch (strength) {
-      PasswordStrength.weak => ('auth.password_strength_weak'.tr(), _weakColor),
-      PasswordStrength.medium => (
-        'auth.password_strength_medium'.tr(),
-        _mediumColor,
-      ),
-      PasswordStrength.strong => (
-        'auth.password_strength_strong'.tr(),
-        _strongColor,
-      ),
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (password.isNotEmpty) ...[
-          Row(
-            children: [
-              Text(
-                strengthLabel,
-                style: textTheme.labelMedium?.copyWith(
-                  color: strengthColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _RequirementChip(
-              label: 'auth.requirement_length'.tr(),
-              met: passwordHasMinLength(password),
-            ),
-            _RequirementChip(
-              label: 'auth.requirement_uppercase'.tr(),
-              met: passwordHasUppercase(password),
-            ),
-            _RequirementChip(
-              label: 'auth.requirement_lowercase'.tr(),
-              met: passwordHasLowercase(password),
-            ),
-            _RequirementChip(
-              label: 'auth.requirement_number'.tr(),
-              met: passwordHasNumber(password),
-            ),
-            _RequirementChip(
-              label: 'auth.requirement_symbol'.tr(),
-              met: passwordHasSymbol(password),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _RequirementChip extends StatelessWidget {
-  const _RequirementChip({required this.label, required this.met});
-
-  final String label;
-  final bool met;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = met ? const Color(0xFF1D9A6C) : const Color(0xFF8A94A6);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: met ? const Color(0xFFE7F6EF) : const Color(0xFFF0F2F5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: met ? const Color(0xFF1D9A6C).withValues(alpha: 0.4) : Colors.transparent,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            met ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 14,
-            color: color,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

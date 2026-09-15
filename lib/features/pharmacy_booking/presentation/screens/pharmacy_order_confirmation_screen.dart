@@ -5,6 +5,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 3 result — pharmacy order "submitted" screen (not a confirmed order:
 /// the pharmacy still has to review the uploaded prescription image and
@@ -45,7 +46,7 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                         color: AppColors.tealAccent.withValues(alpha: 0.12),
                       ),
                       child: const Icon(
-                        Icons.check_circle,
+                        SolarIconsBold.checkCircle,
                         color: AppColors.tealAccent,
                         size: 64,
                       ),
@@ -109,7 +110,7 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                           Row(
                             children: [
                               const Icon(
-                                Icons.access_time,
+                                SolarIconsOutline.clockCircle,
                                 size: 16,
                                 color: AppColors.mutedText2,
                               ),
@@ -157,7 +158,7 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadii.xl),
                           ),
                         ),
-                        icon: const Icon(Icons.local_shipping_outlined),
+                        icon: const Icon(SolarIconsOutline.delivery),
                         label: Text(
                           'pharmacy_booking.confirmation.track_cta'.tr(),
                         ),
@@ -175,7 +176,7 @@ class PharmacyOrderConfirmationScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppRadii.xl),
                           ),
                         ),
-                        icon: const Icon(Icons.home_outlined),
+                        icon: const Icon(SolarIconsOutline.home),
                         label: Text(
                           'pharmacy_booking.confirmation.go_home_cta'.tr(),
                         ),

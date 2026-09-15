@@ -5,15 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/core/widgets/flow_header.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_branch_search_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_branch_card.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_branches_map_view.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 2 of the lab booking flow — choose an accredited lab branch to
 /// fulfil the request uploaded in step 1. Rebuilt 2026-09-05 against the
@@ -87,11 +89,9 @@ class _LabSelectPartnerScreenState
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
-            StepProgressHeader(
-              // Same step labels/order as the other two steps of this flow
-              // — the stepper must read identically across all three
-              // screens.
+            FlowHeader(
+              title: 'lab_booking.step_select_lab'.tr(),
+              onBack: () => context.pop(),
               stepLabels: [
                 'lab_booking.step_upload'.tr(),
                 'lab_booking.step_select_lab'.tr(),
@@ -102,7 +102,7 @@ class _LabSelectPartnerScreenState
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
                   TextField(
                     controller: _searchController,
@@ -112,11 +112,11 @@ class _LabSelectPartnerScreenState
                         .setQuery(value),
                     decoration: InputDecoration(
                       hintText: 'lab_booking.select_lab.search_hint'.tr(),
-                      suffixIcon: const Icon(Icons.search),
+                      suffixIcon: const Icon(SolarIconsOutline.magnifier),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
                         borderSide: const BorderSide(
                           color: AppColors.borderLight,
                         ),
@@ -180,18 +180,21 @@ class _LabSelectPartnerScreenState
               ),
             ),
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: AppColors.borderLight)),
+                boxShadow: AppShadows.resting,
               ),
-              child: AppButton.filled(
-                label: 'lab_booking.select_lab.continue_cta'.tr(),
-                fullWidth: true,
-                backgroundColor: AppColors.patientPrimary,
-                foregroundColor: Colors.white,
-                borderRadius: AppRadii.xl,
-                onPressed: hasSelection ? _continue : null,
+              child: SizedBox(
+                height: 56,
+                child: AppButton.filled(
+                  label: 'lab_booking.select_lab.continue_cta'.tr(),
+                  fullWidth: true,
+                  backgroundColor: AppColors.patientPrimary,
+                  foregroundColor: Colors.white,
+                  borderRadius: AppRadii.pill,
+                  onPressed: hasSelection ? _continue : null,
+                ),
               ),
             ),
           ],
@@ -201,34 +204,3 @@ class _LabSelectPartnerScreenState
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          const SizedBox(width: 48),
-          Expanded(
-            child: Text(
-              'lab_booking.step_select_lab'.tr(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.patientPrimary,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
-          ),
-        ],
-      ),
-    );
-  }
-}

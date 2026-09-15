@@ -13,6 +13,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pha
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Step 3 (final) of the pharmacy booking flow — review the uploaded
 /// prescription, the chosen pharmacy and delivery method, see an
@@ -191,7 +192,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.check_circle,
+                          SolarIconsBold.checkCircle,
                           size: 13,
                           color: AppColors.tealAccent,
                         ),
@@ -226,7 +227,7 @@ class _OrderSummaryCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadii.sm),
                   ),
                   child: const Icon(
-                    Icons.storefront_outlined,
+                    SolarIconsOutline.shop,
                     size: 16,
                     color: AppColors.tealAccent,
                   ),
@@ -310,7 +311,7 @@ class _Thumbnail extends StatelessWidget {
         color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadii.sm),
       ),
-      child: const Icon(Icons.image_outlined, color: AppColors.mutedText2),
+      child: const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText2),
     );
   }
 }
@@ -328,9 +329,9 @@ class _DeliveryMethodSection extends StatelessWidget {
       'حي العليا، الرياض، المملكة العربية السعودية. بالقرب من برج المملكة، مبنى رقم 4.';
 
   static IconData _iconFor(DeliveryMethod method) => switch (method) {
-    DeliveryMethod.homeDelivery => Icons.delivery_dining_outlined,
-    DeliveryMethod.clinicHandover => Icons.local_hospital_outlined,
-    DeliveryMethod.pickup => Icons.storefront_outlined,
+    DeliveryMethod.homeDelivery => SolarIconsOutline.delivery,
+    DeliveryMethod.clinicHandover => SolarIconsOutline.hospital,
+    DeliveryMethod.pickup => SolarIconsOutline.shop,
   };
 
   @override
@@ -405,7 +406,7 @@ class _DeliveryMethodSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
-                    Icons.place_outlined,
+                    SolarIconsOutline.mapPoint,
                     size: 13,
                     color: AppColors.mutedText2,
                   ),
@@ -503,7 +504,7 @@ class _PaymentSummarySection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
-                  Icons.info_outline,
+                  SolarIconsOutline.infoCircle,
                   size: 16,
                   color: AppColors.mutedText2,
                 ),
@@ -642,7 +643,7 @@ class _Header extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_forward),
+            icon: const Icon(SolarIconsOutline.arrowRight),
           ),
         ],
       ),

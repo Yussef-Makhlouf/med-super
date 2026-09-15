@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/result_file_thumbnail.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_status_pill.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 String _formatOrderDate(String iso) {
   final parsed = DateTime.tryParse(iso);
@@ -59,7 +64,7 @@ class LabOrderDetailScreen extends ConsumerWidget {
         // nothing to pop when arriving that way — falling back to the
         // orders list keeps this screen from ever being a dead end.
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(SolarIconsOutline.arrowLeft),
           tooltip: 'lab_booking.orders.back_to_list'.tr(),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/patient/orders'),
@@ -91,23 +96,17 @@ class _OrderDetailBody extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border(
               left: BorderSide(
                 width: 5,
                 color: LabOrderStatusPill.colorFor(order.status),
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: AppShadows.resting,
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -123,18 +122,11 @@ class _OrderDetailBody extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF4FF),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.biotech_outlined,
-                        size: 20,
-                        color: brandBlue,
-                      ),
+                    const AppIconTile(
+                      icon: SolarIconsOutline.testTube,
+                      color: brandBlue,
+                      size: 40,
+                      iconSize: 20,
                     ),
                   ],
                 ),
@@ -178,19 +170,13 @@ class _OrderDetailBody extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: AppColors.borderLight),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              boxShadow: AppShadows.resting,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'lab_booking.orders.items_label'.tr(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink900,
-                  ),
-                ),
+                SectionHeader(title: 'lab_booking.orders.items_label'.tr()),
                 const SizedBox(height: 10),
                 for (final item in order.items)
                   Padding(
@@ -224,19 +210,13 @@ class _OrderDetailBody extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: AppColors.borderLight),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              boxShadow: AppShadows.resting,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'lab_booking.orders.results_label'.tr(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink900,
-                  ),
-                ),
+                SectionHeader(title: 'lab_booking.orders.results_label'.tr()),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -257,13 +237,7 @@ class _OrderDetailBody extends StatelessWidget {
         ],
         if (quote != null) ...[
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: AppColors.borderLight),
-            ),
+          AppSurfaceCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

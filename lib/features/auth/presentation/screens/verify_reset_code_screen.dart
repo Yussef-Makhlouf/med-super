@@ -9,10 +9,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/network/mock/mock_responses.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/formatters.dart';
+import 'package:med_super/core/widgets/auth_hero_illustration.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Verify-reset-code screen — the forgot-password flow's dedicated OTP-verify
 /// step, mirroring `verify_otp_screen.dart`'s 6-digit code boxes / timer /
@@ -216,7 +220,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
             backgroundColor: Colors.white,
             appBar: AppBar(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1A2B4A),
+              foregroundColor: AppPalette.ink,
               elevation: 0,
               centerTitle: true,
               title: Text(
@@ -236,13 +240,16 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 8),
-                    const _VerifyResetCodeHeroIllustration(),
+                    AuthShieldHeroIllustration(
+                      overlayIcon: SolarIconsBold.lockPassword,
+                      tags: const ['OTP', 'VERIFY', 'SECURE', kMockOtpCode],
+                    ),
                     const SizedBox(height: 28),
                     Text(
                       'auth.verify_reset_code_title'.tr(),
                       textAlign: TextAlign.center,
                       style: textTheme.headlineSmall?.copyWith(
-                        color: const Color(0xFF1A2B4A),
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -251,7 +258,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                       'auth.verify_reset_code_subtitle'.tr(),
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF8A94A6),
+                        color: AppPalette.inkMuted,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -259,7 +266,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                       _displayPhone,
                       textAlign: TextAlign.center,
                       style: textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF1A2B4A),
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -268,7 +275,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                       Text(
                         'auth.mock_otp_code'.tr(args: [kMockOtpCode]),
                         style: textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8A94A6),
+                          color: AppPalette.inkMuted,
                         ),
                       ),
                     ],
@@ -291,7 +298,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                                 textAlign: TextAlign.center,
                                 style: textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF1A2B4A),
+                                  color: AppPalette.ink,
                                 ),
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
@@ -303,19 +310,25 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                                   fillColor: Colors.white,
                                   contentPadding: EdgeInsets.zero,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
-                                      color: Color(0xFFD8DEE8),
+                                      color: AppPalette.border,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
-                                      color: Color(0xFFD8DEE8),
+                                      color: AppPalette.border,
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
                                       color: brandBlue,
                                       width: 2,
@@ -368,7 +381,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                           TextSpan(
                             text: '${'auth.didnt_receive'.tr()} ',
                             style: textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF8A94A6),
+                              color: AppPalette.inkMuted,
                             ),
                           ),
                           TextSpan(
@@ -389,7 +402,7 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                         style: TextStyle(
                           color: canResend
                               ? brandBlue
-                              : const Color(0xFFB0B7C3),
+                              : AppPalette.inkFaint,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -416,57 +429,3 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
   }
 }
 
-class _VerifyResetCodeHeroIllustration extends StatelessWidget {
-  const _VerifyResetCodeHeroIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F1FF),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(
-              Icons.shield_outlined,
-              size: 120,
-              color: brandBlue.withValues(alpha: 0.85),
-            ),
-            Icon(
-              Icons.lock_reset_rounded,
-              size: 36,
-              color: brandBlue.withValues(alpha: 0.95),
-            ),
-            Positioned(top: 28, left: 36, child: _tag('OTP')),
-            Positioned(top: 40, right: 28, child: _tag('VERIFY')),
-            Positioned(bottom: 36, left: 28, child: _tag('SECURE')),
-            Positioned(bottom: 48, right: 40, child: _tag(kMockOtpCode)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _tag(String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.85),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: brandBlue.withValues(alpha: 0.25)),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        color: brandBlue.withValues(alpha: 0.9),
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-      ),
-    ),
-  );
-}

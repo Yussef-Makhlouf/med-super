@@ -2,13 +2,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/utils/formatters.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// `GET /v1/appointments/{id}` (File 12 Part 35.17), read-only detail view
 /// for one appointment plus its cancel/reschedule actions — the same
@@ -47,7 +50,7 @@ class _AppointmentDetailScreenState
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               'appointments.cancel'.tr(),
-              style: const TextStyle(color: AppColors.errorRed),
+              style: const TextStyle(color: AppPalette.error),
             ),
           ),
         ],
@@ -98,7 +101,7 @@ class _AppointmentDetailScreenState
     );
 
     return Scaffold(
-      backgroundColor: AppColors.surfaceApp,
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -145,11 +148,14 @@ class _Header extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.patientPrimary,
+                color: AppPalette.primary,
               ),
             ),
           ),
-          IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_forward)),
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(SolarIconsOutline.arrowRight),
+          ),
         ],
       ),
     );
@@ -172,12 +178,12 @@ class _DetailBody extends StatelessWidget {
   final VoidCallback onReschedule;
 
   Color get _statusColor => switch (appt.status) {
-    'CONFIRMED' => AppColors.patientPrimary,
-    'CANCELLED' => AppColors.errorRed,
-    'RESCHEDULED' => AppColors.ratingAmber,
-    'COMPLETED' => AppColors.patientPrimary,
-    'NO_SHOW' => AppColors.errorRed,
-    _ => AppColors.mutedText,
+    'CONFIRMED' => AppPalette.primary,
+    'CANCELLED' => AppPalette.error,
+    'RESCHEDULED' => AppPalette.warning,
+    'COMPLETED' => AppPalette.primary,
+    'NO_SHOW' => AppPalette.error,
+    _ => AppPalette.inkMuted,
   };
 
   String get _statusLabel => switch (appt.status) {
@@ -209,13 +215,7 @@ class _DetailBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: AppColors.borderLight),
-          ),
+        AppSurfaceCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -234,7 +234,7 @@ class _DetailBody extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.ink900,
+                            color: AppPalette.ink,
                           ),
                         ),
                         if (appt.doctorName.isNotEmpty)
@@ -244,39 +244,43 @@ class _DetailBody extends StatelessWidget {
                             ),
                             style: const TextStyle(
                               fontSize: 12,
-                              color: AppColors.mutedText,
+                              color: AppPalette.inkMuted,
                             ),
                           ),
                       ],
                     ),
                   ),
-                  _StatusPill(label: _statusLabel, color: _statusColor),
+                  AppBadge.soft(
+                    label: _statusLabel,
+                    color: _statusColor,
+                    bordered: true,
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
-              const Divider(height: 1, color: AppColors.borderLight),
+              Divider(height: 1, color: AppPalette.border),
               const SizedBox(height: 14),
               _InfoRow(
-                icon: Icons.calendar_today_outlined,
+                icon: SolarIconsOutline.calendarMinimalistic,
                 label: AppFormatters.fullDate(startLocal, locale: locale),
               ),
               const SizedBox(height: 8),
               _InfoRow(
-                icon: Icons.access_time_outlined,
+                icon: SolarIconsOutline.clockCircle,
                 label:
                     '${AppFormatters.time(startLocal, locale: locale)} – ${AppFormatters.time(endLocal, locale: locale)}',
               ),
               if (appt.clinicName.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 _InfoRow(
-                  icon: Icons.local_hospital_outlined,
+                  icon: SolarIconsOutline.hospital,
                   label: appt.clinicName,
                 ),
               ],
               if (appt.clinicAddressLine1.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 _InfoRow(
-                  icon: Icons.location_on_outlined,
+                  icon: SolarIconsOutline.mapPoint,
                   label: [
                     appt.clinicAddressLine1,
                     appt.clinicCity,
@@ -285,7 +289,10 @@ class _DetailBody extends StatelessWidget {
               ],
               if (appt.clinicPhone.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                _InfoRow(icon: Icons.call_outlined, label: appt.clinicPhone),
+                _InfoRow(
+                  icon: SolarIconsOutline.phone,
+                  label: appt.clinicPhone,
+                ),
               ],
             ],
           ),
@@ -293,8 +300,8 @@ class _DetailBody extends StatelessWidget {
         if (appt.status == 'CANCELLED' && appt.cancelledReason != null) ...[
           const SizedBox(height: 16),
           _NoteCard(
-            icon: Icons.info_outline,
-            color: AppColors.errorRed,
+            icon: SolarIconsOutline.infoCircle,
+            color: AppPalette.error,
             text: 'appointments.detail_cancelled_reason'.tr(
               args: [_cancelledReasonLabel],
             ),
@@ -303,8 +310,8 @@ class _DetailBody extends StatelessWidget {
         if (appt.rescheduledFromAppointmentId != null) ...[
           const SizedBox(height: 16),
           _NoteCard(
-            icon: Icons.history_outlined,
-            color: AppColors.ratingAmber,
+            icon: SolarIconsOutline.history,
+            color: AppPalette.warning,
             text: 'appointments.detail_rescheduled_from'.tr(
               args: [appt.rescheduledFromAppointmentId!.substring(0, 8)],
             ),
@@ -320,11 +327,13 @@ class _DetailBody extends StatelessWidget {
                       ? null
                       : onReschedule,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.patientPrimary,
-                    side: const BorderSide(color: Color(0xFFC7D7FE)),
+                    foregroundColor: AppPalette.primary,
+                    side: BorderSide(
+                      color: AppPalette.primary.withValues(alpha: 0.3),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
                     textStyle: const TextStyle(
                       fontSize: 14,
@@ -339,11 +348,13 @@ class _DetailBody extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: isCancelling ? null : onCancel,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.errorRed,
-                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    foregroundColor: AppPalette.error,
+                    side: BorderSide(
+                      color: AppPalette.error.withValues(alpha: 0.3),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
                     textStyle: const TextStyle(
                       fontSize: 14,
@@ -377,11 +388,11 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.mutedText2),
+        Icon(icon, size: 18, color: AppPalette.inkMuted),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(fontSize: 14, color: AppColors.bodyText),
+          style: const TextStyle(fontSize: 14, color: AppPalette.ink),
         ),
       ],
     );
@@ -417,33 +428,6 @@ class _NoteCard extends StatelessWidget {
             child: Text(text, style: TextStyle(fontSize: 13, color: color)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
       ),
     );
   }
