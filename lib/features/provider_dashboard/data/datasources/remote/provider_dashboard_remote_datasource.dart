@@ -3,14 +3,12 @@ import 'package:med_super/core/constants/api_paths.dart';
 import '../../models/doctor_account_profile_dto.dart';
 import '../../models/doctor_appointment_dto.dart';
 import '../../models/doctor_clinic_dto.dart';
-import '../../models/doctor_notification_dto.dart';
 import '../../models/doctor_schedule_template_dto.dart';
 import '../../../domain/entities/doctor_appointment.dart';
 import '../../../domain/entities/doctor_schedule_template.dart';
 
 /// Every method below maps 1:1 onto a real `clinic-reservations` route
-/// (File 12 Part 49), with two documented exceptions that remain mock-only:
-/// [getPatients] and the notification pair. Nothing here invents a path.
+/// (File 12 Part 49). Nothing here invents a path.
 ///
 /// `EnvelopeInterceptor` has already unwrapped the backend's
 /// `{success, data, requestId, correlationId}` success envelope, so
@@ -21,13 +19,14 @@ abstract class ProviderDashboardRemoteDatasource {
   Future<DoctorAccountProfileDto> getDoctorAccount();
 
   /// `name`/`specialty`/`licenseNumber` are deliberately not parameters —
-  /// `PATCH /v1/doctors/me` only accepts `bio`/`degree`/`experienceYears`
-  /// (File 12 Part 45); a doctor can't re-specialize, re-license, or
-  /// rename themselves through this endpoint.
+  /// `PATCH /v1/doctors/me` only accepts `bio`/`degree`/`experienceYears`/
+  /// `photo_data_uri` (File 12 Part 45); a doctor can't re-specialize,
+  /// re-license, or rename themselves through this endpoint.
   Future<DoctorAccountProfileDto> updateDoctorAccount({
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   });
 
   // --- Clinics and branches (/v1/doctors/me/clinics) ---
@@ -98,12 +97,6 @@ abstract class ProviderDashboardRemoteDatasource {
     String clinicBranchId,
     CreateWalkInAppointmentRequestDto body,
   );
-
-  // --- Still mock-only: no backend route exists (see STATUS.md) ---
-
-  Future<List<DoctorNotificationDto>> getNotifications();
-
-  Future<void> markNotificationRead(String id);
 }
 
 class ProviderDashboardRemoteDatasourceImpl
@@ -126,6 +119,7 @@ class ProviderDashboardRemoteDatasourceImpl
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       ApiPaths.doctorMe,
@@ -133,6 +127,7 @@ class ProviderDashboardRemoteDatasourceImpl
         if (bio != null) 'bio': bio,
         if (degree != null) 'degree': degree,
         if (yearsOfExperience != null) 'experienceYears': yearsOfExperience,
+        if (photoDataUri != null) 'photo_data_uri': photoDataUri,
       },
     );
     return DoctorAccountProfileDto.fromJson(_obj(response));
@@ -318,22 +313,4 @@ class ProviderDashboardRemoteDatasourceImpl
     return CreateWalkInAppointmentResultDto.fromJson(_obj(response));
   }
 
-  @override
-  Future<List<DoctorNotificationDto>> getNotifications() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.providerNotifications,
-    );
-
-    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
-    return items
-        .map((e) => DoctorNotificationDto.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<void> markNotificationRead(String id) async {
-    await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.providerNotifications}/$id/read',
-    );
-  }
 }

@@ -1,26 +1,30 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/error/dio_failure_mapper.dart';
+import 'package:med_super/core/error/failure_message.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import '../../domain/entities/deposit_request.dart';
 import '../controllers/wallet_providers.dart';
-import 'wallet_deposit_success_screen.dart';
-import 'wallet_payment_method_screen.dart';
+import 'wallet_top_up_pending_screen.dart';
 
-/// Step 3/3 of the deposit flow: review the amount and payment method chosen
-/// in the previous two steps — each with its own edit affordance that pops
-/// back to that step — before the deposit is actually submitted.
+/// Step 3/3 of the top-up flow: review the amount and billing details
+/// chosen in the previous two steps — each with its own edit affordance
+/// that pops back to that step — then call `POST /v1/wallet/top-up`.
+///
+/// The CTA starts a payment; it doesn't complete one. See
+/// [WalletTopUpPendingScreen] for why the next screen isn't a success page.
 class WalletConfirmDepositScreen extends ConsumerStatefulWidget {
   final double amount;
-  final String paymentMethodId;
+  final PaymentCustomerInfo customer;
 
   const WalletConfirmDepositScreen({
     super.key,
     required this.amount,
-    required this.paymentMethodId,
+    required this.customer,
   });
 
   @override
@@ -32,31 +36,40 @@ class _WalletConfirmDepositScreenState
     extends ConsumerState<WalletConfirmDepositScreen> {
   bool _isLoading = false;
 
-  Future<void> _submitDeposit() async {
+  Future<void> _submitTopUp() async {
     setState(() => _isLoading = true);
     try {
-      final repo = ref.read(walletRepositoryProvider);
-      final transaction = await repo.depositBalance(
-        DepositRequest(
-          amount: widget.amount,
-          paymentMethodId: widget.paymentMethodId,
-        ),
-      );
-      ref.invalidate(walletBalanceProvider);
+      final initiation = await ref
+          .read(walletRepositoryProvider)
+          .initiateTopUp(amount: widget.amount, customer: widget.customer);
+      // A PENDING ledger row now exists, so the history is already stale
+      // even though the balance hasn't moved.
       ref.invalidate(walletTransactionsProvider);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => WalletDepositSuccessScreen(
-            transaction: transaction,
+          builder: (_) => WalletTopUpPendingScreen(
+            initiation: initiation,
+            amount: widget.amount,
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, st) {
       if (!mounted) return;
+      // Maps the backend's own codes (e.g. `INVALID_AMOUNT`,
+      // `PAYMENT_GATEWAY_NOT_CONFIGURED`) to Arabic copy instead of the
+      // generic "something went wrong" this screen used to show for
+      // everything.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('common.error'.tr())),
+        SnackBar(
+          content: Text(
+            failureMessage(
+              mapDioToFailure(e, st),
+              screenFallback: 'common.error',
+            ),
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -91,7 +104,7 @@ class _WalletConfirmDepositScreenState
             child: StepProgressHeader(
               stepLabels: [
                 'wallet.step_amount'.tr(),
-                'wallet.step_payment_method'.tr(),
+                'wallet.step_payment_details'.tr(),
                 'wallet.step_confirm'.tr(),
               ],
               currentStep: 2,
@@ -107,7 +120,12 @@ class _WalletConfirmDepositScreenState
                   _buildReviewCard(
                     title: 'wallet.amount_details_title'.tr(),
                     icon: Icons.payments_outlined,
-                    onEdit: () => Navigator.of(context).pop(),
+                    // Two steps back: amount is step 1, this is step 3.
+                    onEdit: () {
+                      Navigator.of(context)
+                        ..pop()
+                        ..pop();
+                    },
                     rows: [
                       (
                         label: 'wallet.gross_amount'.tr(),
@@ -117,17 +135,22 @@ class _WalletConfirmDepositScreenState
                   ),
                   const SizedBox(height: 16),
                   _buildReviewCard(
-                    title: 'wallet.payment_method_section_title'.tr(),
-                    icon: Icons.credit_card,
-                    onEdit: () {
-                      Navigator.of(context)
-                        ..pop()
-                        ..pop();
-                    },
+                    title: 'payments.customer_title'.tr(),
+                    icon: Icons.person_outline,
+                    onEdit: () => Navigator.of(context).pop(),
                     rows: [
                       (
-                        label: 'wallet.payment_method'.tr(),
-                        value: walletPaymentMethodLabel(widget.paymentMethodId),
+                        label: 'payments.customer_name'.tr(),
+                        value:
+                            '${widget.customer.firstName} ${widget.customer.lastName}',
+                      ),
+                      (
+                        label: 'payments.email'.tr(),
+                        value: widget.customer.email,
+                      ),
+                      (
+                        label: 'payments.phone'.tr(),
+                        value: widget.customer.phone,
                       ),
                     ],
                   ),
@@ -145,7 +168,7 @@ class _WalletConfirmDepositScreenState
               isLoading: _isLoading,
               backgroundColor: brandBlue,
               foregroundColor: Colors.white,
-              onPressed: _submitDeposit,
+              onPressed: _submitTopUp,
             ),
           ),
         ],

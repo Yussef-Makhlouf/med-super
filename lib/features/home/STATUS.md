@@ -13,7 +13,5 @@ screen's specialties row and featured-doctors row, which are real
 
 App shell and tab navigation otherwise. The `appointments` screen here is now
 wired to the real Phase 4 flow (see `lib/features/appointments/`, not this
-folder); `orders`/`notifications` screens remain intentionally static
-placeholders (`*_placeholder_screen.dart`) — Payments and Notifications don't
-exist on the backend yet. Do not wire these to real or mock network calls
-until the owning feature (not `home`) is built against a real backend phase.
+folder); the `orders` tab is real (pharmacy + lab lists). The `notifications`
+tab is wired to `lib/features/notifications/` (`GET/PATCH /v1/notifications`).

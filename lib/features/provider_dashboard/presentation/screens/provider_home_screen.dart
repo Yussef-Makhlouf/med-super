@@ -15,6 +15,7 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_cli
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
 import 'package:med_super/features/provider_dashboard/domain/schedule_day_lookup.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
@@ -49,6 +50,26 @@ final selectedCalendarDateProvider =
 class ProviderHomeScreen extends ConsumerWidget {
   const ProviderHomeScreen({super.key});
 
+  /// Wraps a non-scrolling empty/error state in a scrollable so
+  /// `RefreshIndicator` can still detect the pull gesture and its own
+  /// `EmptyState`/error content stays centered as before.
+  Widget _refreshableEmpty(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   DateTime _weekStart(DateTime d) {
     var diff = d.weekday - DateTime.saturday;
     if (diff < 0) diff += 7;
@@ -78,9 +99,7 @@ class ProviderHomeScreen extends ConsumerWidget {
         .watch(doctorAccountProvider)
         .maybeWhen(data: (account) => account.id, orElse: () => null);
 
-    final unreadNotifsCount = ref
-        .watch(doctorNotificationsProvider)
-        .maybeWhen(data: (list) => list.where((n) => n.isUnread).length, orElse: () => 0);
+    final unreadNotifsCount = ref.watch(unreadNotificationCountProvider);
     final avatarUrl = ref.watch(providerHeaderAvatarUrlProvider);
 
     return Scaffold(
@@ -137,33 +156,66 @@ class ProviderHomeScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: clinicsAsync.when(
-                    loading: () => const CardSkeletonList(count: 3),
-                    error: (error, _) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: EmptyState(
-                        title: 'provider_dashboard.home.load_error'.tr(),
-                        icon: Icons.error_outline,
-                      ),
-                    ),
-                    data: (clinics) {
-                      final branches = clinics
-                          .where((c) => c.isAcceptingBookings)
-                          .toList();
-                      if (branches.isEmpty || doctorId == null) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          child: EmptyState(
-                            title: 'provider_dashboard.home.day_off_title'.tr(),
-                            subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-                            icon: Icons.weekend_outlined,
-                          ),
-                        );
+                  child: Builder(
+                    builder: (context) {
+                      Future<void> onRefresh() async {
+                        ref.invalidate(myClinicsProvider);
+                        ref.invalidate(myScheduleTemplatesProvider());
+                        ref.invalidate(doctorAccountProvider);
+                        if (doctorId != null) {
+                          final dayStart = dateOnly(selectedDate);
+                          final dayEnd = dayStart.add(const Duration(days: 1));
+                          for (final branch in clinicsAsync.value ?? const <DoctorClinic>[]) {
+                            ref.invalidate(
+                              doctorOpenSlotsProvider((
+                                doctorId: doctorId,
+                                clinicBranchId: branch.clinicBranchId,
+                                from: dayStart,
+                                to: dayEnd,
+                              )),
+                            );
+                          }
+                          ref.invalidate(doctorAppointmentsProvider);
+                        }
+                        // Give the invalidated providers a moment to refetch
+                        // so the spinner doesn't vanish before new data lands.
+                        await Future<void>.delayed(const Duration(milliseconds: 400));
                       }
-                      return _BranchTimelineTabs(
-                        branches: branches,
-                        date: selectedDate,
-                        doctorId: doctorId,
+
+                      return clinicsAsync.when(
+                        loading: () => const CardSkeletonList(count: 3),
+                        error: (error, _) => RefreshIndicator(
+                          onRefresh: onRefresh,
+                          child: _refreshableEmpty(
+                            EmptyState(
+                              title: 'provider_dashboard.home.load_error'.tr(),
+                              icon: Icons.error_outline,
+                            ),
+                          ),
+                        ),
+                        data: (clinics) {
+                          final branches = clinics
+                              .where((c) => c.isAcceptingBookings)
+                              .toList();
+                          if (branches.isEmpty || doctorId == null) {
+                            return RefreshIndicator(
+                              onRefresh: onRefresh,
+                              child: _refreshableEmpty(
+                                EmptyState(
+                                  title: 'provider_dashboard.home.day_off_title'.tr(),
+                                  subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
+                                  icon: Icons.weekend_outlined,
+                                ),
+                              ),
+                            );
+                          }
+                          return _BranchTimelineTabs(
+                            branches: branches,
+                            date: selectedDate,
+                            doctorId: doctorId,
+                            onRefresh: onRefresh,
+                          );
+                        },
                       );
                     },
                   ),
@@ -336,11 +388,13 @@ class _BranchTimelineTabs extends StatefulWidget {
     required this.branches,
     required this.date,
     required this.doctorId,
+    required this.onRefresh,
   });
 
   final List<DoctorClinic> branches;
   final DateTime date;
   final String doctorId;
+  final Future<void> Function() onRefresh;
 
   @override
   State<_BranchTimelineTabs> createState() => _BranchTimelineTabsState();
@@ -386,6 +440,7 @@ class _BranchTimelineTabsState extends State<_BranchTimelineTabs>
         branch: widget.branches.first,
         date: widget.date,
         doctorId: widget.doctorId,
+        onRefresh: widget.onRefresh,
       );
     }
 
@@ -418,12 +473,14 @@ class _BranchTimelineTabsState extends State<_BranchTimelineTabs>
                   branches: widget.branches,
                   date: widget.date,
                   doctorId: widget.doctorId,
+                  onRefresh: widget.onRefresh,
                 ),
               for (final branch in widget.branches)
                 _BranchDayTimeline(
                   branch: branch,
                   date: widget.date,
                   doctorId: widget.doctorId,
+                  onRefresh: widget.onRefresh,
                 ),
             ],
           ),
@@ -444,11 +501,13 @@ class _AllBranchesTimeline extends ConsumerWidget {
     required this.branches,
     required this.date,
     required this.doctorId,
+    required this.onRefresh,
   });
 
   final List<DoctorClinic> branches;
   final DateTime date;
   final String doctorId;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -465,20 +524,28 @@ class _AllBranchesTimeline extends ConsumerWidget {
       orElse: () => const AsyncValue.data([]),
     );
     if (firstError.hasError) {
-      return ErrorBanner(
-        message: providerFailureMessageOf(firstError.error!),
-        onRetry: () {
-          for (final branch in branches) {
-            ref.invalidate(
-              doctorOpenSlotsProvider((
-                doctorId: doctorId,
-                clinicBranchId: branch.clinicBranchId,
-                from: dateOnly(date),
-                to: dateOnly(date).add(const Duration(days: 1)),
-              )),
-            );
-          }
-        },
+      // RefreshIndicator here too — a doctor whose day starts with a load
+      // error still expects pull-to-refresh to work, same as every other
+      // state in this timeline.
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: _scrollableCenter(
+          ErrorBanner(
+            message: providerFailureMessageOf(firstError.error!),
+            onRetry: () {
+              for (final branch in branches) {
+                ref.invalidate(
+                  doctorOpenSlotsProvider((
+                    doctorId: doctorId,
+                    clinicBranchId: branch.clinicBranchId,
+                    from: dateOnly(date),
+                    to: dateOnly(date).add(const Duration(days: 1)),
+                  )),
+                );
+              }
+            },
+          ),
+        ),
       );
     }
 
@@ -488,17 +555,26 @@ class _AllBranchesTimeline extends ConsumerWidget {
     ]..sort((a, b) => a.value.startAt.compareTo(b.value.startAt));
 
     if (all.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: EmptyState(
-          title: 'provider_dashboard.home.day_off_title'.tr(),
-          subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-          icon: Icons.weekend_outlined,
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: _scrollableCenter(
+          EmptyState(
+            title: 'provider_dashboard.home.day_off_title'.tr(),
+            subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
+            icon: Icons.weekend_outlined,
+          ),
         ),
       );
     }
 
-    return ListView.separated(
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.separated(
+      // Without this, a short list (fewer rows than fit the viewport)
+      // never overscrolls, so the RefreshIndicator wrapping this screen
+      // never sees the pull gesture and pull-to-refresh silently does
+      // nothing on days with few appointments.
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       itemCount: all.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -507,6 +583,26 @@ class _AllBranchesTimeline extends ConsumerWidget {
         branch: all[index].key,
         doctorId: doctorId,
         showBranchLabel: true,
+      ),
+      ),
+    );
+  }
+
+  /// Wraps non-list content (error/empty states) in a scrollable so
+  /// `RefreshIndicator` can detect the pull gesture on those states too.
+  Widget _scrollableCenter(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: child,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -517,11 +613,13 @@ class _BranchDayTimeline extends ConsumerWidget {
     required this.branch,
     required this.date,
     required this.doctorId,
+    required this.onRefresh,
   });
 
   final DoctorClinic branch;
   final DateTime date;
   final String doctorId;
+  final Future<void> Function() onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -529,40 +627,72 @@ class _BranchDayTimeline extends ConsumerWidget {
 
     return rowsAsync.when(
       loading: () => const CardSkeletonList(count: 3),
-      error: (error, _) => ErrorBanner(
-        message: providerFailureMessageOf(error),
-        onRetry: () => ref.invalidate(
-          doctorOpenSlotsProvider((
-            doctorId: doctorId,
-            clinicBranchId: branch.clinicBranchId,
-            from: dateOnly(date),
-            to: dateOnly(date).add(const Duration(days: 1)),
-          )),
+      error: (error, _) => RefreshIndicator(
+        onRefresh: onRefresh,
+        child: _scrollableCenter(
+          ErrorBanner(
+            message: providerFailureMessageOf(error),
+            onRetry: () => ref.invalidate(
+              doctorOpenSlotsProvider((
+                doctorId: doctorId,
+                clinicBranchId: branch.clinicBranchId,
+                from: dateOnly(date),
+                to: dateOnly(date).add(const Duration(days: 1)),
+              )),
+            ),
+          ),
         ),
       ),
       data: (rows) {
         if (rows.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            child: EmptyState(
-              title: 'provider_dashboard.home.day_off_title'.tr(),
-              subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-              icon: Icons.weekend_outlined,
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: _scrollableCenter(
+              EmptyState(
+                title: 'provider_dashboard.home.day_off_title'.tr(),
+                subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
+                icon: Icons.weekend_outlined,
+              ),
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-          itemCount: rows.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) => _TimelineRowTile(
-            row: rows[index],
-            branch: branch,
-            doctorId: doctorId,
-            showBranchLabel: false,
+        return RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView.separated(
+            // See the same fix in _AllBranchesTimeline above for why this is
+            // required for RefreshIndicator to work on a short list.
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            itemCount: rows.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) => _TimelineRowTile(
+              row: rows[index],
+              branch: branch,
+              doctorId: doctorId,
+              showBranchLabel: false,
+            ),
           ),
         );
       },
+    );
+  }
+
+  /// Wraps non-list content (error/empty states) in a scrollable so
+  /// `RefreshIndicator` can detect the pull gesture on those states too.
+  Widget _scrollableCenter(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: child,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -803,7 +933,7 @@ class _TimelineRowTile extends ConsumerWidget {
   }
 
   Future<void> _bookSlot(BuildContext context, WidgetRef ref, DoctorSlot slot) async {
-    final booked = await showModalBottomSheet<bool>(
+    final booked = await showModalBottomSheet<(DoctorClinic, DoctorSlot)>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -812,15 +942,23 @@ class _TimelineRowTile extends ConsumerWidget {
       ),
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _QuickBookSheet(branch: branch, slot: slot),
+        child: _QuickBookSheet(
+          doctorId: doctorId,
+          initialBranch: branch,
+          slot: slot,
+        ),
       ),
     );
-    if (booked == true) {
-      final dayStart = dateOnly(slot.startAtUtc.toLocal());
+    if (booked != null) {
+      // The sheet lets the doctor switch branches, so the slot actually
+      // booked may belong to a different branch than the one tapped —
+      // invalidate by that branch, not the outer `branch`.
+      final (bookedBranch, bookedSlot) = booked;
+      final dayStart = dateOnly(bookedSlot.startAtUtc.toLocal());
       ref.invalidate(
         doctorOpenSlotsProvider((
           doctorId: doctorId,
-          clinicBranchId: branch.clinicBranchId,
+          clinicBranchId: bookedBranch.clinicBranchId,
           from: dayStart,
           to: dayStart.add(const Duration(days: 1)),
         )),
@@ -830,14 +968,20 @@ class _TimelineRowTile extends ConsumerWidget {
   }
 }
 
-/// A minimal patient-phone/name form for booking directly onto an already
-/// chosen branch + slot from the timeline's "+" button — the full
-/// [showBookWalkInAppointmentSheet] flow re-asks for the branch and slot,
-/// which is redundant when the user already tapped a specific open row.
+/// A patient-phone/name form for booking directly from the timeline's "+"
+/// button. Pre-selects the branch/slot the user tapped (same as the full
+/// [showBookWalkInAppointmentSheet] flow's first two steps), but still lets
+/// the doctor switch branches here instead of forcing them to cancel and
+/// reopen the full flow just to pick a different one.
 class _QuickBookSheet extends ConsumerStatefulWidget {
-  const _QuickBookSheet({required this.branch, required this.slot});
+  const _QuickBookSheet({
+    required this.doctorId,
+    required this.initialBranch,
+    required this.slot,
+  });
 
-  final DoctorClinic branch;
+  final String doctorId;
+  final DoctorClinic initialBranch;
   final DoctorSlot slot;
 
   @override
@@ -848,8 +992,17 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
+  late DoctorClinic _branch;
+  DoctorSlot? _slot;
   bool _submitting = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _branch = widget.initialBranch;
+    _slot = widget.slot;
+  }
 
   @override
   void dispose() {
@@ -858,7 +1011,19 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     super.dispose();
   }
 
+  void _switchBranch(DoctorClinic branch) {
+    if (branch.clinicBranchId == _branch.clinicBranchId) return;
+    setState(() {
+      _branch = branch;
+      // The originally tapped slot belongs to the old branch — a new one
+      // must be picked before submitting is possible again.
+      _slot = null;
+    });
+  }
+
   Future<void> _submit() async {
+    final slot = _slot;
+    if (slot == null) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
       _submitting = true;
@@ -871,15 +1036,15 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     final result = await ref
         .read(bookWalkInAppointmentUseCaseProvider)
         .call(
-          clinicBranchId: widget.branch.clinicBranchId,
-          slotId: widget.slot.slotId,
+          clinicBranchId: _branch.clinicBranchId,
+          slotId: slot.slotId,
           patientPhone: phone,
           patientName: name,
         );
 
     if (!mounted) return;
     result.when(
-      ok: (_) => Navigator.of(context).pop(true),
+      ok: (_) => Navigator.of(context).pop((_branch, slot)),
       err: (failure) => setState(() {
         _submitting = false;
         _error = providerFailureMessage(failure);
@@ -945,6 +1110,65 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                 validator: (value) =>
                     (value ?? '').trim().isEmpty ? 'provider_dashboard.walk_in.name_required'.tr() : null,
               ),
+              const SizedBox(height: 20),
+              Text(
+                'provider_dashboard.walk_in.step_branch'.tr(),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ref
+                  .watch(myClinicsProvider)
+                  .when(
+                    loading: () => SizedBox(
+                      height: 72,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: 3,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (_, _) => const SkeletonLoader(
+                          width: 130,
+                          height: 72,
+                          borderRadius: 12,
+                        ),
+                      ),
+                    ),
+                    error: (error, _) => ErrorBanner(
+                      message: providerFailureMessageOf(error),
+                      onRetry: () => ref.invalidate(myClinicsProvider),
+                    ),
+                    data: (clinics) {
+                      final acceptingBranches = clinics
+                          .where((c) => c.isAcceptingBookings)
+                          .toList();
+                      return SizedBox(
+                        height: 72,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: acceptingBranches.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) =>
+                              _branchChip(acceptingBranches[index]),
+                        ),
+                      );
+                    },
+                  ),
+              if (_slot == null) ...[
+                const SizedBox(height: 20),
+                Text(
+                  'provider_dashboard.walk_in.step_slot'.tr(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _slotPicker(),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 ErrorBanner(message: _error!),
@@ -954,7 +1178,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                 height: 48,
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _submitting ? null : _submit,
+                  onPressed: (_slot != null && !_submitting) ? _submit : null,
                   child: _submitting
                       ? const SizedBox(
                           width: 20,
@@ -965,6 +1189,132 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _branchChip(DoctorClinic clinic) {
+    final selected = _branch.clinicBranchId == clinic.clinicBranchId;
+    return GestureDetector(
+      onTap: () => _switchBranch(clinic),
+      child: Container(
+        width: 130,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.store_mall_directory_outlined,
+                  size: 14,
+                  color: selected ? brandBlue : AppColors.mutedText2,
+                ),
+                const Spacer(),
+                if (selected)
+                  const Icon(Icons.check_circle, color: brandBlue, size: 16),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              clinic.address.city,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            ),
+            Text(
+              clinic.displayAddressLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10, color: AppColors.mutedText2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _slotPicker() {
+    final async = ref.watch(
+      doctorOpenSlotsProvider((
+        doctorId: widget.doctorId,
+        clinicBranchId: _branch.clinicBranchId,
+        from: null,
+        to: null,
+      )),
+    );
+
+    return async.when(
+      loading: () => SizedBox(
+        height: 64,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, _) =>
+              const SkeletonLoader(width: 62, height: 64, borderRadius: 14),
+        ),
+      ),
+      error: (error, _) => ErrorBanner(
+        message: providerFailureMessageOf(error),
+        onRetry: () => ref.invalidate(
+          doctorOpenSlotsProvider((
+            doctorId: widget.doctorId,
+            clinicBranchId: _branch.clinicBranchId,
+            from: null,
+            to: null,
+          )),
+        ),
+      ),
+      data: (slots) {
+        if (slots.isEmpty) {
+          return EmptyState(
+            title: 'provider_dashboard.walk_in.no_slots'.tr(),
+            icon: Icons.event_busy_outlined,
+          );
+        }
+        final sorted = [...slots]
+          ..sort((a, b) => a.startAtUtc.compareTo(b.startAtUtc));
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [for (final slot in sorted) _slotChip(slot)],
+        );
+      },
+    );
+  }
+
+  Widget _slotChip(DoctorSlot slot) {
+    final selected = _slot?.slotId == slot.slotId;
+    return GestureDetector(
+      onTap: () => setState(() => _slot = slot),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          formatAppointmentTime(slot.startAtUtc),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: selected ? brandBlue : AppColors.ink900,
           ),
         ),
       ),

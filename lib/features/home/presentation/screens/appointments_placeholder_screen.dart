@@ -12,7 +12,7 @@ import 'package:med_super/features/appointments/domain/entities/appointment_summ
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
-import 'package:solar_icons/solar_icons.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 
 // ─── screen ───────────────────────────────────────────────────────────────────
 
@@ -212,14 +212,15 @@ class _PatientAppointmentsScreenState
 
 // ─── header ───────────────────────────────────────────────────────────────────
 
-class _ApptHeader extends StatelessWidget {
+class _ApptHeader extends ConsumerWidget {
   const _ApptHeader({required this.displayName});
 
   final String displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
         GestureDetector(
@@ -247,22 +248,14 @@ class _ApptHeader extends StatelessWidget {
           ],
         ),
         const Spacer(),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            IconButton(
-              onPressed: () => context.go('/patient/notifications'),
-              icon: const Icon(
-                SolarIconsOutline.bellBing,
-                color: AppPalette.ink,
-              ),
-            ),
-            PositionedDirectional(
-              end: 6,
-              top: 6,
-              child: IgnorePointer(child: AppBadge.dot()),
-            ),
-          ],
+        IconButton(
+          onPressed: () => context.go('/patient/notifications'),
+          icon: Badge(
+            smallSize: 8,
+            backgroundColor: Colors.red,
+            isLabelVisible: hasUnread,
+            child: const Icon(Icons.notifications_outlined, color: _ink),
+          ),
         ),
       ],
     );

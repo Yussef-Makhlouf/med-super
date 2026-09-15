@@ -1,14 +1,17 @@
-import '../entities/deposit_request.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import '../entities/refund_request.dart';
 import '../entities/transfer_request.dart';
 import '../entities/wallet_balance.dart';
+import '../entities/wallet_top_up_initiation.dart';
 import '../entities/wallet_transaction.dart';
 
 abstract class WalletRepository {
   Future<WalletBalance> getWalletBalance();
-  Future<List<WalletTransaction>> getTransactions();
-  Future<WalletTransaction> getTransactionDetail(String id);
-  Future<WalletTransaction> depositBalance(DepositRequest request);
+  Future<WalletTransactionPage> getTransactions({String? cursor, int? limit});
+  Future<WalletTopUpInitiation> initiateTopUp({
+    required double amount,
+    required PaymentCustomerInfo customer,
+  });
   Future<WalletTransaction> transferBalance(TransferRequest request);
   Future<RefundRequest> requestRefund({
     required String transactionId,

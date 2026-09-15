@@ -63,6 +63,7 @@ Dio buildDioClient({required SecureStorageService storage}) {
     // prefixed by '/v1/doctors/me', which that function registers as a whole
     // path — first-registered-wins substring containment would otherwise let
     // it swallow '/v1/doctors/me/appointments' and friends.
+    registerNotificationMocks(mock);
     registerProviderDashboardMocks(mock);
     registerDoctorMeMocks(mock);
     registerSearchMocks(mock);

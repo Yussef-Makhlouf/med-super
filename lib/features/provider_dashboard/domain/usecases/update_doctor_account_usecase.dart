@@ -11,11 +11,13 @@ class UpdateDoctorAccountUseCase {
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   }) {
     return _repository.updateDoctorAccount(
       bio: bio,
       degree: degree,
       yearsOfExperience: yearsOfExperience,
+      photoDataUri: photoDataUri,
     );
   }
 }

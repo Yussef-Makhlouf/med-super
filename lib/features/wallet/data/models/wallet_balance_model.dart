@@ -1,25 +1,20 @@
 import 'package:med_super/features/wallet/domain/entities/wallet_balance.dart';
 
+/// Parses `GET /v1/wallet`'s `WalletSummary` — camelCase keys, and `balance`
+/// arrives as a fixed 2-decimal string (`"2450.00"`), never a JSON number.
 class WalletBalanceModel extends WalletBalance {
   const WalletBalanceModel({
+    required super.walletId,
     required super.availableBalance,
-    super.pendingBalance = 0.0,
     super.currency = 'EGP',
   });
 
   factory WalletBalanceModel.fromJson(Map<String, dynamic> json) {
     return WalletBalanceModel(
-      availableBalance: (json['available_balance'] as num? ?? 0).toDouble(),
-      pendingBalance: (json['pending_balance'] as num? ?? 0).toDouble(),
+      walletId: json['walletId'] as String? ?? '',
+      availableBalance:
+          double.tryParse(json['balance']?.toString() ?? '') ?? 0.0,
       currency: json['currency'] as String? ?? 'EGP',
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'available_balance': availableBalance,
-      'pending_balance': pendingBalance,
-      'currency': currency,
-    };
   }
 }

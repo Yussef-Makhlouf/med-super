@@ -20,12 +20,18 @@ final walletBalanceProvider = FutureProvider<WalletBalance>((ref) async {
 });
 
 final walletTransactionsProvider = FutureProvider<List<WalletTransaction>>((ref) async {
-  return ref.watch(walletRepositoryProvider).getTransactions();
+  final page = await ref.watch(walletRepositoryProvider).getTransactions();
+  return page.items;
 });
 
+/// The backend ships no per-transaction route — `GET /v1/wallet/transactions`
+/// is the whole ledger read (File 12 Part 50.3) — so the detail screen
+/// resolves its transaction out of the page already loaded above rather than
+/// calling an endpoint that doesn't exist.
 final walletTransactionDetailProvider =
     FutureProvider.family<WalletTransaction, String>((ref, id) async {
-  return ref.watch(walletRepositoryProvider).getTransactionDetail(id);
+  final transactions = await ref.watch(walletTransactionsProvider.future);
+  return transactions.firstWhere((tx) => tx.id == id);
 });
 
 final refundStatusProvider =

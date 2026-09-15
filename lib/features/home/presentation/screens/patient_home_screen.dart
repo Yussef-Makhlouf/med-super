@@ -17,12 +17,11 @@ import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/core/widgets/tap_scale.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/home/presentation/controllers/featured_doctors_provider.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_upload_providers.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
 import 'package:med_super/features/search_discovery/presentation/widgets/doctor_result_card.dart';
-import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 /// Patient home — "Warm Clinical" design system v2.
 class PatientHomeScreen extends ConsumerWidget {
@@ -36,17 +35,7 @@ class PatientHomeScreen extends ConsumerWidget {
         : 'أحمد محمد';
 
     return Scaffold(
-      backgroundColor: AppPalette.paper,
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      floatingActionButton: FloatingActionButton(
-        // Explicit heroTag — otherwise this collides with any other FAB
-        // using Flutter's shared default tag (e.g. provider_home_screen.dart's)
-        // during a route transition that has both on screen at once.
-        heroTag: 'patient_home_fab',
-        onPressed: () {},
-        backgroundColor: AppPalette.error,
-        child: const Icon(SolarIconsBold.siren, color: Colors.white),
-      ),
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppPalette.primary,
@@ -119,14 +108,15 @@ class PatientHomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({required this.displayName});
 
   final String displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
         GestureDetector(
@@ -159,20 +149,15 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            IconButton(
-              onPressed: () => context.go('/patient/notifications'),
-              icon: const Icon(
-                SolarIconsOutline.bellBing,
-                color: AppPalette.ink,
-              ),
-            ),
-            PositionedDirectional(
-              end: 6,
-              top: 6,
-              child: IgnorePointer(child: AppBadge.dot()),
+        IconButton(
+          onPressed: () => context.go('/patient/notifications'),
+          icon: Badge(
+            smallSize: 8,
+            backgroundColor: Colors.red,
+            isLabelVisible: hasUnread,
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: PatientHomeScreen._ink,
             ),
           ],
         ),
@@ -331,53 +316,51 @@ class _QuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickActionCard(
-            icon: SolarIconsOutline.testTube,
-            iconColor: AppPalette.primary,
-            title: 'home.book_labs'.tr(),
-            subtitle: 'home.book_labs_sub'.tr(),
-            onTap: () => context.push('/patient/lab/upload'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _QuickActionCard(
-            icon: SolarIconsOutline.documentMedicine,
-            iconColor: AppPalette.secondary,
-            title: 'home.upload_rx'.tr(),
-            subtitle: 'home.upload_rx_sub'.tr(),
-            onTap: () {
-              ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
-              ref.read(selectedDeliveryMethodProvider.notifier).reset();
-              ref.read(selectedPharmacyProvider.notifier).clear();
-              ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
-              ref.invalidate(pharmacySearchProvider);
-              ref.invalidate(prescriptionUploadControllerProvider);
-              context.push('/patient/pharmacy/upload');
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _QuickActionCard(
-            icon: SolarIconsOutline.wallet2,
-            iconColor: AppPalette.primary,
-            title: 'home.wallet'.tr(),
-            subtitle: 'home.wallet_sub'.tr(),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                settings: const RouteSettings(
-                  name: WalletDashboardScreen.routeName,
-                ),
-                builder: (_) => const WalletDashboardScreen(),
-              ),
+    // Match the tallest card (wallet's Arabic subtitle wraps to two lines)
+    // so the three tiles stay the same height side by side.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.biotech_outlined,
+              iconColor: brandBlue,
+              title: 'home.book_labs'.tr(),
+              subtitle: 'home.book_labs_sub'.tr(),
+              onTap: () => context.push('/patient/lab/upload'),
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.upload_file_outlined,
+              iconColor: const Color(0xFF14B8A6),
+              title: 'home.upload_rx'.tr(),
+              subtitle: 'home.upload_rx_sub'.tr(),
+              onTap: () {
+                ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
+                ref.read(selectedDeliveryMethodProvider.notifier).reset();
+                ref.read(selectedPharmacyProvider.notifier).clear();
+                ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
+                ref.invalidate(pharmacySearchProvider);
+                ref.invalidate(prescriptionUploadControllerProvider);
+                context.push('/patient/pharmacy/upload');
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.account_balance_wallet_outlined,
+              iconColor: brandBlue,
+              title: 'home.wallet'.tr(),
+              subtitle: 'home.wallet_sub'.tr(),
+              onTap: () => context.push('/patient/home/wallet'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -425,11 +408,18 @@ class _QuickActionCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               title,
-              style: textTheme.titleSmall?.copyWith(color: AppPalette.ink),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.titleSmall?.copyWith(
+                color: PatientHomeScreen._ink,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: textTheme.bodySmall?.copyWith(
                 color: AppPalette.inkMuted,
               ),

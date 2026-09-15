@@ -7,7 +7,7 @@ import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import '../controllers/wallet_providers.dart';
 import '../widgets/amount_chip.dart';
-import 'wallet_payment_method_screen.dart';
+import 'wallet_top_up_details_screen.dart';
 
 class WalletAddBalanceScreen extends ConsumerStatefulWidget {
   const WalletAddBalanceScreen({super.key});
@@ -70,7 +70,7 @@ class _WalletAddBalanceScreenState
             child: StepProgressHeader(
               stepLabels: [
                 'wallet.step_amount'.tr(),
-                'wallet.step_payment_method'.tr(),
+                'wallet.step_payment_details'.tr(),
                 'wallet.step_confirm'.tr(),
               ],
               currentStep: 0,
@@ -198,7 +198,7 @@ class _WalletAddBalanceScreenState
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => WalletPaymentMethodScreen(
+                          builder: (_) => WalletTopUpDetailsScreen(
                             amount: _selectedAmount,
                           ),
                         ),

@@ -1,12 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
-import 'package:med_super/core/network/mock/mock_responses.dart';
-import 'package:med_super/core/theme/app_palette.dart';
-import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/auth_hero_illustration.dart';
@@ -507,24 +503,6 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                         ),
                                                 ),
                                               ),
-                                              if (kDebugMode) ...[
-                                                const SizedBox(height: 12),
-                                                Text(
-                                                  'auth.mock_login_hint'.tr(
-                                                    namedArgs: {
-                                                      'phone': kMockDemoPhone,
-                                                      'password':
-                                                          kMockDemoPassword,
-                                                    },
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                        color: AppPalette
-                                                            .inkMuted,
-                                                      ),
-                                                ),
-                                              ],
                                               const SizedBox(height: 16),
                                               Row(
                                                 mainAxisAlignment:

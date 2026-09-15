@@ -39,6 +39,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('سجل المعاملات'), findsAtLeastNWidgets(1));
-    expect(find.textContaining('أسامة علي'), findsOneWidget);
+    // The backend's ledger rows carry no title, so a tile is labelled by its
+    // transaction type (File 12 Part 50.3).
+    expect(find.text('دفع موعد'), findsAtLeastNWidgets(1));
   });
 }

@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
-import 'package:med_super/core/widgets/app_surface_card.dart';
+import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
@@ -38,7 +39,6 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
   String? _selectedSlotId;
   String? _selectedTimeLabel;
   String? _selectedClinicBranchId;
-  bool _favorited = false;
   bool _navigatingToConfirm = false;
 
   /// The branch driving availability/booking: the one the patient explicitly
@@ -150,22 +150,6 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
           ).textTheme.titleLarge?.copyWith(color: AppPalette.ink),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              SolarIconsOutline.share,
-              color: AppPalette.primary,
-            ),
-          ),
-          IconButton(
-            onPressed: () => setState(() => _favorited = !_favorited),
-            icon: Icon(
-              _favorited ? SolarIconsBold.heart : SolarIconsOutline.heart,
-              color: AppPalette.primary,
-            ),
-          ),
-        ],
       ),
       body: AsyncValueView(
         value: asyncProfile,
@@ -432,23 +416,18 @@ class _HeaderCard extends StatelessWidget {
     return AppSurfaceCard(
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 48,
-            backgroundColor: AppPalette.primarySoft,
-            backgroundImage: profile.photoUrl != null
-                ? NetworkImage(profile.photoUrl!)
-                : null,
-            child: profile.photoUrl == null
-                ? const Icon(
-                    SolarIconsBold.userRounded,
-                    size: 48,
-                    color: AppPalette.primary,
-                  )
-                : null,
-            // The "online now" dot (profile.isOnline) is removed here —
-            // no backend column backs it at all
-            // (`GetDoctorUseCase`'s doc comment), so it always defaulted
-            // to false and never rendered against a real backend.
+          Stack(
+            children: [
+              DoctorAvatar(
+                name: profile.name,
+                photoUrl: profile.photoUrl,
+                size: 96,
+              ),
+              // The "online now" dot (profile.isOnline) is removed here —
+              // no backend column backs it at all
+              // (`GetDoctorUseCase`'s doc comment), so it always defaulted
+              // to false and never rendered against a real backend.
+            ],
           ),
           const SizedBox(height: 12),
           Row(

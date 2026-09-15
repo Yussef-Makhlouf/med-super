@@ -11,6 +11,7 @@ import 'package:med_super/features/appointments/domain/usecases/cancel_appointme
 import 'package:med_super/features/appointments/domain/usecases/confirm_appointment_usecase.dart';
 import 'package:med_super/features/appointments/domain/usecases/create_hold_usecase.dart';
 import 'package:med_super/features/appointments/domain/usecases/get_appointment_usecase.dart';
+import 'package:med_super/features/appointments/domain/usecases/initiate_online_payment_usecase.dart';
 import 'package:med_super/features/appointments/domain/usecases/list_my_appointments_usecase.dart';
 import 'package:med_super/features/appointments/domain/usecases/reschedule_appointment_usecase.dart';
 
@@ -35,6 +36,12 @@ final createHoldUseCaseProvider = Provider<CreateHoldUseCase>(
 final confirmAppointmentUseCaseProvider = Provider<ConfirmAppointmentUseCase>(
   (ref) => ConfirmAppointmentUseCase(ref.watch(appointmentRepositoryProvider)),
 );
+
+final initiateOnlinePaymentUseCaseProvider =
+    Provider<InitiateOnlinePaymentUseCase>(
+      (ref) =>
+          InitiateOnlinePaymentUseCase(ref.watch(appointmentRepositoryProvider)),
+    );
 
 final cancelAppointmentUseCaseProvider = Provider<CancelAppointmentUseCase>(
   (ref) => CancelAppointmentUseCase(ref.watch(appointmentRepositoryProvider)),

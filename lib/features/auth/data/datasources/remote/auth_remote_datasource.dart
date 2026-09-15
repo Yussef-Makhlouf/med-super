@@ -162,4 +162,20 @@ class AuthRemoteDatasource {
     );
     return AuthTokensDto.fromJson(response.data ?? const <String, dynamic>{});
   }
+
+  /// File 12 Part 53 — registers or refreshes the caller's FCM token.
+  Future<void> registerDevice({
+    required String fcmToken,
+    required String platform,
+    String? appVersion,
+  }) async {
+    await _dio.post<void>(
+      ApiPaths.authDevices,
+      data: {
+        'fcmToken': fcmToken,
+        'platform': platform,
+        if (appVersion != null) 'appVersion': appVersion,
+      },
+    );
+  }
 }

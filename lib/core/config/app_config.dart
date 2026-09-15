@@ -18,4 +18,12 @@ final class AppConfig {
   bool get isMock => baseUrl == _mockBaseUrl;
 
   bool get isDebug => kDebugMode;
+
+  /// Web Push certificate key pair's public key (Firebase Console → Project
+  /// Settings → Cloud Messaging → Web Push certificates). Required by
+  /// `FirebaseMessaging.getToken()` on web only — mobile ignores it.
+  String? get fcmVapidKey {
+    const value = String.fromEnvironment('FCM_VAPID_KEY');
+    return value.isEmpty ? null : value;
+  }
 }

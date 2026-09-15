@@ -44,7 +44,9 @@ final providerDashboardRoutes = <RouteBase>[
           GoRoute(
             path: '/provider/appointments',
             name: 'providerAppointments',
-            builder: (context, state) => const ProviderAppointmentsScreen(),
+            builder: (context, state) => ProviderAppointmentsScreen(
+              openAppointmentId: state.uri.queryParameters['openAppointmentId'],
+            ),
           ),
         ],
       ),

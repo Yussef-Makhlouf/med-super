@@ -6,7 +6,6 @@ import '../../data/repositories/provider_dashboard_repository_impl.dart';
 import '../../domain/entities/doctor_account_profile.dart';
 import '../../domain/entities/doctor_appointment.dart';
 import '../../domain/entities/doctor_clinic.dart';
-import '../../domain/entities/doctor_notification.dart';
 import '../../domain/entities/doctor_schedule_template.dart';
 import '../../domain/entities/patient.dart';
 import '../../domain/repositories/provider_dashboard_repository.dart';
@@ -14,10 +13,8 @@ import '../../domain/usecases/doctor_appointment_usecases.dart';
 import '../../domain/usecases/doctor_clinic_usecases.dart';
 import '../../domain/usecases/doctor_schedule_template_usecases.dart';
 import '../../domain/usecases/get_doctor_account_usecase.dart';
-import '../../domain/usecases/get_notifications_usecase.dart';
 import '../../domain/usecases/get_provider_patients_usecase.dart'
     show GetProviderPatientsUseCase, ProviderPatientsData;
-import '../../domain/usecases/mark_notification_read_usecase.dart';
 import '../../domain/usecases/update_doctor_account_usecase.dart';
 
 part 'provider_dashboard_providers.g.dart';
@@ -115,14 +112,6 @@ BookWalkInAppointmentUseCase bookWalkInAppointmentUseCase(Ref ref) =>
 @riverpod
 GetProviderPatientsUseCase getProviderPatientsUseCase(Ref ref) =>
     GetProviderPatientsUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-GetNotificationsUseCase getNotificationsUseCase(Ref ref) =>
-    GetNotificationsUseCase(ref.watch(providerDashboardRepositoryProvider));
-
-@riverpod
-MarkNotificationReadUseCase markNotificationReadUseCase(Ref ref) =>
-    MarkNotificationReadUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 // --- State providers ---
 
@@ -234,8 +223,3 @@ Future<List<Patient>> providerPatients(Ref ref) async {
   return data.patients;
 }
 
-@riverpod
-Future<List<DoctorNotification>> doctorNotifications(Ref ref) async {
-  final result = await ref.watch(getNotificationsUseCaseProvider).call();
-  return result.when(ok: (value) => value, err: (failure) => throw failure);
-}

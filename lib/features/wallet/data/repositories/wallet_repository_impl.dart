@@ -1,11 +1,11 @@
-import '../../domain/entities/deposit_request.dart';
+import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
 import '../../domain/entities/refund_request.dart';
 import '../../domain/entities/transfer_request.dart';
 import '../../domain/entities/wallet_balance.dart';
+import '../../domain/entities/wallet_top_up_initiation.dart';
 import '../../domain/entities/wallet_transaction.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_remote_datasource.dart';
-import '../models/deposit_request_model.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
   final WalletRemoteDatasource remoteDatasource;
@@ -16,19 +16,21 @@ class WalletRepositoryImpl implements WalletRepository {
   Future<WalletBalance> getWalletBalance() => remoteDatasource.getBalance();
 
   @override
-  Future<List<WalletTransaction>> getTransactions() =>
-      remoteDatasource.getTransactions();
+  Future<WalletTransactionPage> getTransactions({String? cursor, int? limit}) =>
+      remoteDatasource.getTransactions(cursor: cursor, limit: limit);
 
+  /// The backend takes the amount as a fixed 2-decimal string
+  /// (`TopUpWalletDto.@IsDecimal`), so the conversion happens here rather
+  /// than leaking a formatting concern into the screens.
   @override
-  Future<WalletTransaction> getTransactionDetail(String id) =>
-      remoteDatasource.getTransactionById(id);
-
-  @override
-  Future<WalletTransaction> depositBalance(DepositRequest request) {
-    return remoteDatasource.depositBalance(DepositRequestModel(
-      amount: request.amount,
-      paymentMethodId: request.paymentMethodId,
-    ));
+  Future<WalletTopUpInitiation> initiateTopUp({
+    required double amount,
+    required PaymentCustomerInfo customer,
+  }) {
+    return remoteDatasource.initiateTopUp(
+      amount: amount.toStringAsFixed(2),
+      customer: customer,
+    );
   }
 
   @override

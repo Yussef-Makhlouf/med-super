@@ -7,18 +7,19 @@ void main() {
   testWidgets('WalletDepositSuccessScreen renders deposit receipt summary', (tester) async {
     final transaction = WalletTransaction(
       id: 'tx-900',
-      title: 'شحن المحفظة',
       type: TransactionType.deposit,
       amount: 500,
-      timestamp: DateTime(2023, 10, 24, 10, 30),
+      createdAt: DateTime(2023, 10, 24, 10, 30),
       status: TransactionStatus.completed,
-      referenceNumber: 'TRX-8291034',
-      paymentMethod: 'Visa **** 4242',
+      paymentIntentId: 'TRX-8291034',
     );
 
     await pumpLocalizedWidget(
       tester,
-      WalletDepositSuccessScreen(transaction: transaction),
+      WalletDepositSuccessScreen(
+        transaction: transaction,
+        paymentMethodLabel: 'Visa **** 4242',
+      ),
     );
 
     await tester.pump();

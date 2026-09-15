@@ -1,61 +1,60 @@
 import 'package:med_super/features/wallet/domain/entities/wallet_transaction.dart';
 
+/// Parses one `WalletTransactionSummary` from `GET /v1/wallet/transactions` —
+/// camelCase keys, `amount`/`resultingBalance` as fixed 2-decimal strings,
+/// and the enums in the backend's SCREAMING_SNAKE spelling.
 class WalletTransactionModel extends WalletTransaction {
   const WalletTransactionModel({
     required super.id,
-    required super.title,
     required super.type,
     required super.amount,
     super.currency = 'EGP',
-    required super.timestamp,
+    required super.createdAt,
     required super.status,
-    super.serviceName,
-    super.doctorName,
-    super.fees = 0.0,
-    super.netAmount,
-    super.referenceNumber,
-    super.paymentMethod,
+    super.resultingBalance,
+    super.paymentIntentId,
+    super.appointmentId,
   });
 
   factory WalletTransactionModel.fromJson(Map<String, dynamic> json) {
     return WalletTransactionModel(
       id: json['id'] as String? ?? '',
-      title: json['title'] as String? ?? '',
       type: _typeFromString(json['type'] as String?),
-      amount: (json['amount'] as num? ?? 0).toDouble(),
-      currency: json['currency'] as String? ?? 'EGP',
-      timestamp: DateTime.tryParse(json['timestamp'] as String? ?? '') ?? DateTime.now(),
+      amount: double.tryParse(json['amount']?.toString() ?? '') ?? 0.0,
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+              DateTime.now(),
       status: _statusFromString(json['status'] as String?),
-      serviceName: json['service_name'] as String?,
-      doctorName: json['doctor_name'] as String?,
-      fees: (json['fees'] as num?)?.toDouble() ?? 0.0,
-      netAmount: (json['net_amount'] as num?)?.toDouble(),
-      referenceNumber: json['reference_number'] as String?,
-      paymentMethod: json['payment_method'] as String?,
+      resultingBalance: double.tryParse(
+        json['resultingBalance']?.toString() ?? '',
+      ),
+      paymentIntentId: json['paymentIntentId'] as String?,
+      appointmentId: json['appointmentId'] as String?,
     );
   }
 
   static TransactionType _typeFromString(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'deposit':
+    switch (type) {
+      case 'TOP_UP':
         return TransactionType.deposit;
-      case 'withdrawal':
-        return TransactionType.withdrawal;
-      case 'refund':
+      case 'REFUND':
         return TransactionType.refund;
-      case 'payment':
+      // Mock-only — the backend has no transfer-out concept.
+      case 'WITHDRAWAL':
+        return TransactionType.withdrawal;
+      case 'APPOINTMENT_PAYMENT':
       default:
         return TransactionType.payment;
     }
   }
 
   static TransactionStatus _statusFromString(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'pending':
+    switch (status) {
+      case 'PENDING':
         return TransactionStatus.pending;
-      case 'failed':
+      case 'FAILED':
         return TransactionStatus.failed;
-      case 'completed':
+      case 'COMPLETED':
       default:
         return TransactionStatus.completed;
     }

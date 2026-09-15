@@ -1,8 +1,9 @@
 # Feature status: provider_dashboard
 
-**Label:** `PARTIAL` — profile, clinics, availability, appointments and the
-patient list (derived from real appointment data) are backed by real
-endpoints; only notifications is still mock-only.
+**Label:** `PARTIAL` — profile, clinics, availability, appointments, the
+patient list (derived from real appointment data), and the in-app
+notifications inbox (`lib/features/notifications/`) are backed by real
+endpoints.
 
 Was `MOCKED` until 2026-09-04. See `clinic-reservations` File 12 **Part 49**
 and `clinic-reservations/docs/DOCTOR_DASHBOARD_ARCHITECTURE.md`.
@@ -64,12 +65,6 @@ Every route below exists in `clinic-reservations` and is exercised by
   `ProviderPatientDetailScreen`'s existing fallback bound), dedupes by
   `patientId`, and keeps only `patientId`/`patientName`/`patientPhone` plus
   computed `lastAppointmentAt`/`nextAppointmentAt`.
-
-### Still mock-only (no backend route exists)
-
-`/v1/provider/notifications`. Notifications is Phase 8 and unbuilt.
-`provider_notifications_screen` is honest about being a demo surface — do
-not present it as backend-ready.
 
 Avatar upload stays unavailable (`DEC-009`, no object-storage decision); the
 UI shows a "coming soon" message rather than faking an upload. Password

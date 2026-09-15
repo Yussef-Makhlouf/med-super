@@ -6,16 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
-import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/payments/presentation/widgets/payment_customer_sheet.dart';
+import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:med_super/features/appointments/presentation/screens/fawry_payment_screen.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
-import 'package:solar_icons/solar_icons.dart';
+import 'package:med_super/features/wallet/presentation/controllers/wallet_providers.dart';
 
 enum _Stage { holding, held, confirming, error }
 
@@ -32,11 +35,17 @@ class BookingConfirmArgs {
 }
 
 /// Step 2 (final) of the booking flow: reserve the slot for 5 minutes
-/// (`POST /v1/appointments/hold`), show a countdown, then confirm
-/// (`POST /v1/appointments/{holdId}/confirm`, pay-at-clinic only — Phase 5
-/// Payments doesn't exist yet, File 12 Part 35.4). Reached from
-/// `doctor_details_screen`'s "Book Now" button, or from [RescheduleScreen]
-/// with [initialHold] already set (skips the auto-hold step).
+/// (`POST /v1/appointments/hold`), show a countdown, then pay.
+///
+/// Three payment methods, spanning two endpoints (see
+/// [AppointmentPaymentMethod]): pay-at-clinic and wallet both confirm
+/// synchronously via `POST /v1/appointments/{holdId}/confirm`, while Fawry
+/// goes to `POST /v1/appointments/{holdId}/payments` and leaves the booking
+/// pending until the gateway webhook confirms it.
+///
+/// Reached from `doctor_details_screen`'s "Book Now" button, or from
+/// [RescheduleScreen] with [initialHold] already set (skips the auto-hold
+/// step).
 class BookingConfirmScreen extends ConsumerStatefulWidget {
   const BookingConfirmScreen({
     required this.request,
@@ -59,6 +68,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   Timer? _ticker;
   Duration _remaining = Duration.zero;
   bool _confirmed = false;
+  AppointmentPaymentMethod _method = AppointmentPaymentMethod.payAtClinic;
 
   @override
   void initState() {
@@ -150,20 +160,70 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => tick());
   }
 
-  Future<void> _confirm() async {
+  Future<void> _pay() async {
     final hold = _hold;
     if (hold == null) return;
+    if (_method.isSynchronous) {
+      await _confirm(hold);
+    } else {
+      await _payWithFawry(hold);
+    }
+  }
+
+  /// Fawry never produces a confirmed appointment here — the hold is
+  /// extended and the patient leaves with a reference code, so this path
+  /// deliberately doesn't set [_confirmed] or route to the success screen.
+  Future<void> _payWithFawry(AppointmentHold hold) async {
+    final session = ref.read(sessionControllerProvider).asData?.value;
+    final customer = await showPaymentCustomerSheet(
+      context,
+      initialPhone: session?.user.phone,
+    );
+    if (customer == null || !mounted) return;
 
     setState(() => _stage = _Stage.confirming);
     final result = await ref
+        .read(initiateOnlinePaymentUseCaseProvider)
+        .call(hold.holdId, method: _method, customer: customer);
+    if (!mounted) return;
+
+    result.when(
+      ok: (initiation) {
+        _ticker?.cancel();
+        // The hold now lives on the server for Fawry's own 15-minute window
+        // and this screen is done with it, so skip dispose()'s
+        // abandoned-hold refresh bump.
+        _confirmed = true;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => FawryPaymentScreen(initiation: initiation),
+          ),
+        );
+      },
+      err: (failure) => setState(() {
+        _stage = _Stage.error;
+        _failure = failure;
+      }),
+    );
+  }
+
+  Future<void> _confirm(AppointmentHold hold) async {
+    setState(() => _stage = _Stage.confirming);
+    final result = await ref
         .read(confirmAppointmentUseCaseProvider)
-        .call(hold.holdId);
+        .call(hold.holdId, paymentMethod: _method);
     if (!mounted) return;
 
     result.when(
       ok: (confirmed) {
         _confirmed = true;
         ref.read(myAppointmentsRefreshProvider.notifier).state++;
+        if (_method == AppointmentPaymentMethod.wallet) {
+          // The balance was just debited server-side
+          // (`CaptureInternalWalletPaymentUseCase`) and a ledger row written.
+          ref.invalidate(walletBalanceProvider);
+          ref.invalidate(walletTransactionsProvider);
+        }
         // `go` (not `pushReplacement`) deliberately clears the whole ad-hoc
         // stack this booking flow built up (home → doctor detail → confirm)
         // rather than just swapping the top page for the success screen —
@@ -200,6 +260,13 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
                     child: _SummaryCard(request: widget.request),
                   ),
                   const SizedBox(height: 20),
+                  _PaymentMethodPicker(
+                    selected: _method,
+                    fee: widget.request.consultationFee,
+                    enabled: _stage == _Stage.held,
+                    onChanged: (method) => setState(() => _method = method),
+                  ),
+                  const SizedBox(height: 20),
                   if (_stage == _Stage.held || _stage == _Stage.confirming)
                     _HoldTimer(remaining: _remaining),
                   if (_stage == _Stage.error && _failure != null) ...[
@@ -214,7 +281,8 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
             ),
             _ConfirmBar(
               stage: _stage,
-              onConfirm: _confirm,
+              onConfirm: _pay,
+              method: _method,
               fee: widget.request.consultationFee,
               currency: widget.request.currency,
             ),
@@ -302,12 +370,7 @@ class _SummaryCard extends StatelessWidget {
             label: request.dayLabel,
           ),
           const SizedBox(height: 8),
-          _InfoRow(icon: SolarIconsOutline.clockCircle, label: request.timeLabel),
-          const SizedBox(height: 8),
-          _InfoRow(
-            icon: SolarIconsOutline.walletMoney,
-            label: 'appointments.pay_at_clinic'.tr(),
-          ),
+          _InfoRow(icon: Icons.access_time_outlined, label: request.timeLabel),
           const SizedBox(height: 14),
           Divider(height: 1, color: AppPalette.border),
           const SizedBox(height: 14),
@@ -332,6 +395,170 @@ class _SummaryCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Pay-at-clinic / wallet / Fawry. The wallet tile reads the real balance
+/// (`GET /v1/wallet`) and is locked when it can't cover the fee — the
+/// backend would reject that confirm with `INSUFFICIENT_WALLET_BALANCE`
+/// after burning the hold, so it's better caught here.
+class _PaymentMethodPicker extends ConsumerWidget {
+  const _PaymentMethodPicker({
+    required this.selected,
+    required this.fee,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final AppointmentPaymentMethod selected;
+  final int fee;
+  final bool enabled;
+  final ValueChanged<AppointmentPaymentMethod> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balance = ref.watch(walletBalanceProvider);
+    final available = balance.asData?.value.availableBalance;
+    final canUseWallet = available != null && available >= fee;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'appointments.payment_method'.tr(),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink900,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _MethodTile(
+          method: AppointmentPaymentMethod.payAtClinic,
+          selected: selected,
+          enabled: enabled,
+          icon: Icons.storefront_outlined,
+          title: 'appointments.pay_at_clinic'.tr(),
+          subtitle: 'appointments.pay_at_clinic_hint'.tr(),
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: 10),
+        _MethodTile(
+          method: AppointmentPaymentMethod.wallet,
+          selected: selected,
+          enabled: enabled && canUseWallet,
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'appointments.pay_with_wallet'.tr(),
+          subtitle: switch (available) {
+            null => 'appointments.wallet_balance_unavailable'.tr(),
+            final b when b < fee => 'appointments.wallet_insufficient'.tr(
+              namedArgs: {'balance': b.toStringAsFixed(2)},
+            ),
+            final b => 'appointments.wallet_balance'.tr(
+              namedArgs: {'balance': b.toStringAsFixed(2)},
+            ),
+          },
+          onChanged: onChanged,
+        ),
+        const SizedBox(height: 10),
+        _MethodTile(
+          method: AppointmentPaymentMethod.fawry,
+          selected: selected,
+          enabled: enabled,
+          icon: Icons.receipt_long_outlined,
+          title: 'appointments.pay_with_fawry'.tr(),
+          subtitle: 'appointments.pay_with_fawry_hint'.tr(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _MethodTile extends StatelessWidget {
+  const _MethodTile({
+    required this.method,
+    required this.selected,
+    required this.enabled,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onChanged,
+  });
+
+  final AppointmentPaymentMethod method;
+  final AppointmentPaymentMethod selected;
+  final bool enabled;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final ValueChanged<AppointmentPaymentMethod> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = selected == method;
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: Material(
+        color: isSelected ? AppColors.patientPrimary.withValues(alpha: 0.06) : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: InkWell(
+          onTap: enabled ? () => onChanged(method) : null,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.patientPrimary
+                    : AppColors.borderLight,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 22, color: AppColors.patientPrimary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.mutedText2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Radio<AppointmentPaymentMethod>(
+                  value: method,
+                  groupValue: selected,
+                  activeColor: AppColors.patientPrimary,
+                  onChanged: enabled
+                      ? (value) {
+                          if (value != null) onChanged(value);
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -400,12 +627,14 @@ class _ConfirmBar extends StatelessWidget {
   const _ConfirmBar({
     required this.stage,
     required this.onConfirm,
+    required this.method,
     required this.fee,
     required this.currency,
   });
 
   final _Stage stage;
   final VoidCallback onConfirm;
+  final AppointmentPaymentMethod method;
   final int fee;
   final String currency;
 
@@ -442,7 +671,9 @@ class _ConfirmBar extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    'appointments.confirm_booking'.tr(),
+                    method.isSynchronous
+                        ? 'appointments.confirm_booking'.tr()
+                        : 'appointments.continue_to_payment'.tr(),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

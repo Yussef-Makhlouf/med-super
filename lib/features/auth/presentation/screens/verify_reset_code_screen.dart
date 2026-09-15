@@ -2,15 +2,11 @@ import 'dart:async';
 import 'dart:ui' as ui show TextDirection;
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
-import 'package:med_super/core/network/mock/mock_responses.dart';
-import 'package:med_super/core/theme/app_palette.dart';
-import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/formatters.dart';
@@ -270,15 +266,6 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (kDebugMode) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'auth.mock_otp_code'.tr(args: [kMockOtpCode]),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: AppPalette.inkMuted,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 28),
                     Directionality(
                       textDirection: ui.TextDirection.ltr,
@@ -429,3 +416,56 @@ class _VerifyResetCodeScreenState extends ConsumerState<VerifyResetCodeScreen> {
   }
 }
 
+class _VerifyResetCodeHeroIllustration extends StatelessWidget {
+  const _VerifyResetCodeHeroIllustration();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F1FF),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              Icons.shield_outlined,
+              size: 120,
+              color: brandBlue.withValues(alpha: 0.85),
+            ),
+            Icon(
+              Icons.lock_reset_rounded,
+              size: 36,
+              color: brandBlue.withValues(alpha: 0.95),
+            ),
+            Positioned(top: 28, left: 36, child: _tag('OTP')),
+            Positioned(top: 40, right: 28, child: _tag('VERIFY')),
+            Positioned(bottom: 36, left: 28, child: _tag('SECURE')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _tag(String label) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: brandBlue.withValues(alpha: 0.25)),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        color: brandBlue.withValues(alpha: 0.9),
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+      ),
+    ),
+  );
+}

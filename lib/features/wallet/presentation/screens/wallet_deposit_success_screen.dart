@@ -1,28 +1,24 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import '../../domain/entities/wallet_transaction.dart';
-import 'wallet_dashboard_screen.dart';
 
 class WalletDepositSuccessScreen extends StatelessWidget {
   final WalletTransaction transaction;
 
+  /// Display label for the funding card / destination account. Passed in by
+  /// the confirm step rather than read off [transaction] — a wallet ledger
+  /// row carries no payment-method field (File 12 Part 50.3).
+  final String paymentMethodLabel;
+
   const WalletDepositSuccessScreen({
     super.key,
     required this.transaction,
+    required this.paymentMethodLabel,
   });
-
-  /// Payment method ids are raw selection keys from
-  /// [WalletPaymentMethodScreen] (e.g. `card_visa_4242`, `apple_pay`) — turn
-  /// them into the masked display format the receipt card shows.
-  String _formatPaymentMethod(String? raw) {
-    if (raw == null || raw.isEmpty) return 'بطاقة ائتمانية';
-    if (raw == 'apple_pay') return 'Apple Pay';
-    final lastSegment = raw.split('_').last;
-    return int.tryParse(lastSegment) != null ? '**** $lastSegment' : raw;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +79,7 @@ class WalletDepositSuccessScreen extends StatelessWidget {
                   children: [
                     _buildReceiptRow(
                       'wallet.transaction_number'.tr(),
-                      '#${transaction.referenceNumber ?? 'TXN-84920481'}',
+                      '#${transaction.paymentIntentId ?? transaction.id}',
                     ),
                     const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     _buildReceiptRow('wallet.date_and_time'.tr(), dateFormatted),
@@ -97,13 +93,13 @@ class WalletDepositSuccessScreen extends StatelessWidget {
                     if (isTransfer)
                       _buildReceiptRow(
                         'wallet.destination_account'.tr(),
-                        transaction.paymentMethod ?? '—',
+                        paymentMethodLabel,
                         icon: Icons.account_balance_outlined,
                       )
                     else
                       _buildReceiptRow(
                         'wallet.payment_method'.tr(),
-                        _formatPaymentMethod(transaction.paymentMethod),
+                        paymentMethodLabel,
                         icon: Icons.credit_card,
                       ),
                   ],
@@ -116,11 +112,7 @@ class WalletDepositSuccessScreen extends StatelessWidget {
                 borderRadius: 16,
                 backgroundColor: brandBlue,
                 foregroundColor: Colors.white,
-                onPressed: () {
-                  Navigator.of(context).popUntil(
-                    (route) => route.settings.name == WalletDashboardScreen.routeName,
-                  );
-                },
+                onPressed: () => context.go('/patient/home/wallet'),
               ),
             ],
           ),

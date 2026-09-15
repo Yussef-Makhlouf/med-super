@@ -84,19 +84,12 @@ class ProviderProfileScreen extends ConsumerWidget {
                             ),
                       child: Stack(
                         children: [
-                          CircleAvatar(
+                          AvatarCircle(
                             radius: 55,
                             backgroundColor: AppColors.surfaceCard,
-                            backgroundImage: avatarUrl != null
-                                ? resolveAvatarImage(avatarUrl)
-                                : null,
-                            child: avatarUrl == null
-                                ? const Icon(
-                                    Icons.account_circle,
-                                    size: 110,
-                                    color: AppColors.mutedText,
-                                  )
-                                : null,
+                            imageUrl: avatarUrl,
+                            placeholderIcon: Icons.account_circle,
+                            placeholderIconColor: AppColors.mutedText,
                           ),
                           if (!isAssistant)
                             Positioned(

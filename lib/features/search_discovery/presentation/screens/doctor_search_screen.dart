@@ -109,15 +109,6 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
           style: textTheme.titleLarge?.copyWith(color: AppPalette.primary),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              SolarIconsOutline.magnifier,
-              color: AppPalette.primary,
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
