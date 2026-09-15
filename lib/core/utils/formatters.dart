@@ -61,5 +61,5 @@ abstract final class AppFormatters {
   /// surrounding Arabic text. Without this, a string like "+20 123 456 7890"
   /// gets bidi-reordered into something like "0987 654 321 02+" when it sits
   /// inside RTL text.
-  static String ltrIsolate(String value) => '⁦$value⁩';
+  static String ltrIsolate(String value) => '\u2066$value\u2069';
 }

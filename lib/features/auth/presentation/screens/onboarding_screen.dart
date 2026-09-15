@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/app_palette.dart';
-import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 /// Mandatory profile completion — name and email are both required before
 /// a patient can proceed past this screen (no skip path).

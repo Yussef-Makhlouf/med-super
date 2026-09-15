@@ -786,15 +786,13 @@ class _MockAppointment {
     required this.doctorClinicAffiliationId,
     required this.startAt,
     required this.endAt,
-    this.status = 'CONFIRMED',
-    this.cancelledReason,
     this.rescheduledFromAppointmentId,
   });
   final String slotId;
   final String doctorClinicAffiliationId;
   final DateTime startAt;
   final DateTime endAt;
-  String status;
+  String status = 'CONFIRMED';
   String? cancelledReason;
   String? rescheduledFromAppointmentId;
 }
