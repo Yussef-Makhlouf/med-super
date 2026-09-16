@@ -755,6 +755,58 @@ final class GetDoctorAppointmentUseCaseProvider
 String _$getDoctorAppointmentUseCaseHash() =>
     r'7e340c35e91200bbf46a3340d4e2f5da939764f7';
 
+@ProviderFor(updateAppointmentVisitStatusUseCase)
+final updateAppointmentVisitStatusUseCaseProvider =
+    UpdateAppointmentVisitStatusUseCaseProvider._();
+
+final class UpdateAppointmentVisitStatusUseCaseProvider
+    extends
+        $FunctionalProvider<
+          UpdateAppointmentVisitStatusUseCase,
+          UpdateAppointmentVisitStatusUseCase,
+          UpdateAppointmentVisitStatusUseCase
+        >
+    with $Provider<UpdateAppointmentVisitStatusUseCase> {
+  UpdateAppointmentVisitStatusUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'updateAppointmentVisitStatusUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$updateAppointmentVisitStatusUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<UpdateAppointmentVisitStatusUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  UpdateAppointmentVisitStatusUseCase create(Ref ref) {
+    return updateAppointmentVisitStatusUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UpdateAppointmentVisitStatusUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UpdateAppointmentVisitStatusUseCase>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$updateAppointmentVisitStatusUseCaseHash() =>
+    r'2b63e90cbf80147e1922c76ebbd7c0cd7a813ca8';
+
 @ProviderFor(cancelDoctorAppointmentUseCase)
 final cancelDoctorAppointmentUseCaseProvider =
     CancelDoctorAppointmentUseCaseProvider._();

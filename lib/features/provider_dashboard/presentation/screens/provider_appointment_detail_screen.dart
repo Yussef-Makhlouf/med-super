@@ -56,6 +56,7 @@ class _ProviderAppointmentDetailScreenState
     extends ConsumerState<ProviderAppointmentDetailScreen> {
   bool _mutating = false;
   bool _changed = false;
+  DoctorAppointment? _visitOverride;
 
   void _showSnack(String message, {bool success = false}) {
     if (!mounted) return;
@@ -68,8 +69,41 @@ class _ProviderAppointmentDetailScreenState
   }
 
   void _refresh() {
+    _visitOverride = null;
     ref.invalidate(doctorAppointmentDetailProvider(widget.appointmentId));
     ref.invalidate(doctorAppointmentsProvider);
+  }
+
+  Future<void> _advanceVisitStatus(DoctorAppointment appointment) async {
+    final next = appointment.visitStatus.next;
+    if (_mutating || next == null || !appointment.isActionable) return;
+
+    setState(() => _mutating = true);
+    final result = await ref
+        .read(updateAppointmentVisitStatusUseCaseProvider)
+        .call(
+          appointmentId: appointment.appointmentId,
+          status: next,
+          version: appointment.version,
+        );
+    if (!mounted) return;
+
+    result.when(
+      ok: (updated) {
+        setState(() {
+          _mutating = false;
+          _changed = true;
+          _visitOverride = updated;
+        });
+        ref.invalidate(doctorAppointmentsProvider);
+        _showSnack('provider_dashboard.visit_status.updated'.tr(), success: true);
+      },
+      err: (failure) {
+        setState(() => _mutating = false);
+        _showSnack(providerFailureMessage(failure));
+        _refresh();
+      },
+    );
   }
 
   Future<void> _cancel(DoctorAppointment appointment) async {
@@ -202,7 +236,10 @@ class _ProviderAppointmentDetailScreenState
             child: AsyncValueView<DoctorAppointment>(
               value: async,
               onRetry: _refresh,
-              data: (appointment) => _body(appointment, scrollController),
+              data: (appointment) => _body(
+                _visitOverride ?? appointment,
+                scrollController,
+              ),
             ),
           ),
         ],
@@ -287,6 +324,8 @@ class _ProviderAppointmentDetailScreenState
           ],
         ),
         const SizedBox(height: 20),
+        _visitStatusPanel(appointment),
+        const SizedBox(height: 20),
         if (appointment.isActionable) ...[
           SizedBox(
             height: 50,
@@ -326,6 +365,87 @@ class _ProviderAppointmentDetailScreenState
             child: Center(child: CircularProgressIndicator()),
           ),
       ],
+    );
+  }
+
+  Widget _visitStatusPanel(DoctorAppointment appointment) {
+    final visual = doctorVisitStatusStyle(appointment.visitStatus);
+    final next = appointment.visitStatus.next;
+    final completed = next == null;
+    final enabled = appointment.isActionable && !completed && !_mutating;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: visual.color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: visual.color.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'provider_dashboard.visit_status.title'.tr(),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          DoctorVisitStatusBadge(status: appointment.visitStatus),
+          const SizedBox(height: 12),
+          Text(
+            completed
+                ? 'provider_dashboard.visit_status.complete_hint'.tr()
+                : appointment.isActionable
+                ? 'provider_dashboard.visit_status.next_hint'.tr()
+                : 'provider_dashboard.visit_status.unavailable'.tr(),
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.mutedText2,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: enabled ? () => _advanceVisitStatus(appointment) : null,
+              icon: _mutating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      completed
+                          ? Icons.check_circle_rounded
+                          : doctorVisitStatusStyle(next).icon,
+                    ),
+              label: Text(
+                completed
+                    ? 'provider_dashboard.visit_status.complete'.tr()
+                    : next == DoctorVisitStatus.inDoctorRoom
+                    ? 'provider_dashboard.visit_status.action_in_doctor_room'.tr()
+                    : 'provider_dashboard.visit_status.action_left'.tr(),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: visual.color,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: visual.color.withValues(alpha: 0.12),
+                disabledForegroundColor: visual.color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

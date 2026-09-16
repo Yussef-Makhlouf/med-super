@@ -81,6 +81,12 @@ abstract class ProviderDashboardRemoteDatasource {
 
   Future<DoctorAppointmentDto> getMyAppointment(String appointmentId);
 
+  Future<DoctorAppointmentDto> updateMyAppointmentVisitStatus(
+    String appointmentId, {
+    required DoctorVisitStatus status,
+    required int version,
+  });
+
   Future<CancelAppointmentResultDto> cancelMyAppointment(
     String appointmentId, {
     String? note,
@@ -267,6 +273,19 @@ class ProviderDashboardRemoteDatasourceImpl
   Future<DoctorAppointmentDto> getMyAppointment(String appointmentId) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiPaths.doctorMeAppointments}/$appointmentId',
+    );
+    return DoctorAppointmentDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorAppointmentDto> updateMyAppointmentVisitStatus(
+    String appointmentId, {
+    required DoctorVisitStatus status,
+    required int version,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/visit-status',
+      data: {'status': status.wireValue, 'version': version},
     );
     return DoctorAppointmentDto.fromJson(_obj(response));
   }

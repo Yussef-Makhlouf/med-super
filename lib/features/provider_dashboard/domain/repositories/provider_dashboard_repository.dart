@@ -107,6 +107,12 @@ abstract class ProviderDashboardRepository {
 
   Future<Result<DoctorAppointment>> getMyAppointment(String appointmentId);
 
+  Future<Result<DoctorAppointment>> updateMyAppointmentVisitStatus({
+    required String appointmentId,
+    required DoctorVisitStatus status,
+    required int version,
+  });
+
   Future<Result<CancelAppointmentOutcome>> cancelMyAppointment({
     required String appointmentId,
     String? note,

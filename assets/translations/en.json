@@ -952,6 +952,19 @@
       "completed": "Completed",
       "other": "Other"
     },
+    "visit_status": {
+      "title": "Live visit status",
+      "waiting": "Waiting",
+      "in_doctor_room": "In doctor’s room",
+      "left": "Left",
+      "next_hint": "Use the next action as the patient moves through the clinic.",
+      "complete_hint": "This patient’s clinic visit is complete.",
+      "unavailable": "Visit status cannot be changed for this appointment.",
+      "action_in_doctor_room": "Move to doctor’s room",
+      "action_left": "Mark as left",
+      "complete": "Visit complete",
+      "updated": "Visit status updated."
+    },
     "cancel": {
       "action": "Cancel appointment",
       "title": "Cancel this appointment?",

@@ -836,7 +836,7 @@ class _TimelineRowTile extends ConsumerWidget {
 
   Widget _bookedContent(BuildContext context) {
     final appointment = row.appointment!;
-    final status = doctorAppointmentStatusStyle(appointment.status);
+    final lifecycleStatus = doctorAppointmentStatusStyle(appointment.status);
     return InkWell(
       onTap: () => showProviderAppointmentDetailSheet(
         context,
@@ -874,17 +874,24 @@ class _TimelineRowTile extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: status.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
+          if (appointment.status == DoctorAppointmentStatus.confirmed)
+            DoctorVisitStatusBadge(status: appointment.visitStatus)
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: lifecycleStatus.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                lifecycleStatus.label,
+                style: TextStyle(
+                  color: lifecycleStatus.color,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
             ),
-            child: Text(
-              status.label,
-              style: TextStyle(color: status.color, fontWeight: FontWeight.w700, fontSize: 11),
-            ),
-          ),
         ],
       ),
     );

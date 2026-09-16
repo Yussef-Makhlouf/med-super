@@ -94,6 +94,13 @@ GetDoctorAppointmentUseCase getDoctorAppointmentUseCase(Ref ref) =>
     GetDoctorAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
+UpdateAppointmentVisitStatusUseCase updateAppointmentVisitStatusUseCase(
+  Ref ref,
+) => UpdateAppointmentVisitStatusUseCase(
+  ref.watch(providerDashboardRepositoryProvider),
+);
+
+@riverpod
 CancelDoctorAppointmentUseCase cancelDoctorAppointmentUseCase(Ref ref) =>
     CancelDoctorAppointmentUseCase(
       ref.watch(providerDashboardRepositoryProvider),

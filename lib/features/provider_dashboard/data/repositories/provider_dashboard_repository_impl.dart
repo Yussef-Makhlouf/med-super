@@ -174,6 +174,19 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
       );
 
   @override
+  Future<Result<DoctorAppointment>> updateMyAppointmentVisitStatus({
+    required String appointmentId,
+    required DoctorVisitStatus status,
+    required int version,
+  }) => _guard(
+    () async => (await _remote.updateMyAppointmentVisitStatus(
+      appointmentId,
+      status: status,
+      version: version,
+    )).toEntity(),
+  );
+
+  @override
   Future<Result<CancelAppointmentOutcome>> cancelMyAppointment({
     required String appointmentId,
     String? note,

@@ -39,6 +39,25 @@ class GetDoctorAppointmentUseCase {
   }
 }
 
+/// Advances the live clinic-flow state by exactly one server-validated step.
+class UpdateAppointmentVisitStatusUseCase {
+  const UpdateAppointmentVisitStatusUseCase(this._repository);
+
+  final ProviderDashboardRepository _repository;
+
+  Future<Result<DoctorAppointment>> call({
+    required String appointmentId,
+    required DoctorVisitStatus status,
+    required int version,
+  }) {
+    return _repository.updateMyAppointmentVisitStatus(
+      appointmentId: appointmentId,
+      status: status,
+      version: version,
+    );
+  }
+}
+
 /// `POST /v1/doctors/me/appointments/{id}/cancel`.
 ///
 /// Always sends `PROVIDER_REQUEST`, which waives the cancellation fee — the

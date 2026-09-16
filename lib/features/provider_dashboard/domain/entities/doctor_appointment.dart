@@ -10,6 +10,31 @@
 /// doctor's actions are cancel and reschedule, not accept.
 enum DoctorAppointmentStatus { confirmed, cancelled, rescheduled, completed, other }
 
+/// Live, operational clinic-flow state for a confirmed appointment.
+/// Separate from [DoctorAppointmentStatus], which represents the booking
+/// lifecycle rather than where the patient is inside the clinic.
+enum DoctorVisitStatus { waiting, inDoctorRoom, left }
+
+extension DoctorVisitStatusX on DoctorVisitStatus {
+  String get wireValue => switch (this) {
+    DoctorVisitStatus.waiting => 'WAITING',
+    DoctorVisitStatus.inDoctorRoom => 'IN_DOCTOR_ROOM',
+    DoctorVisitStatus.left => 'LEFT',
+  };
+
+  DoctorVisitStatus? get next => switch (this) {
+    DoctorVisitStatus.waiting => DoctorVisitStatus.inDoctorRoom,
+    DoctorVisitStatus.inDoctorRoom => DoctorVisitStatus.left,
+    DoctorVisitStatus.left => null,
+  };
+
+  static DoctorVisitStatus fromWire(String? value) => switch (value?.toUpperCase()) {
+    'IN_DOCTOR_ROOM' => DoctorVisitStatus.inDoctorRoom,
+    'LEFT' => DoctorVisitStatus.left,
+    _ => DoctorVisitStatus.waiting,
+  };
+}
+
 extension DoctorAppointmentStatusX on DoctorAppointmentStatus {
   /// The wire value `GET /v1/doctors/me/appointments?status=` expects.
   /// `other` has none — it is a display-only bucket.
@@ -56,6 +81,8 @@ class DoctorAppointment {
     required this.patientName,
     required this.patientPhone,
     required this.createdAt,
+    this.visitStatus = DoctorVisitStatus.waiting,
+    this.version = 1,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
   });
@@ -82,6 +109,9 @@ class DoctorAppointment {
   final String patientName;
   final String patientPhone;
 
+  final DoctorVisitStatus visitStatus;
+  final int version;
+
   final DateTime createdAt;
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
@@ -91,6 +121,8 @@ class DoctorAppointment {
   /// `APPOINTMENT_NOT_RESCHEDULABLE`; mirroring it here keeps the UI from
   /// offering an action that is guaranteed to fail.
   bool get isActionable => status == DoctorAppointmentStatus.confirmed;
+
+  bool get canAdvanceVisit => isActionable && visitStatus.next != null;
 }
 
 /// One page of the cursor-paginated doctor appointment list.

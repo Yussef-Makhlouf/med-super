@@ -23,6 +23,19 @@ class _StubRepo implements ProviderDashboardRepository {
       Result.ok(appointment);
 
   @override
+  Future<Result<DoctorAppointment>> updateMyAppointmentVisitStatus({
+    required String appointmentId,
+    required DoctorVisitStatus status,
+    required int version,
+  }) async => Result.ok(
+    _appointment(
+      status: appointment.status,
+      visitStatus: status,
+      version: version + 1,
+    ),
+  );
+
+  @override
   Future<Result<DoctorAppointmentPage>> getMyAppointments({
     DateTime? from,
     DateTime? to,
@@ -59,6 +72,8 @@ class _StubRepo implements ProviderDashboardRepository {
 
 DoctorAppointment _appointment({
   DoctorAppointmentStatus status = DoctorAppointmentStatus.confirmed,
+  DoctorVisitStatus visitStatus = DoctorVisitStatus.waiting,
+  int version = 1,
 }) => DoctorAppointment(
   appointmentId: 'apt-101',
   status: status,
@@ -77,6 +92,8 @@ DoctorAppointment _appointment({
   patientName: 'محمد أحمد',
   patientPhone: '+201009998887',
   createdAt: DateTime.utc(2026, 8, 1),
+  visitStatus: visitStatus,
+  version: version,
 );
 
 void main() {
@@ -121,6 +138,33 @@ void main() {
     expect(find.text('ملغى'), findsOneWidget);
     expect(find.text('تغيير الموعد'), findsNothing);
     expect(find.text('إلغاء الموعد'), findsNothing);
+  });
+
+  testWidgets('assistant advances the live visit state with one action per step', (
+    tester,
+  ) async {
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+      overrides: [
+        providerDashboardRepositoryProvider.overrideWithValue(
+          _StubRepo(appointment: _appointment()),
+        ),
+      ],
+    );
+
+    expect(find.text('في الانتظار'), findsOneWidget);
+    await tester.ensureVisible(find.text('إدخال المريض للطبيب'));
+    await tester.tap(find.text('إدخال المريض للطبيب'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('داخل غرفة الطبيب'), findsOneWidget);
+    await tester.ensureVisible(find.text('تسجيل مغادرة المريض'));
+    await tester.tap(find.text('تسجيل مغادرة المريض'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('غادر'), findsOneWidget);
+    expect(find.text('الزيارة مكتملة'), findsOneWidget);
   });
 
   testWidgets('ProviderPatientDetailScreen renders patient snapshot', (

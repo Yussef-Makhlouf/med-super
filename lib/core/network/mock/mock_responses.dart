@@ -1878,9 +1878,12 @@ Map<String, dynamic> _mockDoctorAppointment({
   String clinicId = _mockClinicId,
   String clinicName = 'عيادة النيل التخصصية',
   String? cancelledReason,
+  String visitStatus = 'WAITING',
 }) => {
   'appointmentId': id,
   'status': status,
+  'visitStatus': visitStatus,
+  'version': 1,
   'slotId': '$branchId-${startUtc.toIso8601String()}',
   'startAt': startUtc.toIso8601String(),
   'endAt': startUtc.add(const Duration(minutes: 30)).toIso8601String(),
@@ -1931,6 +1934,7 @@ List<Map<String, dynamic>> _seedDoctorAppointments() {
       patientId: 'pat-3',
       startUtc: today.add(const Duration(hours: 6)),
       status: 'COMPLETED',
+      visitStatus: 'LEFT',
     ),
     _mockDoctorAppointment(
       id: 'apt-4',
@@ -2600,6 +2604,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       final appointment = <String, dynamic>{
         'appointmentId': appointmentId,
         'status': 'CONFIRMED',
+        'visitStatus': 'WAITING',
+        'version': 1,
         'slotId': slotId,
         'startAt': start.toIso8601String(),
         'endAt': start.add(const Duration(minutes: 30)).toIso8601String(),
@@ -2671,6 +2677,7 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       }
       final note = body['note'] as String?;
       appointment['status'] = 'CANCELLED';
+      appointment['version'] = ((appointment['version'] as num?)?.toInt() ?? 1) + 1;
       appointment['cancelledReason'] = note == null || note.isEmpty
           ? 'PROVIDER_REQUEST'
           : 'PROVIDER_REQUEST: $note';
@@ -2705,6 +2712,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
     final replacement = Map<String, dynamic>.from(appointment)
       ..['appointmentId'] = replacementId
       ..['status'] = 'CONFIRMED'
+      ..['visitStatus'] = 'WAITING'
+      ..['version'] = 1
       ..['slotId'] = newSlotId
       ..['startAt'] = newStart.toIso8601String()
       ..['endAt'] = newStart.add(const Duration(minutes: 30)).toIso8601String()
@@ -2722,6 +2731,63 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         'previousAppointmentId': appointmentId,
       },
     };
+  });
+
+  interceptor.register('PATCH', ApiPaths.doctorMeAppointments, (options) {
+    final parts = options.path.split('/');
+    if (parts.isEmpty || parts.last != 'visit-status' || parts.length < 2) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'إجراء غير معروف.');
+    }
+
+    final appointmentId = parts[parts.length - 2];
+    final index = _mockProviderDashboardStore.appointments.indexWhere(
+      (a) => a['appointmentId'] == appointmentId,
+    );
+    if (index == -1) {
+      return _error(404, 'RESOURCE_NOT_FOUND', 'الموعد غير موجود.');
+    }
+
+    final appointment = Map<String, dynamic>.from(
+      _mockProviderDashboardStore.appointments[index],
+    );
+    final body = _body(options) ?? {};
+    final requested = body['status'] as String?;
+    final requestedVersion = (body['version'] as num?)?.toInt();
+    final currentVersion = (appointment['version'] as num?)?.toInt() ?? 1;
+    final current = appointment['visitStatus'] as String? ?? 'WAITING';
+    const next = <String, String?>{
+      'WAITING': 'IN_DOCTOR_ROOM',
+      'IN_DOCTOR_ROOM': 'LEFT',
+      'LEFT': null,
+    };
+
+    if (requestedVersion != currentVersion) {
+      return _error(
+        409,
+        'OPTIMISTIC_LOCK_CONFLICT',
+        'تم تحديث الموعد من جهاز آخر. حدّث القائمة ثم أعد المحاولة.',
+      );
+    }
+    if (appointment['status'] != 'CONFIRMED') {
+      return _error(
+        422,
+        'APPOINTMENT_VISIT_STATUS_NOT_UPDATABLE',
+        'يمكن تحديث حالة الزيارة للمواعيد المؤكدة فقط.',
+      );
+    }
+    if (requested == null || next[current] != requested) {
+      return _error(
+        422,
+        'INVALID_VISIT_STATUS_TRANSITION',
+        'يجب تحديث حالة الزيارة بالترتيب.',
+      );
+    }
+
+    appointment['visitStatus'] = requested;
+    appointment['version'] = currentVersion + 1;
+    _mockProviderDashboardStore.appointments[index] = appointment;
+    _mockProviderDashboardStore.persistAppointments();
+    return {'statusCode': 200, 'data': appointment};
   });
 
   interceptor.register('GET', ApiPaths.doctorMeAppointments, (options) {

@@ -26,6 +26,8 @@ class DoctorAppointmentDto {
     required this.patientName,
     required this.patientPhone,
     required this.createdAt,
+    required this.visitStatus,
+    required this.version,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
   });
@@ -49,6 +51,8 @@ class DoctorAppointmentDto {
       patientId: json['patientId'] as String? ?? '',
       patientName: json['patientName'] as String? ?? '',
       patientPhone: json['patientPhone'] as String? ?? '',
+      visitStatus: json['visitStatus'] as String? ?? 'WAITING',
+      version: (json['version'] as num?)?.toInt() ?? 1,
       createdAt: DateTime.parse(
         json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -74,6 +78,8 @@ class DoctorAppointmentDto {
   final String patientId;
   final String patientName;
   final String patientPhone;
+  final String visitStatus;
+  final int version;
   final DateTime createdAt;
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
@@ -95,6 +101,8 @@ class DoctorAppointmentDto {
     patientId: patientId,
     patientName: patientName,
     patientPhone: patientPhone,
+    visitStatus: DoctorVisitStatusX.fromWire(visitStatus),
+    version: version,
     createdAt: createdAt,
     cancelledReason: cancelledReason,
     rescheduledFromAppointmentId: rescheduledFromAppointmentId,

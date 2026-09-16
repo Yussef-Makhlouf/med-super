@@ -32,6 +32,69 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_app
   };
 }
 
+({String label, Color color, IconData icon}) doctorVisitStatusStyle(
+  DoctorVisitStatus status,
+) {
+  return switch (status) {
+    DoctorVisitStatus.waiting => (
+      label: 'provider_dashboard.visit_status.waiting'.tr(),
+      color: const Color(0xFFB45309),
+      icon: Icons.schedule_rounded,
+    ),
+    DoctorVisitStatus.inDoctorRoom => (
+      label: 'provider_dashboard.visit_status.in_doctor_room'.tr(),
+      color: brandBlue,
+      icon: Icons.medical_services_outlined,
+    ),
+    DoctorVisitStatus.left => (
+      label: 'provider_dashboard.visit_status.left'.tr(),
+      color: const Color(0xFF059669),
+      icon: Icons.check_circle_rounded,
+    ),
+  };
+}
+
+class DoctorVisitStatusBadge extends StatelessWidget {
+  const DoctorVisitStatusBadge({required this.status, super.key});
+
+  final DoctorVisitStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = doctorVisitStatusStyle(status);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(scale: animation, child: child),
+      ),
+      child: Container(
+        key: ValueKey(status),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: visual.color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(visual.icon, size: 14, color: visual.color),
+            const SizedBox(width: 5),
+            Text(
+              visual.label,
+              style: TextStyle(
+                color: visual.color,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// `HH:mm` in the **branch's** local time.
 ///
 /// `startAt` is UTC (File 11 Part 04). Rendering it with `toLocal()` would
@@ -72,7 +135,7 @@ class ProviderAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = doctorAppointmentStatusStyle(appointment.status);
+    final lifecycleStatus = doctorAppointmentStatusStyle(appointment.status);
     final timeRange =
         '${formatAppointmentTime(appointment.startAt)} - ${formatAppointmentTime(appointment.endAt)}';
 
@@ -131,24 +194,27 @@ class ProviderAppointmentCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: status.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      status.label,
-                      style: TextStyle(
-                        color: status.color,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                  if (appointment.status == DoctorAppointmentStatus.confirmed)
+                    DoctorVisitStatusBadge(status: appointment.visitStatus)
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: lifecycleStatus.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        lifecycleStatus.label,
+                        style: TextStyle(
+                          color: lifecycleStatus.color,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 12),
