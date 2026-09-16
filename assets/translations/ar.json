@@ -5,6 +5,10 @@
     "platform_name": "HealthCare Super Platform"
   },
   "common": {
+    "image_viewer": {
+      "close": "إغلاق",
+      "load_error": "تعذر تحميل الصورة"
+    },
     "retry": "إعادة المحاولة",
     "loading": "جاري التحميل...",
     "error": "حدث خطأ ما",

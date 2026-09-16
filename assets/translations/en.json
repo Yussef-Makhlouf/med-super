@@ -5,6 +5,10 @@
     "platform_name": "HealthCare Super Platform"
   },
   "common": {
+    "image_viewer": {
+      "close": "Close",
+      "load_error": "Couldn't load the image"
+    },
     "retry": "Retry",
     "loading": "Loading...",
     "error": "Something went wrong",

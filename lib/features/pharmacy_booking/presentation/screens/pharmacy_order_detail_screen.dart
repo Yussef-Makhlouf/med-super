@@ -7,6 +7,7 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/image_gallery_viewer.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/domain/utils/order_id_format.dart';
@@ -23,6 +24,9 @@ String _formatOrderDate(String iso) {
   if (parsed == null) return iso;
   return DateFormat('d MMM y, h:mm a').format(parsed.toLocal());
 }
+
+String _prescriptionHeroTag(String orderId, int index) =>
+    'pharmacy-order-$orderId-prescription-$index';
 
 /// `GET /v1/pharmacy-orders/:id` — a read-only patient view of pharmacy
 /// pricing and fulfillment status, plus receipt confirmation for delivery.
@@ -75,18 +79,14 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
     if (result.hasError) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'pharmacy_booking.orders.confirm_receipt_error'.tr(),
-          ),
+          content: Text('pharmacy_booking.orders.confirm_receipt_error'.tr()),
         ),
       );
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'pharmacy_booking.orders.confirm_receipt_success'.tr(),
-        ),
+        content: Text('pharmacy_booking.orders.confirm_receipt_success'.tr()),
       ),
     );
     ref.invalidate(pharmacyOrderDetailProvider(orderId));
@@ -96,9 +96,9 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(pharmacyOrderDetailProvider(orderId));
-    final confirmingReceipt = ref.watch(
-      pharmacyOrderConfirmReceiptControllerProvider,
-    ).isLoading;
+    final confirmingReceipt = ref
+        .watch(pharmacyOrderConfirmReceiptControllerProvider)
+        .isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
@@ -115,9 +115,8 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
         leading: IconButton(
           icon: const Icon(SolarIconsOutline.arrowLeft),
           tooltip: 'pharmacy_booking.orders.back_to_list'.tr(),
-          onPressed: () => context.canPop()
-              ? context.pop()
-              : context.go('/patient/orders'),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/patient/orders'),
         ),
       ),
       body: AsyncValueView(
@@ -223,9 +222,7 @@ class _OrderDetailBody extends StatelessWidget {
                   DeliveryMethod.fromApiValue(
                     order.fulfillmentType,
                   ).titleKey.tr(),
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.ink900,
-                  ),
+                  style: textTheme.bodySmall?.copyWith(color: AppColors.ink900),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -304,35 +301,30 @@ class _OrderDetailBody extends StatelessWidget {
                     color: AppColors.ink900,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+                // Portrait 3:4 tiles — prescriptions are almost always
+                // photographed upright, so a square crop cut off most of
+                // the content. Tapping opens the full-screen viewer.
                 SizedBox(
-                  height: 72,
+                  height: 128,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: order.prescriptionImages.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final image = order.prescriptionImages[i];
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadii.sm),
-                        child: Image.network(
-                          image.fileUrl,
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                width: 72,
-                                height: 72,
-                                color: AppColors.surfaceMuted,
-                                child: const Icon(
-                                  SolarIconsOutline.gallery,
-                                  color: AppColors.mutedText2,
-                                ),
-                              ),
-                        ),
-                      );
-                    },
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) => _PrescriptionThumbnail(
+                      url: order.prescriptionImages[i].fileUrl,
+                      heroTag: _prescriptionHeroTag(order.id, i),
+                      onTap: () => ImageGalleryViewer.open(
+                        context,
+                        imageUrls: [
+                          for (final image in order.prescriptionImages)
+                            image.fileUrl,
+                        ],
+                        initialIndex: i,
+                        heroTagFor: (index) =>
+                            _prescriptionHeroTag(order.id, index),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -402,6 +394,66 @@ class _OrderDetailBody extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _PrescriptionThumbnail extends StatelessWidget {
+  const _PrescriptionThumbnail({
+    required this.url,
+    required this.heroTag,
+    required this.onTap,
+  });
+
+  final String url;
+  final Object heroTag;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 96,
+          height: 128,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Hero(
+                tag: heroTag,
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    SolarIconsOutline.gallery,
+                    color: AppColors.mutedText2,
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                bottom: 6,
+                end: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    SolarIconsOutline.maximizeSquare,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
