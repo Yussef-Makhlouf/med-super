@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:med_super/features/pharmacy_booking/data/datasources/remote/pharmacy_order_remote_datasource.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_approve_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_controller.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_order_list_providers.dart';
@@ -65,45 +64,4 @@ void main() {
       expect(result, order);
     },
   );
-
-  group('PharmacyOrderApproveController', () {
-    test('starts as AsyncData(null)', () {
-      expect(
-        container.read(pharmacyOrderApproveControllerProvider),
-        const AsyncData<PharmacyOrderApproveResult?>(null),
-      );
-    });
-
-    test('approve stores the datasource result on success', () async {
-      when(() => datasource.approve('order-1')).thenAnswer(
-        (_) async => const PharmacyOrderApproveResult(
-          pharmacyOrderId: 'order-1',
-          status: 'PAID',
-          paymentIntentId: 'pi-1',
-          totalAmount: '225.00',
-          currency: 'EGP',
-        ),
-      );
-
-      await container
-          .read(pharmacyOrderApproveControllerProvider.notifier)
-          .approve('order-1');
-
-      final state = container.read(pharmacyOrderApproveControllerProvider);
-      expect(state.value?.status, 'PAID');
-    });
-
-    test('approve surfaces a datasource failure as AsyncError', () async {
-      when(() => datasource.approve('order-1')).thenThrow(Exception('boom'));
-
-      await container
-          .read(pharmacyOrderApproveControllerProvider.notifier)
-          .approve('order-1');
-
-      expect(
-        container.read(pharmacyOrderApproveControllerProvider).hasError,
-        isTrue,
-      );
-    });
-  });
 }

@@ -271,7 +271,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text('pharmacy_booking.review.payment_summary_title'.tr()),
+        find.text('pharmacy_booking.review.cost_summary_title'.tr()),
         findsOneWidget,
       );
       expect(
@@ -362,7 +362,7 @@ void main() {
   );
 
   testWidgets(
-    'renders the payment summary rows with the real translated copy and '
+    'renders the cost summary rows with the real translated copy and '
     'mock values',
     (tester) async {
       await pumpReviewScreen(tester);

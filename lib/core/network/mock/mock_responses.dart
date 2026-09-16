@@ -1446,7 +1446,7 @@ const _mockPharmacyOrderId = '22222222-2222-4222-8222-222222222222';
 
 /// Mirrors `PharmacyOrderDetail` (`clinic-reservations`
 /// `pharmacy-order-detail.mapper.ts`) — quoted/`ACCEPTED` so the detail
-/// screen's "موافقة ودفع" button has something to show in mock mode.
+/// screen can show pharmacy pricing and fulfillment status in mock mode.
 const _mockPharmacyOrderDetailJson = {
   'id': _mockPharmacyOrderId,
   'status': 'ACCEPTED',
@@ -1470,7 +1470,7 @@ const _mockPharmacyOrderDetailJson = {
   'quote': {
     'totalPrice': '225.00',
     'currency': 'EGP',
-    'estimatedReadyMinutes': 45,
+    'estimatedReadyMinutes': null,
     'note': 'All items available',
     'quotedAt': '2026-08-31T10:05:00.000Z',
   },
@@ -1480,18 +1480,13 @@ const _mockPharmacyOrderDetailJson = {
 };
 
 void registerPharmacyOrderMocks(MockInterceptor interceptor) {
-  // Approve — registered before the bare create pattern below, since
-  // MockInterceptor matches first-registered-wins substring containment and
-  // '/v1/pharmacy-orders/{id}/approve' contains the bare create path too.
-  interceptor.register('POST', '${ApiPaths.pharmacyOrders}/', (options) {
+  // Receipt confirmation is more specific than the bare create route below.
+  interceptor.register('POST', '/confirm-receipt', (options) {
     return {
       'statusCode': 200,
       'data': {
         'pharmacyOrderId': _mockPharmacyOrderId,
-        'status': 'PAID',
-        'paymentIntentId': '33333333-3333-4333-8333-333333333333',
-        'totalAmount': '225.00',
-        'currency': 'EGP',
+        'status': 'FULFILLED',
       },
     };
   });
@@ -1504,13 +1499,12 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
       'data': {
         'pharmacyOrderId': _mockPharmacyOrderId,
         'status': 'RECEIVED',
-        'broadcastedBranchIds': [if (branchId != null) branchId],
+        'broadcastedBranchIds': [?branchId],
       },
     };
   });
 
-  // Detail — registered before the bare list pattern below, same ordering
-  // reasoning as approve/create above.
+  // Detail — registered before the bare list pattern below.
   interceptor.register('GET', '${ApiPaths.pharmacyOrders}/', (options) {
     return {'statusCode': 200, 'data': _mockPharmacyOrderDetailJson};
   });

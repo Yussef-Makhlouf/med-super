@@ -86,11 +86,6 @@ class PharmacyOrderDetail {
   final List<PharmacyOrderPrescriptionImage> prescriptionImages;
   final PharmacyOrderRejection? rejection;
 
-  /// The patient's own approve-and-pay CTA only makes sense once a branch
-  /// has priced the order — mirrors the backend's own
-  /// `APPROVABLE_STATUS = 'ACCEPTED'` guard on `ApprovePharmacyOrderUseCase`.
-  bool get canApprove => status == 'ACCEPTED' && quote != null;
-
   /// The patient's own "confirm receipt" CTA — only while a home-delivery
   /// order is actually out for delivery, mirroring the backend's
   /// `assertOrderIsOutForDelivery` guard on

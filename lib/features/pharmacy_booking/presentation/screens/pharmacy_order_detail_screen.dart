@@ -24,36 +24,12 @@ String _formatOrderDate(String iso) {
   return DateFormat('d MMM y, h:mm a').format(parsed.toLocal());
 }
 
-/// `GET /v1/pharmacy-orders/:id` — a single order's detail, with a
-/// `POST /v1/pharmacy-orders/:id/approve` CTA once the branch has quoted it.
+/// `GET /v1/pharmacy-orders/:id` — a read-only patient view of pharmacy
+/// pricing and fulfillment status, plus receipt confirmation for delivery.
 class PharmacyOrderDetailScreen extends ConsumerWidget {
   const PharmacyOrderDetailScreen({required this.orderId, super.key});
 
   final String orderId;
-
-  Future<void> _approve(BuildContext context, WidgetRef ref) async {
-    await ref
-        .read(pharmacyOrderApproveControllerProvider.notifier)
-        .approve(orderId);
-    if (!context.mounted) return;
-
-    final result = ref.read(pharmacyOrderApproveControllerProvider);
-    if (result.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('pharmacy_booking.orders.approve_error'.tr())),
-      );
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('pharmacy_booking.orders.approve_success'.tr())),
-    );
-    ref.invalidate(pharmacyOrderDetailProvider(orderId));
-    // The orders-tab list (`pharmacyOrdersProvider`) is a separate cached
-    // fetch — without this it kept showing the pre-approve status/quote
-    // pill on the list card even though the detail screen (which invalidates
-    // its own provider above) correctly showed the new state.
-    ref.invalidate(pharmacyOrdersProvider);
-  }
 
   Future<void> _confirmReceipt(BuildContext context, WidgetRef ref) async {
     // Terminal action, no undo (same "ask before an irreversible action"
@@ -120,9 +96,6 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(pharmacyOrderDetailProvider(orderId));
-    final approving = ref.watch(
-      pharmacyOrderApproveControllerProvider,
-    ).isLoading;
     final confirmingReceipt = ref.watch(
       pharmacyOrderConfirmReceiptControllerProvider,
     ).isLoading;
@@ -152,8 +125,6 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(pharmacyOrderDetailProvider(orderId)),
         data: (order) => _OrderDetailBody(
           order: order,
-          approving: approving,
-          onApprove: () => _approve(context, ref),
           confirmingReceipt: confirmingReceipt,
           onConfirmReceipt: () => _confirmReceipt(context, ref),
         ),
@@ -165,15 +136,11 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
 class _OrderDetailBody extends StatelessWidget {
   const _OrderDetailBody({
     required this.order,
-    required this.approving,
-    required this.onApprove,
     required this.confirmingReceipt,
     required this.onConfirmReceipt,
   });
 
   final PharmacyOrderDetail order;
-  final bool approving;
-  final VoidCallback onApprove;
   final bool confirmingReceipt;
   final VoidCallback onConfirmReceipt;
 
@@ -397,15 +364,6 @@ class _OrderDetailBody extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (quote.estimatedReadyMinutes != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'pharmacy_booking.orders.quote_eta_label'.tr(
-                      args: ['${quote.estimatedReadyMinutes}'],
-                    ),
-                    style: const TextStyle(color: AppColors.mutedText2),
-                  ),
-                ],
                 if (quote.note != null && quote.note!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -429,18 +387,6 @@ class _OrderDetailBody extends StatelessWidget {
               '${'pharmacy_booking.orders.rejection_label'.tr()}: ${rejection.reason}',
               style: const TextStyle(color: AppColors.errorRed),
             ),
-          ),
-        ],
-        if (order.canApprove) ...[
-          const SizedBox(height: 24),
-          AppButton.filled(
-            label: 'pharmacy_booking.orders.approve_cta'.tr(),
-            fullWidth: true,
-            isLoading: approving,
-            backgroundColor: AppColors.patientPrimary,
-            foregroundColor: Colors.white,
-            borderRadius: AppRadii.xl,
-            onPressed: approving ? null : onApprove,
           ),
         ],
         if (order.canConfirmReceipt) ...[

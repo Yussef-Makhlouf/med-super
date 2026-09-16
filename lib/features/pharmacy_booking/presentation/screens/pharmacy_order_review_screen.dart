@@ -17,7 +17,7 @@ import 'package:solar_icons/solar_icons.dart';
 
 /// Step 3 (final) of the pharmacy booking flow — review the uploaded
 /// prescription, the chosen pharmacy and delivery method, see an
-/// *estimated* payment summary, and submit the order.
+/// *estimated* cost summary, and submit the order.
 ///
 /// Like the lab booking flow's review step, nothing here is a final
 /// confirmed order: the pharmacist still has to review the uploaded
@@ -119,7 +119,7 @@ class _PharmacyOrderReviewScreenState
                     onEdit: () => context.push('/patient/pharmacy/upload'),
                   ),
                   const SizedBox(height: 16),
-                  const _PaymentSummarySection(),
+                  const _CostSummarySection(),
                 ],
               ),
             ),
@@ -444,8 +444,8 @@ class _DeliveryMethodSection extends StatelessWidget {
   }
 }
 
-class _PaymentSummarySection extends StatelessWidget {
-  const _PaymentSummarySection();
+class _CostSummarySection extends StatelessWidget {
+  const _CostSummarySection();
 
   @override
   Widget build(BuildContext context) {
@@ -460,7 +460,7 @@ class _PaymentSummarySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'pharmacy_booking.review.payment_summary_title'.tr(),
+            'pharmacy_booking.review.cost_summary_title'.tr(),
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,

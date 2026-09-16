@@ -55,8 +55,7 @@ class PharmacyOrderController
     // Without this, the orders-tab list (`pharmacyOrdersProvider`) is a
     // separate cached fetch and keeps showing whatever it last loaded —
     // a brand-new order wouldn't appear there until an unrelated refetch
-    // happened to occur (matches the same staleness class already fixed
-    // for `approve()` on `PharmacyOrderApproveController`).
+    // happened to occur.
     if (!state.hasError) {
       ref.invalidate(pharmacyOrdersProvider);
     }

@@ -1,10 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
-import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_approve_dto.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_confirm_receipt_dto.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_create_dto.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_detail_dto.dart';
-import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_approve_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirm_receipt_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_create_result.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
@@ -60,15 +58,6 @@ class PharmacyOrderRemoteDatasource {
       '${ApiPaths.pharmacyOrders}/$orderId',
     );
     return PharmacyOrderDetailDto.fromJson(
-      response.data ?? const <String, dynamic>{},
-    ).toEntity();
-  }
-
-  Future<PharmacyOrderApproveResult> approve(String orderId) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.pharmacyOrders}/$orderId/approve',
-    );
-    return PharmacyOrderApproveDto.fromJson(
       response.data ?? const <String, dynamic>{},
     ).toEntity();
   }

@@ -545,7 +545,6 @@ class SessionController extends _$SessionController {
     ref.invalidate(prescriptionUploadControllerProvider);
     ref.invalidate(pharmacyOrdersProvider);
     ref.invalidate(pharmacyOrderDetailProvider);
-    ref.invalidate(pharmacyOrderApproveControllerProvider);
     ref.invalidate(myAppointmentsProvider);
     ref.invalidate(myAppointmentsRefreshProvider);
     ref.invalidate(walletBalanceProvider);
