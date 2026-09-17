@@ -1,0 +1,21 @@
+version: 2
+
+# GitGuardian scans this repo's history and flags string literals that look
+# like credentials. The entries below are known false positives: deliberately
+# fixed, documented demo/test credentials used only by the local mock API
+# interceptor (lib/core/network/mock/mock_responses.dart), which the app
+# talks to instead of any real backend whenever BASE_URL is unset (the
+# default dev mode — see CLAUDE.md). None of these values are connected to
+# a real account, service, or environment; they exist purely so the
+# phone+password login screens work standalone during UI/manual testing
+# without first running the full registration flow. See
+# docs/assistant_feature_backend_integration.md for the documented
+# phone/password pairs these correspond to.
+secret:
+  ignored-matches:
+    - name: mock doctor demo password (kMockDemoPassword)
+      match: 07480fb9e85b9396af06f006cf1c95024af2531c65fb505cfbd0add1e2f31573
+    - name: mock assistant demo password (kMockAssistantPassword)
+      match: 40e963b91becf70ccfc4f862042c426a417d69ee1bf3f1b099642d516aed6791
+    - name: mock generated-assistant password (generatedPassword)
+      match: 20ebe694e187f5d24a011cc4ec2c111b7ac3572e4b52620fcf13f4aefe68e2f4
