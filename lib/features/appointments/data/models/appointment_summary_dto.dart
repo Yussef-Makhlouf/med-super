@@ -25,6 +25,7 @@ class AppointmentSummaryDto {
     required this.clinicPhone,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
+    this.visitStatus = 'WAITING',
   });
 
   final String appointmentId;
@@ -42,6 +43,7 @@ class AppointmentSummaryDto {
   final String clinicPhone;
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
+  final String visitStatus;
 
   factory AppointmentSummaryDto.fromJson(Map<String, dynamic> json) =>
       AppointmentSummaryDto(
@@ -61,6 +63,7 @@ class AppointmentSummaryDto {
         cancelledReason: json['cancelledReason'] as String?,
         rescheduledFromAppointmentId:
             json['rescheduledFromAppointmentId'] as String?,
+        visitStatus: json['visitStatus'] as String? ?? 'WAITING',
       );
 
   AppointmentSummary toEntity() => AppointmentSummary(
@@ -79,5 +82,6 @@ class AppointmentSummaryDto {
     clinicPhone: clinicPhone,
     cancelledReason: cancelledReason,
     rescheduledFromAppointmentId: rescheduledFromAppointmentId,
+    visitStatus: visitStatus,
   );
 }

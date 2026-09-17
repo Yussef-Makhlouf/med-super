@@ -238,7 +238,7 @@ class ProviderAppointmentCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (appointment.isActionable &&
+              if (appointment.canChangeBooking &&
                   (onCancel != null || onReschedule != null)) ...[
                 const SizedBox(height: 14),
                 Row(

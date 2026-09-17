@@ -123,6 +123,12 @@ class DoctorAppointment {
   bool get isActionable => status == DoctorAppointmentStatus.confirmed;
 
   bool get canAdvanceVisit => isActionable && visitStatus.next != null;
+
+  /// Cancel/reschedule are only offered while the patient is still waiting —
+  /// once they are in the doctor's room the backend rejects both with
+  /// `APPOINTMENT_VISIT_IN_PROGRESS`.
+  bool get canChangeBooking =>
+      isActionable && visitStatus == DoctorVisitStatus.waiting;
 }
 
 /// One page of the cursor-paginated doctor appointment list.

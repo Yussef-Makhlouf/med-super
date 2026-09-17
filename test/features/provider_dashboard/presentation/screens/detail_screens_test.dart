@@ -140,6 +140,57 @@ void main() {
     expect(find.text('إلغاء الموعد'), findsNothing);
   });
 
+  for (final visitStatus in [
+    DoctorVisitStatus.inDoctorRoom,
+    DoctorVisitStatus.left,
+  ]) {
+    testWidgets(
+      'a confirmed appointment in visit state ${visitStatus.name} can no longer be cancelled or rescheduled',
+      (tester) async {
+        await pumpLocalizedWidget(
+          tester,
+          const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+          overrides: [
+            providerDashboardRepositoryProvider.overrideWithValue(
+              _StubRepo(appointment: _appointment(visitStatus: visitStatus)),
+            ),
+          ],
+        );
+
+        expect(find.text('تغيير الموعد'), findsNothing);
+        expect(find.text('إلغاء الموعد'), findsNothing);
+        expect(
+          find.text(
+            'المريض داخل غرفة الطبيب، لذلك لم يعد ممكنًا إلغاء هذا الموعد أو تغييره.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  }
+
+  testWidgets("moving the patient into the doctor's room removes cancel and reschedule immediately", (
+    tester,
+  ) async {
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+      overrides: [
+        providerDashboardRepositoryProvider.overrideWithValue(
+          _StubRepo(appointment: _appointment()),
+        ),
+      ],
+    );
+
+    expect(find.text('إلغاء الموعد'), findsOneWidget);
+    await tester.ensureVisible(find.text('إدخال المريض للطبيب'));
+    await tester.tap(find.text('إدخال المريض للطبيب'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تغيير الموعد'), findsNothing);
+    expect(find.text('إلغاء الموعد'), findsNothing);
+  });
+
   testWidgets('assistant advances the live visit state with one action per step', (
     tester,
   ) async {

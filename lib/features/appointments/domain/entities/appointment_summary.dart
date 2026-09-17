@@ -22,6 +22,7 @@ class AppointmentSummary {
     required this.clinicPhone,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
+    this.visitStatus = 'WAITING',
   });
 
   final String appointmentId;
@@ -40,5 +41,11 @@ class AppointmentSummary {
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
 
-  bool get isCancellable => status == 'CONFIRMED';
+  /// Live clinic-flow state (`WAITING`, `IN_DOCTOR_ROOM`, `LEFT`).
+  final String visitStatus;
+
+  /// Drives both cancel and reschedule: only a confirmed appointment whose
+  /// patient hasn't entered the doctor's room yet — the backend rejects both
+  /// with `APPOINTMENT_VISIT_IN_PROGRESS` after that.
+  bool get isCancellable => status == 'CONFIRMED' && visitStatus == 'WAITING';
 }

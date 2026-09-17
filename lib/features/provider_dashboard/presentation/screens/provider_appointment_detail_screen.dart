@@ -326,7 +326,17 @@ class _ProviderAppointmentDetailScreenState
         const SizedBox(height: 20),
         _visitStatusPanel(appointment),
         const SizedBox(height: 20),
-        if (appointment.isActionable) ...[
+        if (appointment.isActionable && !appointment.canChangeBooking)
+          Text(
+            'provider_dashboard.visit_status.booking_locked'.tr(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.mutedText2,
+            ),
+          ),
+        if (appointment.canChangeBooking) ...[
           SizedBox(
             height: 50,
             child: ElevatedButton.icon(

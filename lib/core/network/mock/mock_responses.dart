@@ -2661,6 +2661,13 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         'Only a confirmed appointment can be ${action == 'cancel' ? 'cancelled' : 'rescheduled'}.',
       );
     }
+    if ((appointment['visitStatus'] as String? ?? 'WAITING') != 'WAITING') {
+      return _error(
+        422,
+        'APPOINTMENT_VISIT_IN_PROGRESS',
+        'لا يمكن إلغاء الموعد أو تغييره بعد دخول المريض إلى غرفة الطبيب.',
+      );
+    }
 
     final body = _body(options) ?? {};
 

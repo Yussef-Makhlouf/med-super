@@ -366,6 +366,7 @@
       "APPOINTMENT_NOT_CANCELLABLE": "لا يمكن إلغاء هذا الموعد إلا وهو مؤكّد.",
       "APPOINTMENT_NOT_RESCHEDULABLE": "لا يمكن تغيير هذا الموعد إلا وهو مؤكّد.",
       "APPOINTMENT_STATE_CHANGED": "تم تعديل هذا الموعد من جهة أخرى. حدّث الصفحة ثم أعد المحاولة.",
+      "APPOINTMENT_VISIT_IN_PROGRESS": "لا يمكن إلغاء الموعد أو تغييره بعد دخول المريض إلى غرفة الطبيب.",
       "INVALID_SCHEDULE_WINDOW": "وقت النهاية يجب أن يكون بعد وقت البداية.",
       "INVALID_DATE_RANGE": "النطاق الزمني المطلوب غير صحيح.",
       "CANCELLATION_REASON_NOT_PERMITTED": "سبب الإلغاء غير مسموح به في هذا الإجراء.",
@@ -963,7 +964,8 @@
       "action_in_doctor_room": "إدخال المريض للطبيب",
       "action_left": "تسجيل مغادرة المريض",
       "complete": "الزيارة مكتملة",
-      "updated": "تم تحديث حالة الزيارة."
+      "updated": "تم تحديث حالة الزيارة.",
+      "booking_locked": "المريض داخل غرفة الطبيب، لذلك لم يعد ممكنًا إلغاء هذا الموعد أو تغييره."
     },
     "cancel": {
       "action": "إلغاء الموعد",
