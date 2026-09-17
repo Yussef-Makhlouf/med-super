@@ -134,14 +134,14 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  network,TResult Function( int statusCode,  String code,  String? message,  String? correlationId)?  server,TResult Function()?  auth,TResult Function( Map<String, String> fieldErrors)?  validation,TResult Function( String reason)?  conflict,TResult Function()?  cache,TResult Function( Object error,  StackTrace stackTrace)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  network,TResult Function( int statusCode,  String code,  String? message,  String? correlationId)?  server,TResult Function()?  auth,TResult Function( Map<String, String> fieldErrors,  String? code)?  validation,TResult Function( String reason,  String? code)?  conflict,TResult Function()?  cache,TResult Function( Object error,  StackTrace stackTrace)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case NetworkFailure() when network != null:
 return network();case ServerFailure() when server != null:
 return server(_that.statusCode,_that.code,_that.message,_that.correlationId);case AuthFailure() when auth != null:
 return auth();case ValidationFailure() when validation != null:
-return validation(_that.fieldErrors);case ConflictFailure() when conflict != null:
-return conflict(_that.reason);case CacheFailure() when cache != null:
+return validation(_that.fieldErrors,_that.code);case ConflictFailure() when conflict != null:
+return conflict(_that.reason,_that.code);case CacheFailure() when cache != null:
 return cache();case UnknownFailure() when unknown != null:
 return unknown(_that.error,_that.stackTrace);case _:
   return orElse();
@@ -161,14 +161,14 @@ return unknown(_that.error,_that.stackTrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  network,required TResult Function( int statusCode,  String code,  String? message,  String? correlationId)  server,required TResult Function()  auth,required TResult Function( Map<String, String> fieldErrors)  validation,required TResult Function( String reason)  conflict,required TResult Function()  cache,required TResult Function( Object error,  StackTrace stackTrace)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  network,required TResult Function( int statusCode,  String code,  String? message,  String? correlationId)  server,required TResult Function()  auth,required TResult Function( Map<String, String> fieldErrors,  String? code)  validation,required TResult Function( String reason,  String? code)  conflict,required TResult Function()  cache,required TResult Function( Object error,  StackTrace stackTrace)  unknown,}) {final _that = this;
 switch (_that) {
 case NetworkFailure():
 return network();case ServerFailure():
 return server(_that.statusCode,_that.code,_that.message,_that.correlationId);case AuthFailure():
 return auth();case ValidationFailure():
-return validation(_that.fieldErrors);case ConflictFailure():
-return conflict(_that.reason);case CacheFailure():
+return validation(_that.fieldErrors,_that.code);case ConflictFailure():
+return conflict(_that.reason,_that.code);case CacheFailure():
 return cache();case UnknownFailure():
 return unknown(_that.error,_that.stackTrace);}
 }
@@ -184,14 +184,14 @@ return unknown(_that.error,_that.stackTrace);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  network,TResult? Function( int statusCode,  String code,  String? message,  String? correlationId)?  server,TResult? Function()?  auth,TResult? Function( Map<String, String> fieldErrors)?  validation,TResult? Function( String reason)?  conflict,TResult? Function()?  cache,TResult? Function( Object error,  StackTrace stackTrace)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  network,TResult? Function( int statusCode,  String code,  String? message,  String? correlationId)?  server,TResult? Function()?  auth,TResult? Function( Map<String, String> fieldErrors,  String? code)?  validation,TResult? Function( String reason,  String? code)?  conflict,TResult? Function()?  cache,TResult? Function( Object error,  StackTrace stackTrace)?  unknown,}) {final _that = this;
 switch (_that) {
 case NetworkFailure() when network != null:
 return network();case ServerFailure() when server != null:
 return server(_that.statusCode,_that.code,_that.message,_that.correlationId);case AuthFailure() when auth != null:
 return auth();case ValidationFailure() when validation != null:
-return validation(_that.fieldErrors);case ConflictFailure() when conflict != null:
-return conflict(_that.reason);case CacheFailure() when cache != null:
+return validation(_that.fieldErrors,_that.code);case ConflictFailure() when conflict != null:
+return conflict(_that.reason,_that.code);case CacheFailure() when cache != null:
 return cache();case UnknownFailure() when unknown != null:
 return unknown(_that.error,_that.stackTrace);case _:
   return null;
@@ -341,7 +341,7 @@ String toString() {
 
 
 class ValidationFailure implements Failure {
-  const ValidationFailure(final  Map<String, String> fieldErrors): _fieldErrors = fieldErrors;
+  const ValidationFailure(final  Map<String, String> fieldErrors, {this.code}): _fieldErrors = fieldErrors;
   
 
  final  Map<String, String> _fieldErrors;
@@ -351,6 +351,7 @@ class ValidationFailure implements Failure {
   return EqualUnmodifiableMapView(_fieldErrors);
 }
 
+ final  String? code;
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
@@ -362,16 +363,16 @@ $ValidationFailureCopyWith<ValidationFailure> get copyWith => _$ValidationFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValidationFailure&&const DeepCollectionEquality().equals(other._fieldErrors, _fieldErrors));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValidationFailure&&const DeepCollectionEquality().equals(other._fieldErrors, _fieldErrors)&&(identical(other.code, code) || other.code == code));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_fieldErrors));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_fieldErrors),code);
 
 @override
 String toString() {
-  return 'Failure.validation(fieldErrors: $fieldErrors)';
+  return 'Failure.validation(fieldErrors: $fieldErrors, code: $code)';
 }
 
 
@@ -382,7 +383,7 @@ abstract mixin class $ValidationFailureCopyWith<$Res> implements $FailureCopyWit
   factory $ValidationFailureCopyWith(ValidationFailure value, $Res Function(ValidationFailure) _then) = _$ValidationFailureCopyWithImpl;
 @useResult
 $Res call({
- Map<String, String> fieldErrors
+ Map<String, String> fieldErrors, String? code
 });
 
 
@@ -399,10 +400,11 @@ class _$ValidationFailureCopyWithImpl<$Res>
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? fieldErrors = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? fieldErrors = null,Object? code = freezed,}) {
   return _then(ValidationFailure(
 null == fieldErrors ? _self._fieldErrors : fieldErrors // ignore: cast_nullable_to_non_nullable
-as Map<String, String>,
+as Map<String, String>,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -413,10 +415,11 @@ as Map<String, String>,
 
 
 class ConflictFailure implements Failure {
-  const ConflictFailure(this.reason);
+  const ConflictFailure(this.reason, {this.code});
   
 
  final  String reason;
+ final  String? code;
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
@@ -428,16 +431,16 @@ $ConflictFailureCopyWith<ConflictFailure> get copyWith => _$ConflictFailureCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ConflictFailure&&(identical(other.reason, reason) || other.reason == reason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ConflictFailure&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.code, code) || other.code == code));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,reason);
+int get hashCode => Object.hash(runtimeType,reason,code);
 
 @override
 String toString() {
-  return 'Failure.conflict(reason: $reason)';
+  return 'Failure.conflict(reason: $reason, code: $code)';
 }
 
 
@@ -448,7 +451,7 @@ abstract mixin class $ConflictFailureCopyWith<$Res> implements $FailureCopyWith<
   factory $ConflictFailureCopyWith(ConflictFailure value, $Res Function(ConflictFailure) _then) = _$ConflictFailureCopyWithImpl;
 @useResult
 $Res call({
- String reason
+ String reason, String? code
 });
 
 
@@ -465,10 +468,11 @@ class _$ConflictFailureCopyWithImpl<$Res>
 
 /// Create a copy of Failure
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? reason = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? reason = null,Object? code = freezed,}) {
   return _then(ConflictFailure(
 null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
-as String,
+as String,code: freezed == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

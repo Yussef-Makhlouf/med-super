@@ -22,9 +22,14 @@ class AuthInterceptor extends Interceptor {
       handler.next(options);
       return;
     }
-    final token = await _storage.accessToken;
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token';
+    try {
+      final token = await _storage.accessToken;
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+    } catch (_) {
+      // Token read failed (e.g. secure storage unavailable) — proceed
+      // unauthenticated rather than silently dropping the request.
     }
     handler.next(options);
   }
@@ -51,15 +56,20 @@ class AuthInterceptor extends Interceptor {
         return;
       }
 
+      // Real `RefreshTokenDto.refreshToken` is camelCase — the backend's
+      // global ValidationPipe (forbidNonWhitelisted:true) rejects this call
+      // with 400 if sent as snake_case, since the required field is then
+      // missing. Response fields are camelCase too (`accessToken`/
+      // `refreshToken`), no snake_case fallback exists on the real backend.
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.refresh,
-        data: {'refresh_token': refreshToken},
+        data: {'refreshToken': refreshToken},
       );
 
       final data = response.data;
       if (data != null) {
-        final newAccess = data['access_token'] as String?;
-        final newRefresh = data['refresh_token'] as String?;
+        final newAccess = data['accessToken'] as String?;
+        final newRefresh = data['refreshToken'] as String?;
         if (newAccess != null) {
           await _storage.saveTokens(
             accessToken: newAccess,

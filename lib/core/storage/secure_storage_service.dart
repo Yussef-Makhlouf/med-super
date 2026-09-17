@@ -13,11 +13,6 @@ class SecureStorageService {
   Future<String?> get refreshToken =>
       _storage.read(key: StorageKeys.refreshToken);
 
-  Future<bool> get biometricEnabled async {
-    final val = await _storage.read(key: StorageKeys.biometricEnabled);
-    return val == 'true';
-  }
-
   Future<bool> get hasSession async => (await accessToken) != null;
 
   Future<void> saveTokens({
@@ -36,7 +31,4 @@ class SecureStorageService {
       _storage.delete(key: StorageKeys.refreshToken),
     ]);
   }
-
-  Future<void> setBiometricEnabled(bool enabled) =>
-      _storage.write(key: StorageKeys.biometricEnabled, value: '$enabled');
 }

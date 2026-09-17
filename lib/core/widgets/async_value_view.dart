@@ -1,6 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'error_banner.dart';
 import 'empty_state.dart';
 
@@ -25,46 +27,43 @@ class AsyncValueView<T> extends StatelessWidget {
     return value.when(
       data: data,
       loading: () =>
-          loadingWidget ??
-          const Center(child: CircularProgressIndicator()),
+          loadingWidget ?? const Center(child: CircularProgressIndicator()),
       error: (error, _) => _buildError(context, error),
     );
   }
 
   Widget _buildError(BuildContext context, Object error) {
+    // A non-[Failure] used to be rendered as `error.toString()` — an English
+    // (often raw) exception string straight into the UI. Everything now goes
+    // through `failureMessage*`, which is Arabic-only by construction.
     if (error is! Failure) {
-      return ErrorBanner(
-        message: error.toString(),
-        onRetry: onRetry,
-      );
+      return ErrorBanner(message: failureMessageOf(error), onRetry: onRetry);
     }
 
     return switch (error) {
       NetworkFailure() => ErrorBanner(
-          message: 'No internet connection. Check your network and try again.',
-          onRetry: onRetry,
-        ),
-      ServerFailure(:final message) => ErrorBanner(
-          message: message ?? 'Something went wrong. Please try again.',
-          onRetry: onRetry,
-        ),
-      AuthFailure() => const EmptyState(
-          title: 'Session expired',
-          subtitle: 'Please sign in again.',
-          icon: Icons.lock_outline,
-        ),
-      ValidationFailure(:final fieldErrors) => ErrorBanner(
-          message: fieldErrors.values.first,
-        ),
-      ConflictFailure(:final reason) => _ConflictDialog(reason: reason),
+        message: failureMessage(error),
+        onRetry: onRetry,
+      ),
+      ServerFailure() => ErrorBanner(
+        message: failureMessage(error),
+        onRetry: onRetry,
+      ),
+      AuthFailure() => EmptyState(
+        title: 'errors.session_expired'.tr(),
+        subtitle: 'errors.session_expired_subtitle'.tr(),
+        icon: Icons.lock_outline,
+      ),
+      ValidationFailure() => ErrorBanner(message: failureMessage(error)),
+      ConflictFailure() => _ConflictDialog(reason: failureMessage(error)),
       CacheFailure() => ErrorBanner(
-          message: 'Could not load cached data.',
-          onRetry: onRetry,
-        ),
+        message: failureMessage(error),
+        onRetry: onRetry,
+      ),
       UnknownFailure() => ErrorBanner(
-          message: 'An unexpected error occurred.',
-          onRetry: onRetry,
-        ),
+        message: failureMessage(error),
+        onRetry: onRetry,
+      ),
     };
   }
 }

@@ -1,7 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:med_super/app/flavor.dart';
-
-export 'package:med_super/app/flavor.dart' show currentFlavor;
 
 final class AppConfig {
   AppConfig._();
@@ -14,8 +11,7 @@ final class AppConfig {
   String get baseUrl =>
       const String.fromEnvironment('BASE_URL', defaultValue: _mockBaseUrl);
 
-  String get env =>
-      const String.fromEnvironment('ENV', defaultValue: 'dev');
+  String get env => const String.fromEnvironment('ENV', defaultValue: 'dev');
 
   bool get isProduction => env == 'production';
 
@@ -23,5 +19,11 @@ final class AppConfig {
 
   bool get isDebug => kDebugMode;
 
-  String get appDisplayName => currentFlavor.displayName;
+  /// Web Push certificate key pair's public key (Firebase Console → Project
+  /// Settings → Cloud Messaging → Web Push certificates). Required by
+  /// `FirebaseMessaging.getToken()` on web only — mobile ignores it.
+  String? get fcmVapidKey {
+    const value = String.fromEnvironment('FCM_VAPID_KEY');
+    return value.isEmpty ? null : value;
+  }
 }

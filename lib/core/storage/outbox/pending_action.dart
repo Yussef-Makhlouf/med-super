@@ -25,33 +25,32 @@ class PendingAction {
     String? idempotencyKey,
     DateTime? createdAt,
     int? attemptCount,
-  }) =>
-      PendingAction(
-        id: id ?? this.id,
-        type: type ?? this.type,
-        payload: payload ?? this.payload,
-        idempotencyKey: idempotencyKey ?? this.idempotencyKey,
-        createdAt: createdAt ?? this.createdAt,
-        attemptCount: attemptCount ?? this.attemptCount,
-      );
+  }) => PendingAction(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    payload: payload ?? this.payload,
+    idempotencyKey: idempotencyKey ?? this.idempotencyKey,
+    createdAt: createdAt ?? this.createdAt,
+    attemptCount: attemptCount ?? this.attemptCount,
+  );
 
   factory PendingAction.fromJson(Map<String, dynamic> json) => PendingAction(
-        id: json['id'] as String,
-        type: json['type'] as String,
-        payload: (json['payload'] as Map<String, dynamic>?) ?? {},
-        idempotencyKey: json['idempotencyKey'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
-      );
+    id: json['id'] as String,
+    type: json['type'] as String,
+    payload: (json['payload'] as Map<String, dynamic>?) ?? {},
+    idempotencyKey: json['idempotencyKey'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'payload': payload,
-        'idempotencyKey': idempotencyKey,
-        'createdAt': createdAt.toIso8601String(),
-        'attemptCount': attemptCount,
-      };
+    'id': id,
+    'type': type,
+    'payload': payload,
+    'idempotencyKey': idempotencyKey,
+    'createdAt': createdAt.toIso8601String(),
+    'attemptCount': attemptCount,
+  };
 
   String toJsonString() => jsonEncode(toJson());
 

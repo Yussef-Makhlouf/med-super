@@ -9,7 +9,8 @@ abstract final class Validators {
 
   /// Egyptian / international phone number — digits 10–15.
   static String? phone(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Phone number is required';
+    if (value == null || value.trim().isEmpty)
+      return 'Phone number is required';
     final digits = value.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 10 || digits.length > 15) {
       return 'Enter a valid phone number';

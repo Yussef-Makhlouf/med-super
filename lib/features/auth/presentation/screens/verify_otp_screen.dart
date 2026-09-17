@@ -2,29 +2,34 @@ import 'dart:async';
 import 'dart:ui' as ui show TextDirection;
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/app/flavor.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/network/mock/mock_responses.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_theme.dart';
+import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/auth_hero_illustration.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Verify-OTP screen — matches Figma (light).
 class VerifyOtpScreen extends ConsumerStatefulWidget {
   const VerifyOtpScreen({
     required this.phone,
     this.role = 'patient',
+    this.requestId = '',
     super.key,
   });
 
   final String phone;
   final String role;
+  final String requestId;
 
   @override
   ConsumerState<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -33,8 +38,10 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
 class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   static const _otpLength = 6;
 
-  final _controllers =
-      List.generate(_otpLength, (_) => TextEditingController());
+  final _controllers = List.generate(
+    _otpLength,
+    (_) => TextEditingController(),
+  );
   final _focusNodes = List.generate(_otpLength, (_) => FocusNode());
 
   int _secondsLeft = 59;
@@ -81,52 +88,47 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   String get _displayPhone {
     final digits = widget.phone.replaceAll(RegExp(r'\D'), '');
-    if (digits.length >= 9) {
-      final local = digits.length > 9
-          ? digits.substring(digits.length - 9)
+    if (digits.length >= 11) {
+      final local = digits.length > 11
+          ? digits.substring(digits.length - 11)
           : digits;
-      return '+966 ${local[0]}X XXX ${local.substring(6)}';
+      return AppFormatters.ltrIsolate(
+        '+20 ${local.substring(0, 2)} ${local.substring(2, 5)} '
+        '${local.substring(5, 8)} ${local.substring(8)}',
+      );
     }
-    return '+966 ${widget.phone}';
+    return AppFormatters.ltrIsolate('+20 ${widget.phone}');
   }
 
   Future<void> _verify() async {
     if (_otp.length != _otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('auth.otp_invalid'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('auth.otp_invalid'.tr())));
       return;
     }
 
     setState(() => _verifying = true);
     try {
-      final result =
-          await ref.read(sessionControllerProvider.notifier).verifyOtp(
-                phone: widget.phone,
-                code: _otp,
-                role: _role,
-              );
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .verifyOtp(
+            requestId: widget.requestId,
+            phone: widget.phone,
+            code: _otp,
+            role: _role,
+          );
 
       if (!mounted) return;
 
       switch (result) {
-        case Ok(:final value):
-          if (!value.onboardingComplete) {
-            context.go('/onboarding');
-          } else {
-            context.go(
-              currentFlavor.isPatient ? '/patient/home' : '/provider/home',
-            );
-          }
+        case Ok():
+          context.go('/');
         case Err(:final failure):
-          final key = failureMessage(failure);
-          // OTP_INVALID → prefer dedicated copy; raw API messages skip .tr()
-          final text = key.startsWith('auth.') || key.startsWith('errors.')
-              ? key.tr()
-              : key;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(text)),
-          );
+          final text = authFailureMessage(failure);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(text)));
       }
     } finally {
       if (mounted) setState(() => _verifying = false);
@@ -137,11 +139,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     if (_resending) return;
     setState(() => _resending = true);
     try {
-      final result =
-          await ref.read(sessionControllerProvider.notifier).requestOtp(
-                phone: widget.phone,
-                role: _role,
-              );
+      final result = await ref
+          .read(sessionControllerProvider.notifier)
+          .requestOtp(phone: widget.phone, role: _role);
       if (!mounted) return;
       switch (result) {
         case Ok():
@@ -151,9 +151,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
           _focusNodes.first.requestFocus();
           _startTimer();
         case Err(:final failure):
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failureMessage(failure).tr())),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authFailureMessage(failure))));
       }
     } finally {
       if (mounted) setState(() => _resending = false);
@@ -214,13 +214,13 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             backgroundColor: Colors.white,
             appBar: AppBar(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF1A2B4A),
+              foregroundColor: AppPalette.ink,
               elevation: 0,
               centerTitle: true,
               leading: const SizedBox.shrink(),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_forward),
+                  icon: const Icon(SolarIconsOutline.arrowRight),
                   onPressed: () => context.pop(),
                 ),
               ],
@@ -234,18 +234,23 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
             ),
             body: SafeArea(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   children: [
                     const SizedBox(height: 8),
-                    const _VerifyHeroIllustration(),
+                    AuthShieldHeroIllustration(
+                      overlayIcon: SolarIconsBold.key,
+                      tags: const ['OTP', 'VERIFY', 'SECURE', kMockOtpCode],
+                    ),
                     const SizedBox(height: 28),
                     Text(
                       'auth.verify_title'.tr(),
                       textAlign: TextAlign.center,
                       style: textTheme.headlineSmall?.copyWith(
-                        color: const Color(0xFF1A2B4A),
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -254,7 +259,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       'auth.verify_subtitle'.tr(),
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF8A94A6),
+                        color: AppPalette.inkMuted,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -262,19 +267,10 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                       _displayPhone,
                       textAlign: TextAlign.center,
                       style: textTheme.titleMedium?.copyWith(
-                        color: const Color(0xFF1A2B4A),
+                        color: AppPalette.ink,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (kDebugMode) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'auth.mock_otp_code'.tr(args: [kMockOtpCode]),
-                        style: textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF8A94A6),
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 28),
                     Directionality(
                       textDirection: ui.TextDirection.ltr,
@@ -294,7 +290,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                                 textAlign: TextAlign.center,
                                 style: textTheme.headlineSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF1A2B4A),
+                                  color: AppPalette.ink,
                                 ),
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
@@ -306,19 +302,25 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                                   fillColor: Colors.white,
                                   contentPadding: EdgeInsets.zero,
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
-                                      color: Color(0xFFD8DEE8),
+                                      color: AppPalette.border,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
-                                      color: Color(0xFFD8DEE8),
+                                      color: AppPalette.border,
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadii.md,
+                                    ),
                                     borderSide: const BorderSide(
                                       color: brandBlue,
                                       width: 2,
@@ -340,8 +342,9 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brandBlue,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              brandBlue.withValues(alpha: 0.5),
+                          disabledBackgroundColor: brandBlue.withValues(
+                            alpha: 0.5,
+                          ),
                           elevation: 0,
                           shape: const StadiumBorder(),
                         ),
@@ -370,7 +373,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                           TextSpan(
                             text: '${'auth.didnt_receive'.tr()} ',
                             style: textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF8A94A6),
+                              color: AppPalette.inkMuted,
                             ),
                           ),
                           TextSpan(
@@ -391,7 +394,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                         style: TextStyle(
                           color: canResend
                               ? brandBlue
-                              : const Color(0xFFB0B7C3),
+                              : AppPalette.inkFaint,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -416,75 +419,4 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
       ),
     );
   }
-}
-
-class _VerifyHeroIllustration extends StatelessWidget {
-  const _VerifyHeroIllustration();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8F1FF),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(
-              Icons.shield_outlined,
-              size: 120,
-              color: brandBlue.withValues(alpha: 0.85),
-            ),
-            Icon(
-              Icons.vpn_key_rounded,
-              size: 36,
-              color: brandBlue.withValues(alpha: 0.95),
-            ),
-            Positioned(
-              top: 28,
-              left: 36,
-              child: _tag('OTP'),
-            ),
-            Positioned(
-              top: 40,
-              right: 28,
-              child: _tag('VERIFY'),
-            ),
-            Positioned(
-              bottom: 36,
-              left: 28,
-              child: _tag('SECURE'),
-            ),
-            Positioned(
-              bottom: 48,
-              right: 40,
-              child: _tag(kMockOtpCode),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget _tag(String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: brandBlue.withValues(alpha: 0.25)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: brandBlue.withValues(alpha: 0.9),
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.4,
-          ),
-        ),
-      );
 }

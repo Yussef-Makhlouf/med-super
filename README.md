@@ -130,7 +130,7 @@ iOS flavor schemes (`patient` / `provider`) must be created in Xcode on a Mac:
 |--------|-------|
 | **0** ✅ | Foundation: flavors, theme, mock network, router shells |
 | **1** ✅ | Identity & auth: OTP, session, role/flavor guard, light onboarding |
-| 2 | Provider directory: search, doctor profile |
+| **2** ✅ | Provider directory: search, doctor profile |
 | 3 | Scheduling: booking, hold, cancel, reschedule |
 | 4 | Payments: PaymentIntent, online/at-clinic, refund |
 | 5 | Transactional notifications: FCM, priority router, center |
