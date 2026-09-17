@@ -5,9 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
@@ -16,6 +20,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Real walk-in booking, `POST
 /// /v1/doctors/me/appointments/branch/{clinicBranchId}/create`
@@ -40,7 +45,7 @@ Future<bool?> showBookWalkInAppointmentSheet(
     isScrollControlled: true,
     backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
     ),
     builder: (_) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -138,96 +143,149 @@ class _BookWalkInAppointmentSheetState
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.85,
+      initialChildSize: 0.88,
       maxChildSize: 0.95,
-      builder: (context, scrollController) => SingleChildScrollView(
-        controller: scrollController,
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'provider_dashboard.walk_in.title'.tr(),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.ink900,
+      builder: (context, scrollController) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _dragHandle(),
+          _titleBar(),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SectionHeader(
+                      title: 'provider_dashboard.walk_in.step_branch'.tr(),
+                    ),
+                    const SizedBox(height: 12),
+                    clinicsAsync.when(
+                      loading: () => _chipRowSkeleton(),
+                      error: (error, _) => ErrorBanner(
+                        message: providerFailureMessageOf(error),
+                        onRetry: () => ref.invalidate(myClinicsProvider),
+                      ),
+                      data: _branchPicker,
+                    ),
+                    if (_branch != null) ...[
+                      const SizedBox(height: 24),
+                      SectionHeader(
+                        title: 'provider_dashboard.walk_in.step_slot'.tr(),
+                      ),
+                      const SizedBox(height: 12),
+                      _slotPicker(_branch!),
+                    ],
+                    if (_slot != null) ...[
+                      const SizedBox(height: 24),
+                      SectionHeader(
+                        title: 'provider_dashboard.walk_in.step_patient'.tr(),
+                      ),
+                      const SizedBox(height: 12),
+                      _patientFields(),
+                    ],
+                    if (_submitError != null) ...[
+                      const SizedBox(height: 12),
+                      ErrorBanner(message: _submitError!),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              _sectionLabel('provider_dashboard.walk_in.step_branch'.tr()),
-              const SizedBox(height: 8),
-              clinicsAsync.when(
-                loading: () => _chipRowSkeleton(),
-                error: (error, _) => ErrorBanner(
-                  message: providerFailureMessageOf(error),
-                  onRetry: () => ref.invalidate(myClinicsProvider),
-                ),
-                data: _branchPicker,
-              ),
-              if (_branch != null) ...[
-                const SizedBox(height: 20),
-                _sectionLabel('provider_dashboard.walk_in.step_slot'.tr()),
-                const SizedBox(height: 8),
-                _slotPicker(_branch!),
-              ],
-              if (_slot != null) ...[
-                const SizedBox(height: 20),
-                _sectionLabel('provider_dashboard.walk_in.step_patient'.tr()),
-                const SizedBox(height: 8),
-                _patientFields(),
-              ],
-              if (_submitError != null) ...[
-                const SizedBox(height: 12),
-                ErrorBanner(message: _submitError!),
-              ],
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 48,
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: (_branch != null && _slot != null && !_submitting)
-                      ? _submit
-                      : null,
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text('provider_dashboard.walk_in.submit'.tr()),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          _submitBar(),
+        ],
       ),
     );
   }
 
-  Widget _sectionLabel(String text) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 13,
-      fontWeight: FontWeight.w800,
-      color: AppColors.ink900,
+  Widget _dragHandle() => Padding(
+    padding: const EdgeInsets.only(top: 10, bottom: 4),
+    child: Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: AppColors.borderMedium,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+    ),
+  );
+
+  Widget _titleBar() => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 8, 12, 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            'provider_dashboard.walk_in.title'.tr(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.ink900,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close, color: AppColors.mutedText2),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.surfaceMuted,
+            shape: const CircleBorder(),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _submitBar() => Container(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      boxShadow: AppShadows.raised,
+    ),
+    child: SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 56,
+        width: double.infinity,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            shape: const StadiumBorder(),
+            backgroundColor: brandBlue,
+          ),
+          onPressed: (_branch != null && _slot != null && !_submitting)
+              ? _submit
+              : null,
+          child: _submitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  'provider_dashboard.walk_in.submit'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                ),
+        ),
+      ),
     ),
   );
 
   Widget _chipRowSkeleton() => SizedBox(
-    height: 72,
+    height: 132,
     child: ListView.separated(
       scrollDirection: Axis.horizontal,
       itemCount: 3,
-      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
       itemBuilder: (_, _) =>
-          const SkeletonLoader(width: 130, height: 72, borderRadius: 12),
+          const SkeletonLoader(width: 168, height: 132, borderRadius: AppRadii.lg),
     ),
   );
 
@@ -235,13 +293,13 @@ class _BookWalkInAppointmentSheetState
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       SizedBox(
-        height: 64,
+        height: 68,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: 4,
           separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, _) =>
-              const SkeletonLoader(width: 62, height: 64, borderRadius: 14),
+              const SkeletonLoader(width: 68, height: 68, borderRadius: AppRadii.md),
         ),
       ),
       const SizedBox(height: 12),
@@ -249,10 +307,10 @@ class _BookWalkInAppointmentSheetState
         spacing: 8,
         runSpacing: 8,
         children: const [
-          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
-          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
-          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
-          SkeletonLoader(width: 70, height: 38, borderRadius: 10),
+          SkeletonLoader(width: 76, height: 40, borderRadius: AppRadii.pill),
+          SkeletonLoader(width: 76, height: 40, borderRadius: AppRadii.pill),
+          SkeletonLoader(width: 76, height: 40, borderRadius: AppRadii.pill),
+          SkeletonLoader(width: 76, height: 40, borderRadius: AppRadii.pill),
         ],
       ),
     ],
@@ -267,7 +325,7 @@ class _BookWalkInAppointmentSheetState
       return EmptyState(
         title: 'provider_dashboard.walk_in.no_branches_title'.tr(),
         subtitle: 'provider_dashboard.walk_in.no_branches_subtitle'.tr(),
-        icon: Icons.store_mall_directory_outlined,
+        icon: SolarIconsOutline.buildings,
       );
     }
 
@@ -289,11 +347,11 @@ class _BookWalkInAppointmentSheetState
     }
 
     return SizedBox(
-      height: 72,
+      height: 132,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: acceptingBranches.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) => _branchChip(acceptingBranches[index]),
       ),
     );
@@ -308,15 +366,16 @@ class _BookWalkInAppointmentSheetState
         _slot = null;
       }),
       child: Container(
-        width: 130,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        width: 168,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? brandBlue.withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(
-            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            color: selected ? brandBlue : AppColors.borderLight,
             width: selected ? 2 : 1,
           ),
+          boxShadow: AppShadows.resting,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -324,27 +383,34 @@ class _BookWalkInAppointmentSheetState
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.store_mall_directory_outlined,
-                  size: 14,
+                AppIconTile(
+                  icon: SolarIconsOutline.buildings,
                   color: selected ? brandBlue : AppColors.mutedText2,
+                  size: 40,
+                  iconSize: 20,
                 ),
                 const Spacer(),
-                if (selected) const Icon(Icons.check_circle, color: brandBlue, size: 16),
+                if (selected)
+                  const Icon(
+                    SolarIconsBold.checkCircle,
+                    color: brandBlue,
+                    size: 20,
+                  ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
             Text(
               clinic.address.city,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
+            const SizedBox(height: 2),
             Text(
               clinic.displayAddressLine,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10, color: AppColors.mutedText2),
+              style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
             ),
           ],
         ),
@@ -379,7 +445,7 @@ class _BookWalkInAppointmentSheetState
         if (slots.isEmpty) {
           return EmptyState(
             title: 'provider_dashboard.walk_in.no_slots'.tr(),
-            icon: Icons.event_busy_outlined,
+            icon: SolarIconsOutline.calendarMinimalistic,
           );
         }
 
@@ -407,7 +473,7 @@ class _BookWalkInAppointmentSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 64,
+              height: 68,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: days.length,
@@ -415,7 +481,7 @@ class _BookWalkInAppointmentSheetState
                 itemBuilder: (context, index) => _dayChip(days[index], days[index] == selectedDay),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -434,11 +500,11 @@ class _BookWalkInAppointmentSheetState
         _slot = null;
       }),
       child: Container(
-        width: 62,
+        width: 68,
         decoration: BoxDecoration(
           color: selected ? brandBlue : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: selected ? brandBlue : const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(color: selected ? brandBlue : AppColors.borderLight),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -454,7 +520,7 @@ class _BookWalkInAppointmentSheetState
             Text(
               '${day.day}/${day.month}',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: selected ? Colors.white : AppColors.ink900,
               ),
@@ -470,12 +536,12 @@ class _BookWalkInAppointmentSheetState
     return GestureDetector(
       onTap: () => setState(() => _slot = slot),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          color: selected ? brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           border: Border.all(
-            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            color: selected ? brandBlue : AppColors.borderLight,
             width: selected ? 2 : 1,
           ),
         ),
@@ -483,8 +549,8 @@ class _BookWalkInAppointmentSheetState
           formatAppointmentTime(slot.startAtUtc),
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 12,
-            color: selected ? brandBlue : AppColors.ink900,
+            fontSize: 13,
+            color: selected ? Colors.white : AppColors.ink900,
           ),
         ),
       ),
@@ -492,51 +558,70 @@ class _BookWalkInAppointmentSheetState
   }
 
   Widget _patientFields() {
-    return Column(
-      children: [
-        TextFormField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          textDirection: ui.TextDirection.ltr,
-          textAlign: TextAlign.left,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(11),
-          ],
-          decoration: InputDecoration(
-            labelText: 'provider_dashboard.walk_in.phone_label'.tr(),
-            hintText: 'provider_dashboard.walk_in.phone_hint'.tr(),
-            border: const OutlineInputBorder(),
-            isDense: true,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceApp,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            textDirection: ui.TextDirection.ltr,
+            textAlign: TextAlign.left,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(11),
+            ],
+            decoration: InputDecoration(
+              labelText: 'provider_dashboard.walk_in.phone_label'.tr(),
+              hintText: 'provider_dashboard.walk_in.phone_hint'.tr(),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            ),
+            validator: (value) {
+              final trimmed = (value ?? '').trim();
+              if (trimmed.isEmpty) {
+                return 'provider_dashboard.walk_in.phone_required'.tr();
+              }
+              if (!isValidEgyptPhone(trimmed)) {
+                return 'provider_dashboard.walk_in.phone_invalid'.tr();
+              }
+              return null;
+            },
           ),
-          validator: (value) {
-            final trimmed = (value ?? '').trim();
-            if (trimmed.isEmpty) {
-              return 'provider_dashboard.walk_in.phone_required'.tr();
-            }
-            if (!isValidEgyptPhone(trimmed)) {
-              return 'provider_dashboard.walk_in.phone_invalid'.tr();
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(
-            labelText: 'provider_dashboard.walk_in.name_label'.tr(),
-            hintText: 'provider_dashboard.walk_in.name_hint'.tr(),
-            border: const OutlineInputBorder(),
-            isDense: true,
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'provider_dashboard.walk_in.name_label'.tr(),
+              hintText: 'provider_dashboard.walk_in.name_hint'.tr(),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: const BorderSide(color: AppColors.borderLight),
+              ),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            ),
+            validator: (value) {
+              if ((value ?? '').trim().isEmpty) {
+                return 'provider_dashboard.walk_in.name_required'.tr();
+              }
+              return null;
+            },
           ),
-          validator: (value) {
-            if ((value ?? '').trim().isEmpty) {
-              return 'provider_dashboard.walk_in.name_required'.tr();
-            }
-            return null;
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

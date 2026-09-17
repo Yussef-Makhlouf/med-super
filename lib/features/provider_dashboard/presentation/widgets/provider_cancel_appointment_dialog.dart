@@ -76,7 +76,11 @@ class _ProviderCancelDialogState extends State<_ProviderCancelDialog> {
           child: Text('provider_dashboard.cancel.keep'.tr()),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.errorRed),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.errorRed,
+            shape: const StadiumBorder(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
           onPressed: () {
             final note = _noteController.text.trim();
             Navigator.of(context).pop((note: note.isEmpty ? null : note));

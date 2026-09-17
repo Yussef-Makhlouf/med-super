@@ -2,7 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
@@ -11,6 +14,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_cancel_appointment_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_reschedule_sheet.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Opens [ProviderAppointmentDetailScreen] as a bottom sheet rather than a
 /// full page route — consistent with every other provider-dashboard action
@@ -268,56 +272,39 @@ class _ProviderAppointmentDetailScreenState
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: status.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status.label,
-                    style: TextStyle(
-                      color: status.color,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                AppBadge.soft(label: status.label, color: status.color),
               ],
             ),
             const SizedBox(height: 12),
             _row(
-              Icons.phone_outlined,
+              SolarIconsOutline.phone,
               'provider_dashboard.appointments.patient_phone'.tr(),
               appointment.patientPhone,
             ),
             _row(
-              Icons.access_time,
+              SolarIconsOutline.clockCircle,
               'provider_dashboard.appointments.title'.tr(),
               '${formatAppointmentTime(appointment.startAt)} - ${formatAppointmentTime(appointment.endAt)}',
             ),
             _row(
-              Icons.local_hospital_outlined,
+              SolarIconsOutline.buildings,
               'provider_dashboard.appointments.branch'.tr(),
               '${appointment.clinicCity} · ${appointment.clinicAddressLine1}',
             ),
             _row(
-              Icons.public,
+              SolarIconsOutline.globus,
               'provider_dashboard.clinics.timezone'.tr(),
               appointment.ianaTimezone,
             ),
             if (appointment.cancelledReason != null)
               _row(
-                Icons.info_outline,
+                SolarIconsOutline.infoCircle,
                 'provider_dashboard.status.cancelled'.tr(),
                 appointment.cancelledReason!,
               ),
             if (appointment.rescheduledFromAppointmentId != null)
               _row(
-                Icons.history,
+                SolarIconsOutline.history,
                 'provider_dashboard.status.rescheduled'.tr(),
                 appointment.rescheduledFromAppointmentId!,
               ),
@@ -338,33 +325,29 @@ class _ProviderAppointmentDetailScreenState
           ),
         if (appointment.canChangeBooking) ...[
           SizedBox(
-            height: 50,
+            height: 56,
             child: ElevatedButton.icon(
               onPressed: _mutating ? null : () => _reschedule(appointment),
-              icon: const Icon(Icons.event_repeat),
+              icon: const Icon(SolarIconsOutline.restart),
               label: Text('provider_dashboard.reschedule.action'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: brandBlue,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: const StadiumBorder(),
               ),
             ),
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 50,
+            height: 56,
             child: OutlinedButton.icon(
               onPressed: _mutating ? null : () => _cancel(appointment),
-              icon: const Icon(Icons.cancel_outlined),
+              icon: const Icon(SolarIconsOutline.closeCircle),
               label: Text('provider_dashboard.cancel.action'.tr()),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.errorRed,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: const StadiumBorder(),
               ),
             ),
           ),
@@ -390,8 +373,9 @@ class _ProviderAppointmentDetailScreenState
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: visual.color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(color: visual.color.withValues(alpha: 0.22)),
+        boxShadow: AppShadows.resting,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,7 +417,7 @@ class _ProviderAppointmentDetailScreenState
                     )
                   : Icon(
                       completed
-                          ? Icons.check_circle_rounded
+                          ? SolarIconsBold.checkCircle
                           : doctorVisitStatusStyle(next).icon,
                     ),
               label: Text(
@@ -463,8 +447,8 @@ class _ProviderAppointmentDetailScreenState
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: const Color(0xFFF1F5F9)),
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      boxShadow: AppShadows.resting,
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
   );
@@ -474,7 +458,7 @@ class _ProviderAppointmentDetailScreenState
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.mutedText2),
+        Icon(icon, size: 18, color: AppColors.mutedText2),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

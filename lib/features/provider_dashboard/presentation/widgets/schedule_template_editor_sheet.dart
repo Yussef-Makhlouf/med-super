@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// What the doctor filled in. Times are `"HH:mm"` local to the chosen
 /// branch's timezone, matching the backend's own contract.
@@ -148,7 +150,9 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
                 color: AppColors.ink900,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            SectionHeader(title: 'provider_dashboard.schedule.section_branch_day'.tr()),
+            const SizedBox(height: 12),
             if (widget.clinics.length > 1) ...[
               DropdownButtonFormField<String>(
                 initialValue: _affiliationId,
@@ -195,6 +199,8 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
               ],
               onChanged: (value) => setState(() => _weekday = value ?? _weekday),
             ),
+            const SizedBox(height: 24),
+            SectionHeader(title: 'provider_dashboard.schedule.section_time_window'.tr()),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -232,7 +238,9 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
               ),
               style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            SectionHeader(title: 'provider_dashboard.schedule.section_slot_settings'.tr()),
+            const SizedBox(height: 12),
             _numberField(
               label: 'provider_dashboard.schedule.slot_duration'.tr(),
               value: _slotDuration,
@@ -257,11 +265,15 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
             ),
             const SizedBox(height: 20),
             SizedBox(
-              height: 48,
+              height: 56,
               width: double.infinity,
               child: FilledButton(
+                style: FilledButton.styleFrom(shape: const StadiumBorder()),
                 onPressed: _submit,
-                child: Text('provider_dashboard.schedule.save'.tr()),
+                child: Text(
+                  'provider_dashboard.schedule.save'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -304,7 +316,7 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
         ),
       ),
       IconButton(
-        icon: const Icon(Icons.remove_circle_outline),
+        icon: const Icon(SolarIconsOutline.minusCircle),
         onPressed: value - step >= min ? () => onChanged(value - step) : null,
       ),
       SizedBox(
@@ -316,7 +328,7 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
         ),
       ),
       IconButton(
-        icon: const Icon(Icons.add_circle_outline),
+        icon: const Icon(SolarIconsOutline.addCircle),
         onPressed: value + step <= max ? () => onChanged(value + step) : null,
       ),
     ],

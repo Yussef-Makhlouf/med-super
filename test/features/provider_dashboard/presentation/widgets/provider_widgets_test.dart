@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_bottom_nav_bar.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
+import 'package:solar_icons/solar_icons.dart';
 import '../../../../helpers/pump_localized_widget.dart';
 
 void main() {
@@ -25,7 +26,7 @@ void main() {
     expect(find.text('المرضى'), findsAtLeastNWidgets(1));
     expect(find.text('الملف الشخصي'), findsAtLeastNWidgets(1));
 
-    await tester.tap(find.byIcon(Icons.people_outline));
+    await tester.tap(find.byIcon(SolarIconsOutline.usersGroupRounded));
     expect(tappedIndex, 2);
   });
 

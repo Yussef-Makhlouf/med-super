@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
@@ -273,6 +276,7 @@ class _ProviderAppointmentsScreenState
         onPressed: _openBookWalkIn,
         backgroundColor: brandBlue,
         foregroundColor: Colors.white,
+        shape: const StadiumBorder(),
         icon: const Icon(Icons.add),
         label: Text('provider_dashboard.appointments.add_walk_in'.tr()),
       ),
@@ -316,8 +320,8 @@ class _ProviderAppointmentsScreenState
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -346,10 +350,10 @@ class _ProviderAppointmentsScreenState
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: brandBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
             child: Column(
               children: [
@@ -398,10 +402,11 @@ class _ProviderAppointmentsScreenState
                     margin: const EdgeInsetsDirectional.only(end: 10),
                     decoration: BoxDecoration(
                       color: selected ? brandBlue : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selected ? brandBlue : const Color(0xFFF1F5F9),
-                      ),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: selected
+                          ? null
+                          : Border.all(color: AppColors.borderLight),
+                      boxShadow: selected ? AppShadows.resting : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -440,10 +445,10 @@ class _ProviderAppointmentsScreenState
               height: 76,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(color: AppColors.borderLight),
               ),
-              child: const Icon(Icons.calendar_month_outlined, color: AppColors.mutedText2),
+              child: const Icon(SolarIconsOutline.calendar, color: AppColors.mutedText2),
             ),
           ),
         ],
@@ -531,11 +536,11 @@ class _ProviderAppointmentsScreenState
       'provider_dashboard.appointments.segment_upcoming',
     ];
     return Container(
-      height: 48,
+      height: 52,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.md),
       ),
       child: Row(
         children: List.generate(labels.length, (index) {
@@ -546,7 +551,8 @@ class _ProviderAppointmentsScreenState
               child: Container(
                 decoration: BoxDecoration(
                   color: selected ? brandBlue : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  boxShadow: selected ? AppShadows.resting : null,
                 ),
                 child: Center(
                   child: Text(
@@ -580,7 +586,7 @@ class _ProviderAppointmentsScreenState
         child: EmptyState(
           title: 'provider_dashboard.appointments.empty_title'.tr(),
           subtitle: 'provider_dashboard.appointments.empty_subtitle'.tr(),
-          icon: Icons.calendar_today_outlined,
+          icon: SolarIconsOutline.calendarMinimalistic,
         ),
       );
     }
