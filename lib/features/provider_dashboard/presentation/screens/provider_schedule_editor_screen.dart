@@ -3,9 +3,13 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
@@ -216,6 +220,7 @@ class _ProviderScheduleEditorScreenState
               backgroundColor: brandBlue,
               foregroundColor: Colors.white,
               onPressed: () => _create(context, ref, clinics),
+              shape: const StadiumBorder(),
               icon: const Icon(Icons.add),
               label: Text('provider_dashboard.schedule.add'.tr()),
             ),
@@ -227,7 +232,7 @@ class _ProviderScheduleEditorScreenState
             return EmptyState(
               title: 'provider_dashboard.schedule.empty_title'.tr(),
               subtitle: 'provider_dashboard.schedule.empty_subtitle'.tr(),
-              icon: Icons.schedule_outlined,
+              icon: SolarIconsOutline.calendarMinimalistic,
             );
           }
 
@@ -261,7 +266,7 @@ class _ProviderScheduleEditorScreenState
       return EmptyState(
         title: 'provider_dashboard.schedule.empty_title'.tr(),
         subtitle: 'provider_dashboard.schedule.empty_subtitle'.tr(),
-        icon: Icons.schedule_outlined,
+        icon: SolarIconsOutline.calendarMinimalistic,
       );
     }
 

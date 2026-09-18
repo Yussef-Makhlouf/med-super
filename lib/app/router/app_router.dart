@@ -42,6 +42,7 @@ bool _isPublicAuthRoute(String path) =>
     path == '/login' ||
     path == '/verify-otp' ||
     path == '/account-login' ||
+    path == '/provider-login' ||
     path == '/forgot-password' ||
     path == '/verify-reset-code' ||
     path == '/reset-password';

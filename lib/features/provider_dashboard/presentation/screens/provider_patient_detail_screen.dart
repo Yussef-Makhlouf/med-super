@@ -2,8 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/empty_state.dart';
+import 'package:solar_icons/solar_icons.dart';
 import '../../domain/entities/patient.dart';
 import '../controllers/provider_dashboard_providers.dart';
 import '../widgets/provider_appointment_card.dart';
@@ -44,15 +49,19 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+                boxShadow: AppShadows.resting,
               ),
               child: Column(
                 children: [
                   CircleAvatar(
                     radius: 36,
                     backgroundColor: brandBlue.withValues(alpha: 0.1),
-                    child: const Icon(Icons.person, color: brandBlue, size: 36),
+                    child: const Icon(
+                      SolarIconsBold.userCircle,
+                      color: brandBlue,
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -81,12 +90,16 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  boxShadow: AppShadows.resting,
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.event, color: brandBlue, size: 24),
+                    const Icon(
+                      SolarIconsOutline.calendarMinimalistic,
+                      color: brandBlue,
+                      size: 24,
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -135,18 +148,12 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                     const [];
 
                 if (patientAppointments.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'provider_dashboard.patients.no_other_appointments'
-                            .tr(),
-                        style: const TextStyle(color: AppColors.mutedText2),
-                      ),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: EmptyState(
+                      title: 'provider_dashboard.patients.no_other_appointments'
+                          .tr(),
+                      icon: SolarIconsOutline.calendarMinimalistic,
                     ),
                   );
                 }
@@ -159,17 +166,18 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final apt = patientAppointments[index];
+                    final status = doctorAppointmentStatusStyle(apt.status);
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        boxShadow: AppShadows.resting,
                       ),
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.access_time_filled,
+                            SolarIconsOutline.clockCircle,
                             color: AppColors.mutedText2,
                             size: 20,
                           ),
@@ -197,14 +205,7 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          Text(
-                            doctorAppointmentStatusStyle(apt.status).label,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: brandBlue,
-                            ),
-                          ),
+                          AppBadge.soft(label: status.label, color: status.color),
                         ],
                       ),
                     );

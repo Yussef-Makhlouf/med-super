@@ -3,10 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_clinic_settings_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_edit_profile_screen.dart';
@@ -88,7 +93,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                             radius: 55,
                             backgroundColor: AppColors.surfaceCard,
                             imageUrl: avatarUrl,
-                            placeholderIcon: Icons.account_circle,
+                            placeholderIcon: SolarIconsBold.userCircle,
                             placeholderIconColor: AppColors.mutedText,
                           ),
                           if (!isAssistant)
@@ -106,7 +111,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 child: const Icon(
-                                  Icons.edit,
+                                  SolarIconsOutline.pen,
                                   size: 14,
                                   color: Colors.white,
                                 ),
@@ -140,8 +145,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                   // Navigation Options List
                   if (!isAssistant)
                     buildNavTile(
-                      icon: Icons.person_outline,
-                      iconBg: brandBlue.withValues(alpha: 0.1),
+                      context: context,
+                      icon: SolarIconsOutline.user,
                       iconColor: brandBlue,
                       title: 'المعلومات الشخصية',
                       subtitle: isAssistant
@@ -157,8 +162,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                   if (!isAssistant) ...[
                     const SizedBox(height: 14),
                     buildNavTile(
-                      icon: Icons.domain_outlined,
-                      iconBg: const Color(0xFFECFDF5),
+                      context: context,
+                      icon: SolarIconsOutline.buildings,
                       iconColor: const Color(0xFF10B981),
                       title: 'إعدادات العيادة',
                       subtitle: 'العنوان، معلومات الاتصال',
@@ -170,8 +175,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 14),
                     buildNavTile(
-                      icon: Icons.calendar_today_outlined,
-                      iconBg: const Color(0xFFF3E8FF),
+                      context: context,
+                      icon: SolarIconsOutline.calendar,
                       iconColor: const Color(0xFFA855F7),
                       title: 'جدول المواعيد',
                       subtitle: 'ساعات العمل والحضور',
@@ -183,8 +188,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 14),
                     buildNavTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      iconBg: const Color(0xFFEFF6FF),
+                      context: context,
+                      icon: SolarIconsOutline.walletMoney,
                       iconColor: brandBlue,
                       title: 'المحفظة',
                       subtitle: 'الرصيد والمعاملات المالية',
@@ -200,8 +205,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 14),
                     // Doctor-only: manage clinic assistants
                     buildNavTile(
-                      icon: Icons.badge_outlined,
-                      iconBg: const Color(0xFFFFF7ED),
+                      context: context,
+                      icon: SolarIconsOutline.diploma,
                       iconColor: const Color(0xFFF97316),
                       title: 'assistants.title'.tr(),
                       subtitle: 'assistants.manage_subtitle'.tr(),
@@ -213,9 +218,9 @@ class ProviderProfileScreen extends ConsumerWidget {
                   // action button across the provider dashboard screens.
                   AppButton.outlined(
                     label: 'تسجيل الخروج',
-                    icon: const Icon(Icons.logout, size: 20),
+                    icon: const Icon(SolarIconsOutline.logout, size: 20),
                     foregroundColor: const Color(0xFFDC2626),
-                    borderRadius: 16,
+                    borderRadius: AppRadii.pill,
                     fullWidth: true,
                     onPressed: () async {
                       // '/account-login' (phone+password), not '/login'
@@ -248,8 +253,8 @@ class ProviderProfileScreen extends ConsumerWidget {
   }
 
   static Widget buildNavTile({
+    required BuildContext context,
     required IconData icon,
-    required Color iconBg,
     required Color iconColor,
     required String title,
     required String subtitle,
@@ -257,26 +262,19 @@ class ProviderProfileScreen extends ConsumerWidget {
   }) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadii.xl),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            boxShadow: AppShadows.resting,
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: iconColor, size: 22),
-              ),
+              AppIconTile(icon: icon, color: iconColor, size: 48, iconSize: 22),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -301,9 +299,9 @@ class ProviderProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_left,
-                color: Color(0xFFCBD5E1),
+              Icon(
+                AppNavIcons.chevronForward(context),
+                color: AppColors.mutedText2,
                 size: 20,
               ),
             ],
@@ -327,8 +325,8 @@ class _AssistantAppointmentsClinicTabs extends StatelessWidget {
     return Column(
       children: [
         ProviderProfileScreen.buildNavTile(
-          icon: Icons.calendar_today_outlined,
-          iconBg: const Color(0xFFF3E8FF),
+          context: context,
+          icon: SolarIconsOutline.calendar,
           iconColor: const Color(0xFFA855F7),
           title: 'جدول المواعيد',
           subtitle: 'ساعات العمل والحضور للفروع المخصصة لك',
@@ -340,8 +338,8 @@ class _AssistantAppointmentsClinicTabs extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         ProviderProfileScreen.buildNavTile(
-          icon: Icons.domain_outlined,
-          iconBg: const Color(0xFFECFDF5),
+          context: context,
+          icon: SolarIconsOutline.buildings,
           iconColor: const Color(0xFF10B981),
           title: 'العيادة',
           subtitle: 'الفروع المخصصة لك',

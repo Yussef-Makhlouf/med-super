@@ -5,6 +5,7 @@ import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/provisioned_assistant.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/assistant_providers.dart';
@@ -13,6 +14,7 @@ import 'package:med_super/features/provider_dashboard/presentation/screens/assis
 import 'package:med_super/features/provider_dashboard/presentation/screens/assistant/delete_assistant_confirmation_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/assistant/edit_assistant_bottom_sheet.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/assistant_card.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Doctor-only screen — lists all clinic assistants and exposes add/edit/delete.
 class AssistantListScreen extends ConsumerWidget {
@@ -29,7 +31,7 @@ class AssistantListScreen extends ConsumerWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          icon: Icon(AppNavIcons.back(context), size: 18),
           color: AppColors.ink900,
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -46,7 +48,8 @@ class AssistantListScreen extends ConsumerWidget {
         onPressed: () => _showAddSheet(context, ref),
         backgroundColor: brandBlue,
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_outlined),
+        shape: const StadiumBorder(),
+        icon: const Icon(SolarIconsOutline.userPlus),
         label: Text('assistants.add_fab'.tr()),
       ),
       body: assistantsAsync.when(
@@ -141,15 +144,15 @@ class _AssistantEmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 112,
+              height: 112,
               decoration: BoxDecoration(
                 color: brandBlue.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.badge_outlined,
-                size: 48,
+                SolarIconsOutline.diploma,
+                size: 52,
                 color: brandBlue.withValues(alpha: 0.6),
               ),
             ),
@@ -179,13 +182,11 @@ class _AssistantEmptyState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: brandBlue,
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                minimumSize: const Size(double.infinity, 56),
+                shape: const StadiumBorder(),
                 elevation: 0,
               ),
-              icon: const Icon(Icons.person_add_outlined),
+              icon: const Icon(SolarIconsOutline.userPlus),
               label: Text(
                 'assistants.add_new'.tr(),
                 style: const TextStyle(
@@ -218,7 +219,7 @@ class _ErrorState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.error_outline_rounded,
+              SolarIconsOutline.dangerCircle,
               size: 56,
               color: AppColors.mutedText,
             ),

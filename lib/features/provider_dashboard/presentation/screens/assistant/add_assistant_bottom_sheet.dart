@@ -2,13 +2,17 @@ import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart'
     show isValidEgyptPhone, normalizeEgyptPhone;
 import 'package:med_super/features/provider_dashboard/domain/entities/provisioned_assistant.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/assistant_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_multi_select.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Bottom sheet for adding a new clinic assistant.
 /// Returns [ProvisionedAssistant] (with generated password) on success,
@@ -146,14 +150,10 @@ class _AddAssistantBottomSheetState
                 const SizedBox(height: 24),
 
                 // Display name field
-                _FieldLabel(text: 'profile.full_name'.tr()),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'profile.full_name'.tr(),
+                  hint: 'assistants.name_hint'.tr(),
                   controller: _nameController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.name_hint'.tr(),
-                  ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'assistants.name_required'.tr();
@@ -166,13 +166,13 @@ class _AddAssistantBottomSheetState
                 const SizedBox(height: 16),
 
                 // Phone field — tasks #34 + #35
-                _FieldLabel(text: 'assistants.phone_label'.tr()),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.phone_label'.tr(),
+                  hint: '01XXXXXXXXX',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   textDirection: TextDirection.ltr,
-                  decoration: _inputDecoration(hint: '01XXXXXXXXX'),
+                  textAlign: TextAlign.left,
                   maxLength: 11,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
@@ -187,34 +187,26 @@ class _AddAssistantBottomSheetState
                 const SizedBox(height: 16),
 
                 // Title field
-                _FieldLabel(text: 'assistants.title_label'.tr()),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.title_label'.tr(),
+                  hint: 'assistants.title_hint'.tr(),
                   controller: _titleController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.title_hint'.tr(),
-                  ),
                   maxLength: 200,
                 ),
                 const SizedBox(height: 16),
 
                 // Subtitle field
-                _FieldLabel(text: 'assistants.subtitle_label'.tr()),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.subtitle_label'.tr(),
+                  hint: 'assistants.subtitle_hint'.tr(),
                   controller: _subtitleController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.subtitle_hint'.tr(),
-                  ),
                   maxLength: 200,
                 ),
                 const SizedBox(height: 16),
 
                 // Branch multi-select
-                _FieldLabel(text: 'assistants.branches_label'.tr()),
-                const SizedBox(height: 6),
+                SectionHeader(title: 'assistants.branches_label'.tr()),
+                const SizedBox(height: 10),
                 Consumer(
                   builder: (context, ref, _) {
                     final clinicsAsync = ref.watch(myClinicsProvider);
@@ -269,8 +261,8 @@ class _AddAssistantBottomSheetState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.errorRed.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
                         color: AppColors.errorRed.withValues(alpha: 0.3),
                       ),
@@ -278,7 +270,7 @@ class _AddAssistantBottomSheetState
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.error_outline,
+                          SolarIconsOutline.dangerCircle,
                           size: 16,
                           color: AppColors.errorRed,
                         ),
@@ -302,16 +294,14 @@ class _AddAssistantBottomSheetState
                 // Submit button
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _submit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: brandBlue,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: _loading
                         ? const SizedBox(
@@ -338,48 +328,4 @@ class _AddAssistantBottomSheetState
       ),
     );
   }
-
-  InputDecoration _inputDecoration({required String hint}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: AppColors.placeholderText),
-    filled: true,
-    fillColor: AppColors.surfaceCard,
-    counterText: '',
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.borderLight),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.borderLight),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: brandBlue, width: 1.5),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.errorRed),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.errorRed, width: 1.5),
-    ),
-  );
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.text});
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: const TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      color: AppColors.ink900,
-    ),
-  );
 }

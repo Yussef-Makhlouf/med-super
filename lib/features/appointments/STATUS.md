@@ -38,9 +38,10 @@ guessed shapes:
   `initialHold` param, which skips the auto-hold step and goes straight to
   the countdown/confirm UI.
 - `GET /v1/appointments` — `ListMyAppointmentsUseCase`, wired to
-  `PatientAppointmentsScreen`. **Cursor pagination not surfaced** — only
-  the first page renders; `nextCursor` is silently dropped. Fine for the
-  seed data volume, not for a patient with many appointments.
+  `PatientAppointmentsScreen` with cursor pagination. Each page is appended
+  by stable `appointmentId`, overlapping records are deduplicated, concurrent
+  load-more taps share one request, and a failed page keeps the visible list
+  and retry cursor intact.
 - `GET /v1/appointments/{id}` — `GetAppointmentUseCase`, wired to
   `AppointmentDetailScreen` (tap a card in `PatientAppointmentsScreen`).
   Shows exactly what the response has — status, times, cancelled reason,

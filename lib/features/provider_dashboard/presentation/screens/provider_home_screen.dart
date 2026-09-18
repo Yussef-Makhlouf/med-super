@@ -5,9 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
@@ -23,6 +28,7 @@ import 'package:med_super/features/provider_dashboard/presentation/widgets/branc
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -189,7 +195,7 @@ class ProviderHomeScreen extends ConsumerWidget {
                           child: _refreshableEmpty(
                             EmptyState(
                               title: 'provider_dashboard.home.load_error'.tr(),
-                              icon: Icons.error_outline,
+                              icon: SolarIconsOutline.dangerCircle,
                             ),
                           ),
                         ),
@@ -204,7 +210,7 @@ class ProviderHomeScreen extends ConsumerWidget {
                                 EmptyState(
                                   title: 'provider_dashboard.home.day_off_title'.tr(),
                                   subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-                                  icon: Icons.weekend_outlined,
+                                  icon: SolarIconsOutline.umbrella,
                                 ),
                               ),
                             );
@@ -245,11 +251,19 @@ class _MonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final monthLabel = DateFormat('MMMM yyyy', 'ar').format(selectedDate);
+    // Week pagination is a temporal axis, not a reading-direction control —
+    // "previous" always sits left with a left-pointing arrow and "next"
+    // always sits right with a right-pointing arrow, in both `ar` and `en`
+    // (universal calendar/pagination convention). Forcing `textDirection`
+    // here only fixes this Row's own child order; it does not affect how
+    // descendant `Text` widgets shape Arabic text, which still follows the
+    // ambient locale `Directionality` normally.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
+        textDirection: ui.TextDirection.ltr,
         children: [
-          _NavCircleButton(icon: Icons.chevron_left, onTap: onNextWeek),
+          _NavCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: onPrevWeek),
           Expanded(
             child: Center(
               child: Text(
@@ -262,16 +276,16 @@ class _MonthHeader extends StatelessWidget {
               ),
             ),
           ),
-          _NavCircleButton(icon: Icons.chevron_right, onTap: onPrevWeek),
+          _NavCircleButton(icon: SolarIconsOutline.altArrowRight, onTap: onNextWeek),
           if (onToday != null) ...[
             const SizedBox(width: 6),
             GestureDetector(
               onTap: onToday,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: brandBlue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
                 child: Text(
                   'provider_dashboard.home.today'.tr(),
@@ -297,14 +311,13 @@ class _NavCircleButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 34,
-        height: 34,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: brandBlue.withValues(alpha: 0.08),
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFF1F5F9)),
         ),
-        child: Icon(icon, size: 20, color: AppColors.mutedText2),
+        child: Icon(icon, size: 20, color: brandBlue),
       ),
     );
   }
@@ -336,12 +349,15 @@ class _DayTile extends StatelessWidget {
         width: 56,
         decoration: BoxDecoration(
           color: isSelected ? brandBlue : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? brandBlue
-                : (isToday ? brandBlue.withValues(alpha: 0.4) : const Color(0xFFF1F5F9)),
-          ),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: isSelected
+              ? null
+              : Border.all(
+                  color: isToday
+                      ? brandBlue.withValues(alpha: 0.4)
+                      : AppColors.borderLight,
+                ),
+          boxShadow: isSelected ? AppShadows.resting : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -363,16 +379,10 @@ class _DayTile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isWorkingDay
-                    ? (isSelected ? Colors.white : brandBlue)
-                    : Colors.transparent,
-              ),
-            ),
+            if (isWorkingDay)
+              AppBadge.dot(color: isSelected ? Colors.white : brandBlue)
+            else
+              const SizedBox(height: 8, width: 8),
           ],
         ),
       ),
@@ -561,7 +571,7 @@ class _AllBranchesTimeline extends ConsumerWidget {
           EmptyState(
             title: 'provider_dashboard.home.day_off_title'.tr(),
             subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-            icon: Icons.weekend_outlined,
+            icon: SolarIconsOutline.umbrella,
           ),
         ),
       );
@@ -651,7 +661,7 @@ class _BranchDayTimeline extends ConsumerWidget {
               EmptyState(
                 title: 'provider_dashboard.home.day_off_title'.tr(),
                 subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
-                icon: Icons.weekend_outlined,
+                icon: SolarIconsOutline.umbrella,
               ),
             ),
           );
@@ -801,10 +811,10 @@ class _TimelineRowTile extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           SizedBox(
@@ -877,21 +887,7 @@ class _TimelineRowTile extends ConsumerWidget {
           if (appointment.status == DoctorAppointmentStatus.confirmed)
             DoctorVisitStatusBadge(status: appointment.visitStatus)
           else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: lifecycleStatus.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                lifecycleStatus.label,
-                style: TextStyle(
-                  color: lifecycleStatus.color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-            ),
+            AppBadge.soft(label: lifecycleStatus.label, color: lifecycleStatus.color),
         ],
       ),
     );
@@ -905,7 +901,7 @@ class _TimelineRowTile extends ConsumerWidget {
       child: Row(
         children: [
           Icon(
-            isPast ? Icons.history_toggle_off : Icons.add_circle_outline,
+            isPast ? SolarIconsOutline.history : SolarIconsOutline.addCircle,
             size: 20,
             color: isPast ? AppColors.mutedText2 : brandBlue,
           ),
@@ -1118,28 +1114,21 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                     (value ?? '').trim().isEmpty ? 'provider_dashboard.walk_in.name_required'.tr() : null,
               ),
               const SizedBox(height: 20),
-              Text(
-                'provider_dashboard.walk_in.step_branch'.tr(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.ink900,
-                ),
-              ),
-              const SizedBox(height: 8),
+              SectionHeader(title: 'provider_dashboard.walk_in.step_branch'.tr()),
+              const SizedBox(height: 12),
               ref
                   .watch(myClinicsProvider)
                   .when(
                     loading: () => SizedBox(
-                      height: 72,
+                      height: 132,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: 3,
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        separatorBuilder: (_, _) => const SizedBox(width: 10),
                         itemBuilder: (_, _) => const SkeletonLoader(
-                          width: 130,
-                          height: 72,
-                          borderRadius: 12,
+                          width: 168,
+                          height: 132,
+                          borderRadius: AppRadii.lg,
                         ),
                       ),
                     ),
@@ -1152,11 +1141,11 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                           .where((c) => c.isAcceptingBookings)
                           .toList();
                       return SizedBox(
-                        height: 72,
+                        height: 132,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: acceptingBranches.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          separatorBuilder: (_, _) => const SizedBox(width: 10),
                           itemBuilder: (context, index) =>
                               _branchChip(acceptingBranches[index]),
                         ),
@@ -1164,16 +1153,9 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                     },
                   ),
               if (_slot == null) ...[
-                const SizedBox(height: 20),
-                Text(
-                  'provider_dashboard.walk_in.step_slot'.tr(),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 24),
+                SectionHeader(title: 'provider_dashboard.walk_in.step_slot'.tr()),
+                const SizedBox(height: 12),
                 _slotPicker(),
               ],
               if (_error != null) ...[
@@ -1182,9 +1164,10 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
               ],
               const SizedBox(height: 20),
               SizedBox(
-                height: 48,
+                height: 56,
                 width: double.infinity,
                 child: FilledButton(
+                  style: FilledButton.styleFrom(shape: const StadiumBorder()),
                   onPressed: (_slot != null && !_submitting) ? _submit : null,
                   child: _submitting
                       ? const SizedBox(
@@ -1192,7 +1175,10 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : Text('provider_dashboard.walk_in.submit'.tr()),
+                      : Text(
+                          'provider_dashboard.walk_in.submit'.tr(),
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -1207,15 +1193,16 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     return GestureDetector(
       onTap: () => _switchBranch(clinic),
       child: Container(
-        width: 130,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        width: 168,
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? brandBlue.withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(
-            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            color: selected ? brandBlue : AppColors.borderLight,
             width: selected ? 2 : 1,
           ),
+          boxShadow: AppShadows.resting,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1223,28 +1210,30 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.store_mall_directory_outlined,
-                  size: 14,
+                AppIconTile(
+                  icon: SolarIconsOutline.buildings,
                   color: selected ? brandBlue : AppColors.mutedText2,
+                  size: 40,
+                  iconSize: 20,
                 ),
                 const Spacer(),
                 if (selected)
-                  const Icon(Icons.check_circle, color: brandBlue, size: 16),
+                  const Icon(SolarIconsBold.checkCircle, color: brandBlue, size: 20),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
             Text(
               clinic.address.city,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
+            const SizedBox(height: 2),
             Text(
               clinic.displayAddressLine,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10, color: AppColors.mutedText2),
+              style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
             ),
           ],
         ),
@@ -1288,7 +1277,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
         if (slots.isEmpty) {
           return EmptyState(
             title: 'provider_dashboard.walk_in.no_slots'.tr(),
-            icon: Icons.event_busy_outlined,
+            icon: SolarIconsOutline.calendarMinimalistic,
           );
         }
         final sorted = [...slots]
@@ -1307,12 +1296,12 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     return GestureDetector(
       onTap: () => setState(() => _slot = slot),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? brandBlue.withValues(alpha: 0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          color: selected ? brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           border: Border.all(
-            color: selected ? brandBlue : const Color(0xFFE2E8F0),
+            color: selected ? brandBlue : AppColors.borderLight,
             width: selected ? 2 : 1,
           ),
         ),
@@ -1320,8 +1309,8 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
           formatAppointmentTime(slot.startAtUtc),
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 12,
-            color: selected ? brandBlue : AppColors.ink900,
+            fontSize: 13,
+            color: selected ? Colors.white : AppColors.ink900,
           ),
         ),
       ),

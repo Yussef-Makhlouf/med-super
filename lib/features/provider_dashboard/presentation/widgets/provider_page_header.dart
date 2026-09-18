@@ -94,7 +94,7 @@ class ProviderPageHeader extends StatelessWidget
                 onTap: onAvatarTap ?? () => context.go('/provider/profile'),
                 child: AvatarCircle(
                   radius: 22,
-                  backgroundColor: const Color(0xFFDCE8FF),
+                  backgroundColor: brandBlue.withValues(alpha: 0.12),
                   imageUrl: avatarUrl,
                   placeholderIconColor: brandBlue,
                 ),

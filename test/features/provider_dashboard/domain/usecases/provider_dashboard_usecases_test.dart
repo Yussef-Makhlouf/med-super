@@ -116,6 +116,7 @@ class _FakeRepo implements ProviderDashboardRepository {
     String? bio,
     String? degree,
     int? yearsOfExperience,
+    String? photoDataUri,
   }) async => _result(
     DoctorAccountProfile(
       id: 'doc-001',

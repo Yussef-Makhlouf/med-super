@@ -3,10 +3,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/patient.dart';
 import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
@@ -122,12 +125,12 @@ class _ProviderPatientsScreenState
                   decoration: InputDecoration(
                     hintText: 'provider_dashboard.patients.search_hint'.tr(),
                     hintStyle: const TextStyle(
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.mutedText2,
                       fontSize: 14,
                     ),
                     suffixIcon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF64748B),
+                      SolarIconsOutline.magnifier,
+                      color: AppColors.mutedText2,
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -136,12 +139,12 @@ class _ProviderPatientsScreenState
                       vertical: 14,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
+                      borderSide: const BorderSide(color: AppColors.borderLight),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
+                      borderSide: const BorderSide(color: AppColors.borderLight),
                     ),
                   ),
                 ),
@@ -211,7 +214,7 @@ class _ProviderPatientsScreenState
                           subtitle:
                               'provider_dashboard.patients.empty_subtitle'
                                   .tr(),
-                          icon: Icons.people_outline,
+                          icon: SolarIconsOutline.usersGroupRounded,
                         ),
                       );
                     }
@@ -247,9 +250,9 @@ class _ProviderPatientsScreenState
       selectedColor: brandBlue,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         side: BorderSide(
-          color: selected ? brandBlue : const Color(0xFFF1F5F9),
+          color: selected ? brandBlue : AppColors.borderLight,
         ),
       ),
       showCheckmark: false,
@@ -281,13 +284,13 @@ class _ProviderPatientsScreenState
             ),
           );
         },
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            boxShadow: AppShadows.resting,
           ),
           child: Row(
             children: [
@@ -319,7 +322,7 @@ class _ProviderPatientsScreenState
                     Row(
                       children: [
                         const Icon(
-                          Icons.phone_outlined,
+                          SolarIconsOutline.phone,
                           size: 14,
                           color: AppColors.mutedText2,
                         ),
@@ -338,17 +341,17 @@ class _ProviderPatientsScreenState
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 4,
+                          vertical: 5,
                         ),
                         decoration: BoxDecoration(
                           color: brandBlue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.calendar_today_outlined,
+                              SolarIconsOutline.calendarMinimalistic,
                               size: 12,
                               color: brandBlue,
                             ),

@@ -2,12 +2,16 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Picks a replacement slot for a provider-initiated reschedule.
 ///
@@ -114,7 +118,7 @@ class _ProviderRescheduleSheet extends ConsumerWidget {
                 data: (slots) => slots.isEmpty
                     ? EmptyState(
                         title: 'provider_dashboard.reschedule.no_slots'.tr(),
-                        icon: Icons.event_busy_outlined,
+                        icon: SolarIconsOutline.calendarMinimalistic,
                       )
                     : ListView.separated(
                         controller: scrollController,
@@ -136,19 +140,25 @@ class _ProviderRescheduleSheet extends ConsumerWidget {
     final dateLabel =
         '${'provider_dashboard.weekday.${local.weekday}'.tr()} ${local.day}/${local.month}';
 
-    return ListTile(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        boxShadow: AppShadows.resting,
       ),
-      leading: const Icon(Icons.schedule, color: AppColors.mutedText2),
-      title: Text(
-        formatAppointmentTime(slot.startAtUtc),
-        style: const TextStyle(fontWeight: FontWeight.w800),
+      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
+        leading: const Icon(SolarIconsOutline.clockCircle, color: AppColors.mutedText2),
+        title: Text(
+          formatAppointmentTime(slot.startAtUtc),
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(dateLabel),
+        trailing: Icon(AppNavIcons.chevronForward(context)),
+        onTap: () => Navigator.of(context).pop(slot.slotId),
       ),
-      subtitle: Text(dateLabel),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context).pop(slot.slotId),
     );
   }
 }

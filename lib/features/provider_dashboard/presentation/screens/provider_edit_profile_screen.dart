@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:solar_icons/solar_icons.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import '../controllers/provider_dashboard_providers.dart';
 
@@ -226,7 +229,7 @@ class _ProviderEditProfileScreenState
                               alignment: Alignment.center,
                               child: previewImage == null
                                   ? const Icon(
-                                      Icons.account_circle,
+                                      SolarIconsBold.userCircle,
                                       size: 96,
                                       color: AppColors.mutedText,
                                     )
@@ -253,7 +256,7 @@ class _ProviderEditProfileScreenState
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.camera_alt,
+                                  SolarIconsOutline.camera,
                                   size: 16,
                                   color: Colors.white,
                                 ),
@@ -270,8 +273,8 @@ class _ProviderEditProfileScreenState
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderMedium),
+                      borderRadius: BorderRadius.circular(AppRadii.lg),
+                      boxShadow: AppShadows.resting,
                     ),
                     child: Column(
                       children: [
@@ -341,6 +344,7 @@ class _ProviderEditProfileScreenState
                     backgroundColor: brandBlue,
                     foregroundColor: Colors.white,
                     fullWidth: true,
+                    borderRadius: AppRadii.pill,
                     onPressed: _isDirty
                         ? () => _submit(isAssistant: isAssistant)
                         : null,

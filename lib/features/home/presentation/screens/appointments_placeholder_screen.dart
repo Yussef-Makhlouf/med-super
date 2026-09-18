@@ -18,8 +18,7 @@ import 'package:solar_icons/solar_icons.dart';
 // ─── screen ───────────────────────────────────────────────────────────────────
 
 /// Real Phase 4 `GET /v1/appointments` (File 12 Part 35.15/35.17) — patient-
-/// only, cursor pagination not yet surfaced here (first page only; see
-/// `lib/features/appointments/STATUS.md`). Cancel calls the real
+/// only, cursor-paginated and accumulated locally. Cancel calls the real
 /// `POST /v1/appointments/{id}/cancel`; reschedule pushes to
 /// `RescheduleScreen`, which needs a doctorId it can only recover from a
 /// mock-convention affiliationId — see that screen's doc comment and
@@ -154,58 +153,103 @@ class _PatientAppointmentsScreenState
                       ? state.items.where((a) => a.status == 'CONFIRMED').toList()
                       : state.items.where((a) => a.status != 'CONFIRMED').toList();
 
-                  if (appts.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'appointments.empty'.tr(),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppPalette.inkMuted,
-                        ),
-                      ),
-                    );
-                  }
-
-                  // Load-more only makes sense on the unfiltered end of the
-                  // fetched page, so it's tacked onto whichever tab is
-                  // active — the backend has no separate cursor per status
-                  // filter here (File 12 Part 35.14 scopes cursor to the
-                  // caller's whole list, not a client-side tab split).
-                  final itemCount = appts.length + (state.hasMore ? 1 : 0);
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-                    itemCount: itemCount,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
-                    itemBuilder: (context, i) {
-                      if (i == itemCount - 1 && state.hasMore) {
-                        return Center(
-                          child: state.isLoadingMore
-                              ? const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: CircularProgressIndicator(),
-                                )
-                              : TextButton(
-                                  onPressed: () => ref
-                                      .read(myAppointmentsProvider.notifier)
-                                      .loadMore(),
-                                  child: Text('appointments.load_more'.tr()),
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: appts.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'appointments.empty'.tr(),
+                                  style: Theme.of(context).textTheme.bodyLarge
+                                      ?.copyWith(color: AppPalette.inkMuted),
                                 ),
-                        );
-                      }
-                      return _AppointmentCard(
-                        appt: appts[i],
-                        isCancelling: _cancellingId == appts[i].appointmentId,
-                        isNavigatingToReschedule: _navigatingToReschedule,
-                        onCancel: () => _cancel(appts[i]),
-                        onReschedule: () => _reschedule(appts[i]),
-                        onTap: () => _openDetail(appts[i]),
-                      );
-                    },
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  16,
+                                ),
+                                itemCount: appts.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 14),
+                                itemBuilder: (context, i) => _AppointmentCard(
+                                  appt: appts[i],
+                                  isCancelling:
+                                      _cancellingId == appts[i].appointmentId,
+                                  isNavigatingToReschedule:
+                                      _navigatingToReschedule,
+                                  onCancel: () => _cancel(appts[i]),
+                                  onReschedule: () => _reschedule(appts[i]),
+                                  onTap: () => _openDetail(appts[i]),
+                                ),
+                              ),
+                      ),
+                      if (state.hasMore)
+                        _LoadMoreAppointments(
+                          isLoading: state.isLoadingMore,
+                          hasError: state.loadMoreFailure != null,
+                          onLoadMore: () => ref
+                              .read(myAppointmentsProvider.notifier)
+                              .loadMore(),
+                        ),
+                    ],
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoadMoreAppointments extends StatelessWidget {
+  const _LoadMoreAppointments({
+    required this.isLoading,
+    required this.hasError,
+    required this.onLoadMore,
+  });
+
+  final bool isLoading;
+  final bool hasError;
+  final VoidCallback onLoadMore;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasError) ...[
+            Text(
+              'appointments.load_more_error'.tr(),
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppPalette.error),
+            ),
+            const SizedBox(height: 4),
+          ],
+          isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : TextButton(
+                  onPressed: onLoadMore,
+                  child: Text(
+                    hasError
+                        ? 'appointments.retry_load_more'.tr()
+                        : 'appointments.load_more'.tr(),
+                  ),
+                ),
+        ],
       ),
     );
   }

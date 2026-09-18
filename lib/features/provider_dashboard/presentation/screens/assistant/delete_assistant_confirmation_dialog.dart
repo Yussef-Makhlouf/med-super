@@ -2,8 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/assistant_providers.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Confirmation dialog shown before deleting an assistant.
 /// Shows the assistant's name, Cancel and red Confirm buttons, and a loading
@@ -58,17 +60,11 @@ class _DeleteAssistantConfirmationDialogState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Warning icon
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.person_remove_outlined,
-              color: AppColors.errorRed,
-              size: 28,
-            ),
+          const AppIconTile(
+            icon: SolarIconsOutline.userMinus,
+            color: AppColors.errorRed,
+            size: 56,
+            iconSize: 28,
           ),
           const SizedBox(height: 16),
           Text(
@@ -130,9 +126,7 @@ class _DeleteAssistantConfirmationDialogState
             backgroundColor: AppColors.errorRed,
             foregroundColor: Colors.white,
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: const StadiumBorder(),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           ),
           child: _loading

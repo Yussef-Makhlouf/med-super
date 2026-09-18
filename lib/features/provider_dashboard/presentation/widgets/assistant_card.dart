@@ -1,9 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant_status.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// A card displaying one clinic assistant with edit and delete action buttons.
 class AssistantCard extends StatelessWidget {
@@ -28,8 +32,8 @@ class AssistantCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          boxShadow: AppShadows.resting,
         ),
         child: Row(
           children: [
@@ -96,20 +100,20 @@ class AssistantCard extends StatelessWidget {
             // Edit button
             IconButton(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_outlined, size: 20),
+              icon: const Icon(SolarIconsOutline.pen, size: 20),
               color: AppColors.mutedText,
               tooltip: 'common.edit'.tr(),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             ),
             // Delete button
             IconButton(
               onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline, size: 20),
+              icon: const Icon(SolarIconsOutline.trashBinTrash, size: 20),
               color: AppColors.errorRed,
               tooltip: 'common.delete'.tr(),
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             ),
           ],
         ),
@@ -139,20 +143,11 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = status == AssistantStatus.active;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        isActive ? 'assistants.status_active'.tr() : 'assistants.status_suspended'.tr(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isActive ? const Color(0xFF059669) : AppColors.errorRed,
-        ),
-      ),
+    return AppBadge.soft(
+      label: isActive
+          ? 'assistants.status_active'.tr()
+          : 'assistants.status_suspended'.tr(),
+      color: isActive ? const Color(0xFF059669) : AppColors.errorRed,
     );
   }
 }

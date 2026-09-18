@@ -1,8 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Localized label + colour for an appointment status.
 ({String label, Color color}) doctorAppointmentStatusStyle(
@@ -73,7 +77,7 @@ class DoctorVisitStatusBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: visual.color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -148,8 +152,8 @@ class ProviderAppointmentCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            boxShadow: AppShadows.resting,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +177,7 @@ class ProviderAppointmentCard extends StatelessWidget {
                         Row(
                           children: [
                             const Icon(
-                              Icons.access_time,
+                              SolarIconsOutline.clockCircle,
                               size: 13,
                               color: AppColors.mutedText2,
                             ),
@@ -197,31 +201,14 @@ class ProviderAppointmentCard extends StatelessWidget {
                   if (appointment.status == DoctorAppointmentStatus.confirmed)
                     DoctorVisitStatusBadge(status: appointment.visitStatus)
                   else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: lifecycleStatus.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        lifecycleStatus.label,
-                        style: TextStyle(
-                          color: lifecycleStatus.color,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                    AppBadge.soft(label: lifecycleStatus.label, color: lifecycleStatus.color),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   const Icon(
-                    Icons.local_hospital_outlined,
+                    SolarIconsOutline.buildings,
                     size: 14,
                     color: AppColors.mutedText2,
                   ),
@@ -246,16 +233,14 @@ class ProviderAppointmentCard extends StatelessWidget {
                     if (onReschedule != null)
                       Expanded(
                         child: SizedBox(
-                          height: 44,
+                          height: 48,
                           child: ElevatedButton(
                             onPressed: busy ? null : onReschedule,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: brandBlue,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              shape: const StadiumBorder(),
                             ),
                             child: Text(
                               'provider_dashboard.reschedule.action'.tr(),
@@ -271,16 +256,14 @@ class ProviderAppointmentCard extends StatelessWidget {
                     if (onCancel != null)
                       Expanded(
                         child: SizedBox(
-                          height: 44,
+                          height: 48,
                           child: OutlinedButton(
                             onPressed: busy ? null : onCancel,
                             style: OutlinedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF8FAFC),
+                              backgroundColor: AppColors.surfaceApp,
                               foregroundColor: AppColors.errorRed,
-                              side: const BorderSide(color: Color(0xFFE2E8F0)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                              side: const BorderSide(color: AppColors.borderLight),
+                              shape: const StadiumBorder(),
                             ),
                             child: Text(
                               'provider_dashboard.cancel.action'.tr(),

@@ -1,9 +1,18 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/error/failure.dart';
+import 'package:med_super/core/error/result.dart';
+import 'package:med_super/core/widgets/auth_role_toggle.dart';
+import 'package:med_super/features/auth/domain/entities/user.dart';
+import 'package:med_super/features/auth/domain/entities/user_role.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/auth/presentation/screens/account_login_screen.dart';
+import 'package:med_super/features/auth/presentation/screens/provider_login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Pumps [AccountLoginScreen] behind a real [GoRouter] (so any `context.go`
@@ -18,6 +27,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> pumpAccountLoginScreen(
   WidgetTester tester, {
   Locale startLocale = const Locale('en'),
+  AccountLoginScreen? screen,
 }) async {
   SharedPreferences.setMockInitialValues({});
 
@@ -31,7 +41,11 @@ Future<void> pumpAccountLoginScreen(
     routes: [
       GoRoute(
         path: '/account-login',
-        builder: (context, state) => const AccountLoginScreen(),
+        builder: (context, state) => screen ?? const AccountLoginScreen(),
+      ),
+      GoRoute(
+        path: '/provider-login',
+        builder: (context, state) => const ProviderLoginScreen(),
       ),
       GoRoute(
         path: '/',
@@ -85,6 +99,23 @@ Future<void> pumpAccountLoginScreen(
   });
 }
 
+Session _sessionFor(UserRole role) => Session(
+  user: User(
+    id: 'user-1',
+    phone: '+201012345678',
+    roles: [role],
+    activeRole: role,
+    displayName: 'Test user',
+  ),
+  onboardingComplete: true,
+  passwordComplete: true,
+);
+
+Future<void> _enterValidCredentials(WidgetTester tester) async {
+  await tester.enterText(find.byType(TextField).first, '01012345678');
+  await tester.enterText(find.byType(TextFormField), 'Str0ng!Pass');
+}
+
 void main() {
   testWidgets(
     'submitting with both phone and password empty shows both required '
@@ -106,10 +137,7 @@ void main() {
     (tester) async {
       await pumpAccountLoginScreen(tester);
 
-      await tester.enterText(
-        find.byType(TextField).first,
-        '01312345678',
-      );
+      await tester.enterText(find.byType(TextField).first, '01312345678');
       await tester.enterText(find.byType(TextFormField), 'Str0ng!Pass');
       await tester.tap(find.text('Log in'));
       await tester.pumpAndSettle();
@@ -120,20 +148,19 @@ void main() {
     },
   );
 
-  testWidgets(
-    'submitting a too-short phone shows the phone-invalid error',
-    (tester) async {
-      await pumpAccountLoginScreen(tester);
+  testWidgets('submitting a too-short phone shows the phone-invalid error', (
+    tester,
+  ) async {
+    await pumpAccountLoginScreen(tester);
 
-      await tester.enterText(find.byType(TextField).first, '0101234');
-      await tester.enterText(find.byType(TextFormField), 'Str0ng!Pass');
-      await tester.tap(find.text('Log in'));
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '0101234');
+    await tester.enterText(find.byType(TextFormField), 'Str0ng!Pass');
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
 
-      expect(find.text('Enter a valid mobile number'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.text('Enter a valid mobile number'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'a valid phone with an empty password shows only the password-required '
@@ -151,4 +178,126 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'patient login has no role selector and shows the provider entry action',
+    (tester) async {
+      await pumpAccountLoginScreen(tester);
+
+      expect(find.byType(AuthRoleToggle<UserRole>), findsNothing);
+      expect(find.text('Patient'), findsNothing);
+      expect(find.text('Are you a healthcare provider?'), findsOneWidget);
+      expect(find.text('Doctor or Assistant Login'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('provider entry opens a dedicated provider login route', (
+    tester,
+  ) async {
+    await pumpAccountLoginScreen(tester);
+
+    await tester.tap(find.text('Doctor or Assistant Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Healthcare provider login'), findsOneWidget);
+    expect(find.text('Doctor'), findsOneWidget);
+    expect(find.text('Clinic assistant'), findsOneWidget);
+    expect(find.byType(AuthRoleToggle<UserRole>), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('patient login submits the patient role', (tester) async {
+    UserRole? submittedRole;
+    await pumpAccountLoginScreen(
+      tester,
+      screen: AccountLoginScreen(
+        loginHandler: ({required phone, required password, required role}) {
+          submittedRole = role;
+          return Future.value(Result.ok(_sessionFor(role)));
+        },
+      ),
+    );
+    await _enterValidCredentials(tester);
+
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+
+    expect(submittedRole, UserRole.patient);
+  });
+
+  testWidgets('provider role switching submits the selected provider role', (
+    tester,
+  ) async {
+    UserRole? submittedRole;
+    await pumpAccountLoginScreen(
+      tester,
+      screen: AccountLoginScreen(
+        isProviderLogin: true,
+        loginHandler: ({required phone, required password, required role}) {
+          submittedRole = role;
+          return Future.value(Result.ok(_sessionFor(role)));
+        },
+      ),
+    );
+    await tester.tap(find.text('Clinic assistant'));
+    await tester.pump();
+    await _enterValidCredentials(tester);
+
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+
+    expect(submittedRole, UserRole.clinicStaff);
+  });
+
+  testWidgets('a pending login prevents duplicate submissions', (tester) async {
+    final completion = Completer<Result<Session>>();
+    var calls = 0;
+    await pumpAccountLoginScreen(
+      tester,
+      screen: AccountLoginScreen(
+        loginHandler: ({required phone, required password, required role}) {
+          calls++;
+          return completion.future;
+        },
+      ),
+    );
+    await _enterValidCredentials(tester);
+
+    await tester.tap(find.text('Log in'));
+    await tester.pump();
+    await tester.tap(find.byType(ElevatedButton));
+    await tester.pump();
+
+    expect(calls, 1);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    completion.complete(Result.err(Failure.network()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('login failures remain visible to the user', (tester) async {
+    await pumpAccountLoginScreen(
+      tester,
+      screen: AccountLoginScreen(
+        loginHandler: ({required phone, required password, required role}) =>
+            Future.value(Result.err(Failure.network())),
+      ),
+    );
+    await _enterValidCredentials(tester);
+
+    await tester.tap(find.text('Log in'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(SnackBar), findsOneWidget);
+  });
+
+  testWidgets('Arabic patient login renders without a layout exception', (
+    tester,
+  ) async {
+    await pumpAccountLoginScreen(tester, startLocale: const Locale('ar'));
+
+    expect(find.text('هل أنت مقدم خدمة صحية؟'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

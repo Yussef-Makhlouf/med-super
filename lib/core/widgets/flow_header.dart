@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 /// One elevated header surface for a multi-step booking flow — back button
 /// + centered title, and (when [stepLabels] is given) the step progress
@@ -50,7 +50,7 @@ class FlowHeader extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: onBack,
-                icon: const Icon(SolarIconsOutline.arrowRight),
+                icon: Icon(AppNavIcons.back(context)),
               ),
               Expanded(
                 child: Text(

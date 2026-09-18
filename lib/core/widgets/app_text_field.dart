@@ -20,6 +20,8 @@ class AppTextField extends StatelessWidget {
     this.readOnly = false,
     this.focusNode,
     this.validator,
+    this.textDirection,
+    this.textAlign,
     super.key,
   });
 
@@ -40,6 +42,11 @@ class AppTextField extends StatelessWidget {
   final bool readOnly;
   final FocusNode? focusNode;
   final FormFieldValidator<String>? validator;
+  /// Overrides the default RTL text direction — for fields whose content is
+  /// always Western/numeric regardless of locale (phone numbers, country/
+  /// region codes, fees, timezones).
+  final TextDirection? textDirection;
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +63,8 @@ class AppTextField extends StatelessWidget {
       readOnly: readOnly,
       focusNode: focusNode,
       validator: validator,
-      textDirection: TextDirection.rtl,
+      textDirection: textDirection ?? TextDirection.rtl,
+      textAlign: textAlign ?? TextAlign.start,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
