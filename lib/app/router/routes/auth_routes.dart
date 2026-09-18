@@ -3,6 +3,7 @@ import 'package:med_super/features/auth/presentation/screens/account_login_scree
 import 'package:med_super/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:med_super/features/auth/presentation/screens/login_screen.dart';
 import 'package:med_super/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:med_super/features/auth/presentation/screens/provider_login_screen.dart';
 import 'package:med_super/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:med_super/features/auth/presentation/screens/set_password_screen.dart';
 import 'package:med_super/features/auth/presentation/screens/verify_otp_screen.dart';
@@ -60,6 +61,11 @@ final authRoutes = <RouteBase>[
       }
       return AccountLoginScreen(successMessageKey: successMessageKey);
     },
+  ),
+  GoRoute(
+    path: '/provider-login',
+    name: 'providerLogin',
+    builder: (context, state) => const ProviderLoginScreen(),
   ),
   GoRoute(
     path: '/forgot-password',
