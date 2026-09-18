@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import (still fully supported, just no longer exported by default).
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:med_super/core/di/core_providers.dart';
+import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/features/appointments/data/datasources/remote/appointments_remote_datasource.dart';
 import 'package:med_super/features/appointments/data/repositories/appointment_repository_impl.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
@@ -79,11 +80,13 @@ class MyAppointmentsState {
     required this.items,
     required this.nextCursor,
     required this.isLoadingMore,
+    this.loadMoreFailure,
   });
 
   final List<AppointmentSummary> items;
   final String? nextCursor;
   final bool isLoadingMore;
+  final Failure? loadMoreFailure;
 
   bool get hasMore => nextCursor != null;
 
@@ -92,14 +95,20 @@ class MyAppointmentsState {
     String? nextCursor,
     bool clearNextCursor = false,
     bool? isLoadingMore,
+    Failure? loadMoreFailure,
+    bool clearLoadMoreFailure = false,
   }) => MyAppointmentsState(
     items: items ?? this.items,
     nextCursor: clearNextCursor ? null : (nextCursor ?? this.nextCursor),
     isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    loadMoreFailure: clearLoadMoreFailure
+        ? null
+        : (loadMoreFailure ?? this.loadMoreFailure),
   );
 }
 
 class MyAppointmentsNotifier extends AsyncNotifier<MyAppointmentsState> {
+  Future<void>? _loadMoreInFlight;
   @override
   Future<MyAppointmentsState> build() async {
     ref.watch(myAppointmentsRefreshProvider);
@@ -115,32 +124,103 @@ class MyAppointmentsNotifier extends AsyncNotifier<MyAppointmentsState> {
     );
   }
 
-  Future<void> loadMore() async {
-    final current = state.value;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+  /// Loads exactly one cursor page. Concurrent taps share the same future,
+  /// so a slow network response cannot issue the same cursor request twice.
+  Future<void> loadMore() {
+    final inFlight = _loadMoreInFlight;
+    if (inFlight != null) return inFlight;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    final current = state.value;
+    if (current == null || !current.hasMore || current.isLoadingMore) {
+      return Future.value();
+    }
+
+    final cursor = current.nextCursor!;
+    late final Future<void> request;
+    request = _loadMorePage(current: current, cursor: cursor).whenComplete(() {
+      if (identical(_loadMoreInFlight, request)) {
+        _loadMoreInFlight = null;
+      }
+    });
+    _loadMoreInFlight = request;
+    return request;
+  }
+
+  Future<void> _loadMorePage({
+    required MyAppointmentsState current,
+    required String cursor,
+  }) async {
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, clearLoadMoreFailure: true),
+    );
     try {
       final result = await ref
           .read(listMyAppointmentsUseCaseProvider)
-          .call(cursor: current.nextCursor);
-      final page = result.when(
-        ok: (value) => value,
-        err: (failure) => throw failure,
+          .call(cursor: cursor);
+
+      result.when(
+        ok: (page) {
+          // Page boundaries can overlap when records change between requests.
+          // Keep the first copy of each stable appointment id.
+          final knownIds = current.items.map((item) => item.appointmentId).toSet();
+          final appendedItems = [
+            ...current.items,
+            for (final item in page.items)
+              if (knownIds.add(item.appointmentId)) item,
+          ];
+
+          // Do not let a malformed response create an endless request loop.
+          if (page.nextCursor == cursor) {
+            _finishLoadMoreFailure(
+              current,
+              cursor,
+              Failure.unknown(
+                StateError('Appointment pagination returned the same cursor.'),
+                StackTrace.current,
+              ),
+            );
+            return;
+          }
+
+          if (!_isCurrentLoadMoreRequest(cursor)) return;
+          state = AsyncData(
+            current.copyWith(
+              items: appendedItems,
+              nextCursor: page.nextCursor,
+              clearNextCursor: page.nextCursor == null,
+              isLoadingMore: false,
+              clearLoadMoreFailure: true,
+            ),
+          );
+        },
+        err: (failure) => _finishLoadMoreFailure(current, cursor, failure),
       );
-      state = AsyncData(
-        current.copyWith(
-          items: [...current.items, ...page.items],
-          nextCursor: page.nextCursor,
-          clearNextCursor: page.nextCursor == null,
-          isLoadingMore: false,
-        ),
+    } catch (error, stackTrace) {
+      _finishLoadMoreFailure(
+        current,
+        cursor,
+        Failure.unknown(error, stackTrace),
       );
-    } catch (_) {
-      // A failed "load more" keeps the existing page visible — only the
-      // spinner clears, matching PharmacySearchNotifier's behavior.
-      state = AsyncData(current.copyWith(isLoadingMore: false));
     }
+  }
+
+  bool _isCurrentLoadMoreRequest(String cursor) {
+    final visible = state.value;
+    return visible != null &&
+        visible.isLoadingMore &&
+        visible.nextCursor == cursor;
+  }
+
+  void _finishLoadMoreFailure(
+    MyAppointmentsState current,
+    String cursor,
+    Failure failure,
+  ) {
+    if (!_isCurrentLoadMoreRequest(cursor)) return;
+    // A failed page is never destructive: the list and retry cursor remain.
+    state = AsyncData(
+      current.copyWith(isLoadingMore: false, loadMoreFailure: failure),
+    );
   }
 }
 

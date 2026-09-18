@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 
 /// Multi-select list of the doctor's own branches, used by Add/Edit Assistant
@@ -32,12 +33,8 @@ class BranchMultiSelect extends StatelessWidget {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderLight),
-      ),
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           for (final branch in branches)

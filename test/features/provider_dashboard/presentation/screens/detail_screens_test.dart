@@ -74,12 +74,14 @@ DoctorAppointment _appointment({
   DoctorAppointmentStatus status = DoctorAppointmentStatus.confirmed,
   DoctorVisitStatus visitStatus = DoctorVisitStatus.waiting,
   int version = 1,
+  DateTime? startAt,
+  DateTime? endAt,
 }) => DoctorAppointment(
   appointmentId: 'apt-101',
   status: status,
   slotId: 'slot-1',
-  startAt: DateTime.utc(2026, 8, 14, 10),
-  endAt: DateTime.utc(2026, 8, 14, 10, 30),
+  startAt: startAt ?? DateTime.now().toUtc().subtract(const Duration(minutes: 10)),
+  endAt: endAt ?? DateTime.now().toUtc().add(const Duration(minutes: 20)),
   doctorClinicAffiliationId: 'aff-1',
   clinicId: 'clinic-1',
   clinicName: 'عيادة النيل التخصصية',
@@ -161,7 +163,7 @@ void main() {
         expect(find.text('إلغاء الموعد'), findsNothing);
         expect(
           find.text(
-            'المريض داخل غرفة الطبيب، لذلك لم يعد ممكنًا إلغاء هذا الموعد أو تغييره.',
+            'لا يمكن إلغاء الموعد أو إعادة جدولته بعد بدء زيارة المريض.',
           ),
           findsOneWidget,
         );
@@ -216,6 +218,25 @@ void main() {
 
     expect(find.text('غادر'), findsOneWidget);
     expect(find.text('الزيارة مكتملة'), findsOneWidget);
+  });
+
+  testWidgets('a future appointment explains that visit controls are not ready', (tester) async {
+    final futureStart = DateTime.now().toUtc().add(const Duration(hours: 2));
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+      overrides: [
+        providerDashboardRepositoryProvider.overrideWithValue(
+          _StubRepo(appointment: _appointment(
+            startAt: futureStart,
+            endAt: futureStart.add(const Duration(minutes: 30)),
+          )),
+        ),
+      ],
+    );
+
+    expect(find.text('ستتاح إدارة حالة الزيارة عند اقتراب موعد المريض.'), findsOneWidget);
+    expect(find.text('إدخال المريض للطبيب'), findsNothing);
   });
 
   testWidgets('ProviderPatientDetailScreen renders patient snapshot', (

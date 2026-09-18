@@ -73,6 +73,12 @@
     "login_password_title": "Welcome back",
     "login_password_subtitle": "Log in with your mobile number and password",
     "login_password_cta": "Log in",
+    "healthcare_provider_question": "Are you a healthcare provider?",
+    "provider_login_cta": "Doctor or Assistant Login",
+    "provider_login_title": "Healthcare provider login",
+    "provider_login_subtitle": "For doctors and clinic assistants",
+    "not_healthcare_provider_question": "Not a healthcare provider?",
+    "back_to_patient_login_cta": "Return to patient login",
     "no_account_prompt": "Don't have an account?",
     "signup_cta": "Sign up",
     "have_account_prompt": "Already have an account?",
@@ -182,6 +188,8 @@
     "title": "Appointments",
     "empty": "No appointments yet",
     "load_more": "Load more",
+    "load_more_error": "Couldn't load more appointments. Your existing appointments are still available.",
+    "retry_load_more": "Try again",
     "tab_upcoming": "Upcoming",
     "tab_past": "Past",
     "status_confirmed": "Confirmed",
@@ -965,7 +973,10 @@
       "action_left": "Mark as left",
       "complete": "Visit complete",
       "updated": "Visit status updated.",
-      "booking_locked": "The patient is in the doctor’s room, so this appointment can no longer be cancelled or rescheduled."
+      "booking_locked": "This appointment can’t be cancelled or rescheduled after the patient visit has started.",
+      "available_near_time": "Visit controls will become available near the appointment time.",
+      "too_early": "The visit status cannot be changed before the allowed appointment time.",
+      "outside_window": "Visit status can only be changed during the appointment window."
     },
     "cancel": {
       "action": "Cancel appointment",
@@ -1076,6 +1087,7 @@
       "forbidden": "Your account does not have access to this.",
       "not_found": "This is no longer available, or it is not yours.",
       "conflict": "Someone changed this first. Reload and try again.",
+      "appointment_visit_in_progress": "This appointment can’t be cancelled or rescheduled after the patient visit has started.",
       "validation": "Some details are not valid. Check and try again.",
       "generic": "Something went wrong. Please try again."
     }

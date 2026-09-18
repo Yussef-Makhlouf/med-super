@@ -2,8 +2,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/provisioned_assistant.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// One-time credential display shown immediately after creating a new
 /// assistant. The Doctor must copy and share these credentials manually —
@@ -27,17 +31,11 @@ class CredentialDisplayDialog extends StatelessWidget {
             // Header icon + title
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Color(0xFF059669),
-                    size: 24,
-                  ),
+                const AppIconTile(
+                  icon: SolarIconsBold.checkCircle,
+                  color: Color(0xFF059669),
+                  size: 44,
+                  iconSize: 24,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -66,7 +64,7 @@ class CredentialDisplayDialog extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
-                    Icons.warning_amber_rounded,
+                    SolarIconsOutline.dangerTriangle,
                     size: 16,
                     color: AppColors.warningAmberText,
                   ),
@@ -114,16 +112,14 @@ class CredentialDisplayDialog extends StatelessWidget {
             // Done button
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 56,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: brandBlue,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+                  shape: const StadiumBorder(),
                 ),
                 child: Text(
                   'assistants.done_cta'.tr(),
@@ -197,9 +193,9 @@ class _CredentialBoxState extends State<_CredentialBox> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            boxShadow: AppShadows.resting,
           ),
           child: Row(
             children: [
@@ -224,8 +220,8 @@ class _CredentialBoxState extends State<_CredentialBox> {
                   onTap: () => setState(() => _revealed = !_revealed),
                   child: Icon(
                     _revealed
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+                        ? SolarIconsOutline.eyeClosed
+                        : SolarIconsOutline.eye,
                     size: 18,
                     color: AppColors.mutedText,
                   ),
@@ -235,7 +231,7 @@ class _CredentialBoxState extends State<_CredentialBox> {
               GestureDetector(
                 onTap: () => widget.onCopy(context),
                 child: const Icon(
-                  Icons.copy_rounded,
+                  SolarIconsOutline.copy,
                   size: 18,
                   color: AppColors.mutedText,
                 ),

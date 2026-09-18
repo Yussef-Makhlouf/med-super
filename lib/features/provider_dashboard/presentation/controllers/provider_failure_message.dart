@@ -44,6 +44,12 @@ String? _doctorOverride(Failure failure) {
       'provider_dashboard.cancel.not_cancellable'.tr(),
     'APPOINTMENT_NOT_RESCHEDULABLE' =>
       'provider_dashboard.reschedule.not_reschedulable'.tr(),
+    'APPOINTMENT_VISIT_IN_PROGRESS' =>
+      'provider_dashboard.errors.appointment_visit_in_progress'.tr(),
+    'VISIT_STATUS_TOO_EARLY' =>
+      'provider_dashboard.visit_status.too_early'.tr(),
+    'VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW' =>
+      'provider_dashboard.visit_status.outside_window'.tr(),
     'INVALID_SCHEDULE_WINDOW' =>
       'provider_dashboard.schedule.invalid_window'.tr(),
     'OPTIMISTIC_LOCK_CONFLICT' || 'APPOINTMENT_STATE_CHANGED' =>

@@ -15,6 +15,52 @@
 
 ---
 
+## Session Update — 2026-09-18 (Appointment Visit Status)
+
+### Scheduling/visit lifecycle hardening — 2026-09-18
+
+- **Backend authoritative:** the visit-status use case reads the appointment's
+  current slot in its transaction and allows changes only during the named
+  30-minute early-arrival-to-slot-end window. It returns `422
+  VISIT_STATUS_TOO_EARLY` or `422
+  VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW`; an appointment created by a
+  reschedule therefore uses only its replacement slot. Existing
+  `APPOINTMENT_VISIT_IN_PROGRESS` protection continues to reject
+  cancellation/rescheduling after `IN_DOCTOR_ROOM` or `LEFT`.
+- **Flutter reflection:** the provider-detail action policy uses the same UTC
+  instants and window, presents only the single valid next action when
+  eligible, and explains early/outside-window states without leaving a dead
+  control. Server codes are mapped to localized provider messages; mutation
+  failures invalidate and re-fetch the detail/list state.
+- **Verification:** focused backend unit tests and Flutter domain/widget tests
+  cover the policy and existing transition/locking paths. Browser/emulator
+  manual verification is still pending in this environment.
+
+- **Wired contract:** merged backend PR #22 exposes `PATCH
+  /v1/doctors/me/appointments/{appointmentId}/visit-status` to `DOCTOR` and
+  `CLINIC_STAFF`. The real Flutter provider-dashboard datasource sends
+  `{status, version}`, maps the returned `DoctorAppointment`, and the detail
+  UI offers only the next forward action: `WAITING → IN_DOCTOR_ROOM → LEFT`.
+- **Server protections:** the endpoint is confirmed-appointment-only,
+  ownership-scoped (out-of-scope is `404 RESOURCE_NOT_FOUND`), and
+  optimistic-locked (`409 OPTIMISTIC_LOCK_CONFLICT` for a valid stale
+  version). Its database write and audit record are transactional.
+- **Evidence:** Docker PostgreSQL/Redis were live; Prisma had no pending
+  migration; the backend build completed; and the five focused use-case tests
+  passed. The provider-assistant HTTP E2E now includes success, stale-version,
+  and cross-doctor assertions. An initial E2E test attempt correctly revealed
+  that `version: 0` is rejected by DTO validation (`400`), so the test was
+  corrected to send an earlier valid version after a successful update; the
+  corrected real-PostgreSQL suite passed **32/32**.
+- **Parity status:** implementation wiring is complete, but live Flutter
+  dashboard verification is **not yet evidenced** here: Flutter code
+  generation and focused widget tests stalled without diagnostics, and no
+  runnable Flutter browser/emulator device was discovered. Do not label this
+  UI path fully end-to-end verified until that run succeeds against
+  `BASE_URL=http://localhost:3000`.
+
+---
+
 ## Session Update — 2026-09-04 (Doctor Self-Service: Documents + Working Hours)
 
 This document predates Phases 4–7 (see `docs/backend_api_reference_2026-08-25.html` for the current endpoint catalog and wiring badges) and is kept here only for its still-relevant provider-registration/contracts history — treat everything below this entry and above 2026-08-14 as a dated snapshot, not current state.

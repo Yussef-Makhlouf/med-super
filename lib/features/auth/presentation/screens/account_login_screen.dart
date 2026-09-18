@@ -12,19 +12,46 @@ import 'package:med_super/core/widgets/auth_phone_field.dart';
 import 'package:med_super/core/widgets/auth_role_toggle.dart';
 import 'package:med_super/features/auth/domain/entities/user_role.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/auth/presentation/widgets/auth_secondary_entry_cards.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// Phone + password login screen for users who already finished signup.
 class AccountLoginScreen extends ConsumerStatefulWidget {
-  const AccountLoginScreen({this.successMessageKey, super.key});
+  const AccountLoginScreen({
+    this.successMessageKey,
+    this.isProviderLogin = false,
+    this.loginHandler,
+    super.key,
+  });
+
+  /// Reuses the password-login form on the provider-only route while keeping
+  /// the patient route free from a role selector.
+  const AccountLoginScreen.provider({super.key})
+    : successMessageKey = null,
+      isProviderLogin = true,
+      loginHandler = null;
 
   /// Translation key for a one-shot success message shown on arrival, e.g.
   /// after a completed password reset (which does not auto-login).
   final String? successMessageKey;
 
+  /// Whether this route is the provider entry point (Doctor / Clinic staff).
+  final bool isProviderLogin;
+
+  /// A narrow test seam for checking the selected role without duplicating the
+  /// production auth flow. Normal app use always calls [SessionController].
+  final AccountLoginHandler? loginHandler;
+
   @override
   ConsumerState<AccountLoginScreen> createState() => _AccountLoginScreenState();
 }
+
+typedef AccountLoginHandler =
+    Future<Result<Session>> Function({
+      required String phone,
+      required String password,
+      required UserRole role,
+    });
 
 class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
     with TickerProviderStateMixin {
@@ -101,7 +128,7 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
   @override
   void initState() {
     super.initState();
-    _role = UserRole.patient;
+    _role = widget.isProviderLogin ? UserRole.doctor : UserRole.patient;
     // Bottom sheet rises up from off-screen into place on first frame,
     // instead of appearing static — a more inviting entrance.
     _sheetController = AnimationController(
@@ -146,13 +173,20 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
     final phone = normalizeEgyptPhone(_phoneController.text);
     setState(() => _submitting = true);
     try {
-      final result = await ref
-          .read(sessionControllerProvider.notifier)
-          .loginWithPassword(
-            phone: phone,
-            password: _passwordController.text,
-            role: _role,
-          );
+      final handler = widget.loginHandler;
+      final result = handler != null
+          ? await handler(
+              phone: phone,
+              password: _passwordController.text,
+              role: _role,
+            )
+          : await ref
+                .read(sessionControllerProvider.notifier)
+                .loginWithPassword(
+                  phone: phone,
+                  password: _passwordController.text,
+                  role: _role,
+                );
 
       if (!mounted) return;
 
@@ -166,6 +200,14 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  void _returnToPatientLogin() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/account-login');
     }
   }
 
@@ -188,6 +230,16 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                   _sheetHeight = constraints.maxHeight;
                   return Stack(
                     children: [
+                      if (widget.isProviderLogin)
+                        PositionedDirectional(
+                          top: 0,
+                          start: 0,
+                          child: IconButton(
+                            onPressed: _returnToPatientLogin,
+                            color: AppPalette.ink,
+                            icon: const BackButtonIcon(),
+                          ),
+                        ),
                       // Pinned to the original top region (unchanged design)
                       // — the rising sheet simply covers it as it expands,
                       // instead of the hero being re-centered on the whole
@@ -281,7 +333,9 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                 CrossAxisAlignment.stretch,
                                             children: [
                                               Text(
-                                                'auth.login_password_title'
+                                                (widget.isProviderLogin
+                                                        ? 'auth.provider_login_title'
+                                                        : 'auth.login_password_title')
                                                     .tr(),
                                                 textAlign: TextAlign.center,
                                                 style: textTheme.headlineSmall
@@ -293,7 +347,9 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                               ),
                                               const SizedBox(height: 6),
                                               Text(
-                                                'auth.login_password_subtitle'
+                                                (widget.isProviderLogin
+                                                        ? 'auth.provider_login_subtitle'
+                                                        : 'auth.login_password_subtitle')
                                                     .tr(),
                                                 textAlign: TextAlign.center,
                                                 style: textTheme.bodyMedium
@@ -303,28 +359,26 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                     ),
                                               ),
                                               const SizedBox(height: 22),
-                                              AuthRoleToggle<UserRole>(
-                                                entries: [
-                                                  (
-                                                    'auth.role_doctor'.tr(),
-                                                    UserRole.doctor,
+                                              if (widget.isProviderLogin) ...[
+                                                AuthRoleToggle<UserRole>(
+                                                  entries: [
+                                                    (
+                                                      'auth.role_doctor'.tr(),
+                                                      UserRole.doctor,
+                                                    ),
+                                                    (
+                                                      'auth.role_clinic_staff'
+                                                          .tr(),
+                                                      UserRole.clinicStaff,
+                                                    ),
+                                                  ],
+                                                  value: _role,
+                                                  onChanged: (role) => setState(
+                                                    () => _role = role,
                                                   ),
-                                                  (
-                                                    'auth.role_clinic_staff'
-                                                        .tr(),
-                                                    UserRole.clinicStaff,
-                                                  ),
-                                                  (
-                                                    'auth.role_patient'.tr(),
-                                                    UserRole.patient,
-                                                  ),
-                                                ],
-                                                value: _role,
-                                                onChanged: (role) => setState(
-                                                  () => _role = role,
                                                 ),
-                                              ),
-                                              const SizedBox(height: 22),
+                                                const SizedBox(height: 22),
+                                              ],
                                               Text(
                                                 'auth.phone_label'.tr(),
                                                 style: textTheme.titleSmall
@@ -346,9 +400,7 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                     return 'auth.phone_required'
                                                         .tr();
                                                   }
-                                                  if (!isValidEgyptPhone(
-                                                    raw,
-                                                  )) {
+                                                  if (!isValidEgyptPhone(raw)) {
                                                     return 'auth.phone_invalid'
                                                         .tr();
                                                   }
@@ -393,8 +445,8 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                         ),
                                                     borderSide:
                                                         const BorderSide(
-                                                          color: AppPalette
-                                                              .border,
+                                                          color:
+                                                              AppPalette.border,
                                                         ),
                                                   ),
                                                   enabledBorder:
@@ -506,33 +558,46 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    'auth.no_account_prompt'
-                                                        .tr(),
-                                                    style: textTheme.bodyMedium
-                                                        ?.copyWith(
-                                                          color: AppPalette
-                                                              .inkMuted,
+                                              if (widget.isProviderLogin)
+                                                PatientEntryCard(
+                                                  onTap: _returnToPatientLogin,
+                                                )
+                                              else ...[
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      'auth.no_account_prompt'
+                                                          .tr(),
+                                                      style: textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            color: AppPalette
+                                                                .inkMuted,
+                                                          ),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          context.go('/login'),
+                                                      child: Text(
+                                                        'auth.signup_cta'.tr(),
+                                                        style: const TextStyle(
+                                                          color: brandBlue,
+                                                          fontWeight:
+                                                              FontWeight.w700,
                                                         ),
-                                                  ),
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        context.go('/login'),
-                                                    child: Text(
-                                                      'auth.signup_cta'.tr(),
-                                                      style: const TextStyle(
-                                                        color: brandBlue,
-                                                        fontWeight:
-                                                            FontWeight.w700,
                                                       ),
                                                     ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                ProviderEntryCard(
+                                                  onTap: () => context.push(
+                                                    '/provider-login',
                                                   ),
-                                                ],
-                                              ),
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -556,4 +621,3 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
     );
   }
 }
-
