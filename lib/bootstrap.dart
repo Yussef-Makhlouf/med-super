@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:med_super/core/notifications/fcm_service.dart';
 import 'package:med_super/core/storage/hive_service.dart';
 import 'package:med_super/firebase_options.dart';
 
@@ -30,8 +32,11 @@ Future<void> bootstrap(Widget Function() appBuilder) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Must be registered before runApp — this is what lets FCM wake a
+    // separate isolate to handle a push while the app is fully terminated.
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   } catch (e) {
-    debugPrint('Firebase init skipped (Sprint 0 placeholder): $e');
+    debugPrint('Firebase init skipped: $e');
   }
 
   runApp(
@@ -40,9 +45,7 @@ Future<void> bootstrap(Widget Function() appBuilder) async {
       path: 'assets/translations',
       fallbackLocale: const Locale('ar'),
       startLocale: const Locale('ar'),
-      child: ProviderScope(
-        child: appBuilder(),
-      ),
+      child: ProviderScope(child: appBuilder()),
     ),
   );
 }

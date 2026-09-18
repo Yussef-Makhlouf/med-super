@@ -1,0 +1,356 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
+import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:solar_icons/solar_icons.dart';
+import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_clinic_settings_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_edit_profile_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/screens/provider_schedule_editor_screen.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
+import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
+
+/// Provider Profile Screen pixel-perfect against mockup `profile.png`.
+class ProviderProfileScreen extends ConsumerWidget {
+  const ProviderProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final doctorAccountAsync = ref.watch(doctorAccountProvider);
+    final session = ref.watch(sessionControllerProvider).asData?.value;
+
+    // Assistants see a stripped-down profile: only personal info + logout.
+    final isAssistant = session?.user.isAssistant ?? false;
+
+    // For assistants: name comes from session (their own display name),
+    // subtitle shows a generic "مساعد طبي" — they have no hospital/specialty.
+    // For doctors: name comes from doctorAccountProvider, subtitle = hospital + specialty.
+    final displayName = isAssistant
+        ? (session?.user.displayName ?? 'المساعد')
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => acc.name,
+            orElse: () => session?.user.displayName ?? 'د. أحمد علي',
+          );
+
+    final doctorName = displayName;
+
+    // No clinic-affiliation join exists on `GET /v1/doctors/me`
+    // (`clinic-reservations` File 12 Part 45) — showing a hospital name here
+    // would mean fabricating data, so this line is specialty-only now.
+    final subtitle = isAssistant
+        ? 'مساعد طبي'
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => acc.specialty,
+            orElse: () => '',
+          );
+
+    final avatarUrl = isAssistant
+        ? null
+        : doctorAccountAsync.maybeWhen(
+            data: (acc) => acc.avatarUrl,
+            orElse: () => null,
+          );
+
+    return Scaffold(
+      backgroundColor: AppColors.surfaceApp,
+      body: Column(
+        children: [
+          ProviderPageHeader(
+            title: 'الملف الشخصي',
+            avatarUrl: avatarUrl,
+            onAvatarTap: () {}, // already on the profile screen
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // Centered Avatar with edit pencil badge
+                  Center(
+                    child: GestureDetector(
+                      onTap: isAssistant
+                          ? null
+                          : () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const ProviderEditProfileScreen(),
+                              ),
+                            ),
+                      child: Stack(
+                        children: [
+                          AvatarCircle(
+                            radius: 55,
+                            backgroundColor: AppColors.surfaceCard,
+                            imageUrl: avatarUrl,
+                            placeholderIcon: SolarIconsBold.userCircle,
+                            placeholderIconColor: AppColors.mutedText,
+                          ),
+                          if (!isAssistant)
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: brandBlue,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  SolarIconsOutline.pen,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    doctorName,
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.mutedText2,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Assistant-only: two tabs mirroring the doctor's own
+                  // Appointments/Clinic surfaces — same screens, unmodified,
+                  // just naturally scoped to the assistant's assigned
+                  // branches (via the backend's doctor-scope resolution).
+                  if (isAssistant) const _AssistantAppointmentsClinicTabs(),
+                  // Navigation Options List
+                  if (!isAssistant)
+                    buildNavTile(
+                      context: context,
+                      icon: SolarIconsOutline.user,
+                      iconColor: brandBlue,
+                      title: 'المعلومات الشخصية',
+                      subtitle: isAssistant
+                          ? 'الاسم والصورة الشخصية'
+                          : 'البريد الإلكتروني، نبذة، المؤهل العلمي، سنوات الخبرة',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderEditProfileScreen(),
+                        ),
+                      ),
+                    ),
+                  // Doctor-only tiles — hidden from assistants
+                  if (!isAssistant) ...[
+                    const SizedBox(height: 14),
+                    buildNavTile(
+                      context: context,
+                      icon: SolarIconsOutline.buildings,
+                      iconColor: const Color(0xFF10B981),
+                      title: 'إعدادات العيادة',
+                      subtitle: 'العنوان، معلومات الاتصال',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderClinicSettingsScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    buildNavTile(
+                      context: context,
+                      icon: SolarIconsOutline.calendar,
+                      iconColor: const Color(0xFFA855F7),
+                      title: 'جدول المواعيد',
+                      subtitle: 'ساعات العمل والحضور',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProviderScheduleEditorScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    buildNavTile(
+                      context: context,
+                      icon: SolarIconsOutline.walletMoney,
+                      iconColor: brandBlue,
+                      title: 'المحفظة',
+                      subtitle: 'الرصيد والمعاملات المالية',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          settings: const RouteSettings(
+                            name: WalletDashboardScreen.routeName,
+                          ),
+                          builder: (_) => const WalletDashboardScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    // Doctor-only: manage clinic assistants
+                    buildNavTile(
+                      context: context,
+                      icon: SolarIconsOutline.diploma,
+                      iconColor: const Color(0xFFF97316),
+                      title: 'assistants.title'.tr(),
+                      subtitle: 'assistants.manage_subtitle'.tr(),
+                      onTap: () => context.push('/provider/assistants'),
+                    ),
+                  ],
+                  const SizedBox(height: 36),
+                  // Logout button — AppButton.outlined, same as every other
+                  // action button across the provider dashboard screens.
+                  AppButton.outlined(
+                    label: 'تسجيل الخروج',
+                    icon: const Icon(SolarIconsOutline.logout, size: 20),
+                    foregroundColor: const Color(0xFFDC2626),
+                    borderRadius: AppRadii.pill,
+                    fullWidth: true,
+                    onPressed: () async {
+                      // '/account-login' (phone+password), not '/login'
+                      // (OTP first-time signup) — same reasoning as the
+                      // patient profile's logout button. Must be awaited: an
+                      // un-awaited logout races the router's own
+                      // sessionControllerProvider-driven redirect, which can
+                      // send the user straight back into /provider/home
+                      // before the session is actually cleared.
+                      await ref.read(sessionControllerProvider.notifier).logout();
+                      if (!context.mounted) return;
+                      context.go('/account-login');
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'الإصدار 2.4.0 • تواصل مع الدعم الفني',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.mutedText2,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget buildNavTile({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            boxShadow: AppShadows.resting,
+          ),
+          child: Row(
+            children: [
+              AppIconTile(icon: icon, color: iconColor, size: 48, iconSize: 22),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.ink900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                AppNavIcons.chevronForward(context),
+                color: AppColors.mutedText2,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Assistant-only profile section: two tiles pushing to the doctor's own
+/// `ProviderScheduleEditorScreen`/`ProviderClinicSettingsScreen` unmodified —
+/// both already scope to only the assistant's assigned branches via
+/// `ResolveDoctorScopeUseCase` on the backend, so no separate assistant
+/// screens or extra filtering are needed here.
+class _AssistantAppointmentsClinicTabs extends StatelessWidget {
+  const _AssistantAppointmentsClinicTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ProviderProfileScreen.buildNavTile(
+          context: context,
+          icon: SolarIconsOutline.calendar,
+          iconColor: const Color(0xFFA855F7),
+          title: 'جدول المواعيد',
+          subtitle: 'ساعات العمل والحضور للفروع المخصصة لك',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProviderScheduleEditorScreen(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        ProviderProfileScreen.buildNavTile(
+          context: context,
+          icon: SolarIconsOutline.buildings,
+          iconColor: const Color(0xFF10B981),
+          title: 'العيادة',
+          subtitle: 'الفروع المخصصة لك',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProviderClinicSettingsScreen(),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+}

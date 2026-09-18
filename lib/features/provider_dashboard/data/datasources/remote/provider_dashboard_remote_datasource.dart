@@ -1,0 +1,335 @@
+import 'package:dio/dio.dart';
+import 'package:med_super/core/constants/api_paths.dart';
+import '../../models/doctor_account_profile_dto.dart';
+import '../../models/doctor_appointment_dto.dart';
+import '../../models/doctor_clinic_dto.dart';
+import '../../models/doctor_schedule_template_dto.dart';
+import '../../../domain/entities/doctor_appointment.dart';
+import '../../../domain/entities/doctor_schedule_template.dart';
+
+/// Every method below maps 1:1 onto a real `clinic-reservations` route
+/// (File 12 Part 49). Nothing here invents a path.
+///
+/// `EnvelopeInterceptor` has already unwrapped the backend's
+/// `{success, data, requestId, correlationId}` success envelope, so
+/// `response.data` is the `data` payload itself.
+abstract class ProviderDashboardRemoteDatasource {
+  // --- Profile (GET/PATCH /v1/doctors/me) ---
+
+  Future<DoctorAccountProfileDto> getDoctorAccount();
+
+  /// `name`/`specialty`/`licenseNumber` are deliberately not parameters —
+  /// `PATCH /v1/doctors/me` only accepts `bio`/`degree`/`experienceYears`/
+  /// `photo_data_uri` (File 12 Part 45); a doctor can't re-specialize,
+  /// re-license, or rename themselves through this endpoint.
+  Future<DoctorAccountProfileDto> updateDoctorAccount({
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
+    String? photoDataUri,
+  });
+
+  // --- Clinics and branches (/v1/doctors/me/clinics) ---
+
+  Future<List<DoctorClinicDto>> getMyClinics();
+
+  Future<DoctorClinicDto> createMyClinicBranch(
+    String clinicId,
+    CreateDoctorBranchRequestDto body,
+  );
+
+  Future<DoctorClinicDto> updateMyClinicBranch(
+    String branchId,
+    UpdateDoctorBranchRequestDto body,
+  );
+
+  Future<DoctorClinicDto> updateMyAffiliationStatus(
+    String affiliationId, {
+    required bool active,
+    double? consultFee,
+  });
+
+  Future<void> deleteMyClinicBranch(String branchId);
+
+  // --- Availability (/v1/doctors/me/schedule-templates) ---
+
+  Future<List<DoctorScheduleTemplateDto>> getMyScheduleTemplates({
+    String? affiliationId,
+  });
+
+  Future<DoctorScheduleTemplateDto> createMyScheduleTemplate(
+    NewDoctorScheduleTemplate template,
+  );
+
+  Future<DoctorScheduleTemplateDto> updateMyScheduleTemplate(
+    String templateId,
+    DoctorScheduleTemplatePatch patch,
+  );
+
+  Future<void> deleteMyScheduleTemplate(String templateId, {int? version});
+
+  // --- Appointments (/v1/doctors/me/appointments) ---
+
+  Future<DoctorAppointmentPageDto> getMyAppointments({
+    DateTime? from,
+    DateTime? to,
+    DoctorAppointmentStatus? status,
+    String? clinicBranchId,
+    String? cursor,
+    int? limit,
+  });
+
+  Future<DoctorAppointmentDto> getMyAppointment(String appointmentId);
+
+  Future<DoctorAppointmentDto> updateMyAppointmentVisitStatus(
+    String appointmentId, {
+    required DoctorVisitStatus status,
+    required int version,
+  });
+
+  Future<CancelAppointmentResultDto> cancelMyAppointment(
+    String appointmentId, {
+    String? note,
+  });
+
+  Future<RescheduleAppointmentResultDto> rescheduleMyAppointment(
+    String appointmentId, {
+    required String newSlotId,
+  });
+
+  /// `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` —
+  /// walk-in booking, callable by DOCTOR or CLINIC_STAFF.
+  Future<CreateWalkInAppointmentResultDto> createWalkInAppointment(
+    String clinicBranchId,
+    CreateWalkInAppointmentRequestDto body,
+  );
+}
+
+class ProviderDashboardRemoteDatasourceImpl
+    implements ProviderDashboardRemoteDatasource {
+  ProviderDashboardRemoteDatasourceImpl(this._dio);
+
+  final Dio _dio;
+
+  static Map<String, dynamic> _obj(Response<Map<String, dynamic>> response) =>
+      response.data ?? const <String, dynamic>{};
+
+  @override
+  Future<DoctorAccountProfileDto> getDoctorAccount() async {
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.doctorMe);
+    return DoctorAccountProfileDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorAccountProfileDto> updateDoctorAccount({
+    String? bio,
+    String? degree,
+    int? yearsOfExperience,
+    String? photoDataUri,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiPaths.doctorMe,
+      data: {
+        if (bio != null) 'bio': bio,
+        if (degree != null) 'degree': degree,
+        if (yearsOfExperience != null) 'experienceYears': yearsOfExperience,
+        if (photoDataUri != null) 'photo_data_uri': photoDataUri,
+      },
+    );
+    return DoctorAccountProfileDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<List<DoctorClinicDto>> getMyClinics() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.doctorMeClinics,
+    );
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map((e) => DoctorClinicDto.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<DoctorClinicDto> createMyClinicBranch(
+    String clinicId,
+    CreateDoctorBranchRequestDto body,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeClinics}/$clinicId/branches',
+      data: body.toJson(),
+    );
+    return DoctorClinicDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorClinicDto> updateMyClinicBranch(
+    String branchId,
+    UpdateDoctorBranchRequestDto body,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeClinicBranches}/$branchId',
+      data: body.toJson(),
+    );
+    return DoctorClinicDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorClinicDto> updateMyAffiliationStatus(
+    String affiliationId, {
+    required bool active,
+    double? consultFee,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAffiliations}/$affiliationId',
+      data: {
+        'status': active ? 'ACTIVE' : 'PAUSED',
+        if (consultFee != null) 'consultFee': consultFee,
+      },
+    );
+    return DoctorClinicDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<void> deleteMyClinicBranch(String branchId) async {
+    await _dio.delete<void>('${ApiPaths.doctorMeClinicBranches}/$branchId');
+  }
+
+  @override
+  Future<List<DoctorScheduleTemplateDto>> getMyScheduleTemplates({
+    String? affiliationId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.doctorMeScheduleTemplates,
+      queryParameters: {
+        if (affiliationId != null) 'affiliationId': affiliationId,
+      },
+    );
+    final items = (_obj(response)['items'] as List<dynamic>?) ?? const [];
+    return items
+        .map(
+          (e) => DoctorScheduleTemplateDto.fromJson(e as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  @override
+  Future<DoctorScheduleTemplateDto> createMyScheduleTemplate(
+    NewDoctorScheduleTemplate template,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.doctorMeScheduleTemplates,
+      data: DoctorScheduleTemplateDto.createBody(template),
+    );
+    return DoctorScheduleTemplateDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorScheduleTemplateDto> updateMyScheduleTemplate(
+    String templateId,
+    DoctorScheduleTemplatePatch patch,
+  ) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeScheduleTemplates}/$templateId',
+      data: DoctorScheduleTemplateDto.patchBody(patch),
+    );
+    return DoctorScheduleTemplateDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<void> deleteMyScheduleTemplate(String templateId, {int? version}) async {
+    await _dio.delete<void>(
+      '${ApiPaths.doctorMeScheduleTemplates}/$templateId',
+      queryParameters: {if (version != null) 'version': version},
+    );
+  }
+
+  @override
+  Future<DoctorAppointmentPageDto> getMyAppointments({
+    DateTime? from,
+    DateTime? to,
+    DoctorAppointmentStatus? status,
+    String? clinicBranchId,
+    String? cursor,
+    int? limit,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.doctorMeAppointments,
+      queryParameters: {
+        // Bounds are sent as UTC ISO-8601 — the backend filters on the slot's
+        // `start_at`, which is timestamptz.
+        if (from != null) 'from': from.toUtc().toIso8601String(),
+        if (to != null) 'to': to.toUtc().toIso8601String(),
+        if (status?.wireValue != null) 'status': status!.wireValue,
+        if (clinicBranchId != null) 'clinicBranchId': clinicBranchId,
+        if (cursor != null) 'cursor': cursor,
+        if (limit != null) 'limit': limit,
+      },
+    );
+    return DoctorAppointmentPageDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorAppointmentDto> getMyAppointment(String appointmentId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId',
+    );
+    return DoctorAppointmentDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<DoctorAppointmentDto> updateMyAppointmentVisitStatus(
+    String appointmentId, {
+    required DoctorVisitStatus status,
+    required int version,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/visit-status',
+      data: {'status': status.wireValue, 'version': version},
+    );
+    return DoctorAppointmentDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<CancelAppointmentResultDto> cancelMyAppointment(
+    String appointmentId, {
+    String? note,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/cancel',
+      // `PROVIDER_REQUEST` is the only reason this route accepts — it is what
+      // waives the cancellation fee entirely (File 12 Part 49.8). Sending
+      // anything else is a 400.
+      data: {
+        'reason': 'PROVIDER_REQUEST',
+        if (note != null && note.isNotEmpty) 'note': note,
+      },
+    );
+    return CancelAppointmentResultDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<RescheduleAppointmentResultDto> rescheduleMyAppointment(
+    String appointmentId, {
+    required String newSlotId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/$appointmentId/reschedule',
+      data: {'newSlotId': newSlotId},
+    );
+    return RescheduleAppointmentResultDto.fromJson(_obj(response));
+  }
+
+  @override
+  Future<CreateWalkInAppointmentResultDto> createWalkInAppointment(
+    String clinicBranchId,
+    CreateWalkInAppointmentRequestDto body,
+  ) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/branch/$clinicBranchId/create',
+      data: body.toJson(),
+    );
+    return CreateWalkInAppointmentResultDto.fromJson(_obj(response));
+  }
+
+}

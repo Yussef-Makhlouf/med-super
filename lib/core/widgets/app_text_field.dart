@@ -19,6 +19,9 @@ class AppTextField extends StatelessWidget {
     this.prefix,
     this.readOnly = false,
     this.focusNode,
+    this.validator,
+    this.textDirection,
+    this.textAlign,
     super.key,
   });
 
@@ -38,6 +41,12 @@ class AppTextField extends StatelessWidget {
   final Widget? prefix;
   final bool readOnly;
   final FocusNode? focusNode;
+  final FormFieldValidator<String>? validator;
+  /// Overrides the default RTL text direction — for fields whose content is
+  /// always Western/numeric regardless of locale (phone numbers, country/
+  /// region codes, fees, timezones).
+  final TextDirection? textDirection;
+  final TextAlign? textAlign;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +62,9 @@ class AppTextField extends StatelessWidget {
       inputFormatters: inputFormatters,
       readOnly: readOnly,
       focusNode: focusNode,
+      validator: validator,
+      textDirection: textDirection ?? TextDirection.rtl,
+      textAlign: textAlign ?? TextAlign.start,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -60,6 +72,10 @@ class AppTextField extends StatelessWidget {
         suffixIcon: suffix,
         prefixIcon: prefix,
         counterText: '',
+        // Prevents the label from floating up as garbled characters on web
+        // RTL builds — keeps it always inline until focused/filled.
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        alignLabelWithHint: true,
       ),
     );
   }

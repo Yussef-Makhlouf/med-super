@@ -1,0 +1,535 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/flow_header.dart';
+import 'package:med_super/core/widgets/section_header.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_service_type.dart';
+import 'package:med_super/features/lab_booking/presentation/controllers/lab_upload_providers.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/presentation/controllers/prescription_upload_controller.dart';
+import 'package:solar_icons/solar_icons.dart';
+
+/// Step 1 of the lab booking flow — attach a photo of the paper/digital lab
+/// request and choose how the sample should be collected. Replaces the old
+/// test-catalog picker that used to live in this slot (`LabTestSelectionScreen`).
+///
+/// Rebuilt 2026-09-05 to actually upload on "continue"
+/// (`POST /v1/prescriptions/upload` via the shared
+/// `PrescriptionRemoteDatasource` — the same real endpoint
+/// `pharmacy_booking` uploads through) rather than only holding the images
+/// as local state: `POST /v1/lab-orders` needs a real `prescriptionId`, not
+/// the raw images.
+class LabRequestUploadScreen extends ConsumerStatefulWidget {
+  const LabRequestUploadScreen({super.key});
+
+  @override
+  ConsumerState<LabRequestUploadScreen> createState() =>
+      _LabRequestUploadScreenState();
+}
+
+class _LabRequestUploadScreenState
+    extends ConsumerState<LabRequestUploadScreen> {
+  Future<void> _pickImages() async {
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        // Bytes (not just a path) are required on every platform: on
+        // Flutter Web there is no real filesystem path to read from later,
+        // and dart:io's File/Image.file don't work there at all.
+        withData: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('errors.image_picker_failed'.tr()),
+        ),
+      );
+      return;
+    }
+    final files = result?.files ?? const <PlatformFile>[];
+    if (files.isEmpty) return;
+    ref
+        .read(uploadedLabRequestImagesProvider.notifier)
+        .addImages(
+          files.map(
+            (file) => (path: file.path ?? file.name, bytes: file.bytes),
+          ),
+        );
+  }
+
+  Future<void> _continue() async {
+    final images = ref.read(uploadedLabRequestImagesProvider);
+    await ref
+        .read(prescriptionUploadControllerProvider.notifier)
+        .submit(images: images);
+    if (!mounted) return;
+    final result = ref.read(prescriptionUploadControllerProvider);
+    if (result.hasError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('lab_booking.upload.submit_error'.tr())),
+      );
+      return;
+    }
+    context.push('/patient/lab/select-lab');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = ref.watch(uploadedLabRequestImagesProvider);
+    final selectedType = ref.watch(selectedLabServiceTypeProvider);
+    final canContinue = ref.watch(canContinueFromUploadProvider);
+    final isSubmitting = ref
+        .watch(prescriptionUploadControllerProvider)
+        .isLoading;
+
+    return Scaffold(
+      backgroundColor: AppColors.surfaceApp,
+      body: SafeArea(
+        child: Column(
+          children: [
+            FlowHeader(
+              title: 'lab_booking.upload.title'.tr(),
+              onBack: () => context.pop(),
+              stepLabels: [
+                'lab_booking.step_upload'.tr(),
+                'lab_booking.step_select_lab'.tr(),
+                'lab_booking.step_review'.tr(),
+              ],
+              currentStep: 0,
+              accentColor: AppColors.patientPrimary,
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                children: [
+                  _UploadBox(onTap: _pickImages),
+                  if (images.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _ImageThumbnailRow(
+                      images: images,
+                      onAdd: _pickImages,
+                      onRemove: (id) => ref
+                          .read(uploadedLabRequestImagesProvider.notifier)
+                          .removeImage(id),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  SectionHeader(title: 'lab_booking.upload.service_type_title'.tr()),
+                  const SizedBox(height: 16),
+                  _ServiceTypeSection(
+                    selected: selectedType,
+                    onSelect: (type) => ref
+                        .read(selectedLabServiceTypeProvider.notifier)
+                        .select(type),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: AppShadows.resting,
+              ),
+              child: SizedBox(
+                height: 56,
+                child: AppButton.filled(
+                  label: 'lab_booking.upload.continue_cta'.tr(),
+                  fullWidth: true,
+                  isLoading: isSubmitting,
+                  // Explicit brand color/radius — the shared ElevatedButton
+                  // theme default is colorScheme.primary (brandBlue), which is
+                  // a visibly different blue than AppColors.patientPrimary
+                  // used everywhere else in this flow (stepper accent, price
+                  // text, every other CTA). Must match the mockup exactly.
+                  backgroundColor: AppColors.patientPrimary,
+                  // Without this, ElevatedButton's default M3 style computes
+                  // the label color against the *theme's* primary rather
+                  // than this explicit override, landing on a low-contrast
+                  // near-invisible blue-on-blue label.
+                  foregroundColor: Colors.white,
+                  borderRadius: AppRadii.pill,
+                  onPressed: canContinue && !isSubmitting ? _continue : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Big dashed-border tap target on a tinted panel — the primary way to
+/// attach the first image(s) of the lab request. Sized and tinted to read
+/// as an inviting drop-zone rather than a bare bordered box.
+class _UploadBox extends StatelessWidget {
+  const _UploadBox({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: CustomPaint(
+        painter: const _DashedRRectPainter(
+          color: AppPalette.primary,
+          radius: AppRadii.xl,
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppPalette.primarySoft,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  SolarIconsOutline.cameraAdd,
+                  color: AppColors.patientPrimary,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'lab_booking.upload.upload_cta'.tr(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'lab_booking.upload.upload_hint'.tr(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.mutedText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Horizontal row below the upload box: one tile per attached image (each
+/// with a red delete badge) followed by a small dashed "+" tile to attach
+/// more without scrolling back up to [_UploadBox].
+class _ImageThumbnailRow extends StatelessWidget {
+  const _ImageThumbnailRow({
+    required this.images,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<PrescriptionImage> images;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  static const _tileSize = 80.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _tileSize,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          if (index == images.length) {
+            return _AddImageTile(onTap: onAdd, size: _tileSize);
+          }
+          final image = images[index];
+          return _ImageThumbnail(
+            key: ValueKey(image.id),
+            image: image,
+            size: _tileSize,
+            onRemove: () => onRemove(image.id),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AddImageTile extends StatelessWidget {
+  const _AddImageTile({required this.onTap, required this.size});
+
+  final VoidCallback onTap;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'lab_booking.upload.add_image_tooltip'.tr(),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: CustomPaint(
+          painter: const _DashedRRectPainter(
+            color: AppColors.borderMedium,
+            radius: AppRadii.md,
+          ),
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: const Icon(SolarIconsOutline.plus, color: AppColors.patientPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageThumbnail extends StatelessWidget {
+  const _ImageThumbnail({
+    required this.image,
+    required this.size,
+    required this.onRemove,
+    super.key,
+  });
+
+  final PrescriptionImage image;
+  final double size;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: Container(
+            width: size,
+            height: size,
+            color: AppColors.surfaceMuted,
+            child: image.bytes == null
+                ? const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText)
+                : Image.memory(
+                    image.bytes!,
+                    width: size,
+                    height: size,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      SolarIconsOutline.gallery,
+                      color: AppColors.mutedText,
+                    ),
+                  ),
+          ),
+        ),
+        Positioned(
+          top: -6,
+          right: -6,
+          child: Tooltip(
+            message: 'lab_booking.upload.remove_image_tooltip'.tr(),
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: AppColors.errorRed,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 14, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "نوع الخدمة" — the two selectable service-type cards. No default
+/// selection on purpose (see [SelectedLabServiceType]).
+class _ServiceTypeSection extends StatelessWidget {
+  const _ServiceTypeSection({required this.selected, required this.onSelect});
+
+  final LabServiceType? selected;
+  final ValueChanged<LabServiceType> onSelect;
+
+  // Purple token for the home-collection icon tile — not part of the
+  // shared AppColors palette (only this card uses purple), so kept local.
+  static const _homeIconColor = Color(0xFF9333EA);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ServiceTypeCard(
+          type: LabServiceType.branchVisit,
+          isSelected: selected == LabServiceType.branchVisit,
+          icon: SolarIconsOutline.buildings,
+          iconColor: AppColors.tealAccent,
+          onTap: () => onSelect(LabServiceType.branchVisit),
+        ),
+        const SizedBox(height: 12),
+        _ServiceTypeCard(
+          type: LabServiceType.homeCollection,
+          isSelected: selected == LabServiceType.homeCollection,
+          icon: SolarIconsOutline.medicalKit,
+          iconColor: _homeIconColor,
+          onTap: () => onSelect(LabServiceType.homeCollection),
+        ),
+      ],
+    );
+  }
+}
+
+class _ServiceTypeCard extends StatelessWidget {
+  const _ServiceTypeCard({
+    required this.type,
+    required this.isSelected,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  final LabServiceType type;
+  final bool isSelected;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected ? AppPalette.primarySoft : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.patientPrimary
+                : AppColors.borderLight,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? AppShadows.resting : null,
+        ),
+        child: Row(
+          children: [
+            AppIconTile(icon: icon, color: iconColor, size: 56, iconSize: 26),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    type.titleKey.tr(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    type.subtitleKey.tr(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.mutedText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? AppColors.patientPrimary : Colors.white,
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.patientPrimary
+                      : AppColors.borderMedium,
+                  width: 2,
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 15, color: Colors.white)
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Draws a dashed rounded-rect border. Used for both the big upload box and
+/// the small "+" tile — Flutter has no built-in dashed border and this
+/// feature owns no other file where a reusable widget could live, so it's
+/// kept private to this screen.
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  static const _dashWidth = 6.0;
+  static const _dashSpace = 4.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final dashPath = Path();
+    for (final metric in (Path()..addRRect(rrect)).computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        dashPath.addPath(
+          metric.extractPath(distance, distance + _dashWidth),
+          Offset.zero,
+        );
+        distance += _dashWidth + _dashSpace;
+      }
+    }
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
+      color != oldDelegate.color || radius != oldDelegate.radius;
+}

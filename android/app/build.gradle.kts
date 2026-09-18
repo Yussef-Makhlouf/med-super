@@ -1,5 +1,9 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    // END: FlutterFire Configuration
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -11,6 +15,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // Required by flutter_local_notifications (uses java.time APIs via
+        // desugaring on API levels below 26).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -19,19 +26,6 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }
-
-    flavorDimensions += "app"
-
-    productFlavors {
-        create("patient") {
-            dimension = "app"
-            applicationIdSuffix = ".patient"
-        }
-        create("provider") {
-            dimension = "app"
-            applicationIdSuffix = ".provider"
-        }
     }
 
     buildTypes {
@@ -49,4 +43,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

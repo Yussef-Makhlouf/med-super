@@ -9,9 +9,14 @@ class VerifyOtpUseCase {
   final AuthRepository _repository;
 
   Future<Result<AuthTokens>> call({
+    required String requestId,
     required String phone,
     required String code,
     required UserRole role,
-  }) =>
-      _repository.verifyOtp(phone: phone, code: code, role: role);
+  }) => _repository.verifyOtp(
+    requestId: requestId,
+    phone: phone,
+    code: code,
+    role: role,
+  );
 }
