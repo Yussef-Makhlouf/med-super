@@ -32,9 +32,36 @@ Every route below exists in `clinic-reservations` and is exercised by
 | Affiliation | `PATCH /v1/doctors/me/clinics/affiliations/{id}` | `ACTIVE`/`PAUSED` |
 | Availability | `GET/POST/PATCH/DELETE /v1/doctors/me/schedule-templates` | optimistic-locked |
 | Appointments | `GET /v1/doctors/me/appointments[/{id}]` | filters + cursor paging |
+| Visit status | `PATCH /v1/doctors/me/appointments/{id}/visit-status` | `DOCTOR`/`CLINIC_STAFF`; requires the last-read `version`; only `WAITING → IN_DOCTOR_ROOM → LEFT` |
 | Cancel | `POST /v1/doctors/me/appointments/{id}/cancel` | `PROVIDER_REQUEST`, full refund |
 | Reschedule | `POST /v1/doctors/me/appointments/{id}/reschedule` | completes in one transaction |
 | Walk-in booking | `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` | DOCTOR or CLINIC_STAFF; `{patientId}` or `{patientPhone, patientName?}` + `slotId` |
+
+## Visit-status verification: 2026-09-18
+
+The Flutter queue/detail DTO, repository, use case, generated Riverpod
+provider, localized badge, and single-step action call the route above with
+`{status, version}`. A successful response replaces the displayed
+appointment, so the next action uses the server-returned version.
+
+- **Verified backend contract:** local Docker PostgreSQL and Redis were up;
+  Prisma reported no pending migrations; `npm run build` completed; and the
+  focused `UpdateAppointmentVisitStatusUseCase` suite passed 5/5, covering
+  forward transitions, invalid transitions, non-confirmed appointments,
+  assistant branch scope, and stale versions.
+- **Focused HTTP coverage added:** `test/provider-assistants.e2e-spec.ts`
+  now asserts the successful two-step progression, a `409
+  OPTIMISTIC_LOCK_CONFLICT` after a valid stale version, and a `404
+  RESOURCE_NOT_FOUND` for another doctor's appointment. The first live run
+  exposed that `version: 0` is validation-invalid (`400`), not stale; the
+  test now uses version `1` after the first update, which is the real stale
+  client case. The corrected suite passed **32/32** against real PostgreSQL.
+- **Still unverified in this environment:** Flutter `build_runner` and the
+  focused widget suite stalled without diagnostic output, and Flutter device
+  discovery did not return a runnable target. The generated provider is
+  present in source, but a browser/emulator run with
+  `--dart-define=BASE_URL=http://localhost:3000` remains required before
+  claiming live-dashboard verification.
 
 ### What changed, and why the old shapes were wrong
 
