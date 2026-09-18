@@ -4,6 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 
 /// What the doctor filled in to add another branch under a clinic they
@@ -120,77 +123,94 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
                 widget.clinicName,
                 style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
               ),
-              const SizedBox(height: 16),
-              _field(
-                controller: _phone,
-                label: 'provider_dashboard.clinics.phone'.tr(),
-                keyboardType: TextInputType.phone,
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(11),
-                ],
-                validator: (value) {
-                  final trimmed = (value ?? '').trim();
-                  if (trimmed.isEmpty) {
-                    return 'provider_dashboard.clinics.phone'.tr();
-                  }
-                  if (!isValidEgyptPhone(trimmed)) {
-                    return 'provider_dashboard.clinics.phone'.tr();
-                  }
-                  return null;
-                },
-              ),
-              _field(
-                controller: _line1,
-                label: 'provider_dashboard.clinics.address_line'.tr(),
-              ),
-              _field(
-                controller: _city,
-                label: 'provider_dashboard.clinics.city'.tr(),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _field(
-                      controller: _regionCode,
-                      label: 'provider_dashboard.clinics.region_code'.tr(),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  boxShadow: AppShadows.resting,
+                ),
+                child: Column(
+                  children: [
+                    AppTextField(
+                      controller: _phone,
+                      label: 'provider_dashboard.clinics.phone'.tr(),
+                      keyboardType: TextInputType.phone,
+                      textDirection: ui.TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(11),
+                      ],
+                      validator: (value) {
+                        final trimmed = (value ?? '').trim();
+                        if (trimmed.isEmpty) {
+                          return 'provider_dashboard.clinics.phone'.tr();
+                        }
+                        if (!isValidEgyptPhone(trimmed)) {
+                          return 'provider_dashboard.clinics.phone'.tr();
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _line1,
+                      label: 'provider_dashboard.clinics.address_line'.tr(),
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _city,
+                      label: 'provider_dashboard.clinics.city'.tr(),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            controller: _regionCode,
+                            label: 'provider_dashboard.clinics.region_code'.tr(),
+                            textDirection: ui.TextDirection.ltr,
+                            textAlign: TextAlign.left,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            controller: _countryCode,
+                            label: 'provider_dashboard.clinics.country_code'.tr(),
+                            textDirection: ui.TextDirection.ltr,
+                            textAlign: TextAlign.left,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _timezone,
+                      label: 'provider_dashboard.clinics.timezone'.tr(),
                       textDirection: ui.TextDirection.ltr,
                       textAlign: TextAlign.left,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _field(
-                      controller: _countryCode,
-                      label: 'provider_dashboard.clinics.country_code'.tr(),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _consultFee,
+                      label:
+                          '${'provider_dashboard.clinics.consult_fee'.tr()} (${widget.defaultCurrency})',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       textDirection: ui.TextDirection.ltr,
                       textAlign: TextAlign.left,
+                      validator: (value) {
+                        final parsed = double.tryParse((value ?? '').trim());
+                        if (parsed == null || parsed <= 0) {
+                          return 'provider_dashboard.clinics.consult_fee'.tr();
+                        }
+                        return null;
+                      },
                     ),
-                  ),
-                ],
-              ),
-              _field(
-                controller: _timezone,
-                label: 'provider_dashboard.clinics.timezone'.tr(),
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-              ),
-              _field(
-                controller: _consultFee,
-                label:
-                    '${'provider_dashboard.clinics.consult_fee'.tr()} (${widget.defaultCurrency})',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-                validator: (value) {
-                  final parsed = double.tryParse((value ?? '').trim());
-                  if (parsed == null || parsed <= 0) {
-                    return 'provider_dashboard.clinics.consult_fee'.tr();
-                  }
-                  return null;
-                },
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -199,11 +219,15 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 48,
+                height: 56,
                 width: double.infinity,
                 child: FilledButton(
+                  style: FilledButton.styleFrom(shape: const StadiumBorder()),
                   onPressed: _submit,
-                  child: Text('provider_dashboard.clinics.add_branch'.tr()),
+                  child: Text(
+                    'provider_dashboard.clinics.add_branch'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
                 ),
               ),
             ],
@@ -212,31 +236,4 @@ class _AddClinicBranchSheetState extends State<_AddClinicBranchSheet> {
       ),
     );
   }
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    TextInputType? keyboardType,
-    ui.TextDirection? textDirection,
-    TextAlign? textAlign,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textDirection: textDirection,
-      textAlign: textAlign ?? TextAlign.start,
-      inputFormatters: inputFormatters,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
-      validator:
-          validator ??
-          (value) => (value == null || value.trim().isEmpty) ? label : null,
-    ),
-  );
 }

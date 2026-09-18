@@ -3,12 +3,16 @@ import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
+import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/assistant_status.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/assistant_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_multi_select.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// Bottom sheet for editing an existing assistant's display name and status.
 /// Pre-fills fields from [assistant] and saves changes via [AssistantsNotifier].
@@ -173,21 +177,10 @@ class _EditAssistantBottomSheetState
                 const SizedBox(height: 24),
 
                 // Display name field (pre-filled)
-                Text(
-                  'profile.full_name'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'profile.full_name'.tr(),
+                  hint: 'assistants.name_hint_edit'.tr(),
                   controller: _nameController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.name_hint_edit'.tr(),
-                  ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
                       return 'assistants.name_required'.tr();
@@ -200,53 +193,24 @@ class _EditAssistantBottomSheetState
                 ),
                 const SizedBox(height: 20),
 
-                Text(
-                  'assistants.title_label'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.title_label'.tr(),
+                  hint: 'assistants.title_hint'.tr(),
                   controller: _titleController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.title_hint'.tr(),
-                  ),
                   maxLength: 200,
                 ),
                 const SizedBox(height: 20),
 
-                Text(
-                  'assistants.subtitle_label'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.subtitle_label'.tr(),
+                  hint: 'assistants.subtitle_hint'.tr(),
                   controller: _subtitleController,
-                  textDirection: TextDirection.rtl,
-                  decoration: _inputDecoration(
-                    hint: 'assistants.subtitle_hint'.tr(),
-                  ),
                   maxLength: 200,
                 ),
                 const SizedBox(height: 20),
 
-                Text(
-                  'assistants.branches_label'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                SectionHeader(title: 'assistants.branches_label'.tr()),
+                const SizedBox(height: 10),
                 Consumer(
                   builder: (context, ref, _) {
                     final clinicsAsync = ref.watch(myClinicsProvider);
@@ -293,46 +257,27 @@ class _EditAssistantBottomSheetState
                 ],
                 const SizedBox(height: 20),
 
-                Text(
-                  'assistants.password_label'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'assistants.password_label'.tr(),
+                  hint: 'assistants.password_hint_edit'.tr(),
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  decoration:
-                      _inputDecoration(
-                        hint: 'assistants.password_hint_edit'.tr(),
-                      ).copyWith(
-                        suffixIcon: IconButton(
-                          tooltip: 'assistants.password_show'.tr(),
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                          ),
-                          onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                        ),
-                      ),
+                  suffix: IconButton(
+                    tooltip: 'assistants.password_show'.tr(),
+                    icon: Icon(
+                      _obscurePassword
+                          ? SolarIconsOutline.eye
+                          : SolarIconsOutline.eyeClosed,
+                    ),
+                    onPressed: () => setState(
+                      () => _obscurePassword = !_obscurePassword,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
 
                 // Status toggle
-                Text(
-                  'assistants.status_label'.tr(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink900,
-                  ),
-                ),
+                SectionHeader(title: 'assistants.status_label'.tr()),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -367,8 +312,8 @@ class _EditAssistantBottomSheetState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.errorRed.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                       border: Border.all(
                         color: AppColors.errorRed.withValues(alpha: 0.3),
                       ),
@@ -376,7 +321,7 @@ class _EditAssistantBottomSheetState
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.error_outline,
+                          SolarIconsOutline.dangerCircle,
                           size: 16,
                           color: AppColors.errorRed,
                         ),
@@ -400,16 +345,14 @@ class _EditAssistantBottomSheetState
                 // Save button
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: brandBlue,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      shape: const StadiumBorder(),
                     ),
                     child: _loading
                         ? const SizedBox(
@@ -436,34 +379,6 @@ class _EditAssistantBottomSheetState
       ),
     );
   }
-
-  InputDecoration _inputDecoration({required String hint}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: AppColors.placeholderText),
-    filled: true,
-    fillColor: AppColors.surfaceCard,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.borderLight),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.borderLight),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: brandBlue, width: 1.5),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.errorRed),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: AppColors.errorRed, width: 1.5),
-    ),
-  );
 }
 
 // ─── Status chip ─────────────────────────────────────────────────────────────
@@ -492,7 +407,7 @@ class _StatusChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? selectedBg : AppColors.surfaceCard,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           border: Border.all(
             color: selected ? selectedColor : AppColors.borderLight,
             width: selected ? 1.5 : 1,
