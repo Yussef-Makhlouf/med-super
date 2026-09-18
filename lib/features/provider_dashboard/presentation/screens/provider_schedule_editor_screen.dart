@@ -202,6 +202,9 @@ class _ProviderScheduleEditorScreenState
       backgroundColor: AppColors.surfaceApp,
       appBar: AppBar(
         title: Text('provider_dashboard.schedule.title'.tr()),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.ink900,
+        elevation: 0,
         bottom: tabController == null
             ? null
             : TabBar(
@@ -221,7 +224,7 @@ class _ProviderScheduleEditorScreenState
               foregroundColor: Colors.white,
               onPressed: () => _create(context, ref, clinics),
               shape: const StadiumBorder(),
-              icon: const Icon(Icons.add),
+              icon: const Icon(SolarIconsOutline.addCircle),
               label: Text('provider_dashboard.schedule.add'.tr()),
             ),
       body: AsyncValueView<List<DoctorScheduleTemplate>>(
@@ -294,11 +297,11 @@ class _ProviderScheduleEditorScreenState
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: const Color(0xFFEFF6FF),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadii.md),
     ),
     child: Row(
       children: [
-        const Icon(Icons.info_outline, size: 18, color: brandBlue),
+        const Icon(SolarIconsOutline.infoCircle, size: 18, color: brandBlue),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -321,8 +324,8 @@ class _ProviderScheduleEditorScreenState
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        boxShadow: AppShadows.resting,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,15 +343,22 @@ class _ProviderScheduleEditorScreenState
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 20),
+                icon: const Icon(SolarIconsOutline.pen, size: 20),
+                color: AppColors.mutedText,
+                tooltip: 'common.edit'.tr(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: onEdit,
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.delete_outline,
+                  SolarIconsOutline.trashBinTrash,
                   size: 20,
                   color: AppColors.errorRed,
                 ),
+                tooltip: 'common.delete'.tr(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: onDelete,
               ),
             ],
@@ -370,11 +380,15 @@ class _ProviderScheduleEditorScreenState
           Wrap(
             spacing: 8,
             children: [
-              _pill(
-                '${'provider_dashboard.schedule.slot_duration'.tr()}: ${template.slotDurationMinutes}',
+              AppBadge.soft(
+                label:
+                    '${'provider_dashboard.schedule.slot_duration'.tr()}: ${template.slotDurationMinutes}',
+                color: AppColors.mutedText2,
               ),
-              _pill(
-                '${'provider_dashboard.schedule.buffer'.tr()}: ${template.bufferMinutes}',
+              AppBadge.soft(
+                label:
+                    '${'provider_dashboard.schedule.buffer'.tr()}: ${template.bufferMinutes}',
+                color: AppColors.mutedText2,
               ),
             ],
           ),
@@ -382,16 +396,4 @@ class _ProviderScheduleEditorScreenState
       ),
     );
   }
-
-  Widget _pill(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
-    ),
-  );
 }
