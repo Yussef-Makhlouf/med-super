@@ -8,6 +8,7 @@ import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
+import 'package:med_super/features/provider_dashboard/domain/doctor_appointment_visit_action_policy.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
@@ -80,7 +81,11 @@ class _ProviderAppointmentDetailScreenState
 
   Future<void> _advanceVisitStatus(DoctorAppointment appointment) async {
     final next = appointment.visitStatus.next;
-    if (_mutating || next == null || !appointment.isActionable) return;
+    final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
+      appointment,
+      DateTime.now(),
+    );
+    if (_mutating || next == null || availability != DoctorAppointmentVisitActionAvailability.available) return;
 
     setState(() => _mutating = true);
     final result = await ref
@@ -364,8 +369,19 @@ class _ProviderAppointmentDetailScreenState
   Widget _visitStatusPanel(DoctorAppointment appointment) {
     final visual = doctorVisitStatusStyle(appointment.visitStatus);
     final next = appointment.visitStatus.next;
-    final completed = next == null;
-    final enabled = appointment.isActionable && !completed && !_mutating;
+    final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
+      appointment,
+      DateTime.now(),
+    );
+    final completed = availability == DoctorAppointmentVisitActionAvailability.terminal;
+    final enabled = availability == DoctorAppointmentVisitActionAvailability.available && !_mutating;
+    final hint = switch (availability) {
+      DoctorAppointmentVisitActionAvailability.available => 'provider_dashboard.visit_status.next_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.tooEarly => 'provider_dashboard.visit_status.available_near_time'.tr(),
+      DoctorAppointmentVisitActionAvailability.outsideWindow => 'provider_dashboard.visit_status.outside_window'.tr(),
+      DoctorAppointmentVisitActionAvailability.terminal => 'provider_dashboard.visit_status.complete_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.unavailable => 'provider_dashboard.visit_status.unavailable'.tr(),
+    };
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
@@ -392,11 +408,7 @@ class _ProviderAppointmentDetailScreenState
           DoctorVisitStatusBadge(status: appointment.visitStatus),
           const SizedBox(height: 12),
           Text(
-            completed
-                ? 'provider_dashboard.visit_status.complete_hint'.tr()
-                : appointment.isActionable
-                ? 'provider_dashboard.visit_status.next_hint'.tr()
-                : 'provider_dashboard.visit_status.unavailable'.tr(),
+            hint,
             style: const TextStyle(
               fontSize: 12,
               height: 1.45,
@@ -404,7 +416,7 @@ class _ProviderAppointmentDetailScreenState
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
+          if (availability == DoctorAppointmentVisitActionAvailability.available || completed) SizedBox(
             width: double.infinity,
             height: 48,
             child: FilledButton.icon(
@@ -418,7 +430,7 @@ class _ProviderAppointmentDetailScreenState
                   : Icon(
                       completed
                           ? SolarIconsBold.checkCircle
-                          : doctorVisitStatusStyle(next).icon,
+                          : doctorVisitStatusStyle(next!).icon,
                     ),
               label: Text(
                 completed
