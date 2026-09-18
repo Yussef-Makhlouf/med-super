@@ -17,6 +17,25 @@
 
 ## Session Update — 2026-09-18 (Appointment Visit Status)
 
+### Scheduling/visit lifecycle hardening — 2026-09-18
+
+- **Backend authoritative:** the visit-status use case reads the appointment's
+  current slot in its transaction and allows changes only during the named
+  30-minute early-arrival-to-slot-end window. It returns `422
+  VISIT_STATUS_TOO_EARLY` or `422
+  VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW`; an appointment created by a
+  reschedule therefore uses only its replacement slot. Existing
+  `APPOINTMENT_VISIT_IN_PROGRESS` protection continues to reject
+  cancellation/rescheduling after `IN_DOCTOR_ROOM` or `LEFT`.
+- **Flutter reflection:** the provider-detail action policy uses the same UTC
+  instants and window, presents only the single valid next action when
+  eligible, and explains early/outside-window states without leaving a dead
+  control. Server codes are mapped to localized provider messages; mutation
+  failures invalidate and re-fetch the detail/list state.
+- **Verification:** focused backend unit tests and Flutter domain/widget tests
+  cover the policy and existing transition/locking paths. Browser/emulator
+  manual verification is still pending in this environment.
+
 - **Wired contract:** merged backend PR #22 exposes `PATCH
   /v1/doctors/me/appointments/{appointmentId}/visit-status` to `DOCTOR` and
   `CLINIC_STAFF`. The real Flutter provider-dashboard datasource sends
