@@ -8,7 +8,18 @@ import 'package:med_super/features/auth/presentation/controllers/auth_providers.
 /// Best-effort registration of the device FCM token with
 /// `POST /v1/auth/devices` so push notifications can be delivered.
 Future<void> registerFcmDeviceIfAvailable(Ref ref) async {
-  if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
+  final String? platform;
+  if (kIsWeb) {
+    platform = 'web';
+  } else if (Platform.isAndroid) {
+    platform = 'android';
+  } else if (Platform.isIOS) {
+    platform = 'ios';
+  } else {
+    platform = null;
+  }
+
+  if (platform == null) return;
 
   try {
     final token = await ref.read(fcmServiceProvider).token;
@@ -16,7 +27,7 @@ Future<void> registerFcmDeviceIfAvailable(Ref ref) async {
 
     await ref.read(authRemoteDatasourceProvider).registerDevice(
       fcmToken: token,
-      platform: Platform.isIOS ? 'ios' : 'android',
+      platform: platform,
     );
   } catch (e) {
     if (kDebugMode) {
