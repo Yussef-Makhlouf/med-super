@@ -1,4 +1,8 @@
-# Miscellaneous
+# Environment files
+.env
+.env.local
+.env.*.local
+
 *.class
 *.log
 *.pyc
