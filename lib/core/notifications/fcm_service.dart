@@ -49,6 +49,22 @@ class FcmService {
     }
   }
 
+  /// Fires whenever FCM rotates this device's token. Without re-registering
+  /// on rotation the backend keeps only the old token, so every push to this
+  /// device silently stops arriving until the next fresh login.
+  Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;
+
+  /// Invalidates this device's token, so pushes for the account that just
+  /// signed out stop reaching this device. The next sign-in calls `getToken`
+  /// again and registers the new token.
+  Future<void> deleteToken() async {
+    try {
+      await _messaging.deleteToken();
+    } catch (e) {
+      if (kDebugMode) debugPrint('FcmService: deleteToken failed — $e');
+    }
+  }
+
   Future<String?> get token async {
     try {
       final vapidKey = AppConfig.instance.fcmVapidKey;
