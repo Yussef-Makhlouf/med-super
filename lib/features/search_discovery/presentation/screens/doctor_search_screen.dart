@@ -9,6 +9,7 @@ import 'package:med_super/core/specialties/presentation/controllers/specialties_
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_filter_chip.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
@@ -99,8 +100,8 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(
-            SolarIconsOutline.arrowLeft,
+          icon: Icon(
+            AppNavIcons.back(context),
             color: AppPalette.primary,
           ),
         ),

@@ -23,6 +23,52 @@ class Specialty {
   String localizedName(String languageCode) =>
       languageCode == 'ar' && nameAr.isNotEmpty ? nameAr : nameEn;
 
+  /// Resolves a doctor-row specialty for the current locale.
+  ///
+  /// Doctor search/detail return a single English `specialty` string (and
+  /// sometimes a `specialtyKey` code). The specialties catalog from
+  /// `GET /v1/specialties` is the source of `name_ar` / `name_en`. Match
+  /// by [code] first, then by [fallback] against `nameEn`/`code`, and keep
+  /// [fallback] if the catalog has no row (unknown specialty, catalog
+  /// still loading).
+  static String resolveLabel({
+    required Iterable<Specialty> catalog,
+    required String languageCode,
+    String? code,
+    required String fallback,
+  }) {
+    return findIn(
+          catalog,
+          code: code,
+          name: fallback,
+        )?.localizedName(languageCode) ??
+        fallback;
+  }
+
+  static Specialty? findIn(
+    Iterable<Specialty> catalog, {
+    String? code,
+    String? name,
+  }) {
+    if (code != null && code.isNotEmpty) {
+      final needle = code.toUpperCase();
+      for (final specialty in catalog) {
+        if (specialty.code.toUpperCase() == needle) return specialty;
+      }
+    }
+    final trimmed = name?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    final needle = trimmed.toLowerCase();
+    for (final specialty in catalog) {
+      if (specialty.nameEn.toLowerCase() == needle ||
+          specialty.code.toLowerCase() == needle ||
+          specialty.nameAr == trimmed) {
+        return specialty;
+      }
+    }
+    return null;
+  }
+
   @override
   bool operator ==(Object other) =>
       other is Specialty &&

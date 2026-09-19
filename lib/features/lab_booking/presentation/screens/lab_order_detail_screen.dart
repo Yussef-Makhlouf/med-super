@@ -7,6 +7,7 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_icon_tile.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/result_file_thumbnail.dart';
@@ -64,7 +65,7 @@ class LabOrderDetailScreen extends ConsumerWidget {
         // nothing to pop when arriving that way — falling back to the
         // orders list keeps this screen from ever being a dead end.
         leading: IconButton(
-          icon: const Icon(SolarIconsOutline.arrowLeft),
+          icon: Icon(AppNavIcons.back(context)),
           tooltip: 'lab_booking.orders.back_to_list'.tr(),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/patient/orders'),

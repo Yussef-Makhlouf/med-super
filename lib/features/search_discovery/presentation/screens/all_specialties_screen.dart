@@ -7,8 +7,8 @@ import 'package:med_super/core/specialties/presentation/controllers/specialties_
 import 'package:med_super/core/specialties/presentation/utils/specialty_visuals.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
-import 'package:solar_icons/solar_icons.dart';
 
 /// Full "all categories" grid, reached from the patient home screen's
 /// specialties row via "عرض الكل" — previously that link just opened
@@ -32,8 +32,8 @@ class AllSpecialtiesScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(
-            SolarIconsOutline.arrowLeft,
+          icon: Icon(
+            AppNavIcons.back(context),
             color: AppPalette.primary,
           ),
         ),

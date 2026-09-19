@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
@@ -266,10 +267,10 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Balances the back button on the other side so the title stays
-          // centered — there's already a real search TextField in the body,
-          // so this side doesn't need its own (previously no-op) icon.
-          const SizedBox(width: 48),
+          IconButton(
+            onPressed: () => context.pop(),
+            icon: Icon(AppNavIcons.back(context)),
+          ),
           Expanded(
             child: Text(
               'pharmacy_booking.select_pharmacy.title'.tr(),
@@ -281,10 +282,10 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(SolarIconsOutline.arrowRight),
-          ),
+          // Balances the leading back button so the title stays centered —
+          // there's already a real search TextField in the body, so this
+          // side doesn't need its own (previously no-op) icon.
+          const SizedBox(width: 48),
         ],
       ),
     );

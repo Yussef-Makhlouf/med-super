@@ -6,6 +6,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/image_gallery_viewer.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
@@ -113,7 +114,7 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
         // orders list keeps this screen from ever being a dead end
         // regardless of how the patient got here.
         leading: IconButton(
-          icon: const Icon(SolarIconsOutline.arrowLeft),
+          icon: Icon(AppNavIcons.back(context)),
           tooltip: 'pharmacy_booking.orders.back_to_list'.tr(),
           onPressed: () =>
               context.canPop() ? context.pop() : context.go('/patient/orders'),
