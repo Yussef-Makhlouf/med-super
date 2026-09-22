@@ -1,16 +1,22 @@
 import 'dart:async';
+// `easy_localization` re-exports `intl`, whose `TextDirection` shadows the
+// `dart:ui` enum the amount field needs for LTR digits.
+import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
+import 'package:med_super/core/payments/domain/payment_amount.dart';
 import 'package:med_super/core/payments/presentation/widgets/payment_customer_sheet.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -72,10 +78,15 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   Duration _remaining = Duration.zero;
   bool _confirmed = false;
   AppointmentPaymentMethod _method = AppointmentPaymentMethod.payAtClinic;
+  late final TextEditingController _amountController;
+  String? _amountError;
 
   @override
   void initState() {
     super.initState();
+    _amountController = TextEditingController(
+      text: PaymentAmount.fromNum(widget.request.consultationFee),
+    );
     final initial = widget.initialHold;
     if (initial != null) {
       _hold = initial;
@@ -90,6 +101,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
   @override
   void dispose() {
+    _amountController.dispose();
     _ticker?.cancel();
     // A hold was created (slot flipped OPEN → HELD server-side) but the
     // user left this screen without confirming — e.g. tapping back on the
@@ -166,12 +178,120 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   Future<void> _pay() async {
     final hold = _hold;
     if (hold == null) return;
+    if (!_validateAmountForSubmit()) return;
     if (_method.isSynchronous) {
       await _confirm(hold);
     } else {
       await _payWithFawry(hold);
     }
   }
+
+  /// Client-side checks the server will also run: numeric, ≤ 2 decimals,
+  /// greater than zero, not above the displayed fee, and (wallet) not above
+  /// the available balance. The **minimum** is not checked here — the
+  /// backend does not expose it to patients, so a too-low amount comes back
+  /// as `PAYMENT_AMOUNT_BELOW_MINIMUM` with `details.minAmount`.
+  bool _validateAmountForSubmit() {
+    if (!_method.supportsPartialPayment) {
+      setState(() => _amountError = null);
+      return true;
+    }
+    final parsed = PaymentAmount.tryParse(_amountController.text);
+    if (parsed == null) {
+      setState(
+        () => _amountError = 'appointments.payment_amount_invalid'.tr(),
+      );
+      return false;
+    }
+    final amount = num.parse(parsed);
+    if (amount > widget.request.consultationFee) {
+      setState(
+        () => _amountError = 'appointments.payment_amount_exceeds_fee'.tr(
+          namedArgs: {
+            'fee': PaymentAmount.fromNum(widget.request.consultationFee),
+          },
+        ),
+      );
+      return false;
+    }
+    if (_method == AppointmentPaymentMethod.wallet) {
+      final available =
+          ref.read(walletBalanceProvider).asData?.value.availableBalance;
+      if (available != null && amount > available) {
+        setState(
+          () => _amountError = 'appointments.wallet_insufficient_for_amount'
+              .tr(namedArgs: {'balance': available.toStringAsFixed(2)}),
+        );
+        return false;
+      }
+    }
+    setState(() => _amountError = null);
+    return true;
+  }
+
+  /// Omit `paymentAmount` when paying the full displayed fee so this path
+  /// stays identical to the pre-partial-payment client (full payments never
+  /// need the `MIN_APPOINTMENT_PAYMENT` policy).
+  String? _paymentAmountForRequest() {
+    if (!_method.supportsPartialPayment) return null;
+    final parsed = PaymentAmount.tryParse(_amountController.text);
+    if (parsed == null) return null;
+    if (num.parse(parsed) == widget.request.consultationFee) return null;
+    return parsed;
+  }
+
+  String _displayedPayAmount() {
+    if (!_method.supportsPartialPayment) {
+      return PaymentAmount.fromNum(widget.request.consultationFee);
+    }
+    return PaymentAmount.tryParse(_amountController.text) ??
+        PaymentAmount.fromNum(widget.request.consultationFee);
+  }
+
+  void _applyAmountFailure(Failure failure) {
+    final message = switch (failure) {
+      ValidationFailure(:final code, :final fieldErrors) =>
+        _amountMessageFor(code, fieldErrors) ?? failureMessage(failure),
+      _ => failureMessage(failure),
+    };
+    setState(() {
+      _stage = _Stage.held;
+      _failure = null;
+      _amountError = message;
+    });
+  }
+
+  String? _amountMessageFor(String? code, Map<String, String> fieldErrors) {
+    final min = fieldErrors['minAmount'];
+    if (code == 'PAYMENT_AMOUNT_BELOW_MINIMUM' && min != null) {
+      return 'appointments.payment_amount_below_minimum'.tr(
+        namedArgs: {'min': min},
+      );
+    }
+    final fee = fieldErrors['fullAmount'];
+    if (code == 'PAYMENT_AMOUNT_EXCEEDS_FEE' && fee != null) {
+      return 'appointments.payment_amount_exceeds_fee'.tr(
+        namedArgs: {'fee': fee},
+      );
+    }
+    return null;
+  }
+
+  bool _isAmountFailure(Failure failure) => switch (failure) {
+    ValidationFailure(:final code) => _isAmountCode(code),
+    ServerFailure(:final code) => _isAmountCode(code),
+    _ => false,
+  };
+
+  bool _isAmountCode(String? code) => switch (code) {
+    'PAYMENT_AMOUNT_BELOW_MINIMUM' ||
+    'PAYMENT_AMOUNT_EXCEEDS_FEE' ||
+    'PAYMENT_AMOUNT_INVALID' ||
+    'PAYMENT_AMOUNT_NOT_SUPPORTED' ||
+    'INSUFFICIENT_WALLET_BALANCE' ||
+    'MIN_APPOINTMENT_PAYMENT_NOT_CONFIGURED' => true,
+    _ => false,
+  };
 
   /// Fawry never produces a confirmed appointment here — the hold is
   /// extended and the patient leaves with a reference code, so this path
@@ -187,7 +307,12 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     setState(() => _stage = _Stage.confirming);
     final result = await ref
         .read(initiateOnlinePaymentUseCaseProvider)
-        .call(hold.holdId, method: _method, customer: customer);
+        .call(
+          hold.holdId,
+          method: _method,
+          customer: customer,
+          paymentAmount: _paymentAmountForRequest(),
+        );
     if (!mounted) return;
 
     result.when(
@@ -199,14 +324,24 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
         _confirmed = true;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => FawryPaymentScreen(initiation: initiation),
+            builder: (_) => FawryPaymentScreen(
+              initiation: initiation,
+              paidAmount: _displayedPayAmount(),
+              currency: widget.request.currency,
+            ),
           ),
         );
       },
-      err: (failure) => setState(() {
-        _stage = _Stage.error;
-        _failure = failure;
-      }),
+      err: (failure) {
+        if (_isAmountFailure(failure)) {
+          _applyAmountFailure(failure);
+          return;
+        }
+        setState(() {
+          _stage = _Stage.error;
+          _failure = failure;
+        });
+      },
     );
   }
 
@@ -214,7 +349,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     setState(() => _stage = _Stage.confirming);
     final result = await ref
         .read(confirmAppointmentUseCaseProvider)
-        .call(hold.holdId, paymentMethod: _method);
+        .call(
+          hold.holdId,
+          paymentMethod: _method,
+          paymentAmount: _paymentAmountForRequest(),
+        );
     if (!mounted) return;
 
     result.when(
@@ -239,10 +378,16 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
           extra: BookingSuccessArgs(request: widget.request, method: _method),
         );
       },
-      err: (failure) => setState(() {
-        _stage = _Stage.error;
-        _failure = failure;
-      }),
+      err: (failure) {
+        if (_isAmountFailure(failure)) {
+          _applyAmountFailure(failure);
+          return;
+        }
+        setState(() {
+          _stage = _Stage.error;
+          _failure = failure;
+        });
+      },
     );
   }
 
@@ -267,8 +412,28 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
                     selected: _method,
                     fee: widget.request.consultationFee,
                     enabled: _stage == _Stage.held,
-                    onChanged: (method) => setState(() => _method = method),
+                    onChanged: (method) => setState(() {
+                      _method = method;
+                      _amountError = null;
+                    }),
                   ),
+                  if (_method.supportsPartialPayment) ...[
+                    const SizedBox(height: 20),
+                    _PaymentAmountField(
+                      controller: _amountController,
+                      currency: widget.request.currency,
+                      fee: widget.request.consultationFee,
+                      errorText: _amountError,
+                      enabled: _stage == _Stage.held,
+                      onChanged: (_) => setState(() => _amountError = null),
+                      onPayFull: () {
+                        _amountController.text = PaymentAmount.fromNum(
+                          widget.request.consultationFee,
+                        );
+                        setState(() => _amountError = null);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   if (_stage == _Stage.held || _stage == _Stage.confirming)
                     _HoldTimer(remaining: _remaining),
@@ -286,7 +451,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               stage: _stage,
               onConfirm: _pay,
               method: _method,
-              fee: widget.request.consultationFee,
+              payAmountLabel: _displayedPayAmount(),
               currency: widget.request.currency,
             ),
           ],
@@ -404,9 +569,11 @@ class _SummaryCard extends StatelessWidget {
 }
 
 /// Pay-at-clinic / wallet / Fawry. The wallet tile reads the real balance
-/// (`GET /v1/wallet`) and is locked when it can't cover the fee — the
-/// backend would reject that confirm with `INSUFFICIENT_WALLET_BALANCE`
-/// after burning the hold, so it's better caught here.
+/// (`GET /v1/wallet`) and is locked only when the balance is zero — a
+/// partial `paymentAmount` can cover a fee the wallet couldn't pay in full.
+/// A confirm that still overshoots the balance is rejected with
+/// `INSUFFICIENT_WALLET_BALANCE` *after* the hold was already spent, so the
+/// amount field also checks before submit.
 class _PaymentMethodPicker extends ConsumerWidget {
   const _PaymentMethodPicker({
     required this.selected,
@@ -424,7 +591,7 @@ class _PaymentMethodPicker extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final balance = ref.watch(walletBalanceProvider);
     final available = balance.asData?.value.availableBalance;
-    final canUseWallet = available != null && available >= fee;
+    final canUseWallet = available != null && available > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +623,8 @@ class _PaymentMethodPicker extends ConsumerWidget {
           title: 'appointments.pay_with_wallet'.tr(),
           subtitle: switch (available) {
             null => 'appointments.wallet_balance_unavailable'.tr(),
-            final b when b < fee => 'appointments.wallet_insufficient'.tr(
+            final b when b <= 0 => 'appointments.wallet_empty'.tr(),
+            final b when b < fee => 'appointments.wallet_partial_ok'.tr(
               namedArgs: {'balance': b.toStringAsFixed(2)},
             ),
             final b => 'appointments.wallet_balance'.tr(
@@ -567,6 +735,91 @@ class _MethodTile extends StatelessWidget {
   }
 }
 
+class _PaymentAmountField extends StatelessWidget {
+  const _PaymentAmountField({
+    required this.controller,
+    required this.currency,
+    required this.fee,
+    required this.enabled,
+    required this.onChanged,
+    required this.onPayFull,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final String currency;
+  final int fee;
+  final bool enabled;
+  final String? errorText;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onPayFull;
+
+  @override
+  Widget build(BuildContext context) {
+    final feeLabel = currency == 'EGP'
+        ? '${PaymentAmount.fromNum(fee)} ج.م'
+        : '${PaymentAmount.fromNum(fee)} $currency';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'appointments.payment_amount'.tr(),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'appointments.payment_amount_hint'.tr(),
+          style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+        ),
+        const SizedBox(height: 10),
+        AppTextField(
+          label: 'appointments.payment_amount_label'.tr(),
+          controller: controller,
+          hint: PaymentAmount.fromNum(fee),
+          errorText: errorText,
+          readOnly: !enabled,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.done,
+          textDirection: ui.TextDirection.ltr,
+          textAlign: TextAlign.start,
+          maxLength: 12,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          onChanged: onChanged,
+          suffix: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 12),
+            child: Center(
+              child: Text(
+                currency == 'EGP' ? 'ج.م' : currency,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.mutedText2,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton(
+            onPressed: enabled ? onPayFull : null,
+            child: Text(
+              'appointments.pay_full_fee'.tr(namedArgs: {'fee': feeLabel}),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.icon, required this.label});
 
@@ -631,20 +884,30 @@ class _ConfirmBar extends StatelessWidget {
     required this.stage,
     required this.onConfirm,
     required this.method,
-    required this.fee,
+    required this.payAmountLabel,
     required this.currency,
   });
 
   final _Stage stage;
   final VoidCallback onConfirm;
   final AppointmentPaymentMethod method;
-  final int fee;
+  final String payAmountLabel;
   final String currency;
 
   @override
   Widget build(BuildContext context) {
     final canConfirm = stage == _Stage.held;
     final isBusy = stage == _Stage.holding || stage == _Stage.confirming;
+    final amountSuffix = currency == 'EGP'
+        ? '$payAmountLabel ج.م'
+        : '$payAmountLabel $currency';
+    final label = method.isSynchronous
+        ? 'appointments.confirm_booking_with_amount'.tr(
+            namedArgs: {'amount': amountSuffix},
+          )
+        : 'appointments.continue_to_payment_with_amount'.tr(
+            namedArgs: {'amount': amountSuffix},
+          );
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
       decoration: const BoxDecoration(
@@ -674,9 +937,7 @@ class _ConfirmBar extends StatelessWidget {
                     ),
                   )
                 : Text(
-                    method.isSynchronous
-                        ? 'appointments.confirm_booking'.tr()
-                        : 'appointments.continue_to_payment'.tr(),
+                    label,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

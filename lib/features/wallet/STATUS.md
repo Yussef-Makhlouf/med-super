@@ -67,5 +67,6 @@ this flow needs to change when it lands.
 `POST /v1/appointments/{holdId}/confirm` with
 `paymentMethod: INTERNAL_WALLET` is how the balance actually gets spent,
 and it is wired now — `BookingConfirmScreen`'s payment-method picker sends
-it, and the balance/transaction providers are invalidated on success. See
+it (optionally with a `paymentAmount` string for a partial debit), and the
+balance/transaction providers are invalidated on success. See
 `appointments/STATUS.md`.

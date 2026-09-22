@@ -20,16 +20,23 @@ guessed shapes:
   `PAY_AT_CLINIC`. Both synchronous methods are wired:
   `PAY_AT_CLINIC` and `INTERNAL_WALLET` (File 12 Part 50.4 — debits the
   wallet inside the same transaction that confirms the appointment).
+  `INTERNAL_WALLET` accepts an optional `paymentAmount` string (`"50.00"`);
+  omit it to pay the full fee. `PAY_AT_CLINIC` rejects `paymentAmount`
+  (`422 PAYMENT_AMOUNT_NOT_SUPPORTED`) — the amount field is hidden on
+  that tile.
 - `POST /v1/appointments/{holdId}/payments` — `InitiateOnlinePaymentUseCase`,
-  wired for **`FAWRY` only**. Returns a reference code the patient pays at
-  an outlet; the hold is extended to 15 minutes and the appointment is
-  confirmed later by the gateway webhook, never by the client
-  (`FawryPaymentScreen` is therefore terminal and has no "I've paid"
-  button).
+  wired for **`FAWRY` only**. Same optional `paymentAmount`. Returns a
+  Fawry `referenceCode` (no `redirectUrl`) the patient pays at an outlet;
+  the hold is extended to 15 minutes and the appointment is confirmed later
+  by the gateway webhook, never by the client (`FawryPaymentScreen` is
+  therefore terminal, shows the amount the UI submitted — the response does
+  not echo it — and has no "I've paid" button).
 - `POST /v1/appointments/{id}/cancel` — `CancelAppointmentUseCase`, wired
   to `PatientAppointmentsScreen`'s cancel button. `feeApplied`/
-  `refundAmount` are always `0` server-side (Part 35.7) — nothing to
-  display beyond the cancellation succeeding.
+  `refundAmount` are computed from what the patient actually paid (a 50
+  EGP payment on a 500 fee with a 10% fee refunds 45, not 450). The
+  response shape is unchanged; the patient UI still only shows that the
+  cancellation succeeded.
 - `POST /v1/appointments/{id}/reschedule` — `RescheduleAppointmentUseCase`,
   wired to `RescheduleScreen` (a day/slot picker, entered from
   `PatientAppointmentsScreen`'s "Reschedule" button on confirmed
@@ -58,11 +65,16 @@ simplification: mock holds never expire (no background sweep to fake) — do
 not use the mock to test hold-expiry UX; that's exercised server-side.
 
 The mock also covers both new payment paths. `INTERNAL_WALLET` debits the
-shared `_MockWalletStore` (a flat `_kMockConsultFee`, since the confirm
-request carries no fee) and refuses on an insufficient balance without
-consuming the hold, mirroring the real rollback. The Fawry mock returns a
-reference code but never books the slot — nothing simulates the webhook —
-so a mock Fawry booking correctly never appears in "My Appointments".
+shared `_MockWalletStore` by the requested `paymentAmount` (or
+`_kMockConsultFee` when omitted — the confirm request still carries no
+fee, so the mock uses one representative consult fee and a 50 EGP
+minimum matching the seeded `MIN_APPOINTMENT_PAYMENT` policy) and
+refuses on an insufficient balance without consuming the hold, mirroring
+the real rollback. Sending `paymentAmount` with `PAY_AT_CLINIC` is
+rejected. The Fawry mock returns a reference code but never books the
+slot — nothing simulates the webhook — so a mock Fawry booking correctly
+never appears in "My Appointments". The first amount on a Fawry hold is
+kept; a retry with a different `paymentAmount` is ignored.
 `_MockHold` now carries `doctorClinicAffiliationId` through hold → confirm
 (previously hardcoded to `'mock-affiliation'` regardless of which doctor
 was actually booked) — needed so a mock appointment's affiliationId still
@@ -70,10 +82,19 @@ resolves to the right doctorId for the reschedule slot-picker above.
 
 ## Payment methods
 
-`BookingConfirmScreen` shows a three-way picker. The wallet tile reads the
-real balance (`GET /v1/wallet`) and locks itself when it can't cover the
-fee — the backend would otherwise reject the confirm with
-`INSUFFICIENT_WALLET_BALANCE` *after* the hold was already spent.
+`BookingConfirmScreen` shows a three-way picker plus an amount field for
+wallet and Fawry (hidden for pay-at-clinic). The field defaults to the
+full consultation fee and is omitted from the request when left at that
+value, so a full payment never depends on `MIN_APPOINTMENT_PAYMENT`. The
+minimum itself is **not hardcoded** — the backend does not expose it to
+patients yet, and a too-low amount comes back as
+`422 PAYMENT_AMOUNT_BELOW_MINIMUM` with `details.minAmount` shown inline.
+The wallet tile reads the real balance (`GET /v1/wallet`) and locks
+itself only when the balance is zero — a partial amount can cover a fee
+the wallet couldn't pay in full. A confirm that still overshoots the
+balance is caught on the amount field before submit, because the backend
+would otherwise reject with `INSUFFICIENT_WALLET_BALANCE` *after* the
+hold was already spent.
 
 **`CARD` and `MOBILE_WALLET` are deliberately absent** even though the
 backend supports both. Each returns a Paymob checkout URL that needs an
@@ -114,6 +135,12 @@ today's backend; pay-at-clinic and wallet are unaffected.
   scope.
 - **No branch/doctor-staff surfaces** — everything here is patient-only,
   matching the backend's own Phase 4 scope (File 12 Part 35.8/35.14).
+- **Remaining appointment balance is not shown.** The backend stores the
+  unpaid part of the fee but no GET returns it yet, and there is no clinic
+  collection flow. Don't invent a "pay the rest at the clinic" line.
+- **The 50 EGP minimum is not patient-readable yet.** Display/pre-validate
+  from `details.minAmount` on the 422, not from a hardcoded constant. A
+  patient-facing min would be a backend contract change.
 - **`EnvelopeInterceptor`** (`core/network/interceptors/`) was added
   alongside this feature — it wasn't specific to appointments, but nothing
   calling a real backend endpoint worked before it existed (the backend's

@@ -24,4 +24,11 @@ enum AppointmentPaymentMethod {
   final String wireValue;
 
   bool get isSynchronous => this != AppointmentPaymentMethod.fawry;
+
+  /// Wallet and Fawry accept an optional `paymentAmount`. Pay-at-clinic
+  /// rejects one with `422 PAYMENT_AMOUNT_NOT_SUPPORTED`, so the amount
+  /// field stays hidden for that tile.
+  bool get supportsPartialPayment =>
+      this == AppointmentPaymentMethod.wallet ||
+      this == AppointmentPaymentMethod.fawry;
 }
