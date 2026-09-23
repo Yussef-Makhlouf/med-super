@@ -351,9 +351,11 @@ void main() {
 
     expect(find.text('start-placeholder'), findsNothing);
 
+    // The header uses the direction-aware `AppNavIcons.back`, and
+    // `pumpWithRouter` starts in `en` (LTR), so the back icon is arrowLeft.
     final backButton = tester.widget<IconButton>(
       find.ancestor(
-        of: find.byIcon(SolarIconsOutline.arrowRight),
+        of: find.byIcon(SolarIconsOutline.arrowLeft),
         matching: find.byType(IconButton),
       ),
     );

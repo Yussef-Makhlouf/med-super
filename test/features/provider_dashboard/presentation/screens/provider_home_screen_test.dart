@@ -8,6 +8,7 @@ import 'package:med_super/core/storage/secure_storage_service.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_home_screen.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
+import 'package:solar_icons/solar_icons.dart';
 import '../../../../helpers/pump_localized_widget.dart';
 
 /// The mock schedule-template seed (`_seedDoctorScheduleTemplates` in
@@ -27,9 +28,12 @@ int _tileIndexForWeekday(int isoWeekday) => (isoWeekday - DateTime.saturday) % 7
 Finder _dayTile(int isoWeekday) =>
     find.byKey(Key('providerCalendarDayTile-${_tileIndexForWeekday(isoWeekday)}'));
 
-/// The small "working day" dot under a day tile's date — filled when the
-/// doctor has a schedule template for that weekday, transparent otherwise.
+/// The small "working day" dot (`AppBadge.dot`, a circular `Container`)
+/// under a day tile's date — rendered only when the doctor has a schedule
+/// template for that weekday; a non-working day gets a same-size plain
+/// `SizedBox` spacer instead (no circle at all).
 bool _hasWorkingDayDot(WidgetTester tester, int isoWeekday) {
+  expect(_dayTile(isoWeekday), findsOneWidget);
   final dots = tester.widgetList<Container>(
     find.descendant(
       of: _dayTile(isoWeekday),
@@ -41,9 +45,8 @@ bool _hasWorkingDayDot(WidgetTester tester, int isoWeekday) {
       ),
     ),
   );
-  expect(dots, hasLength(1));
-  final color = (dots.single.decoration! as BoxDecoration).color;
-  return color != null && color != Colors.transparent;
+  expect(dots.length, lessThanOrEqualTo(1));
+  return dots.isNotEmpty;
 }
 
 /// Open-slot rows on the timeline are labelled "متاح" (bookable) or
@@ -129,8 +132,9 @@ void main() {
       // Page to next week first: the mock seeds appointments from yesterday
       // through today+2, which can fall on this week's Friday. Next week's
       // Friday is always at least 7 days out, and Friday has no template.
-      // (In the RTL header, chevron_left is "next week".)
-      await tester.tap(find.byIcon(Icons.chevron_left));
+      // The month header forces LTR child order, so altArrowRight is always
+      // "next week" regardless of locale.
+      await tester.tap(find.byIcon(SolarIconsOutline.altArrowRight));
       await _settle(tester);
       await _selectWeekday(tester, DateTime.friday);
 
