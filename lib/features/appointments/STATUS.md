@@ -86,12 +86,16 @@ resolves to the right doctorId for the reschedule slot-picker above.
 wallet and Fawry (hidden for pay-at-clinic). The field defaults to the
 full consultation fee and is omitted from the request when left at that
 value, so a full payment never depends on `MIN_APPOINTMENT_PAYMENT`. The
-minimum itself is **not hardcoded** — the backend does not expose it to
-patients yet, and a too-low amount comes back as
-`422 PAYMENT_AMOUNT_BELOW_MINIMUM` with `details.minAmount` shown inline.
+minimum itself is **not hardcoded** — it comes from the hold response
+(`minPaymentAmount`, `min(policy, fee)`), is shown in the field's hint,
+and is checked before submit. `minPaymentAmount: null` (policy not
+configured, or a reschedule hold) hides the field: full payment only. A
+server `422 PAYMENT_AMOUNT_BELOW_MINIMUM` still lands inline with
+`details.minAmount`.
 The wallet tile reads the real balance (`GET /v1/wallet`) and locks
-itself only when the balance is zero — a partial amount can cover a fee
-the wallet couldn't pay in full. A confirm that still overshoots the
+itself only when the balance is below the minimum (or the full fee when
+no partial is allowed). Choosing the wallet with less than the fee
+pre-fills the amount with the balance. A confirm that still overshoots the
 balance is caught on the amount field before submit, because the backend
 would otherwise reject with `INSUFFICIENT_WALLET_BALANCE` *after* the
 hold was already spent.
@@ -135,12 +139,13 @@ today's backend; pay-at-clinic and wallet are unaffected.
   scope.
 - **No branch/doctor-staff surfaces** — everything here is patient-only,
   matching the backend's own Phase 4 scope (File 12 Part 35.8/35.14).
-- **Remaining appointment balance is not shown.** The backend stores the
-  unpaid part of the fee but no GET returns it yet, and there is no clinic
-  collection flow. Don't invent a "pay the rest at the clinic" line.
-- **The 50 EGP minimum is not patient-readable yet.** Display/pre-validate
-  from `details.minAmount` on the 422, not from a hardcoded constant. A
-  patient-facing min would be a backend contract change.
+- **Remaining balance is shown to the doctor, not the patient.** Doctor
+  appointment responses carry `payment { method, fullAmount, paidAmount,
+  remainingBalance }`, rendered on `ProviderAppointmentDetailScreen`.
+  There is still no "mark as collected" flow.
+- **Fawry amount comes from the server.** `POST .../payments` echoes
+  `amount` (the first attempt's on a retry); `FawryPaymentScreen` shows
+  that, not what the UI sent.
 - **`EnvelopeInterceptor`** (`core/network/interceptors/`) was added
   alongside this feature — it wasn't specific to appointments, but nothing
   calling a real backend endpoint worked before it existed (the backend's

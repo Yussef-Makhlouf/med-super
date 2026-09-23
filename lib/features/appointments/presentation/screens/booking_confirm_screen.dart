@@ -186,13 +186,46 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     }
   }
 
+  /// Server-side minimum for a partial amount, from the hold response
+  /// (`minPaymentAmount`). `null` = the policy isn't configured (or this is a
+  /// reschedule hold), so only a full payment is offered.
+  num? get _minAmount => _hold?.minPaymentAmount;
+
+  /// A partial amount is only offered when the method takes one and the
+  /// server gave a minimum below the fee (a fee ≤ the minimum can only be
+  /// paid in full anyway).
+  bool get _partialAllowed {
+    final min = _minAmount;
+    return _method.supportsPartialPayment &&
+        min != null &&
+        min < widget.request.consultationFee;
+  }
+
+  /// Wallet with less than the fee: start the field at what the wallet can
+  /// actually cover instead of a full fee that would fail validation.
+  void _onMethodChanged(AppointmentPaymentMethod method) {
+    setState(() {
+      _method = method;
+      _amountError = null;
+    });
+    if (method != AppointmentPaymentMethod.wallet || !_partialAllowed) return;
+    final available =
+        ref.read(walletBalanceProvider).asData?.value.availableBalance;
+    if (available == null || available >= widget.request.consultationFee) {
+      return;
+    }
+    // Floor to the cent so rounding never proposes more than the balance.
+    _amountController.text = PaymentAmount.fromNum(
+      (available * 100).floor() / 100,
+    );
+  }
+
   /// Client-side checks the server will also run: numeric, ≤ 2 decimals,
-  /// greater than zero, not above the displayed fee, and (wallet) not above
-  /// the available balance. The **minimum** is not checked here — the
-  /// backend does not expose it to patients, so a too-low amount comes back
-  /// as `PAYMENT_AMOUNT_BELOW_MINIMUM` with `details.minAmount`.
+  /// greater than zero, not below the server minimum, not above the
+  /// displayed fee, and (wallet) not above the available balance. The
+  /// server re-validates everything; its 422 still lands on the field.
   bool _validateAmountForSubmit() {
-    if (!_method.supportsPartialPayment) {
+    if (!_partialAllowed) {
       setState(() => _amountError = null);
       return true;
     }
@@ -204,6 +237,15 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       return false;
     }
     final amount = num.parse(parsed);
+    final min = _minAmount!;
+    if (amount < min) {
+      setState(
+        () => _amountError = 'appointments.payment_amount_below_minimum'.tr(
+          namedArgs: {'min': PaymentAmount.fromNum(min)},
+        ),
+      );
+      return false;
+    }
     if (amount > widget.request.consultationFee) {
       setState(
         () => _amountError = 'appointments.payment_amount_exceeds_fee'.tr(
@@ -233,7 +275,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   /// stays identical to the pre-partial-payment client (full payments never
   /// need the `MIN_APPOINTMENT_PAYMENT` policy).
   String? _paymentAmountForRequest() {
-    if (!_method.supportsPartialPayment) return null;
+    if (!_partialAllowed) return null;
     final parsed = PaymentAmount.tryParse(_amountController.text);
     if (parsed == null) return null;
     if (num.parse(parsed) == widget.request.consultationFee) return null;
@@ -241,7 +283,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   }
 
   String _displayedPayAmount() {
-    if (!_method.supportsPartialPayment) {
+    if (!_partialAllowed) {
       return PaymentAmount.fromNum(widget.request.consultationFee);
     }
     return PaymentAmount.tryParse(_amountController.text) ??
@@ -249,6 +291,19 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   }
 
   void _applyAmountFailure(Failure failure) {
+    // No amount field on screen (full payment only) — an inline error would
+    // be invisible, so show a snackbar instead. The hold is still valid:
+    // the server rolls back without consuming it.
+    if (!_partialAllowed) {
+      setState(() {
+        _stage = _Stage.held;
+        _failure = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(failureMessage(failure))),
+      );
+      return;
+    }
     final message = switch (failure) {
       ValidationFailure(:final code, :final fieldErrors) =>
         _amountMessageFor(code, fieldErrors) ?? failureMessage(failure),
@@ -324,10 +379,12 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
         _confirmed = true;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
+            // The server echoes what Fawry will actually charge — on a retry
+            // that's the first attempt's amount, not what was sent now.
             builder: (_) => FawryPaymentScreen(
               initiation: initiation,
-              paidAmount: _displayedPayAmount(),
-              currency: widget.request.currency,
+              paidAmount: initiation.amount ?? _displayedPayAmount(),
+              currency: initiation.currency ?? widget.request.currency,
             ),
           ),
         );
@@ -411,18 +468,17 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
                   _PaymentMethodPicker(
                     selected: _method,
                     fee: widget.request.consultationFee,
+                    minAmount: _minAmount,
                     enabled: _stage == _Stage.held,
-                    onChanged: (method) => setState(() {
-                      _method = method;
-                      _amountError = null;
-                    }),
+                    onChanged: _onMethodChanged,
                   ),
-                  if (_method.supportsPartialPayment) ...[
+                  if (_partialAllowed) ...[
                     const SizedBox(height: 20),
                     _PaymentAmountField(
                       controller: _amountController,
                       currency: widget.request.currency,
                       fee: widget.request.consultationFee,
+                      minAmount: _minAmount!,
                       errorText: _amountError,
                       enabled: _stage == _Stage.held,
                       onChanged: (_) => setState(() => _amountError = null),
@@ -580,6 +636,7 @@ class _PaymentMethodPicker extends ConsumerWidget {
     required this.fee,
     required this.enabled,
     required this.onChanged,
+    this.minAmount,
   });
 
   final AppointmentPaymentMethod selected;
@@ -587,11 +644,18 @@ class _PaymentMethodPicker extends ConsumerWidget {
   final bool enabled;
   final ValueChanged<AppointmentPaymentMethod> onChanged;
 
+  /// Server minimum for a partial payment; `null` = full payment only.
+  final num? minAmount;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final balance = ref.watch(walletBalanceProvider);
     final available = balance.asData?.value.availableBalance;
-    final canUseWallet = available != null && available > 0;
+    // The least the wallet must hold: the minimum when a partial amount is
+    // allowed, otherwise the whole fee.
+    final min = minAmount;
+    final walletFloor = min != null && min < fee ? min : fee;
+    final canUseWallet = available != null && available >= walletFloor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,6 +688,9 @@ class _PaymentMethodPicker extends ConsumerWidget {
           subtitle: switch (available) {
             null => 'appointments.wallet_balance_unavailable'.tr(),
             final b when b <= 0 => 'appointments.wallet_empty'.tr(),
+            final b when b < walletFloor => 'appointments.wallet_insufficient'.tr(
+              namedArgs: {'balance': b.toStringAsFixed(2)},
+            ),
             final b when b < fee => 'appointments.wallet_partial_ok'.tr(
               namedArgs: {'balance': b.toStringAsFixed(2)},
             ),
@@ -740,6 +807,7 @@ class _PaymentAmountField extends StatelessWidget {
     required this.controller,
     required this.currency,
     required this.fee,
+    required this.minAmount,
     required this.enabled,
     required this.onChanged,
     required this.onPayFull,
@@ -749,6 +817,7 @@ class _PaymentAmountField extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
   final int fee;
+  final num minAmount;
   final bool enabled;
   final String? errorText;
   final ValueChanged<String> onChanged;
@@ -759,6 +828,9 @@ class _PaymentAmountField extends StatelessWidget {
     final feeLabel = currency == 'EGP'
         ? '${PaymentAmount.fromNum(fee)} ج.م'
         : '${PaymentAmount.fromNum(fee)} $currency';
+    final minLabel = currency == 'EGP'
+        ? '${PaymentAmount.fromNum(minAmount)} ج.م'
+        : '${PaymentAmount.fromNum(minAmount)} $currency';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -772,7 +844,7 @@ class _PaymentAmountField extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'appointments.payment_amount_hint'.tr(),
+          'appointments.payment_amount_hint'.tr(namedArgs: {'min': minLabel}),
           style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
         ),
         const SizedBox(height: 10),

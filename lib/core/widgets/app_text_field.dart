@@ -48,6 +48,7 @@ class AppTextField extends StatelessWidget {
   final TextDirection? textDirection;
   final TextAlign? textAlign;
 
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(

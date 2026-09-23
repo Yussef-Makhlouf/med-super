@@ -843,6 +843,13 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'slotId': slotId,
         'expiresAt': expiresAt.toIso8601String(),
         'status': 'HELD',
+        // Same fee/minimum the mock payment paths validate against.
+        'fullAmount': _kMockConsultFee.toStringAsFixed(2),
+        'currency': 'EGP',
+        'minPaymentAmount': (_kMockMinAppointmentPayment < _kMockConsultFee
+                ? _kMockMinAppointmentPayment
+                : _kMockConsultFee)
+            .toStringAsFixed(2),
       },
     };
   });
@@ -886,6 +893,9 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'referenceCode':
             '${DateTime.now().millisecondsSinceEpoch}'.padLeft(11, '0'),
         'expiresAt': expiresAt.toIso8601String(),
+        // The first attempt's amount is kept on a retry, like the backend.
+        'amount': resolved.amount,
+        'currency': 'EGP',
       },
     };
   });
@@ -1899,6 +1909,7 @@ Map<String, dynamic> _mockDoctorAppointment({
   String clinicName = 'عيادة النيل التخصصية',
   String? cancelledReason,
   String visitStatus = 'WAITING',
+  Map<String, dynamic>? payment,
 }) => {
   'appointmentId': id,
   'status': status,
@@ -1920,6 +1931,15 @@ Map<String, dynamic> _mockDoctorAppointment({
   'patientPhone': '+201001112223',
   'cancelledReason': cancelledReason,
   'rescheduledFromAppointmentId': null,
+  'payment':
+      payment ??
+      const {
+        'method': 'PAY_AT_CLINIC',
+        'currency': 'EGP',
+        'fullAmount': '350.00',
+        'paidAmount': '0.00',
+        'remainingBalance': '350.00',
+      },
   'createdAt': startUtc.subtract(const Duration(days: 3)).toIso8601String(),
 };
 
@@ -1947,6 +1967,14 @@ List<Map<String, dynamic>> _seedDoctorAppointments() {
       patientId: 'pat-2',
       startUtc: today.add(const Duration(hours: 8, minutes: 30)),
       status: 'CONFIRMED',
+      // Partial online payment — shows the remaining balance on the detail.
+      payment: const {
+        'method': 'FAWRY',
+        'currency': 'EGP',
+        'fullAmount': '350.00',
+        'paidAmount': '50.00',
+        'remainingBalance': '300.00',
+      },
     ),
     _mockDoctorAppointment(
       id: 'apt-3',
