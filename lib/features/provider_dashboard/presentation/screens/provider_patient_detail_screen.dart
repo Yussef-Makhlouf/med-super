@@ -12,6 +12,7 @@ import 'package:solar_icons/solar_icons.dart';
 import '../../domain/entities/patient.dart';
 import '../controllers/provider_dashboard_providers.dart';
 import '../widgets/provider_appointment_card.dart';
+import 'provider_clinical_requests_screen.dart';
 
 class ProviderPatientDetailScreen extends ConsumerWidget {
   const ProviderPatientDetailScreen({required this.patient, super.key});
@@ -128,6 +129,17 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => ProviderClinicalRequestsScreen(
+                  patientId: patient.patientId,
+                  patientName: patient.patientName,
+                ),
+              )),
+              icon: const Icon(Icons.medical_services_outlined),
+              label: Text('provider_dashboard.clinical_requests.open'.tr()),
+            ),
             const SizedBox(height: 20),
             Text(
               'provider_dashboard.patients.appointment_history'.tr(),
