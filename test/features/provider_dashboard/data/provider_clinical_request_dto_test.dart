@@ -35,6 +35,20 @@ void main() {
     },
   );
 
+  test('maps private prescription image URLs for provider history', () {
+    final prescription = ProviderPrescriptionDto.fromJson({
+      'id': 'rx-photo-1',
+      'patientId': 'patient-1',
+      'status': 'ACCEPTED',
+      'images': [
+        {'id': 'image-1', 'fileUrl': 'https://private.example/image-1'},
+      ],
+    }).toEntity();
+
+    expect(prescription.images, hasLength(1));
+    expect(prescription.images.single.url, 'https://private.example/image-1');
+  });
+
   test('maps the provider lab catalog contract', () {
     final test = ProviderLabTestDto.fromJson({
       'code': 'CBC',

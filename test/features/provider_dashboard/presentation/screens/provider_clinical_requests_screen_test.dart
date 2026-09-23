@@ -92,4 +92,29 @@ void main() {
     expect(find.text('اعتماد وتوقيع'), findsOneWidget);
     expect(find.text('رفض'), findsOneWidget);
   });
+
+  testWidgets('provider prescription form requests an image attachment', (
+    tester,
+  ) async {
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderClinicalRequestsScreen(
+        patientId: 'patient-1',
+        patientName: 'Sara',
+      ),
+      overrides: [
+        sessionControllerProvider.overrideWith(_DoctorSessionController.new),
+        providerPrescriptionsProvider.overrideWith((ref) async => const []),
+        providerPharmacyOrdersProvider.overrideWith((ref) async => const []),
+        providerLabOrdersProvider.overrideWith((ref) async => const []),
+      ],
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إنشاء روشتة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('إرفاق صور الروشتة أو طلب التحاليل'), findsOneWidget);
+    expect(find.text('أرفق صورة واحدة على الأقل للمتابعة.'), findsNothing);
+  });
 }

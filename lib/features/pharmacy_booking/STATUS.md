@@ -16,6 +16,12 @@ Consequences of wiring real data, all deliberate:
 
 `PharmacyPrescriptionUploadScreen`'s submit CTA (step 1) calls the real, complete `POST /v1/prescriptions/upload` (**Prescriptions / Phase 6**) via `PrescriptionUploadController`/`PrescriptionRemoteDatasource`. `notes` now round-trips for real (`clinic-reservations` File 12 Part 44 added the column it was silently missing before). One remaining caveat: the endpoint's `fileUrls` are pre-hosted-URL-only by design (object storage is `DEC-009`, still an open/deferred decision — same gap as `ProviderVerificationDocument.file_url`), so no real image bytes are actually uploaded anywhere yet. Each attached image is sent as a distinct placeholder URL (`https://placeholder.medsuper.local/prescriptions/<id>.jpg`) purely so the real quality-check/OCR pipeline runs end-to-end — swap this for a real upload step once object storage is decided. The picker is capped at 5 images and the notes field at 500 chars, matching the backend's own `UploadPrescriptionDto` limits.
 
+**Correction, 2026-09-23:** the placeholder-URL caveat above is historical.
+The patient client currently uploads real image bytes as multipart data to
+private ImageKit storage. Provider document upload reuses the same datasource
+and pipeline, adding patient scope and an explicit `PRESCRIPTION` or
+`LAB_REFERRAL` purpose.
+
 ## Phase 7 (Pharmacy Fulfillment): order creation wired 2026-08-31
 
 `clinic-reservations` merged the whole module 2026-08-31 (PR #8), complete. Investigating it for `pharmacy_order_review_screen.dart` surfaced two blockers, both now fixed on the backend (`clinic-reservations` File 12 Part 44):

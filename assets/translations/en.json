@@ -1049,6 +1049,8 @@
       "labs": "Lab requests",
       "create_prescription": "Create prescription",
       "create_lab": "Request lab tests",
+      "attach_images": "Attach prescription or lab-request photos",
+      "image_required": "Attach at least one image to continue.",
       "prescription": "Prescription",
       "empty_prescriptions": "No prescriptions from this care team yet.",
       "empty_labs": "No lab requests from this care team yet.",
@@ -1117,6 +1119,7 @@
       "edit_batch": "Edit selection",
       "submit_batch": "Submit independent requests",
       "review_per_patient": "Review per patient",
+      "attachments_count": "images",
       "batch_results": "Per-patient results",
       "batch_validation": "Select at least one patient and complete the request details.",
       "unauthorized": "You are not authorized to make this clinical request."

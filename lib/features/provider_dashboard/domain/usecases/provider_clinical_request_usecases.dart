@@ -2,10 +2,26 @@ import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import '../entities/provider_clinical_request.dart';
 import '../repositories/provider_clinical_requests_repository.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
 
 class ProviderClinicalRequestUseCases {
   const ProviderClinicalRequestUseCases(this._repository);
   final ProviderClinicalRequestsRepository _repository;
+
+  Future<PrescriptionUploadResult> uploadClinicalDocument({
+    required String patientId,
+    required String documentType,
+    required List<PrescriptionImage> images,
+    String? appointmentId,
+    String? notes,
+  }) => _repository.uploadClinicalDocument(
+    patientId: patientId,
+    documentType: documentType,
+    images: images,
+    appointmentId: appointmentId,
+    notes: notes,
+  );
 
   Future<ProviderPrescriptionResult> createPrescription({
     required String patientId,
@@ -43,12 +59,14 @@ class ProviderClinicalRequestUseCases {
     required String labBranchId,
     required String collectionType,
     required List<String> testCodes,
+    String? prescriptionId,
     String? appointmentId,
   }) => _repository.createLabOrder(
     patientId: patientId,
     labBranchId: labBranchId,
     collectionType: collectionType,
     testCodes: testCodes,
+    prescriptionId: prescriptionId,
     appointmentId: appointmentId,
   );
   Future<ProviderLabBatchResult> createLabOrderBatch(

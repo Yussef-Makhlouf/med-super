@@ -9,6 +9,7 @@ class ProviderPrescriptionDto {
 
   ProviderPrescription toEntity() {
     final items = value['items'] as List<dynamic>? ?? const [];
+    final images = value['images'] as List<dynamic>? ?? const [];
     return ProviderPrescription(
       id: value['id'] as String? ?? value['prescriptionId'] as String? ?? '',
       patientId: value['patientId'] as String? ?? '',
@@ -34,6 +35,16 @@ class ProviderPrescriptionDto {
               quantity: item['quantity'] as int? ?? 1,
             ),
           )
+          .toList(growable: false),
+      images: images
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (image) => ProviderPrescriptionImage(
+              id: image['id'] as String? ?? '',
+              url: image['fileUrl'] as String? ?? '',
+            ),
+          )
+          .where((image) => image.url.isNotEmpty)
           .toList(growable: false),
     );
   }

@@ -37,6 +37,22 @@ Every route below exists in `clinic-reservations` and is exercised by
 | Reschedule | `POST /v1/doctors/me/appointments/{id}/reschedule` | completes in one transaction |
 | Walk-in booking | `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` | DOCTOR or CLINIC_STAFF; `{patientId}` or `{patientPhone, patientName?}` + `slotId` |
 
+## Provider prescription and lab images — 2026-09-23
+
+Provider-created clinical documents use the same multipart image-upload
+pipeline as patient uploads, replacing the former structured medication/test
+entry form. The UI sends patient/appointment scope and document purpose to
+`POST /v1/prescriptions/provider/upload`. Assistant prescriptions remain
+drafts for physician approval; only signed prescriptions can be submitted to
+the existing `POST /v1/pharmacy-orders/provider` queue. Lab referrals link the
+uploaded document to `POST /v1/lab-orders/provider`, feeding the existing
+branch queue. Provider history displays persisted private image URLs.
+Multi-patient mode requires a separate image set and independent request per
+patient; it does not create one shared clinical record.
+
+Focused DTO/widget tests and static analysis passed on 2026-09-23. Live
+backend/device verification remains pending.
+
 ## Visit-status verification: 2026-09-18
 
 ### Scheduling guard update: 2026-09-18

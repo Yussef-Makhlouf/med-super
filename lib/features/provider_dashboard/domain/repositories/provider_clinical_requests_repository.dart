@@ -1,8 +1,17 @@
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import '../entities/provider_clinical_request.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
 
 abstract interface class ProviderClinicalRequestsRepository {
+  Future<PrescriptionUploadResult> uploadClinicalDocument({
+    required String patientId,
+    required String documentType,
+    required List<PrescriptionImage> images,
+    String? appointmentId,
+    String? notes,
+  });
   Future<ProviderPrescriptionResult> createPrescription({
     required String patientId,
     required List<ProviderPrescriptionItem> items,
@@ -26,6 +35,7 @@ abstract interface class ProviderClinicalRequestsRepository {
     required String labBranchId,
     required String collectionType,
     required List<String> testCodes,
+    String? prescriptionId,
     String? appointmentId,
   });
   Future<ProviderLabBatchResult> createLabOrderBatch(

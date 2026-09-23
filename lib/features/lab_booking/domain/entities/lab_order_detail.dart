@@ -91,6 +91,7 @@ class LabOrderDetail {
     required this.rejection,
     required this.recollectionRequired,
     required this.results,
+    this.requestImages = const [],
     this.patientId,
   });
 
@@ -119,4 +120,11 @@ class LabOrderDetail {
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
   final List<LabOrderResultFile> results;
+  final List<LabRequestImage> requestImages;
+}
+
+class LabRequestImage {
+  const LabRequestImage({required this.id, required this.fileUrl});
+  final String id;
+  final String fileUrl;
 }

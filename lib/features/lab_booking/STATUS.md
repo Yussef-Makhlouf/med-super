@@ -33,6 +33,12 @@ user's 2026-09-05 request to connect the app and dashboard end-to-end.
   appointment/prep instructions) once staff sets it and the booking code
   once confirmed.
 
+Provider lab referrals (2026-09-23) use the same image-upload pipeline and
+link the uploaded `LAB_REFERRAL` document to the provider-created lab order.
+That order enters the existing branch intake queue; the existing detail
+contract returns its linked images. Provider history renders those images,
+while the backend remains authoritative for access and status.
+
 ## What's deliberately gone (was fabricated, not backed by real data)
 
 Removed rather than kept as dead/misleading UI: lab rating, "starting

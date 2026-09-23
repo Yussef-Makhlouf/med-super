@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_st
 import 'package:med_super/features/pharmacy_booking/presentation/controllers/pharmacy_search_providers.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/provider_clinical_request.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_clinical_request_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
@@ -101,10 +103,11 @@ class _PrescriptionHistory extends ConsumerWidget {
               try {
                 final result = await ref
                     .read(providerClinicalUseCasesProvider)
-                    .createPrescription(
+                    .uploadClinicalDocument(
                       patientId: patientId,
                       appointmentId: appointmentId,
-                      items: [values['item'] as ProviderPrescriptionItem],
+                      documentType: 'PRESCRIPTION',
+                      images: values['images'] as List<PrescriptionImage>,
                       notes: values['notes'] as String?,
                     );
                 if (!context.mounted) return;
@@ -234,6 +237,12 @@ class _PrescriptionCard extends ConsumerWidget {
                 fullRecord.notes!,
                 style: const TextStyle(color: AppColors.mutedText2),
               ),
+            if (fullRecord.images.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _RequestImagesRow(
+                urls: fullRecord.images.map((image) => image.url).toList(),
+              ),
+            ],
             if (fullRecord.rejectionReason?.isNotEmpty ?? false)
               Text(
                 fullRecord.rejectionReason!,
@@ -620,6 +629,12 @@ class _LabCard extends StatelessWidget {
             '${'provider_dashboard.clinical_requests.collection'.tr()}: ${order.collectionType == 'HOME_COLLECTION' ? 'provider_dashboard.clinical_requests.home_collection'.tr() : 'provider_dashboard.clinical_requests.branch_visit'.tr()}',
             style: const TextStyle(color: AppColors.mutedText2, fontSize: 12),
           ),
+          if (order.requestImages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _RequestImagesRow(
+              urls: order.requestImages.map((image) => image.fileUrl).toList(),
+            ),
+          ],
           if (order.results.isNotEmpty)
             Text(
               'provider_dashboard.clinical_requests.results_count'.tr(
@@ -633,6 +648,45 @@ class _LabCard extends StatelessWidget {
   );
 }
 
+class _RequestImagesRow extends StatelessWidget {
+  const _RequestImagesRow({required this.urls});
+  final List<String> urls;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 76,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: urls.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) => InkWell(
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (context) => Dialog(
+            child: InteractiveViewer(
+              child: Image.network(urls[index], fit: BoxFit.contain),
+            ),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: Image.network(
+            urls[index],
+            width: 76,
+            height: 76,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox(
+              width: 76,
+              height: 76,
+              child: Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class _PrescriptionForm extends StatefulWidget {
   const _PrescriptionForm({required this.patientName});
   final String patientName;
@@ -641,20 +695,11 @@ class _PrescriptionForm extends StatefulWidget {
 }
 
 class _PrescriptionFormState extends State<_PrescriptionForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _dose = TextEditingController();
-  final _frequency = TextEditingController();
-  final _days = TextEditingController();
-  final _quantity = TextEditingController(text: '1');
   final _notes = TextEditingController();
+  List<PrescriptionImage> _images = const [];
+
   @override
   void dispose() {
-    _name.dispose();
-    _dose.dispose();
-    _frequency.dispose();
-    _days.dispose();
-    _quantity.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -667,79 +712,133 @@ class _PrescriptionFormState extends State<_PrescriptionForm> {
       top: 20,
       bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
     ),
-    child: Form(
-      key: _formKey,
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Text(
-            'provider_dashboard.clinical_requests.create_prescription'.tr(),
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+    child: ListView(
+      shrinkWrap: true,
+      children: [
+        Text(
+          'provider_dashboard.clinical_requests.create_prescription'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
+        Text(
+          widget.patientName,
+          style: const TextStyle(color: AppColors.mutedText2),
+        ),
+        const SizedBox(height: 12),
+        _ClinicalImagePicker(onChanged: (images) => _images = images),
+        TextField(
+          controller: _notes,
+          maxLength: 500,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
           ),
-          Text(
-            widget.patientName,
-            style: const TextStyle(color: AppColors.mutedText2),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            _name,
-            'provider_dashboard.clinical_requests.drug_name'.tr(),
-            required: true,
-          ),
-          _field(_dose, 'provider_dashboard.clinical_requests.dose'.tr()),
-          _field(
-            _frequency,
-            'provider_dashboard.clinical_requests.frequency'.tr(),
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: _field(
-                  _days,
-                  'provider_dashboard.clinical_requests.duration_days'.tr(),
-                  numeric: true,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _field(
-                  _quantity,
-                  'provider_dashboard.clinical_requests.quantity'.tr(),
-                  numeric: true,
-                  required: true,
-                ),
-              ),
-            ],
-          ),
-          _field(
-            _notes,
-            'provider_dashboard.clinical_requests.notes'.tr(),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: () {
-              if (!_formKey.currentState!.validate()) return;
-              Navigator.pop(context, {
-                'item': ProviderPrescriptionItem(
-                  drugName: _name.text.trim(),
-                  quantity: int.parse(_quantity.text),
-                  dose: _dose.text.trim().isEmpty ? null : _dose.text.trim(),
-                  frequency: _frequency.text.trim().isEmpty
-                      ? null
-                      : _frequency.text.trim(),
-                  durationDays: _days.text.trim().isEmpty
-                      ? null
-                      : int.parse(_days.text),
-                ),
-                'notes': _notes.text.trim(),
-              });
-            },
-            child: Text('provider_dashboard.clinical_requests.submit'.tr()),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        FilledButton(
+          onPressed: () {
+            if (_images.isEmpty) {
+              _snack(
+                context,
+                'provider_dashboard.clinical_requests.image_required'.tr(),
+              );
+              return;
+            }
+            Navigator.pop(context, {
+              'images': _images,
+              'notes': _notes.text.trim(),
+            });
+          },
+          child: Text('provider_dashboard.clinical_requests.submit'.tr()),
+        ),
+      ],
     ),
+  );
+}
+
+class _ClinicalImagePicker extends StatefulWidget {
+  const _ClinicalImagePicker({required this.onChanged, super.key});
+  final ValueChanged<List<PrescriptionImage>> onChanged;
+
+  @override
+  State<_ClinicalImagePicker> createState() => _ClinicalImagePickerState();
+}
+
+class _ClinicalImagePickerState extends State<_ClinicalImagePicker> {
+  static const _maxImages = 5;
+  final List<PrescriptionImage> _images = [];
+
+  Future<void> _pickImages() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+      withData: true,
+    );
+    if (!mounted || result == null) return;
+    for (final file in result.files) {
+      if (_images.length >= _maxImages) break;
+      if (file.bytes == null) continue;
+      _images.add(
+        PrescriptionImage(
+          id: '${DateTime.now().microsecondsSinceEpoch}-${file.name}',
+          path: file.name,
+          bytes: file.bytes,
+        ),
+      );
+    }
+    setState(() {});
+    widget.onChanged(List.unmodifiable(_images));
+  }
+
+  void _remove(PrescriptionImage image) {
+    setState(() => _images.removeWhere((item) => item.id == image.id));
+    widget.onChanged(List.unmodifiable(_images));
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      OutlinedButton.icon(
+        onPressed: _images.length >= _maxImages ? null : _pickImages,
+        icon: const Icon(Icons.add_a_photo_outlined),
+        label: Text('provider_dashboard.clinical_requests.attach_images'.tr()),
+      ),
+      if (_images.isNotEmpty)
+        SizedBox(
+          height: 92,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _images.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, index) {
+              final image = _images[index];
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    child: Image.memory(
+                      image.bytes!,
+                      width: 84,
+                      height: 84,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  PositionedDirectional(
+                    top: 2,
+                    end: 2,
+                    child: IconButton.filledTonal(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _remove(image),
+                      icon: const Icon(Icons.close, size: 16),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      const SizedBox(height: 8),
+    ],
   );
 }
 
@@ -752,21 +851,20 @@ class _LabRequestForm extends ConsumerStatefulWidget {
 }
 
 class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
-  final _search = TextEditingController();
-  final _selectedCodes = <String>{};
+  final _notes = TextEditingController();
+  List<PrescriptionImage> _images = const [];
   String? _branchId;
   String _collectionType = 'VISIT';
   bool _saving = false;
   @override
   void dispose() {
-    _search.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final labs = ref.watch(labBranchesProvider);
-    final catalog = ref.watch(providerLabCatalogProvider(_search.text));
     return Padding(
       padding: EdgeInsets.only(
         left: 18,
@@ -836,68 +934,19 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
               _branchId = null;
             }),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          _ClinicalImagePicker(onChanged: (images) => _images = images),
           TextField(
-            controller: _search,
+            controller: _notes,
+            maxLength: 500,
+            maxLines: 2,
             decoration: InputDecoration(
-              labelText: 'provider_dashboard.clinical_requests.search_test'
-                  .tr(),
-              suffixIcon: IconButton(
-                onPressed: () => setState(() {}),
-                icon: const Icon(Icons.search),
-              ),
+              labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
             ),
-            onSubmitted: (_) => setState(() {}),
-            onChanged: (_) => setState(() {}),
           ),
-          catalog.when(
-            data: (tests) => tests.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      'provider_dashboard.clinical_requests.no_tests'.tr(),
-                    ),
-                  )
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 260),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: tests
-                          .map(
-                            (test) => CheckboxListTile(
-                              value: _selectedCodes.contains(test.code),
-                              title: Text(test.displayName),
-                              subtitle: Text(test.code),
-                              onChanged: (value) => setState(() {
-                                value == true
-                                    ? _selectedCodes.add(test.code)
-                                    : _selectedCodes.remove(test.code);
-                              }),
-                              dense: true,
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-            error: (_, _) => TextButton(
-              onPressed: () =>
-                  ref.invalidate(providerLabCatalogProvider(_search.text)),
-              child: Text('provider_dashboard.clinical_requests.retry'.tr()),
-            ),
-            loading: () => const Center(child: CircularProgressIndicator()),
-          ),
-          if (_selectedCodes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'provider_dashboard.clinical_requests.tests_selected'.tr(
-                  args: ['${_selectedCodes.length}'],
-                ),
-              ),
-            ),
           const SizedBox(height: 8),
           FilledButton(
-            onPressed: _saving || _branchId == null || _selectedCodes.isEmpty
+            onPressed: _saving || _branchId == null || _images.isEmpty
                 ? null
                 : _submit,
             child: _saving
@@ -916,13 +965,26 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
   Future<void> _submit() async {
     setState(() => _saving = true);
     try {
+      final uploaded = await ref
+          .read(providerClinicalUseCasesProvider)
+          .uploadClinicalDocument(
+            patientId: widget.patientId,
+            documentType: 'LAB_REFERRAL',
+            images: _images,
+            appointmentId: widget.appointmentId,
+            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+          );
+      if (uploaded.status == 'QUALITY_CHECK_FAILED') {
+        throw StateError('quality check failed');
+      }
       await ref
           .read(providerClinicalUseCasesProvider)
           .createLabOrder(
             patientId: widget.patientId,
             labBranchId: _branchId!,
             collectionType: _collectionType,
-            testCodes: _selectedCodes.toList(growable: false),
+            testCodes: const [],
+            prescriptionId: uploaded.prescriptionId,
             appointmentId: widget.appointmentId,
           );
       if (mounted) Navigator.pop(context, true);
@@ -981,14 +1043,8 @@ class _BatchRequestSheet extends ConsumerStatefulWidget {
 }
 
 class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
-  final _drugName = TextEditingController();
-  final _dose = TextEditingController();
-  final _frequency = TextEditingController();
-  final _quantity = TextEditingController(text: '1');
-  final _notes = TextEditingController();
-  final _testSearch = TextEditingController();
   final _selectedPatientIds = <String>{};
-  final _selectedTestCodes = <String>{};
+  final _imagesByPatient = <String, List<PrescriptionImage>>{};
   String? _labBranchId;
   String _collectionType = 'VISIT';
   int _step = 0;
@@ -998,12 +1054,6 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
 
   @override
   void dispose() {
-    _drugName.dispose();
-    _dose.dispose();
-    _frequency.dispose();
-    _quantity.dispose();
-    _notes.dispose();
-    _testSearch.dispose();
     super.dispose();
   }
 
@@ -1109,53 +1159,55 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
       const SizedBox(height: 4),
-      ...patients.map(
-        (patient) => CheckboxListTile(
-          value: _selectedPatientIds.contains(patient.patientId),
+      ...patients.map((patient) {
+        final patientId = patient.patientId as String;
+        return CheckboxListTile(
+          value: _selectedPatientIds.contains(patientId),
           title: Text(patient.patientName),
           subtitle: Text(
             patient.patientPhone,
             textDirection: ui.TextDirection.ltr,
           ),
           onChanged: (selected) => setState(() {
-            selected == true
-                ? _selectedPatientIds.add(patient.patientId as String)
-                : _selectedPatientIds.remove(patient.patientId);
+            if (selected == true) {
+              _selectedPatientIds.add(patientId);
+            } else {
+              _selectedPatientIds.remove(patientId);
+              _imagesByPatient.remove(patientId);
+            }
           }),
-        ),
-      ),
+        );
+      }),
       const Divider(height: 28),
-      if (isPrescription) ...[
-        _field(
-          _drugName,
-          'provider_dashboard.clinical_requests.drug_name'.tr(),
-          required: true,
+      if (!isPrescription) _labFields(),
+      for (final patient in patients.where(
+        (patient) => _selectedPatientIds.contains(patient.patientId),
+      ))
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  patient.patientName,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                _ClinicalImagePicker(
+                  key: ValueKey('batch-images-${patient.patientId}'),
+                  onChanged: (images) => setState(() {
+                    _imagesByPatient[patient.patientId as String] = images;
+                  }),
+                ),
+              ],
+            ),
+          ),
         ),
-        _field(_dose, 'provider_dashboard.clinical_requests.dose'.tr()),
-        _field(
-          _frequency,
-          'provider_dashboard.clinical_requests.frequency'.tr(),
-        ),
-        _field(
-          _quantity,
-          'provider_dashboard.clinical_requests.quantity'.tr(),
-          numeric: true,
-          required: true,
-        ),
-        _field(
-          _notes,
-          'provider_dashboard.clinical_requests.notes'.tr(),
-          maxLines: 2,
-        ),
-      ] else ...[
-        _labFields(),
-      ],
     ],
   );
 
   Widget _labFields() {
     final branches = ref.watch(labBranchesProvider);
-    final catalog = ref.watch(providerLabCatalogProvider(_testSearch.text));
     return Column(
       children: [
         branches.when(
@@ -1167,7 +1219,7 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
                 ? all.where((branch) => branch.homeCollectionCapable).toList()
                 : all;
             return DropdownButtonFormField<String>(
-              value: eligible.any((branch) => branch.id == _labBranchId)
+              initialValue: eligible.any((branch) => branch.id == _labBranchId)
                   ? _labBranchId
                   : null,
               decoration: InputDecoration(
@@ -1187,7 +1239,7 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
           },
         ),
         DropdownButtonFormField<String>(
-          value: _collectionType,
+          initialValue: _collectionType,
           decoration: InputDecoration(
             labelText: 'provider_dashboard.clinical_requests.collection'.tr(),
           ),
@@ -1204,42 +1256,6 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
             _collectionType = value ?? 'VISIT';
             _labBranchId = null;
           }),
-        ),
-        TextField(
-          controller: _testSearch,
-          decoration: InputDecoration(
-            labelText: 'provider_dashboard.clinical_requests.search_test'.tr(),
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        catalog.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(),
-          ),
-          error: (_, _) => _RetryPanel(
-            onRetry: () =>
-                ref.invalidate(providerLabCatalogProvider(_testSearch.text)),
-          ),
-          data: (tests) => Column(
-            children: tests
-                .map(
-                  (test) => CheckboxListTile(
-                    value: _selectedTestCodes.contains(test.code),
-                    title: Text(test.displayName),
-                    subtitle: Text(
-                      test.code,
-                      textDirection: ui.TextDirection.ltr,
-                    ),
-                    onChanged: (selected) => setState(() {
-                      selected == true
-                          ? _selectedTestCodes.add(test.code)
-                          : _selectedTestCodes.remove(test.code);
-                    }),
-                  ),
-                )
-                .toList(),
-          ),
         ),
       ],
     );
@@ -1259,9 +1275,7 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
               child: ListTile(
                 title: Text(patient.patientName),
                 subtitle: Text(
-                  isPrescription
-                      ? _drugName.text.trim()
-                      : _selectedTestCodes.join(', '),
+                  '${_imagesByPatient[patient.patientId]?.length ?? 0} ${'provider_dashboard.clinical_requests.attachments_count'.tr()}',
                 ),
               ),
             ),
@@ -1283,14 +1297,13 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
   );
 
   void _review(List<dynamic> patients, bool isPrescription) {
+    final everyPatientHasOwnImage = _selectedPatientIds.every(
+      (id) => _imagesByPatient[id]?.isNotEmpty == true,
+    );
     final invalid =
         _selectedPatientIds.isEmpty ||
-        (isPrescription &&
-            (_drugName.text.trim().isEmpty ||
-                int.tryParse(_quantity.text) == null ||
-                int.parse(_quantity.text) < 1)) ||
-        (!isPrescription &&
-            (_labBranchId == null || _selectedTestCodes.isEmpty));
+        !everyPatientHasOwnImage ||
+        (!isPrescription && _labBranchId == null);
     if (invalid) {
       setState(
         () => _error = 'provider_dashboard.clinical_requests.batch_validation'
@@ -1314,67 +1327,53 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
         for (final patient in patients)
           patient.patientId as String: patient.patientName as String,
       };
-      if (isPrescription) {
-        final item = ProviderPrescriptionItem(
-          drugName: _drugName.text.trim(),
-          quantity: int.parse(_quantity.text),
-          dose: _dose.text.trim().isEmpty ? null : _dose.text.trim(),
-          frequency: _frequency.text.trim().isEmpty
-              ? null
-              : _frequency.text.trim(),
-        );
-        final batch = await ref
-            .read(providerClinicalUseCasesProvider)
-            .createPrescriptionBatch(
-              _selectedPatientIds
-                  .map(
-                    (id) => ProviderPrescriptionRequest(
-                      patientId: id,
-                      items: [item],
-                      notes: _notes.text.trim().isEmpty
-                          ? null
-                          : _notes.text.trim(),
-                    ),
-                  )
-                  .toList(growable: false),
+      final useCases = ref.read(providerClinicalUseCasesProvider);
+      final results = <String>[];
+      for (final id in _selectedPatientIds) {
+        final patientName = patientNames[id] ?? id;
+        try {
+          final upload = await useCases.uploadClinicalDocument(
+            patientId: id,
+            documentType: isPrescription ? 'PRESCRIPTION' : 'LAB_REFERRAL',
+            images: _imagesByPatient[id]!,
+          );
+          if (!isPrescription && upload.status == 'QUALITY_CHECK_FAILED') {
+            throw StateError(
+              'Uploaded lab referral did not pass quality checks.',
             );
-        _results = batch.results
-            .map(
-              (result) =>
-                  '${patientNames[result.patientId] ?? result.patientId}: ${result.status} (${result.prescriptionId})',
-            )
-            .toList(growable: false);
+          }
+          if (isPrescription) {
+            results.add(
+              '$patientName: ${upload.status} (${upload.prescriptionId})',
+            );
+          } else {
+            final order = await useCases.createLabOrder(
+              patientId: id,
+              labBranchId: _labBranchId!,
+              collectionType: _collectionType,
+              testCodes: const [],
+              prescriptionId: upload.prescriptionId,
+            );
+            results.add('$patientName: ${order.status} (${order.labOrderId})');
+          }
+        } catch (error) {
+          results.add('$patientName: ${_requestFailureMessage(error)}');
+        }
+      }
+      _results = results;
+      if (isPrescription) {
         ref.invalidate(providerPrescriptionsProvider);
       } else {
-        final batch = await ref
-            .read(providerClinicalUseCasesProvider)
-            .createLabOrderBatch(
-              _selectedPatientIds
-                  .map(
-                    (id) => ProviderLabRequest(
-                      patientId: id,
-                      labBranchId: _labBranchId!,
-                      collectionType: _collectionType,
-                      testCodes: _selectedTestCodes.toList(growable: false),
-                    ),
-                  )
-                  .toList(growable: false),
-            );
-        _results = batch.results
-            .map(
-              (result) =>
-                  '${patientNames[result.patientId] ?? result.patientId}: ${result.status} (${result.labOrderId})',
-            )
-            .toList(growable: false);
         ref.invalidate(providerLabOrdersProvider);
       }
       if (mounted) setState(() => _submitting = false);
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _submitting = false;
           _error = _requestFailureMessage(error);
         });
+      }
     }
   }
 }
@@ -1408,32 +1407,6 @@ class _CreateAction extends StatelessWidget {
     ),
   );
 }
-
-Widget _field(
-  TextEditingController controller,
-  String label, {
-  bool numeric = false,
-  bool required = false,
-  int maxLines = 1,
-}) => Padding(
-  padding: const EdgeInsets.only(bottom: 10),
-  child: TextFormField(
-    controller: controller,
-    keyboardType: numeric ? TextInputType.number : TextInputType.text,
-    maxLines: maxLines,
-    decoration: InputDecoration(labelText: label),
-    validator: (value) {
-      final text = value?.trim() ?? '';
-      if (required && text.isEmpty) {
-        return 'provider_dashboard.clinical_requests.required'.tr();
-      }
-      if (numeric && text.isNotEmpty && int.tryParse(text) == null) {
-        return 'provider_dashboard.clinical_requests.number_required'.tr();
-      }
-      return null;
-    },
-  ),
-);
 
 bool _isConflict(Object error) =>
     error.toString().contains('409') ||

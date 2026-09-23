@@ -19,6 +19,7 @@ class LabOrderDetailDto {
     required this.recollectionRequired,
     required this.results,
     this.patientId,
+    this.requestImages = const [],
   });
 
   factory LabOrderDetailDto.fromJson(Map<String, dynamic> json) {
@@ -26,6 +27,8 @@ class LabOrderDetailDto {
     final rejectionJson = json['rejection'] as Map<String, dynamic>?;
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
     final resultsJson = json['results'] as List<dynamic>? ?? const [];
+    final requestImagesJson =
+        json['prescriptionImages'] as List<dynamic>? ?? const [];
     return LabOrderDetailDto(
       id: json['id'] as String? ?? '',
       patientId: (json['patient'] as Map<String, dynamic>?)?['id'] as String?,
@@ -77,6 +80,16 @@ class LabOrderDetailDto {
             ),
           )
           .toList(),
+      requestImages: requestImagesJson
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (image) => LabRequestImage(
+              id: image['id'] as String? ?? '',
+              fileUrl: image['fileUrl'] as String? ?? '',
+            ),
+          )
+          .where((image) => image.fileUrl.isNotEmpty)
+          .toList(),
     );
   }
 
@@ -93,6 +106,7 @@ class LabOrderDetailDto {
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
   final List<LabOrderResultFile> results;
+  final List<LabRequestImage> requestImages;
 
   LabOrderDetail toEntity() => LabOrderDetail(
     id: id,
@@ -108,5 +122,6 @@ class LabOrderDetailDto {
     rejection: rejection,
     recollectionRequired: recollectionRequired,
     results: results,
+    requestImages: requestImages,
   );
 }

@@ -14,6 +14,12 @@ class ProviderPrescriptionItem {
   final int? durationDays;
 }
 
+class ProviderPrescriptionImage {
+  const ProviderPrescriptionImage({required this.id, required this.url});
+  final String id;
+  final String url;
+}
+
 class ProviderPrescription {
   const ProviderPrescription({
     required this.id,
@@ -22,6 +28,7 @@ class ProviderPrescription {
     required this.version,
     required this.createdAt,
     required this.items,
+    this.images = const [],
     this.appointmentId,
     this.notes,
     this.source,
@@ -35,6 +42,7 @@ class ProviderPrescription {
   final int version;
   final DateTime? createdAt;
   final List<ProviderPrescriptionItem> items;
+  final List<ProviderPrescriptionImage> images;
   final String? appointmentId;
   final String? notes;
   final String? source;

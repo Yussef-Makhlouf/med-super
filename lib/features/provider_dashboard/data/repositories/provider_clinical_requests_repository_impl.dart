@@ -3,11 +3,28 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_ord
 import '../../domain/entities/provider_clinical_request.dart';
 import '../../domain/repositories/provider_clinical_requests_repository.dart';
 import '../datasources/remote/provider_clinical_requests_remote_datasource.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
 
 class ProviderClinicalRequestsRepositoryImpl
     implements ProviderClinicalRequestsRepository {
   const ProviderClinicalRequestsRepositoryImpl(this._remote);
   final ProviderClinicalRequestsRemoteDatasource _remote;
+
+  @override
+  Future<PrescriptionUploadResult> uploadClinicalDocument({
+    required String patientId,
+    required String documentType,
+    required List<PrescriptionImage> images,
+    String? appointmentId,
+    String? notes,
+  }) => _remote.uploadClinicalDocument(
+    patientId: patientId,
+    documentType: documentType,
+    images: images,
+    appointmentId: appointmentId,
+    notes: notes,
+  );
 
   @override
   Future<ProviderPrescriptionResult> createPrescription({
@@ -52,12 +69,14 @@ class ProviderClinicalRequestsRepositoryImpl
     required String labBranchId,
     required String collectionType,
     required List<String> testCodes,
+    String? prescriptionId,
     String? appointmentId,
   }) => _remote.createLabOrder(
     patientId: patientId,
     labBranchId: labBranchId,
     collectionType: collectionType,
     testCodes: testCodes,
+    prescriptionId: prescriptionId,
     appointmentId: appointmentId,
   );
   @override

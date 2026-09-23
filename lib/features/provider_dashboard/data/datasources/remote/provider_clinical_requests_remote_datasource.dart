@@ -6,10 +6,32 @@ import 'package:med_super/features/pharmacy_booking/data/models/pharmacy_order_d
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/provider_dashboard/data/models/provider_clinical_request_dto.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/provider_clinical_request.dart';
+import 'package:med_super/features/pharmacy_booking/data/datasources/remote/prescription_remote_datasource.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
 
 class ProviderClinicalRequestsRemoteDatasource {
-  ProviderClinicalRequestsRemoteDatasource(this._dio);
+  ProviderClinicalRequestsRemoteDatasource(
+    this._dio, [
+    PrescriptionRemoteDatasource? prescriptionUploads,
+  ]) : _prescriptionUploads =
+           prescriptionUploads ?? PrescriptionRemoteDatasource(_dio);
   final Dio _dio;
+  final PrescriptionRemoteDatasource _prescriptionUploads;
+
+  Future<PrescriptionUploadResult> uploadClinicalDocument({
+    required String patientId,
+    required String documentType,
+    required List<PrescriptionImage> images,
+    String? appointmentId,
+    String? notes,
+  }) => _prescriptionUploads.uploadForProvider(
+    patientId: patientId,
+    documentType: documentType,
+    images: images,
+    appointmentId: appointmentId,
+    notes: notes,
+  );
 
   Future<ProviderPrescriptionResult> createPrescription({
     required String patientId,
@@ -22,7 +44,7 @@ class ProviderClinicalRequestsRemoteDatasource {
       data: {
         'patientId': patientId,
         'items': items.map(_prescriptionItemJson).toList(growable: false),
-        if (appointmentId != null) 'appointmentId': appointmentId,
+        ...?((appointmentId != null) ? {'appointmentId': appointmentId} : null),
         ...?((notes != null && notes.trim().isNotEmpty)
             ? {'notes': notes.trim()}
             : null),
@@ -127,6 +149,7 @@ class ProviderClinicalRequestsRemoteDatasource {
     required String labBranchId,
     required String collectionType,
     required List<String> testCodes,
+    String? prescriptionId,
     String? appointmentId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -136,7 +159,10 @@ class ProviderClinicalRequestsRemoteDatasource {
         'labBranchId': labBranchId,
         'collectionType': collectionType,
         'testCodes': testCodes,
-        if (appointmentId != null) 'appointmentId': appointmentId,
+        ...?((prescriptionId != null)
+            ? {'prescriptionId': prescriptionId}
+            : null),
+        ...?((appointmentId != null) ? {'appointmentId': appointmentId} : null),
       },
     );
     final data = response.data ?? const <String, dynamic>{};
@@ -220,7 +246,9 @@ class ProviderClinicalRequestsRemoteDatasource {
         'patientId': patientId,
         'prescriptionId': prescriptionId,
         'fulfillmentType': fulfillmentType,
-        if (pharmacyBranchId != null) 'pharmacyBranchId': pharmacyBranchId,
+        ...?((pharmacyBranchId != null)
+            ? {'pharmacyBranchId': pharmacyBranchId}
+            : null),
       },
     );
     final data = response.data ?? const <String, dynamic>{};
