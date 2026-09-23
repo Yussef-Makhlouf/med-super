@@ -18,8 +18,8 @@ class _FakeSpecialtiesRepository implements SpecialtiesRepository {
 void main() {
   test('specialtiesProvider resolves to the backend list on success', () async {
     const specialties = [
-      Specialty(code: 'CARDIOLOGY', nameEn: 'Cardiology', nameAr: 'قلب'),
-      Specialty(code: 'DENTAL', nameEn: 'Dental', nameAr: 'أسنان'),
+      Specialty(code: 'CARDIOLOGY', nameAr: 'قلب'),
+      Specialty(code: 'DENTAL', nameAr: 'أسنان'),
     ];
     final container = ProviderContainer(
       overrides: [

@@ -1525,35 +1525,30 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
 const _mockSpecialtiesJson = <Map<String, dynamic>>[
   {
     'code': 'CARDIOLOGY',
-    'name_en': 'Cardiology',
     'name_ar': 'أمراض القلب',
     'parent_code': null,
     'version': 1,
   },
   {
     'code': 'PEDIATRICS',
-    'name_en': 'Pediatrics',
     'name_ar': 'طب الأطفال',
     'parent_code': null,
     'version': 1,
   },
   {
     'code': 'DERMATOLOGY',
-    'name_en': 'Dermatology',
     'name_ar': 'الأمراض الجلدية',
     'parent_code': null,
     'version': 1,
   },
   {
     'code': 'DENTAL',
-    'name_en': 'Dental',
     'name_ar': 'طب الأسنان',
     'parent_code': null,
     'version': 1,
   },
   {
     'code': 'OPHTHALMOLOGY',
-    'name_en': 'Ophthalmology',
     'name_ar': 'طب العيون',
     'parent_code': null,
     'version': 1,

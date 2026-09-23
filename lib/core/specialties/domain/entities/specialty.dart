@@ -6,7 +6,6 @@
 class Specialty {
   const Specialty({
     required this.code,
-    required this.nameEn,
     required this.nameAr,
     this.parentCode,
   });
@@ -14,21 +13,19 @@ class Specialty {
   /// Stable identifier — also the value sent back to the backend as the
   /// `specialty` query parameter on `GET /v1/doctors/search`.
   final String code;
-  final String nameEn;
   final String nameAr;
   final String? parentCode;
 
-  /// Picks the display name for [languageCode] ('ar' vs. everything else,
-  /// matching how `context.locale.languageCode` is used across the app).
-  String localizedName(String languageCode) =>
-      languageCode == 'ar' && nameAr.isNotEmpty ? nameAr : nameEn;
+  /// The catalog is Arabic-only (`name_ar`), so every locale shows the same
+  /// name; [languageCode] is kept for call-site compatibility.
+  String localizedName(String languageCode) => nameAr;
 
   /// Resolves a doctor-row specialty for the current locale.
   ///
-  /// Doctor search/detail return a single English `specialty` string (and
+  /// Doctor search/detail return a single `specialty` string (and
   /// sometimes a `specialtyKey` code). The specialties catalog from
-  /// `GET /v1/specialties` is the source of `name_ar` / `name_en`. Match
-  /// by [code] first, then by [fallback] against `nameEn`/`code`, and keep
+  /// `GET /v1/specialties` is the source of `name_ar`. Match
+  /// by [code] first, then by [fallback] against `nameAr`/`code`, and keep
   /// [fallback] if the catalog has no row (unknown specialty, catalog
   /// still loading).
   static String resolveLabel({
@@ -60,8 +57,7 @@ class Specialty {
     if (trimmed.isEmpty) return null;
     final needle = trimmed.toLowerCase();
     for (final specialty in catalog) {
-      if (specialty.nameEn.toLowerCase() == needle ||
-          specialty.code.toLowerCase() == needle ||
+      if (specialty.code.toLowerCase() == needle ||
           specialty.nameAr == trimmed) {
         return specialty;
       }
@@ -73,10 +69,9 @@ class Specialty {
   bool operator ==(Object other) =>
       other is Specialty &&
       other.code == code &&
-      other.nameEn == nameEn &&
       other.nameAr == nameAr &&
       other.parentCode == parentCode;
 
   @override
-  int get hashCode => Object.hash(code, nameEn, nameAr, parentCode);
+  int get hashCode => Object.hash(code, nameAr, parentCode);
 }
