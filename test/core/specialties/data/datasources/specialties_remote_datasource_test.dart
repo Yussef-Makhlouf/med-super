@@ -24,8 +24,8 @@ void main() {
           requestOptions: RequestOptions(path: ApiPaths.specialties),
           statusCode: 200,
           data: [
-            {'code': 'CARDIOLOGY', 'name_en': 'Cardiology', 'name_ar': 'قلب'},
-            {'code': 'DENTAL', 'name_en': 'Dental', 'name_ar': 'أسنان'},
+            {'code': 'CARDIOLOGY', 'name_ar': 'قلب'},
+            {'code': 'DENTAL', 'name_ar': 'أسنان'},
           ],
         ),
       );
@@ -47,7 +47,7 @@ void main() {
           statusCode: 200,
           data: {
             'specialties': [
-              {'code': 'DERMATOLOGY', 'name_en': 'Dermatology', 'name_ar': 'جلدية'},
+              {'code': 'DERMATOLOGY', 'name_ar': 'جلدية'},
             ],
           },
         ),

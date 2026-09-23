@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:med_super/core/utils/avatar_image.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_bottom_nav_bar.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -44,7 +45,7 @@ void main() {
     );
 
     expect(find.text('عنوان الصفحة'), findsOneWidget);
-    await tester.tap(find.byType(CircleAvatar));
+    await tester.tap(find.byType(AvatarCircle));
     expect(avatarTapped, isTrue);
   });
 }

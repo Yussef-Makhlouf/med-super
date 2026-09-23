@@ -25,6 +25,8 @@ void main() {
     expect(find.text('تفاصيل المعاملة'), findsAtLeastNWidgets(1));
     expect(find.text('المبلغ المدفوع'), findsOneWidget);
     expect(find.text('معلومات العملية'), findsOneWidget);
-    expect(find.text('تحميل الإيصال'), findsOneWidget);
+    // The "download receipt" button was intentionally removed (it only ever
+    // showed a fake SnackBar) — see commit 8cf0a56.
+    expect(find.text('تحميل الإيصال'), findsNothing);
   });
 }

@@ -30,6 +30,7 @@ class DoctorAppointmentDto {
     required this.version,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
+    this.payment,
   });
 
   factory DoctorAppointmentDto.fromJson(Map<String, dynamic> json) {
@@ -59,6 +60,33 @@ class DoctorAppointmentDto {
       cancelledReason: json['cancelledReason'] as String?,
       rescheduledFromAppointmentId:
           json['rescheduledFromAppointmentId'] as String?,
+      payment: _paymentFromJson(json['payment']),
+    );
+  }
+
+  /// `{ method, currency, fullAmount, paidAmount, remainingBalance }` with
+  /// decimal-string amounts. Anything malformed is dropped (`null`) rather
+  /// than shown as a wrong number.
+  static DoctorAppointmentPayment? _paymentFromJson(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    num? amount(String key) => switch (raw[key]) {
+      final String s => num.tryParse(s),
+      final num n => n,
+      _ => null,
+    };
+    final full = amount('fullAmount');
+    final paid = amount('paidAmount');
+    final remaining = amount('remainingBalance');
+    final method = raw['method'] as String?;
+    if (full == null || paid == null || remaining == null || method == null) {
+      return null;
+    }
+    return DoctorAppointmentPayment(
+      method: method,
+      currency: raw['currency'] as String? ?? 'EGP',
+      fullAmount: full,
+      paidAmount: paid,
+      remainingBalance: remaining,
     );
   }
 
@@ -83,6 +111,7 @@ class DoctorAppointmentDto {
   final DateTime createdAt;
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
+  final DoctorAppointmentPayment? payment;
 
   DoctorAppointment toEntity() => DoctorAppointment(
     appointmentId: appointmentId,
@@ -106,6 +135,7 @@ class DoctorAppointmentDto {
     createdAt: createdAt,
     cancelledReason: cancelledReason,
     rescheduledFromAppointmentId: rescheduledFromAppointmentId,
+    payment: payment,
   );
 }
 

@@ -79,14 +79,23 @@ Future<GoRouter> pumpWithRouter(
     ),
   );
 
+  // A single `pumpAndSettle()` isn't enough: while the (large) translation
+  // JSON is still loading via real `rootBundle` I/O nothing is scheduled on
+  // the fake clock, so it returns immediately with an empty tree. Interleave
+  // real delays with frame pumps until each route is actually mounted.
   await tester.runAsync(() async {
     await EasyLocalization.ensureInitialized();
     await tester.pumpWidget(shell());
+    for (var i = 0; i < 200 && !tester.any(find.text('start-placeholder')); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
     await tester.pumpAndSettle();
 
     router.push('/select-pharmacy');
-    for (var i = 0; i < 3; i++) {
-      await tester.pump();
+    for (var i = 0; i < 200 && !tester.any(find.byWidget(child)); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
     }
     await tester.pumpAndSettle();
   });
@@ -342,9 +351,11 @@ void main() {
 
     expect(find.text('start-placeholder'), findsNothing);
 
+    // The header uses the direction-aware `AppNavIcons.back`, and
+    // `pumpWithRouter` starts in `en` (LTR), so the back icon is arrowLeft.
     final backButton = tester.widget<IconButton>(
       find.ancestor(
-        of: find.byIcon(SolarIconsOutline.arrowRight),
+        of: find.byIcon(SolarIconsOutline.arrowLeft),
         matching: find.byType(IconButton),
       ),
     );

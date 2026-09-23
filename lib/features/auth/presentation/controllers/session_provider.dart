@@ -149,8 +149,14 @@ class SessionController extends _$SessionController {
     return session;
   }
 
+  StreamSubscription<String>? _fcmTokenRefreshSub;
+
   void _registerPushDevice() {
     registerFcmDeviceIfAvailable(ref);
+    // FCM can rotate this device's token at any point during the session;
+    // without re-registering it, the backend keeps a token that no longer
+    // resolves and pushes silently stop arriving.
+    _fcmTokenRefreshSub ??= listenForFcmTokenRefresh(ref);
     unawaited(ref.read(pushNotificationCoordinatorProvider).start());
   }
 
@@ -493,6 +499,14 @@ class SessionController extends _$SessionController {
     } catch (_) {
       // Ignored — local session teardown below still proceeds.
     }
+    // Stop tracking rotations for the account that is signing out, and drop
+    // this device's token so pushes meant for them stop arriving here — the
+    // same "don't leak one account's state into the next login on this
+    // device" reasoning as the Hive clears below. A fresh token is minted
+    // and re-registered on the next sign-in.
+    await _fcmTokenRefreshSub?.cancel();
+    _fcmTokenRefreshSub = null;
+    await ref.read(fcmServiceProvider).deleteToken();
     await _writeOnboardingComplete(false);
     await _writePasswordComplete(false);
     // Both are Hive-persisted local flags, not Riverpod providers, so they

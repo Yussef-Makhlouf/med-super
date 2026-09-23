@@ -26,8 +26,12 @@ void main() {
     expect(find.text('المحفظة الرقمية'), findsAtLeastNWidgets(1));
     expect(find.text('الرصيد المتاح'), findsOneWidget);
     expect(find.text('إيداع'), findsOneWidget);
-    expect(find.text('تحويل'), findsOneWidget);
-    expect(find.text('بطاقات مرتبطة'), findsOneWidget);
+    // The "transfer" balance-card button was intentionally commented out
+    // (no backend transfer endpoint yet) — see commit 7ac8964.
+    expect(find.text('تحويل'), findsNothing);
+    // The "linked cards" quick action was intentionally commented out (no
+    // backend flow behind it yet) — see commit 8cf0a56.
+    expect(find.text('بطاقات مرتبطة'), findsNothing);
     expect(find.text('سجل المعاملات'), findsOneWidget);
   });
 }

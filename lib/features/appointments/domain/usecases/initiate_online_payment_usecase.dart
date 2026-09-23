@@ -13,9 +13,11 @@ class InitiateOnlinePaymentUseCase {
     String holdId, {
     required AppointmentPaymentMethod method,
     required PaymentCustomerInfo customer,
+    String? paymentAmount,
   }) => _repository.initiateOnlinePayment(
     holdId,
     method: method,
     customer: customer,
+    paymentAmount: paymentAmount,
   );
 }

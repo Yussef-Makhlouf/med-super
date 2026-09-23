@@ -56,6 +56,33 @@ extension DoctorAppointmentStatusX on DoctorAppointmentStatus {
       };
 }
 
+/// What the patient already paid and what the clinic still has to collect
+/// (backend `DoctorAppointmentPayment`). Amounts are parsed from the API's
+/// decimal strings (`"450.00"`).
+///
+/// `PAY_AT_CLINIC` (incl. walk-ins) comes back as `paidAmount: 0` with the
+/// whole fee remaining; an online/wallet payment may be partial (minimum
+/// policy `MIN_APPOINTMENT_PAYMENT`, normally 50 EGP).
+class DoctorAppointmentPayment {
+  const DoctorAppointmentPayment({
+    required this.method,
+    required this.currency,
+    required this.fullAmount,
+    required this.paidAmount,
+    required this.remainingBalance,
+  });
+
+  /// Wire value: `PAY_AT_CLINIC`, `INTERNAL_WALLET`, `FAWRY`, `CARD`,
+  /// `MOBILE_WALLET`.
+  final String method;
+  final String currency;
+  final num fullAmount;
+  final num paidAmount;
+  final num remainingBalance;
+
+  bool get isFullyPaid => remainingBalance <= 0;
+}
+
 /// One appointment as the Doctor Dashboard sees it
 /// (`GET /v1/doctors/me/appointments`, File 12 Part 49.7).
 ///
@@ -85,6 +112,7 @@ class DoctorAppointment {
     this.version = 1,
     this.cancelledReason,
     this.rescheduledFromAppointmentId,
+    this.payment,
   });
 
   final String appointmentId;
@@ -115,6 +143,9 @@ class DoctorAppointment {
   final DateTime createdAt;
   final String? cancelledReason;
   final String? rescheduledFromAppointmentId;
+
+  /// `null` when no payment is on record (or against an older backend).
+  final DoctorAppointmentPayment? payment;
 
   /// Only a `CONFIRMED` appointment can be cancelled or rescheduled — the
   /// backend enforces this with `422 APPOINTMENT_NOT_CANCELLABLE` /

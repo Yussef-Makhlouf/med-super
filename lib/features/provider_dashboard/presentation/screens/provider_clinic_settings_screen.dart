@@ -6,7 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
+import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -14,6 +19,7 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_cli
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/add_clinic_branch_sheet.dart';
+import 'package:solar_icons/solar_icons.dart';
 
 /// The doctor's clinics and branches, backed by `GET /v1/doctors/me/clinics`
 /// (File 12 Part 49.2).
@@ -105,6 +111,9 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.surfaceApp,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.ink900,
+        elevation: 0,
         // A doctor can be affiliated with several clinics, each with several
         // branches (`doctor_clinic_affiliations` only unique-constrains on
         // `[doctor_id, clinic_branch_id]` — no cap on distinct clinics). If
@@ -133,8 +142,9 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
                       heroTag: 'provider_clinics_fab',
                       backgroundColor: brandBlue,
                       foregroundColor: Colors.white,
+                      shape: const StadiumBorder(),
                       onPressed: () => _addBranch(context, ref, clinics),
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(SolarIconsOutline.addCircle),
                       label: Text('provider_dashboard.clinics.add_branch'.tr()),
                     ),
               orElse: () => null,
@@ -147,7 +157,7 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
             return EmptyState(
               title: 'provider_dashboard.clinics.empty_title'.tr(),
               subtitle: 'provider_dashboard.clinics.empty_subtitle'.tr(),
-              icon: Icons.local_hospital_outlined,
+              icon: SolarIconsOutline.hospital,
             );
           }
           return RefreshIndicator(
@@ -192,15 +202,15 @@ class _ClinicBranchListTile extends StatelessWidget {
 
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadii.xl),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            boxShadow: AppShadows.resting,
           ),
           child: Row(
             children: [
@@ -227,19 +237,9 @@ class _ClinicBranchListTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12),
-                ),
-              ),
+              AppBadge.soft(label: label, color: color),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_left, color: AppColors.mutedText2),
+              Icon(AppNavIcons.chevronForward(context), color: AppColors.mutedText2),
             ],
           ),
         ),
@@ -541,63 +541,79 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                       : 'provider_dashboard.clinics.paused_note'.tr(),
                 ),
               const SizedBox(height: 12),
-              _field(
-                controller: _phone,
-                label: 'provider_dashboard.clinics.phone'.tr(),
-                keyboardType: TextInputType.phone,
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(11),
-                ],
-                validator: (value) {
-                  final trimmed = (value ?? '').trim();
-                  if (trimmed.isEmpty) {
-                    return 'provider_dashboard.clinics.phone'.tr();
-                  }
-                  if (!isValidEgyptPhone(trimmed)) {
-                    return 'provider_dashboard.clinics.phone'.tr();
-                  }
-                  return null;
-                },
-              ),
-              _field(
-                controller: _line1,
-                label: 'provider_dashboard.clinics.address_line'.tr(),
-              ),
-              _field(
-                controller: _city,
-                label: 'provider_dashboard.clinics.city'.tr(),
-              ),
-              _field(
-                controller: _timezone,
-                label: 'provider_dashboard.clinics.timezone'.tr(),
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-              ),
-              _field(
-                controller: _consultFee,
-                label:
-                    '${'provider_dashboard.clinics.consult_fee'.tr()} (${clinic.currency})',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textDirection: ui.TextDirection.ltr,
-                textAlign: TextAlign.left,
-                // Consult fee is doctor-only (commercial term of the
-                // affiliation, not a branch operational field) — an
-                // assistant sees it for context but cannot change it.
-                readOnly: widget.isAssistant,
-                validator: widget.isAssistant
-                    ? null
-                    : (value) {
-                        final parsed = double.tryParse((value ?? '').trim());
-                        if (parsed == null || parsed <= 0) {
-                          return 'provider_dashboard.clinics.consult_fee'.tr();
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  boxShadow: AppShadows.resting,
+                ),
+                child: Column(
+                  children: [
+                    AppTextField(
+                      controller: _phone,
+                      label: 'provider_dashboard.clinics.phone'.tr(),
+                      keyboardType: TextInputType.phone,
+                      textDirection: ui.TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(11),
+                      ],
+                      validator: (value) {
+                        final trimmed = (value ?? '').trim();
+                        if (trimmed.isEmpty) {
+                          return 'provider_dashboard.clinics.phone'.tr();
+                        }
+                        if (!isValidEgyptPhone(trimmed)) {
+                          return 'provider_dashboard.clinics.phone'.tr();
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _line1,
+                      label: 'provider_dashboard.clinics.address_line'.tr(),
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _city,
+                      label: 'provider_dashboard.clinics.city'.tr(),
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _timezone,
+                      label: 'provider_dashboard.clinics.timezone'.tr(),
+                      textDirection: ui.TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _consultFee,
+                      label:
+                          '${'provider_dashboard.clinics.consult_fee'.tr()} (${clinic.currency})',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textDirection: ui.TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      // Consult fee is doctor-only (commercial term of the
+                      // affiliation, not a branch operational field) — an
+                      // assistant sees it for context but cannot change it.
+                      readOnly: widget.isAssistant,
+                      validator: widget.isAssistant
+                          ? null
+                          : (value) {
+                              final parsed = double.tryParse((value ?? '').trim());
+                              if (parsed == null || parsed <= 0) {
+                                return 'provider_dashboard.clinics.consult_fee'.tr();
+                              }
+                              return null;
+                            },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(
                 'provider_dashboard.clinics.verification_admin_note'.tr(),
                 style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
@@ -607,7 +623,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                 children: [
                   Expanded(
                     child: SizedBox(
-                      height: 46,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: (_saving || !_isDirty) ? null : _save,
                         style: ElevatedButton.styleFrom(
@@ -615,9 +631,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                           foregroundColor: Colors.white,
                           disabledBackgroundColor: const Color(0xFFE2E8F0),
                           elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: const StadiumBorder(),
                         ),
                         child: _saving
                             ? const SizedBox(
@@ -628,7 +642,10 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                                   color: Colors.white,
                                 ),
                               )
-                            : Text('provider_dashboard.clinics.save'.tr()),
+                            : Text(
+                                'provider_dashboard.clinics.save'.tr(),
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
                       ),
                     ),
                   ),
@@ -639,9 +656,12 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                     const SizedBox(width: 12),
                     Expanded(
                       child: SizedBox(
-                        height: 46,
+                        height: 52,
                         child: OutlinedButton(
                           onPressed: _saving ? null : _togglePaused,
+                          style: const ButtonStyle(
+                            shape: WidgetStatePropertyAll(StadiumBorder()),
+                          ),
                           child: Text(
                             isActive
                                 ? 'provider_dashboard.clinics.pause'.tr()
@@ -657,14 +677,15 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 42,
+                  height: 46,
                   child: OutlinedButton.icon(
                     onPressed: _saving ? null : _delete,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.errorRed,
                       side: const BorderSide(color: AppColors.errorRed),
+                      shape: const StadiumBorder(),
                     ),
-                    icon: const Icon(Icons.delete_outline, size: 18),
+                    icon: const Icon(SolarIconsOutline.trashBinTrash, size: 18),
                     label: Text('provider_dashboard.clinics.delete'.tr()),
                   ),
                 ),
@@ -687,64 +708,21 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
         Colors.orange,
       ),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-      ),
-    );
+    return AppBadge.soft(label: label, color: color);
   }
 
   Widget _notice(String text) => Container(
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
       color: const Color(0xFFFFF7ED),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadii.md),
     ),
     child: Row(
       children: [
-        const Icon(Icons.info_outline, size: 16, color: Colors.orange),
+        const Icon(SolarIconsOutline.infoCircle, size: 16, color: Colors.orange),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
       ],
-    ),
-  );
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    TextInputType? keyboardType,
-    ui.TextDirection? textDirection,
-    TextAlign? textAlign,
-    List<TextInputFormatter>? inputFormatters,
-    String? Function(String?)? validator,
-    bool readOnly = false,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textDirection: textDirection,
-      textAlign: textAlign ?? TextAlign.start,
-      inputFormatters: inputFormatters,
-      readOnly: readOnly,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
-      validator:
-          validator ??
-          (value) => (value == null || value.trim().isEmpty) ? label : null,
     ),
   );
 }

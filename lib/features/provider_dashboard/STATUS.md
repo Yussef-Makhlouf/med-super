@@ -39,6 +39,24 @@ Every route below exists in `clinic-reservations` and is exercised by
 
 ## Visit-status verification: 2026-09-18
 
+### Scheduling guard update: 2026-09-18
+
+The provider UI and backend now share a named 30-minute early-arrival policy:
+the next visit action is available only from 30 minutes before the current
+appointment slot's UTC `startAt` through its `endAt`. The Flutter action policy
+compares instants in UTC and hides the next-action control with localized
+guidance when too early or outside the window; the backend independently
+returns `VISIT_STATUS_TOO_EARLY` or `VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW`.
+After a reschedule, the new appointment row and its new slot are the only
+schedule used by either layer. `IN_DOCTOR_ROOM` and `LEFT` still hide cancel
+and reschedule, while the server rejects stale attempts with
+`APPOINTMENT_VISIT_IN_PROGRESS` and the client maps it to provider-facing
+Arabic/English copy.
+
+Focused domain, failure-mapping, and detail-widget tests cover timing, the
+forward state machine, booking lock, current-slot reschedule behavior, and
+localized server feedback. Device/browser manual verification remains pending.
+
 The Flutter queue/detail DTO, repository, use case, generated Riverpod
 provider, localized badge, and single-step action call the route above with
 `{status, version}`. A successful response replaces the displayed

@@ -8,6 +8,7 @@ import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
+import 'package:med_super/features/provider_dashboard/domain/doctor_appointment_visit_action_policy.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
@@ -80,7 +81,11 @@ class _ProviderAppointmentDetailScreenState
 
   Future<void> _advanceVisitStatus(DoctorAppointment appointment) async {
     final next = appointment.visitStatus.next;
-    if (_mutating || next == null || !appointment.isActionable) return;
+    final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
+      appointment,
+      DateTime.now(),
+    );
+    if (_mutating || next == null || availability != DoctorAppointmentVisitActionAvailability.available) return;
 
     setState(() => _mutating = true);
     final result = await ref
@@ -310,6 +315,10 @@ class _ProviderAppointmentDetailScreenState
               ),
           ],
         ),
+        if (appointment.payment case final payment?) ...[
+          const SizedBox(height: 12),
+          _paymentCard(payment),
+        ],
         const SizedBox(height: 20),
         _visitStatusPanel(appointment),
         const SizedBox(height: 20),
@@ -364,8 +373,19 @@ class _ProviderAppointmentDetailScreenState
   Widget _visitStatusPanel(DoctorAppointment appointment) {
     final visual = doctorVisitStatusStyle(appointment.visitStatus);
     final next = appointment.visitStatus.next;
-    final completed = next == null;
-    final enabled = appointment.isActionable && !completed && !_mutating;
+    final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
+      appointment,
+      DateTime.now(),
+    );
+    final completed = availability == DoctorAppointmentVisitActionAvailability.terminal;
+    final enabled = availability == DoctorAppointmentVisitActionAvailability.available && !_mutating;
+    final hint = switch (availability) {
+      DoctorAppointmentVisitActionAvailability.available => 'provider_dashboard.visit_status.next_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.tooEarly => 'provider_dashboard.visit_status.available_near_time'.tr(),
+      DoctorAppointmentVisitActionAvailability.outsideWindow => 'provider_dashboard.visit_status.outside_window'.tr(),
+      DoctorAppointmentVisitActionAvailability.terminal => 'provider_dashboard.visit_status.complete_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.unavailable => 'provider_dashboard.visit_status.unavailable'.tr(),
+    };
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 240),
@@ -392,11 +412,7 @@ class _ProviderAppointmentDetailScreenState
           DoctorVisitStatusBadge(status: appointment.visitStatus),
           const SizedBox(height: 12),
           Text(
-            completed
-                ? 'provider_dashboard.visit_status.complete_hint'.tr()
-                : appointment.isActionable
-                ? 'provider_dashboard.visit_status.next_hint'.tr()
-                : 'provider_dashboard.visit_status.unavailable'.tr(),
+            hint,
             style: const TextStyle(
               fontSize: 12,
               height: 1.45,
@@ -404,7 +420,7 @@ class _ProviderAppointmentDetailScreenState
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
+          if (availability == DoctorAppointmentVisitActionAvailability.available || completed) SizedBox(
             width: double.infinity,
             height: 48,
             child: FilledButton.icon(
@@ -418,7 +434,7 @@ class _ProviderAppointmentDetailScreenState
                   : Icon(
                       completed
                           ? SolarIconsBold.checkCircle
-                          : doctorVisitStatusStyle(next).icon,
+                          : doctorVisitStatusStyle(next!).icon,
                     ),
               label: Text(
                 completed
@@ -442,6 +458,89 @@ class _ProviderAppointmentDetailScreenState
       ),
     );
   }
+
+  /// Fee / paid in advance / left to collect — so the doctor or assistant
+  /// knows what to take from the patient at the visit.
+  Widget _paymentCard(DoctorAppointmentPayment payment) {
+    String money(num value) => payment.currency == 'EGP'
+        ? '${value.toStringAsFixed(2)} ج.م'
+        : '${value.toStringAsFixed(2)} ${payment.currency}';
+    return _card(
+      children: [
+        Text(
+          'provider_dashboard.appointments.payment_title'.tr(),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink900,
+          ),
+        ),
+        _row(
+          Icons.payments_outlined,
+          'provider_dashboard.appointments.payment_method'.tr(),
+          _paymentMethodLabel(payment.method),
+        ),
+        _row(
+          Icons.receipt_long_outlined,
+          'provider_dashboard.appointments.fee'.tr(),
+          money(payment.fullAmount),
+        ),
+        _row(
+          Icons.check_circle_outline,
+          'provider_dashboard.appointments.paid_amount'.tr(),
+          money(payment.paidAmount),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: payment.isFullyPaid
+                ? const Color(0xFF10B981).withValues(alpha: 0.10)
+                : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  payment.isFullyPaid
+                      ? 'provider_dashboard.appointments.fully_paid'.tr()
+                      : 'provider_dashboard.appointments.remaining_balance'
+                            .tr(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink900,
+                  ),
+                ),
+              ),
+              if (!payment.isFullyPaid)
+                Text(
+                  money(payment.remainingBalance),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink900,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _paymentMethodLabel(String method) => switch (method) {
+    'PAY_AT_CLINIC' => 'provider_dashboard.appointments.method_pay_at_clinic'.tr(),
+    'INTERNAL_WALLET' =>
+      'provider_dashboard.appointments.method_internal_wallet'.tr(),
+    'FAWRY' => 'provider_dashboard.appointments.method_fawry'.tr(),
+    'CARD' => 'provider_dashboard.appointments.method_card'.tr(),
+    'MOBILE_WALLET' =>
+      'provider_dashboard.appointments.method_mobile_wallet'.tr(),
+    _ => method,
+  };
 
   Widget _card({required List<Widget> children}) => Container(
     padding: const EdgeInsets.all(18),

@@ -9,11 +9,10 @@ import 'package:med_super/core/theme/app_spacing.dart';
 /// shared primitive so every patient surface gets the same accent-bar
 /// treatment instead of re-inventing it per screen.
 ///
-/// The accent bar is built as a nested `Row` — not a `Positioned`/hardcoded
-/// side — so it lands at the title's logical *start* (right before it in
-/// reading order) in both `en` and `ar` automatically. This mirrors a past
-/// fix: a physical `Alignment`/`Positioned` here would put the bar on the
-/// wrong visual side once the locale flips.
+/// Title sits at the Row's logical *start* (left in `en`, right in `ar`);
+/// the optional action sits at the *end*. The accent bar is a nested `Row`
+/// child, not a `Positioned`/hardcoded side, so it stays immediately before
+/// the title in reading order in both locales.
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
     required this.title,
@@ -34,21 +33,6 @@ class SectionHeader extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Row(
       children: [
-        if (actionLabel != null)
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              foregroundColor: AppPalette.primary,
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              actionLabel!,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        const Spacer(),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -67,6 +51,22 @@ class SectionHeader extends StatelessWidget {
             ),
           ],
         ),
+        if (actionLabel != null) ...[
+          const Spacer(),
+          TextButton(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              foregroundColor: AppPalette.primary,
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              actionLabel!,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ],
     );
   }

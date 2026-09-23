@@ -362,11 +362,18 @@ class _DayTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              dayLabel,
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.mutedText2,
+            // The tile has a fixed 56x72 box, so a long weekday label (e.g.
+            // "ثلاثاء") must never wrap to a second line and push the column
+            // past its height — scale it down on one line instead.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                dayLabel,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.mutedText2,
+                ),
               ),
             ),
             const SizedBox(height: 4),

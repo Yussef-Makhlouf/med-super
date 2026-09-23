@@ -14,12 +14,17 @@ class ErrorInterceptor extends Interceptor {
       String? message;
       String? correlationId;
 
+      Map<String, dynamic>? details;
       if (data is Map<String, dynamic>) {
         final errorObj = data['error'] as Map<String, dynamic>?;
         if (errorObj != null) {
           code = errorObj['code'] as String? ?? code;
           message = errorObj['message'] as String?;
-          correlationId = errorObj['correlation_id'] as String?;
+          correlationId =
+              errorObj['correlationId'] as String? ??
+              errorObj['correlation_id'] as String?;
+          final rawDetails = errorObj['details'];
+          if (rawDetails is Map<String, dynamic>) details = rawDetails;
         }
       }
 
@@ -33,6 +38,7 @@ class ErrorInterceptor extends Interceptor {
             code: code,
             message: message,
             correlationId: correlationId,
+            details: details,
           ),
         ),
       );

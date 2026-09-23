@@ -16,12 +16,14 @@ abstract interface class AppointmentRepository {
   Future<Result<ConfirmedAppointment>> confirmHold(
     String holdId, {
     required AppointmentPaymentMethod paymentMethod,
+    String? paymentAmount,
   });
 
   Future<Result<OnlinePaymentInitiation>> initiateOnlinePayment(
     String holdId, {
     required AppointmentPaymentMethod method,
     required PaymentCustomerInfo customer,
+    String? paymentAmount,
   });
 
   Future<Result<CancelledAppointment>> cancel({
@@ -53,9 +55,8 @@ class AppointmentSummaryPage {
   final String? nextCursor;
 }
 
-/// Result of `POST /v1/appointments/{id}/cancel` (File 12 Part 35.7 —
-/// `feeApplied`/`refundAmount` are always `0` in this phase, see that
-/// decision for why).
+/// Result of `POST /v1/appointments/{id}/cancel`. `feeApplied`/`refundAmount`
+/// are computed from the amount actually captured, not the full consult fee.
 class CancelledAppointment {
   const CancelledAppointment({
     required this.status,

@@ -130,7 +130,7 @@ void main() {
       await tester.tap(find.text('سارة علي'));
       await tester.pumpAndSettle();
 
-      expect(find.text('الملف الطبي للمريض'), findsOneWidget);
+      expect(find.text('بيانات المريض'), findsOneWidget);
       // The detail screen reuses `providerPatientsDataProvider`'s already-
       // fetched appointment grouping rather than re-querying, so Sara's
       // single seeded appointment (apt-2, at her own clinic) shows up here

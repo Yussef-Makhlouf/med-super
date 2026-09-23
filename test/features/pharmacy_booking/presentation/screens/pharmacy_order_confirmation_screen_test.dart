@@ -92,14 +92,28 @@ Future<GoRouter> pumpConfirmationScreen(
   // regardless of how many frames are pumped afterwards — see the doc
   // comment on `pumpLocalizedWidget` in test/helpers/pump_localized_widget.dart
   // for the longer story.
+  //
+  // A single `pumpAndSettle()` isn't enough: while the (large) translation
+  // JSON is still loading nothing is scheduled on the fake clock, so it
+  // returns immediately and the tree is still empty. Interleave real delays
+  // with frame pumps until the expected route is actually mounted.
   await tester.runAsync(() async {
     await EasyLocalization.ensureInitialized();
     await tester.pumpWidget(shell());
+    for (var i = 0; i < 200 && !tester.any(find.text('start-placeholder')); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
     await tester.pumpAndSettle();
 
     router.push('/confirmation');
-    for (var i = 0; i < 3; i++) {
-      await tester.pump();
+    for (
+      var i = 0;
+      i < 200 && !tester.any(find.byType(PharmacyOrderConfirmationScreen));
+      i++
+    ) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
     }
     await tester.pumpAndSettle();
   });
@@ -149,8 +163,8 @@ void main() {
   ) async {
     await pumpConfirmationScreen(tester, confirmation);
 
-    expect(_anyTextContains(tester, 'Expected delivery time'), isTrue);
-    expect(_anyTextContains(tester, 'Within 2 hours'), isTrue);
+    expect(_anyTextContains(tester, 'Delivery time'), isTrue);
+    expect(_anyTextContains(tester, 'Set by the pharmacist'), isTrue);
     expect(_anyTextContains(tester, 'Track order'), isTrue);
     expect(_anyTextContains(tester, 'Back to home'), isTrue);
     expect(tester.takeException(), isNull);
@@ -174,8 +188,8 @@ void main() {
       isTrue,
     );
     expect(_anyTextContains(tester, 'رقم الطلب'), isTrue);
-    expect(_anyTextContains(tester, 'وقت التوصيل المتوقع'), isTrue);
-    expect(_anyTextContains(tester, 'خلال ساعتين'), isTrue);
+    expect(_anyTextContains(tester, 'مدة التوصيل'), isTrue);
+    expect(_anyTextContains(tester, 'يحددها الصيدلي'), isTrue);
     expect(_anyTextContains(tester, 'تتبع الطلب'), isTrue);
     expect(_anyTextContains(tester, 'العودة للرئيسية'), isTrue);
     expect(tester.takeException(), isNull);

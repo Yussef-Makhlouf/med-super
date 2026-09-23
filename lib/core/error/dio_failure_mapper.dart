@@ -32,9 +32,12 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
       if (api.isValidation) {
         // The backend sends one Arabic sentence per business rule; keep the
         // code alongside it so `failureMessage()` can prefer app-local copy.
-        return Failure.validation({
-          'form': api.message ?? api.code,
-        }, code: api.code);
+        // Known `details` keys (`minAmount`, `fullAmount`) ride along so a
+        // screen can show the server's number instead of guessing.
+        return Failure.validation(
+          _validationFieldErrors(api),
+          code: api.code,
+        );
       }
       return Failure.server(
         statusCode: api.statusCode,
@@ -108,3 +111,14 @@ bool _isCredentialFailure(String code) => switch (code) {
 
 bool _isPasswordLoginPath(DioException error) =>
     error.requestOptions.path.contains(ApiPaths.passwordLogin);
+
+Map<String, String> _validationFieldErrors(ApiException api) {
+  final fields = <String, String>{'form': api.message ?? api.code};
+  final details = api.details;
+  if (details == null) return fields;
+  for (final key in const ['minAmount', 'fullAmount']) {
+    final value = details[key];
+    if (value != null) fields[key] = value.toString();
+  }
+  return fields;
+}

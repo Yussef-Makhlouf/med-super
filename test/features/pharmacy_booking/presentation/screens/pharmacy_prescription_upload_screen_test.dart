@@ -84,7 +84,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // A single back-arrow IconButton (`context.pop()`), balanced by a
-      // same-width leading SizedBox so the title stays centered.
+      // same-width trailing SizedBox so the title stays centered.
       expect(find.byIcon(SolarIconsOutline.arrowRight), findsOneWidget);
       expect(find.text('pharmacy_booking.upload.title'.tr()), findsOneWidget);
 

@@ -1,5 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/specialties/domain/entities/specialty.dart';
+import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
@@ -109,12 +112,29 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            doctor.specialty,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: AppPalette.primary.withValues(alpha: 0.85),
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final specialties =
+                                  ref
+                                      .watch(specialtiesProvider)
+                                      .asData
+                                      ?.value ??
+                                  const [];
+                              return Text(
+                                Specialty.resolveLabel(
+                                  catalog: specialties,
+                                  languageCode: context.locale.languageCode,
+                                  code: doctor.specialtyKey,
+                                  fallback: doctor.specialty,
+                                ),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppPalette.primary.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            },
                           ),
                           // Experience-years row removed — `SearchDoctorItem`
                           // (the real `GET /v1/doctors/search` shape) has no

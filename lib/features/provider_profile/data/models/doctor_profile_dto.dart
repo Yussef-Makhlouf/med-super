@@ -126,7 +126,7 @@ class DoctorProfileDto {
       id: json['id'] as String,
       name: json['name'] as String,
       specialty: json['specialty'] as String,
-      specialtyKey: json['specialtyKey'] as String?,
+      specialtyKey: (json['specialtyKey'] ?? json['specialty_key']) as String?,
       experienceYears: json['experienceYears'] as int? ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviewCount: json['reviewCount'] as int? ?? 0,

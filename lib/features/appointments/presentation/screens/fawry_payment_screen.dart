@@ -18,9 +18,18 @@ import 'package:med_super/features/appointments/domain/entities/online_payment_i
 /// confirms it, so there is deliberately no "I've paid" button here. The
 /// booking only becomes real once it shows up in "My Appointments".
 class FawryPaymentScreen extends StatefulWidget {
-  const FawryPaymentScreen({required this.initiation, super.key});
+  const FawryPaymentScreen({
+    required this.initiation,
+    this.paidAmount,
+    this.currency = 'EGP',
+    super.key,
+  });
 
   final OnlinePaymentInitiation initiation;
+
+  /// Amount the patient submitted — the payments response does not echo it.
+  final String? paidAmount;
+  final String currency;
 
   @override
   State<FawryPaymentScreen> createState() => _FawryPaymentScreenState();
@@ -104,6 +113,24 @@ class _FawryPaymentScreenState extends State<FawryPaymentScreen> {
                   ),
                   const SizedBox(height: 28),
                   if (code != null) _ReferenceCard(code: code, onCopy: _copyReference),
+                  if (widget.paidAmount != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'payments.fawry_amount'.tr(
+                        namedArgs: {
+                          'amount': widget.currency == 'EGP'
+                              ? '${widget.paidAmount} ج.م'
+                              : '${widget.paidAmount} ${widget.currency}',
+                        },
+                      ),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink900,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(14),

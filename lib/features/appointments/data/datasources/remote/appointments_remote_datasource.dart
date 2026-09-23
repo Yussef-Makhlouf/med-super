@@ -46,13 +46,21 @@ class AppointmentsRemoteDatasource {
   /// `INTERNAL_WALLET` both create the `CONFIRMED` appointment in this one
   /// call (File 12 Part 50.4). `ONLINE` is rejected here by the backend on
   /// purpose — the async methods go through [initiateOnlinePayment].
+  ///
+  /// [paymentAmount] is `INTERNAL_WALLET` only — a decimal string such as
+  /// `"50.00"`. Omit it to pay the full fee. Sending it with `PAY_AT_CLINIC`
+  /// is `422 PAYMENT_AMOUNT_NOT_SUPPORTED`.
   Future<ConfirmedAppointmentDto> confirmHold(
     String holdId, {
     required AppointmentPaymentMethod paymentMethod,
+    String? paymentAmount,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '${ApiPaths.appointments}/$holdId/confirm',
-      data: {'paymentMethod': paymentMethod.wireValue},
+      data: {
+        'paymentMethod': paymentMethod.wireValue,
+        if (paymentAmount != null) 'paymentAmount': paymentAmount,
+      },
     );
     return ConfirmedAppointmentDto.fromJson(response.data!);
   }
@@ -60,14 +68,22 @@ class AppointmentsRemoteDatasource {
   /// `POST /v1/appointments/{holdId}/payments` (File 12 Part 50.1) — starts
   /// an async gateway payment. Returns the Fawry reference the patient pays
   /// against; the appointment itself is confirmed later by the webhook.
+  ///
+  /// [paymentAmount] is optional (`"50.00"`). Omit it to pay the full fee.
+  /// The response does not echo the amount — the caller already knows it.
   Future<OnlinePaymentInitiationDto> initiateOnlinePayment(
     String holdId, {
     required AppointmentPaymentMethod method,
     required PaymentCustomerInfo customer,
+    String? paymentAmount,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '${ApiPaths.appointments}/$holdId/payments',
-      data: {'method': method.wireValue, 'customer': customer.toJson()},
+      data: {
+        'method': method.wireValue,
+        'customer': customer.toJson(),
+        if (paymentAmount != null) 'paymentAmount': paymentAmount,
+      },
     );
     return OnlinePaymentInitiationDto.fromJson(response.data!);
   }

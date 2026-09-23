@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/widgets/app_badge.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/features/provider_profile/domain/entities/clinic_branch.dart';
@@ -34,8 +35,8 @@ class ClinicBranchDetailsScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(
-            SolarIconsOutline.arrowLeft,
+          icon: Icon(
+            AppNavIcons.back(context),
             color: AppPalette.primary,
           ),
         ),

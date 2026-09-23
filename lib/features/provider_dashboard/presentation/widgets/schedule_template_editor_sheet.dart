@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_clinic.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_schedule_template.dart';
@@ -140,6 +141,17 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderMedium,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               widget.existing == null
                   ? 'provider_dashboard.schedule.add'.tr()
@@ -158,8 +170,6 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
                 initialValue: _affiliationId,
                 decoration: InputDecoration(
                   labelText: 'provider_dashboard.schedule.branch'.tr(),
-                  border: const OutlineInputBorder(),
-                  isDense: true,
                 ),
                 isExpanded: true,
                 items: [
@@ -187,8 +197,6 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
               initialValue: _weekday,
               decoration: InputDecoration(
                 labelText: 'provider_dashboard.schedule.weekday'.tr(),
-                border: const OutlineInputBorder(),
-                isDense: true,
               ),
               items: [
                 for (var day = 1; day <= 7; day++)
@@ -287,13 +295,10 @@ class _ScheduleTemplateEditorState extends State<_ScheduleTemplateEditor> {
     required String value,
     required VoidCallback onTap,
   }) => InkWell(
+    borderRadius: BorderRadius.circular(AppRadii.md),
     onTap: onTap,
     child: InputDecorator(
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
+      decoration: InputDecoration(labelText: label),
       child: Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
     ),
   );

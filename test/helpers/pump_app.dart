@@ -39,7 +39,16 @@ Future<void> pumpLocalizedApp(
         ),
       ),
     );
-    // First pump builds EasyLocalization's FutureBuilder for asset loading.
+    // Pump until [child] is actually mounted rather than relying on a single
+    // `pumpAndSettle()`: while the translation JSON is still loading nothing
+    // is scheduled on the fake clock, so pumpAndSettle returns immediately
+    // with an empty tree (the first test in a file then loses the race).
+    // A real `Future.delayed` is what lets `rootBundle.loadString` progress
+    // — same approach as test/helpers/pump_localized_widget.dart.
+    for (var i = 0; i < 200 && !tester.any(find.byWidget(child)); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
     await tester.pumpAndSettle();
   });
 }

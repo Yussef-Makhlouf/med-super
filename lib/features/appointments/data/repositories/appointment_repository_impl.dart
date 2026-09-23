@@ -37,11 +37,13 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   Future<Result<ConfirmedAppointment>> confirmHold(
     String holdId, {
     required AppointmentPaymentMethod paymentMethod,
+    String? paymentAmount,
   }) async {
     try {
       final dto = await _remote.confirmHold(
         holdId,
         paymentMethod: paymentMethod,
+        paymentAmount: paymentAmount,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {
@@ -54,12 +56,14 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
     String holdId, {
     required AppointmentPaymentMethod method,
     required PaymentCustomerInfo customer,
+    String? paymentAmount,
   }) async {
     try {
       final dto = await _remote.initiateOnlinePayment(
         holdId,
         method: method,
         customer: customer,
+        paymentAmount: paymentAmount,
       );
       return Result.ok(dto.toEntity());
     } catch (e, st) {

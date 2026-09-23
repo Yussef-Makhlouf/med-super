@@ -2,10 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/specialties/domain/entities/specialty.dart';
+import 'package:med_super/core/specialties/presentation/controllers/specialties_providers.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
+import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
@@ -138,8 +141,8 @@ class _DoctorDetailsScreenState extends ConsumerState<DoctorDetailsScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(
-            SolarIconsOutline.arrowLeft,
+          icon: Icon(
+            AppNavIcons.back(context),
             color: AppPalette.primary,
           ),
         ),
@@ -404,15 +407,23 @@ class _BranchPickerCard extends StatelessWidget {
   }
 }
 
-class _HeaderCard extends StatelessWidget {
+class _HeaderCard extends ConsumerWidget {
   const _HeaderCard({required this.profile, required this.affiliation});
 
   final DoctorProfile profile;
   final DoctorAffiliation? affiliation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final specialties =
+        ref.watch(specialtiesProvider).asData?.value ?? const [];
+    final specialtyLabel = Specialty.resolveLabel(
+      catalog: specialties,
+      languageCode: context.locale.languageCode,
+      code: profile.specialtyKey,
+      fallback: profile.specialty,
+    );
     return AppSurfaceCard(
       child: Column(
         children: [
@@ -451,7 +462,7 @@ class _HeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            profile.specialty,
+            specialtyLabel,
             textAlign: TextAlign.center,
             style: textTheme.bodyMedium?.copyWith(color: AppPalette.inkMuted),
           ),

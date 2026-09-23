@@ -44,7 +44,8 @@ class DoctorSummaryDto {
         id: (json['doctorId'] ?? json['id']) as String,
         name: json['name'] as String,
         specialty: json['specialty'] as String,
-        specialtyKey: json['specialty_key'] as String?,
+        specialtyKey:
+            (json['specialtyKey'] ?? json['specialty_key']) as String?,
         locationLabel:
             (json['clinicName'] ?? json['location_label']) as String? ?? '',
         distanceKm: ((json['distanceKm'] ?? json['distance_km']) as num?)
