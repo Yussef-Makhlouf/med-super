@@ -59,11 +59,12 @@ void main() {
     expect(find.text('عياداتي'), findsOneWidget);
     // Seeded by the mock's `GET /v1/doctors/me/clinics` in the real shape —
     // the list shows each branch as a row titled by its city (branches have
-    // no name of their own), with the clinic name in the subtitle.
+    // no name of their own), with its street address in the subtitle (not
+    // the clinic name, which doesn't tell branches apart).
     expect(find.text('القاهرة'), findsOneWidget);
     expect(find.text('الإسكندرية'), findsOneWidget);
-    expect(find.textContaining('عيادة النيل التخصصية'), findsOneWidget);
-    expect(find.textContaining('مركز الإسكندرية الطبي'), findsOneWidget);
+    expect(find.text('12 شارع التحرير'), findsOneWidget);
+    expect(find.text('5 الكورنيش'), findsOneWidget);
     // The full form (consult fee, delete) is not shown until a row is tapped.
     expect(find.widgetWithText(TextFormField, 'سعر الكشف (EGP)'), findsNothing);
     expect(find.text('حذف الفرع'), findsNothing);
@@ -112,7 +113,7 @@ void main() {
         of: sheet,
         matching: find.widgetWithText(TextFormField, 'هاتف الفرع'),
       ),
-      '+20233330000',
+      '01033330000',
     );
     await tester.enterText(
       find.descendant(

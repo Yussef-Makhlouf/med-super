@@ -23,6 +23,17 @@ Future<void> _pumpUntilFound(WidgetTester tester, Finder finder) async {
   }
 }
 
+/// Street address of the seeded VERIFIED/ACTIVE Cairo branch
+/// (`mock_responses.dart`) — what its branch chip shows.
+const _cairoBranchLine = '12 شارع التحرير';
+
+/// Street address of the seeded PENDING Alexandria branch, which must never
+/// be offered for booking.
+const _alexBranchLine = '5 الكورنيش';
+
+/// Slot chips render `formatAppointmentTime` output, e.g. `09:30 AM`.
+final _slotChips = find.textContaining(RegExp(r'^\d{2}:\d{2} (AM|PM)$'));
+
 /// Exercises the real Dio + `MockInterceptor` stack end to end: branch pick
 /// -> slot pick -> patient phone/name -> submit -> the walk-in booking
 /// mock in `mock_responses.dart` (`POST
@@ -55,22 +66,24 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pump();
 
-      final branchFinder = find.textContaining('عيادة النيل التخصصية');
+      // Branch chips are labelled by city + street address (not the shared
+      // clinic name, which doesn't distinguish branches).
+      final branchFinder = find.text(_cairoBranchLine);
       await _pumpUntilFound(tester, branchFinder);
 
       // Only the VERIFIED/ACTIVE branch (Cairo) is offered — the second
       // seeded branch is PENDING verification and must not appear.
       expect(branchFinder, findsOneWidget);
-      expect(find.textContaining('مركز الإسكندرية الطبي'), findsNothing);
+      expect(find.text(_alexBranchLine), findsNothing);
 
       await tester.tap(branchFinder);
       await tester.pump();
 
-      final slotTiles = find.byIcon(Icons.schedule);
+      final slotTiles = _slotChips;
       await _pumpUntilFound(tester, slotTiles);
 
-      // A slot tile renders a formatted time (ListTile with a schedule
-      // icon) — tap the first one.
+      // A slot chip renders a formatted time (`hh:mm AM/PM`) for the
+      // auto-selected earliest day — tap the first one.
       expect(slotTiles, findsWidgets);
       await tester.tap(slotTiles.first);
       await tester.pump();
@@ -81,7 +94,7 @@ void main() {
         'رقم هاتف المريض',
       );
       expect(phoneField, findsOneWidget);
-      await tester.enterText(phoneField, '+201009998887');
+      await tester.enterText(phoneField, '01009998887');
 
       final nameField = find.widgetWithText(TextFormField, 'اسم المريض');
       await tester.enterText(nameField, 'سارة أحمد');
@@ -125,13 +138,13 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pump();
 
-    final branchFinder = find.textContaining('عيادة النيل التخصصية');
+    final branchFinder = find.text(_cairoBranchLine);
     await _pumpUntilFound(tester, branchFinder);
 
     await tester.tap(branchFinder);
     await tester.pump();
 
-    final slotTiles = find.byIcon(Icons.schedule);
+    final slotTiles = _slotChips;
     await _pumpUntilFound(tester, slotTiles);
 
     await tester.tap(slotTiles.first);
@@ -147,7 +160,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('أدخل رقم هاتف صحيح بصيغة دولية، مثل ‎+201001234567'),
+      find.text('أدخل رقم هاتف مصري صحيح، مثل 01001234567'),
       findsOneWidget,
     );
   });
@@ -175,13 +188,13 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pump();
 
-    final branchFinder = find.textContaining('عيادة النيل التخصصية');
+    final branchFinder = find.text(_cairoBranchLine);
     await _pumpUntilFound(tester, branchFinder);
 
     await tester.tap(branchFinder);
     await tester.pump();
 
-    final slotTiles = find.byIcon(Icons.schedule);
+    final slotTiles = _slotChips;
     await _pumpUntilFound(tester, slotTiles);
 
     await tester.tap(slotTiles.first);
@@ -190,7 +203,7 @@ void main() {
     // Phone is valid, but the name is left blank — the name field is
     // required, not optional, so submitting must still be blocked.
     final phoneField = find.widgetWithText(TextFormField, 'رقم هاتف المريض');
-    await tester.enterText(phoneField, '+201009998887');
+    await tester.enterText(phoneField, '01009998887');
 
     final submitButton = find.widgetWithText(FilledButton, 'تأكيد الحجز');
     await tester.ensureVisible(submitButton);
