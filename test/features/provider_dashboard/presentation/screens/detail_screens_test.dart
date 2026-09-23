@@ -259,7 +259,7 @@ void main() {
       ],
     );
 
-    expect(find.text('الملف الطبي للمريض'), findsOneWidget);
+    expect(find.text('بيانات المريض'), findsOneWidget);
     expect(find.text('عبدالله خالد'), findsOneWidget);
     expect(find.text('+201009998887'), findsWidgets);
   });

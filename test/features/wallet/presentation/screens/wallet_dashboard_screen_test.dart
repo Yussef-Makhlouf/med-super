@@ -27,7 +27,9 @@ void main() {
     expect(find.text('الرصيد المتاح'), findsOneWidget);
     expect(find.text('إيداع'), findsOneWidget);
     expect(find.text('تحويل'), findsOneWidget);
-    expect(find.text('بطاقات مرتبطة'), findsOneWidget);
+    // The "linked cards" quick action was intentionally commented out (no
+    // backend flow behind it yet) — see commit 8cf0a56.
+    expect(find.text('بطاقات مرتبطة'), findsNothing);
     expect(find.text('سجل المعاملات'), findsOneWidget);
   });
 }

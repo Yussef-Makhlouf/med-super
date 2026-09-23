@@ -77,8 +77,9 @@ class GetProviderPatientsUseCase {
       cursor = page.nextCursor;
     } while (cursor != null);
 
-    final patients = byPatient.values.map((acc) => acc.toPatient()).toList()
-      ..sort((a, b) => a.patientName.compareTo(b.patientName));
+    final patients =
+        byPatient.values.map((acc) => acc.toPatient(anchor)).toList()
+          ..sort((a, b) => a.patientName.compareTo(b.patientName));
 
     final appointmentsByPatientId = <String, List<DoctorAppointment>>{
       for (final entry in byPatient.entries)
@@ -131,9 +132,7 @@ class _Accumulator {
     }
   }
 
-  Patient toPatient() {
-    final now = DateTime.now();
-
+  Patient toPatient(DateTime now) {
     // "Last" (most recent past visit) can be any status — a completed or
     // even a cancelled slot still records that this patient was seen/booked
     // then. "Next" must be a real upcoming visit the patient will actually
