@@ -71,6 +71,7 @@ abstract final class ApiPaths {
   static const labTests = '/v1/lab-tests';
   static const labBranches = '/v1/lab-branches';
   static const labOrders = '/v1/lab-orders';
+  static const labOrderCatalog = '/v1/lab-orders/catalog';
 
   // Provider registration
   static const providerRegistrationSubmit = '/v1/provider/registration';
@@ -90,6 +91,7 @@ abstract final class ApiPaths {
 
   // Prescriptions (Phase 6)
   static const prescriptions = '/v1/prescriptions';
+  static const providerPrescriptions = '/v1/prescriptions/provider';
 
   // Pharmacy Fulfillment (Phase 7)
   static const pharmacyOrders = '/v1/pharmacy-orders';

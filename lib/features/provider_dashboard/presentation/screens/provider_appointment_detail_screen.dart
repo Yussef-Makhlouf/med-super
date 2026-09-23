@@ -15,6 +15,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_cancel_appointment_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_reschedule_sheet.dart';
+import 'provider_clinical_requests_screen.dart';
 import 'package:solar_icons/solar_icons.dart';
 
 /// Opens [ProviderAppointmentDetailScreen] as a bottom sheet rather than a
@@ -319,6 +320,20 @@ class _ProviderAppointmentDetailScreenState
           const SizedBox(height: 12),
           _paymentCard(payment),
         ],
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ProviderClinicalRequestsScreen(
+                patientId: appointment.patientId,
+                patientName: appointment.patientName,
+                appointmentId: appointment.appointmentId,
+              ),
+            ),
+          ),
+          icon: const Icon(Icons.medical_services_outlined),
+          label: Text('provider_dashboard.clinical_requests.open'.tr()),
+        ),
         const SizedBox(height: 20),
         _visitStatusPanel(appointment),
         const SizedBox(height: 20),

@@ -64,13 +64,18 @@ class PharmacyOrderDetail {
     required this.staffNote,
     required this.prescriptionImages,
     required this.rejection,
+    this.patientId,
+    this.prescriptionId,
   });
 
   final String id;
+  final String? patientId;
+  final String? prescriptionId;
   final String status;
   final String fulfillmentType;
   final String createdAt;
   final String updatedAt;
+
   /// Not returned by the backend today (no branch profile join in
   /// `buildPharmacyOrderDetail`) — always `null`, kept as a field so the UI
   /// has a single place to show it once the backend adds it.
@@ -78,6 +83,7 @@ class PharmacyOrderDetail {
   final String? doctorName;
   final PharmacyOrderQuote? quote;
   final String? patientNote;
+
   /// The order-level staff note (`order.staff_note`) — distinct from
   /// `quote.note`, which is the same underlying column surfaced a second
   /// time inside the quote payload; kept separate here because a rejected

@@ -91,9 +91,14 @@ class LabOrderDetail {
     required this.rejection,
     required this.recollectionRequired,
     required this.results,
+    this.patientId,
   });
 
   final String id;
+
+  /// Present when the backend's patient summary is included in list/detail.
+  /// Provider history uses it to keep one patient's requests on their own record.
+  final String? patientId;
   final String status;
   final String collectionType;
   final String createdAt;

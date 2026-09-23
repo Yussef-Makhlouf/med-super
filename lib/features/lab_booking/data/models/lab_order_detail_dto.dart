@@ -18,6 +18,7 @@ class LabOrderDetailDto {
     required this.rejection,
     required this.recollectionRequired,
     required this.results,
+    this.patientId,
   });
 
   factory LabOrderDetailDto.fromJson(Map<String, dynamic> json) {
@@ -27,6 +28,7 @@ class LabOrderDetailDto {
     final resultsJson = json['results'] as List<dynamic>? ?? const [];
     return LabOrderDetailDto(
       id: json['id'] as String? ?? '',
+      patientId: (json['patient'] as Map<String, dynamic>?)?['id'] as String?,
       status: json['status'] as String? ?? '',
       collectionType: json['collectionType'] as String? ?? '',
       createdAt: json['createdAt'] as String? ?? '',
@@ -79,6 +81,7 @@ class LabOrderDetailDto {
   }
 
   final String id;
+  final String? patientId;
   final String status;
   final String collectionType;
   final String createdAt;
@@ -93,6 +96,7 @@ class LabOrderDetailDto {
 
   LabOrderDetail toEntity() => LabOrderDetail(
     id: id,
+    patientId: patientId,
     status: status,
     collectionType: collectionType,
     createdAt: createdAt,
