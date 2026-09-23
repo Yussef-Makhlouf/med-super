@@ -92,9 +92,20 @@ Future<void> pumpAccountLoginScreen(
   // easy_localization's default asset loader does real `rootBundle`
   // (non-fake-clock) I/O, so the whole pump sequence has to run inside
   // `tester.runAsync` or `.tr()` permanently falls back to the raw key.
+  //
+  // The translation JSON is large enough that its load doesn't reliably
+  // finish within a single `pumpAndSettle()` (nothing is scheduled on the
+  // fake clock while the real I/O is pending, so it returns early and the
+  // first test in the file sees an empty tree). Interleave real delays with
+  // frame pumps until the screen is actually mounted — same approach as
+  // test/helpers/pump_localized_widget.dart.
   await tester.runAsync(() async {
     await EasyLocalization.ensureInitialized();
     await tester.pumpWidget(shell());
+    for (var i = 0; i < 200 && !tester.any(find.byType(AccountLoginScreen)); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
     await tester.pumpAndSettle();
   });
 }

@@ -316,14 +316,21 @@ class _ProviderAppointmentDetailScreenState
               ),
           ],
         ),
+        if (appointment.payment case final payment?) ...[
+          const SizedBox(height: 12),
+          _paymentCard(payment),
+        ],
+        const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => ProviderClinicalRequestsScreen(
-              patientId: appointment.patientId,
-              patientName: appointment.patientName,
-              appointmentId: appointment.appointmentId,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ProviderClinicalRequestsScreen(
+                patientId: appointment.patientId,
+                patientName: appointment.patientName,
+                appointmentId: appointment.appointmentId,
+              ),
             ),
-          )),
+          ),
           icon: const Icon(Icons.medical_services_outlined),
           label: Text('provider_dashboard.clinical_requests.open'.tr()),
         ),
@@ -466,6 +473,89 @@ class _ProviderAppointmentDetailScreenState
       ),
     );
   }
+
+  /// Fee / paid in advance / left to collect — so the doctor or assistant
+  /// knows what to take from the patient at the visit.
+  Widget _paymentCard(DoctorAppointmentPayment payment) {
+    String money(num value) => payment.currency == 'EGP'
+        ? '${value.toStringAsFixed(2)} ج.م'
+        : '${value.toStringAsFixed(2)} ${payment.currency}';
+    return _card(
+      children: [
+        Text(
+          'provider_dashboard.appointments.payment_title'.tr(),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink900,
+          ),
+        ),
+        _row(
+          Icons.payments_outlined,
+          'provider_dashboard.appointments.payment_method'.tr(),
+          _paymentMethodLabel(payment.method),
+        ),
+        _row(
+          Icons.receipt_long_outlined,
+          'provider_dashboard.appointments.fee'.tr(),
+          money(payment.fullAmount),
+        ),
+        _row(
+          Icons.check_circle_outline,
+          'provider_dashboard.appointments.paid_amount'.tr(),
+          money(payment.paidAmount),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: payment.isFullyPaid
+                ? const Color(0xFF10B981).withValues(alpha: 0.10)
+                : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  payment.isFullyPaid
+                      ? 'provider_dashboard.appointments.fully_paid'.tr()
+                      : 'provider_dashboard.appointments.remaining_balance'
+                            .tr(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink900,
+                  ),
+                ),
+              ),
+              if (!payment.isFullyPaid)
+                Text(
+                  money(payment.remainingBalance),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.ink900,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _paymentMethodLabel(String method) => switch (method) {
+    'PAY_AT_CLINIC' => 'provider_dashboard.appointments.method_pay_at_clinic'.tr(),
+    'INTERNAL_WALLET' =>
+      'provider_dashboard.appointments.method_internal_wallet'.tr(),
+    'FAWRY' => 'provider_dashboard.appointments.method_fawry'.tr(),
+    'CARD' => 'provider_dashboard.appointments.method_card'.tr(),
+    'MOBILE_WALLET' =>
+      'provider_dashboard.appointments.method_mobile_wallet'.tr(),
+    _ => method,
+  };
 
   Widget _card({required List<Widget> children}) => Container(
     padding: const EdgeInsets.all(18),

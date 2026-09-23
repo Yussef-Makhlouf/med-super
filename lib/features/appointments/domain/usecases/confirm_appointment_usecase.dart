@@ -12,5 +12,10 @@ class ConfirmAppointmentUseCase {
     String holdId, {
     AppointmentPaymentMethod paymentMethod =
         AppointmentPaymentMethod.payAtClinic,
-  }) => _repository.confirmHold(holdId, paymentMethod: paymentMethod);
+    String? paymentAmount,
+  }) => _repository.confirmHold(
+    holdId,
+    paymentMethod: paymentMethod,
+    paymentAmount: paymentAmount,
+  );
 }

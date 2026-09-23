@@ -52,13 +52,19 @@ const kMockDemoPhone = '01000000000';
 const kMockDemoPhoneNormalized = '+201000000000';
 const kMockDemoPassword = 'Test1234';
 
-Map<String, dynamic> _error(int status, String code, String message) => {
+Map<String, dynamic> _error(
+  int status,
+  String code,
+  String message, [
+  Map<String, dynamic>? details,
+]) => {
   'statusCode': status,
   'data': {
     'error': {
       'code': code,
       'message': message,
       'correlation_id': 'mock-corr-auth',
+      if (details != null) 'details': details,
     },
   },
 };
@@ -778,6 +784,9 @@ class _MockHold {
   /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
   DateTime expiresAt;
   final String? rescheduledFromAppointmentId;
+  /// First `paymentAmount` on this hold wins — a retry with a different
+  /// amount is ignored, matching the real initiate-online use-case.
+  String? lockedPaymentAmount;
 }
 
 class _MockAppointment {
@@ -834,6 +843,13 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'slotId': slotId,
         'expiresAt': expiresAt.toIso8601String(),
         'status': 'HELD',
+        // Same fee/minimum the mock payment paths validate against.
+        'fullAmount': _kMockConsultFee.toStringAsFixed(2),
+        'currency': 'EGP',
+        'minPaymentAmount': (_kMockMinAppointmentPayment < _kMockConsultFee
+                ? _kMockMinAppointmentPayment
+                : _kMockConsultFee)
+            .toStringAsFixed(2),
       },
     };
   });
@@ -860,6 +876,12 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
 
     final body = _body(options) ?? {};
     final method = body['method'] as String? ?? 'FAWRY';
+    final resolved = hold.lockedPaymentAmount != null
+        ? _MockPaymentAmount.ok(hold.lockedPaymentAmount!)
+        : _mockResolvePaymentAmount(body['paymentAmount']);
+    if (resolved.error != null) return resolved.error;
+    hold.lockedPaymentAmount = resolved.amount;
+
     final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 15));
     hold.expiresAt = expiresAt;
 
@@ -871,6 +893,9 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'referenceCode':
             '${DateTime.now().millisecondsSinceEpoch}'.padLeft(11, '0'),
         'expiresAt': expiresAt.toIso8601String(),
+        // The first attempt's amount is kept on a retry, like the backend.
+        'amount': resolved.amount,
+        'currency': 'EGP',
       },
     };
   });
@@ -891,17 +916,27 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
     // balance leaves the hold untouched — mirroring the real use-case,
     // where the debit is the first write and its failure rolls the whole
     // confirm transaction back (File 12 Part 50.4).
-    final paymentMethod =
-        (_body(options) ?? {})['paymentMethod'] as String? ?? 'PAY_AT_CLINIC';
+    final body = _body(options) ?? {};
+    final paymentMethod = body['paymentMethod'] as String? ?? 'PAY_AT_CLINIC';
+    if (paymentMethod == 'PAY_AT_CLINIC' && body.containsKey('paymentAmount')) {
+      return _error(
+        422,
+        'PAYMENT_AMOUNT_NOT_SUPPORTED',
+        'الدفع الجزئي غير متاح مع الدفع في العيادة.',
+      );
+    }
     if (paymentMethod == 'INTERNAL_WALLET') {
-      if (_mockWalletStore.availableBalance < _kMockConsultFee) {
+      final resolved = _mockResolvePaymentAmount(body['paymentAmount']);
+      if (resolved.error != null) return resolved.error;
+      final amount = num.parse(resolved.amount!);
+      if (_mockWalletStore.availableBalance < amount) {
         return _error(
           422,
           'INSUFFICIENT_WALLET_BALANCE',
           'رصيد المحفظة غير كافٍ لإتمام هذه العملية.',
         );
       }
-      _mockWalletStore.debitForAppointment(_kMockConsultFee);
+      _mockWalletStore.debitForAppointment(amount.toDouble());
     }
 
     _mockHolds.remove(holdId);
@@ -1874,6 +1909,7 @@ Map<String, dynamic> _mockDoctorAppointment({
   String clinicName = 'عيادة النيل التخصصية',
   String? cancelledReason,
   String visitStatus = 'WAITING',
+  Map<String, dynamic>? payment,
 }) => {
   'appointmentId': id,
   'status': status,
@@ -1895,6 +1931,15 @@ Map<String, dynamic> _mockDoctorAppointment({
   'patientPhone': '+201001112223',
   'cancelledReason': cancelledReason,
   'rescheduledFromAppointmentId': null,
+  'payment':
+      payment ??
+      const {
+        'method': 'PAY_AT_CLINIC',
+        'currency': 'EGP',
+        'fullAmount': '350.00',
+        'paidAmount': '0.00',
+        'remainingBalance': '350.00',
+      },
   'createdAt': startUtc.subtract(const Duration(days: 3)).toIso8601String(),
 };
 
@@ -1922,6 +1967,14 @@ List<Map<String, dynamic>> _seedDoctorAppointments() {
       patientId: 'pat-2',
       startUtc: today.add(const Duration(hours: 8, minutes: 30)),
       status: 'CONFIRMED',
+      // Partial online payment — shows the remaining balance on the detail.
+      payment: const {
+        'method': 'FAWRY',
+        'currency': 'EGP',
+        'fullAmount': '350.00',
+        'paidAmount': '50.00',
+        'remainingBalance': '300.00',
+      },
     ),
     _mockDoctorAppointment(
       id: 'apt-3',
@@ -2989,8 +3042,62 @@ class _MockWalletStore {
 }
 
 /// The mock confirm endpoint receives no fee (the real backend reads it off
-/// the affiliation), so wallet debits use one representative consult fee.
+/// the affiliation), so wallet debits and amount checks use one
+/// representative consult fee. The minimum matches the seeded
+/// `MIN_APPOINTMENT_PAYMENT` policy (`50.00`).
 const _kMockConsultFee = 350.0;
+const _kMockMinAppointmentPayment = 50.0;
+
+class _MockPaymentAmount {
+  const _MockPaymentAmount.ok(this.amount) : error = null;
+  const _MockPaymentAmount.err(this.error) : amount = null;
+
+  final String? amount;
+  final Map<String, dynamic>? error;
+}
+
+/// Mirrors `ResolveAppointmentPaymentAmountUseCase`: omit = pay in full;
+/// an amount equal to the fee is also full; otherwise min ≤ amount ≤ fee.
+_MockPaymentAmount _mockResolvePaymentAmount(dynamic raw) {
+  if (raw == null) {
+    return _MockPaymentAmount.ok(_kMockConsultFee.toStringAsFixed(2));
+  }
+  if (raw is! String ||
+      !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(raw.trim()) ||
+      num.parse(raw) <= 0) {
+    return _MockPaymentAmount.err(
+      _error(422, 'PAYMENT_AMOUNT_INVALID', 'مبلغ الدفع غير صالح.'),
+    );
+  }
+  final requested = num.parse(raw);
+  if (requested == _kMockConsultFee) {
+    return _MockPaymentAmount.ok(_kMockConsultFee.toStringAsFixed(2));
+  }
+  final min = _kMockMinAppointmentPayment < _kMockConsultFee
+      ? _kMockMinAppointmentPayment
+      : _kMockConsultFee;
+  if (requested < min) {
+    return _MockPaymentAmount.err(
+      _error(
+        422,
+        'PAYMENT_AMOUNT_BELOW_MINIMUM',
+        'المبلغ أقل من الحد الأدنى المسموح به للدفع.',
+        {'minAmount': min.toStringAsFixed(2)},
+      ),
+    );
+  }
+  if (requested > _kMockConsultFee) {
+    return _MockPaymentAmount.err(
+      _error(
+        422,
+        'PAYMENT_AMOUNT_EXCEEDS_FEE',
+        'المبلغ أكبر من قيمة الكشف.',
+        {'fullAmount': _kMockConsultFee.toStringAsFixed(2)},
+      ),
+    );
+  }
+  return _MockPaymentAmount.ok(requested.toStringAsFixed(2));
+}
 
 final _mockWalletStore = _MockWalletStore();
 

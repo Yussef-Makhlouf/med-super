@@ -66,13 +66,13 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
   late final Animation<Offset> _sheetOffset;
   late final Animation<double> _sheetOpacity;
 
-  // Sheet extent as a live 0..1 fraction between _collapsedFraction (60%)
+  // Sheet extent as a live 0..1 fraction between _collapsedFraction (78%)
   // and _expandedFraction (92%) — driven directly by drag deltas (not just
   // snapped once on release) and read by an AnimatedBuilder scoped to only
   // the sheet's Positioned wrapper, so dragging tracks the finger in real
   // time and repaints just that subtree instead of the whole screen.
   late final AnimationController _extentController;
-  static const _collapsedFraction = 0.6;
+  static const _collapsedFraction = 0.78;
   static const _expandedFraction = 0.92;
   double _sheetHeight = 1;
 

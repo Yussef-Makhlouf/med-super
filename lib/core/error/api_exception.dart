@@ -6,6 +6,7 @@ class ApiException implements Exception {
     required this.code,
     this.message,
     this.correlationId,
+    this.details,
   });
 
   final int statusCode;
@@ -14,6 +15,11 @@ class ApiException implements Exception {
   final String code;
   final String? message;
   final String? correlationId;
+
+  /// Envelope `error.details` — e.g. `{ minAmount: "50.00" }` on
+  /// `PAYMENT_AMOUNT_BELOW_MINIMUM`. Opaque to this class; callers that
+  /// know a code's shape read the keys they need.
+  final Map<String, dynamic>? details;
 
   bool get isUnauthorized => statusCode == 401;
   bool get isConflict => statusCode == 409;

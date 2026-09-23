@@ -15,6 +15,8 @@ class OnlinePaymentInitiation {
     required this.expiresAt,
     this.redirectUrl,
     this.referenceCode,
+    this.amount,
+    this.currency,
   });
 
   final String paymentIntentId;
@@ -22,4 +24,10 @@ class OnlinePaymentInitiation {
   final DateTime expiresAt;
   final String? redirectUrl;
   final String? referenceCode;
+
+  /// What the gateway will actually charge (`"50.00"`) — on a retry the
+  /// FIRST attempt's amount, so show this rather than what the UI sent.
+  /// `null` only against a backend older than this field.
+  final String? amount;
+  final String? currency;
 }
