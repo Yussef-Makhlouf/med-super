@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
@@ -51,20 +52,76 @@ class ProviderClinicalRequestsScreen extends ConsumerWidget {
           ],
         ),
       ),
-      body: TabBarView(
+      body: Column(
         children: [
-          _PrescriptionHistory(
-            patientId: patientId,
-            patientName: patientName,
-            appointmentId: appointmentId,
-          ),
-          _LabHistory(
-            patientId: patientId,
-            patientName: patientName,
-            appointmentId: appointmentId,
+          _PatientContextBanner(patientName: patientName),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _PrescriptionHistory(
+                  patientId: patientId,
+                  patientName: patientName,
+                  appointmentId: appointmentId,
+                ),
+                _LabHistory(
+                  patientId: patientId,
+                  patientName: patientName,
+                  appointmentId: appointmentId,
+                ),
+              ],
+            ),
           ),
         ],
       ),
+    ),
+  );
+}
+
+class _PatientContextBanner extends StatelessWidget {
+  const _PatientContextBanner({required this.patientName});
+
+  final String patientName;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      border: Border.all(color: AppColors.borderLight),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.person_outline, color: AppColors.mutedText2),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'provider_dashboard.clinical_requests.patient_context'.tr(),
+                style: const TextStyle(
+                  color: AppColors.mutedText2,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                patientName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.ink900,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 }
@@ -90,6 +147,35 @@ class _PrescriptionHistory extends ConsumerWidget {
         const <PharmacyOrderDetail>[];
     return Column(
       children: [
+        if (canCreate && !isDoctor)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: brandBlue.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: brandBlue.withValues(alpha: 0.18)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, size: 18, color: brandBlue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'provider_dashboard.clinical_requests.assistant_approval_note'
+                        .tr(),
+                    style: const TextStyle(
+                      color: AppColors.ink700,
+                      height: 1.4,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (canCreate)
           _CreateAction(
             label: 'provider_dashboard.clinical_requests.create_prescription'
@@ -126,8 +212,7 @@ class _PrescriptionHistory extends ConsumerWidget {
                           prescriptionId: result.prescriptionId,
                           fulfillmentType:
                               values.pharmacySubmission!.fulfillment,
-                          pharmacyBranchId:
-                              values.pharmacySubmission!.branchId,
+                          pharmacyBranchId: values.pharmacySubmission!.branchId,
                         );
                     ref.invalidate(providerPharmacyOrdersProvider);
                     if (context.mounted) {
@@ -305,6 +390,12 @@ class _PrescriptionCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                        ),
+                      ),
                       onPressed: () => _decide(context, ref, approve: false),
                       child: Text(
                         'provider_dashboard.clinical_requests.reject'.tr(),
@@ -314,6 +405,12 @@ class _PrescriptionCard extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                        ),
+                      ),
                       onPressed: () => _decide(context, ref, approve: true),
                       child: Text(
                         'provider_dashboard.clinical_requests.approve'.tr(),
@@ -326,6 +423,12 @@ class _PrescriptionCard extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                  ),
                   onPressed: () => _approveAndCreatePharmacyOrder(context, ref),
                   icon: const Icon(Icons.local_pharmacy_outlined),
                   label: Text(
@@ -497,7 +600,10 @@ class _PrescriptionCard extends ConsumerWidget {
     }
     if (!context.mounted) return;
     if (branches.isEmpty) {
-      _snack(context, 'provider_dashboard.clinical_requests.no_pharmacies'.tr());
+      _snack(
+        context,
+        'provider_dashboard.clinical_requests.no_pharmacies'.tr(),
+      );
       return;
     }
     final selection = await showModalBottomSheet<_PharmacySubmission>(
@@ -677,9 +783,8 @@ class _PharmacySubmissionFields extends StatelessWidget {
     final eligibleBranches = branches
         .where((branch) => fulfillment == 'PICKUP' || branch.deliveryCapable)
         .toList(growable: false);
-    final selectedBranchId = eligibleBranches.any(
-      (branch) => branch.id == branchId,
-    )
+    final selectedBranchId =
+        eligibleBranches.any((branch) => branch.id == branchId)
         ? branchId
         : null;
     return Column(
@@ -1318,10 +1423,7 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.biotech_outlined,
-                  color: AppColors.tealAccent,
-                ),
+                const Icon(Icons.biotech_outlined, color: AppColors.tealAccent),
                 const SizedBox(width: 8),
                 Text(
                   'provider_dashboard.clinical_requests.create_lab'.tr(),
@@ -1575,9 +1677,8 @@ class _LabBranchField extends StatelessWidget {
     final eligibleBranches = collectionType == 'HOME_COLLECTION'
         ? branches.where((branch) => branch.homeCollectionCapable).toList()
         : branches;
-    final selectedBranchId = eligibleBranches.any(
-      (branch) => branch.id == branchId,
-    )
+    final selectedBranchId =
+        eligibleBranches.any((branch) => branch.id == branchId)
         ? branchId
         : null;
     if (eligibleBranches.isEmpty) {
@@ -1591,8 +1692,7 @@ class _LabBranchField extends StatelessWidget {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: 'provider_dashboard.clinical_requests.lab_branch'.tr(),
-        helperText: 'provider_dashboard.clinical_requests.lab_branch_hint'
-            .tr(),
+        helperText: 'provider_dashboard.clinical_requests.lab_branch_hint'.tr(),
       ),
       items: eligibleBranches
           .map(

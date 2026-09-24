@@ -937,9 +937,17 @@
     "no_branches_available": "لا توجد فروع متاحة"
   },
   "provider_dashboard": {
+    "header": {
+      "open_notifications": "فتح التنبيهات",
+      "unread_notifications": "لديك {} تنبيه غير مقروء",
+      "open_profile": "فتح الملف الشخصي"
+    },
     "home": {
       "title": "الجدول",
+      "assistant_title": "جدول العيادة",
       "today": "اليوم",
+      "previous_week": "الأسبوع السابق",
+      "next_week": "الأسبوع التالي",
       "day_off_title": "يوم إجازة",
       "day_off_subtitle": "لا توجد أوقات عمل محددة في أي عيادة لهذا اليوم.",
       "working_hours": "ساعات العمل",
@@ -951,6 +959,25 @@
       "slot_open": "متاح",
       "slot_past": "انتهى الوقت",
       "minutes_short": "د"
+    },
+    "profile": {
+      "title": "الملف الشخصي",
+      "doctor_fallback": "حساب الطبيب",
+      "assistant_fallback": "حساب المساعد",
+      "assistant_role": "مساعد العيادة",
+      "edit_profile": "تعديل الملف الشخصي",
+      "personal_info": "المعلومات الشخصية",
+      "personal_info_hint": "البريد الإلكتروني والنبذة والمؤهل العلمي والخبرة",
+      "clinic_settings": "إعدادات العيادة",
+      "clinic_settings_hint": "العنوان ومعلومات التواصل للفروع المسندة",
+      "schedule": "جدول المواعيد",
+      "schedule_hint": "إدارة ساعات العمل والأوقات المتاحة",
+      "assistant_schedule_hint": "ساعات العمل للفروع المسندة إليك",
+      "assigned_branches": "الفروع المسندة",
+      "assigned_branches_hint": "عرض وإدارة معلومات فروع عملك",
+      "wallet": "المحفظة",
+      "wallet_hint": "الرصيد وسجل المعاملات",
+      "footer": "MedSuper • الملف المهني"
     },
     "appointments": {
       "title": "المواعيد",
@@ -1063,6 +1090,8 @@
     },
     "clinical_requests": {
       "title": "الطلبات الطبية",
+      "patient_context": "ملف المريض",
+      "assistant_approval_note": "مسودة الروشتة التي ينشئها المساعد تحتاج اعتماد الطبيب قبل إرسالها للصيدلية.",
       "open": "الروشتات وطلبات التحاليل",
       "prescriptions": "الروشتات",
       "labs": "طلبات التحاليل",

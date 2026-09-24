@@ -937,9 +937,17 @@
     "no_branches_available": "No branches available"
   },
   "provider_dashboard": {
+    "header": {
+      "open_notifications": "Open notifications",
+      "unread_notifications": "You have {} unread notification(s)",
+      "open_profile": "Open profile"
+    },
     "home": {
       "title": "Schedule",
+      "assistant_title": "Clinic schedule",
       "today": "Today",
+      "previous_week": "Previous week",
+      "next_week": "Next week",
       "day_off_title": "Day off",
       "day_off_subtitle": "You have no working hours set at any clinic for this day.",
       "working_hours": "Working hours",
@@ -951,6 +959,25 @@
       "slot_open": "Open",
       "slot_past": "Past",
       "minutes_short": "min"
+    },
+    "profile": {
+      "title": "Profile",
+      "doctor_fallback": "Doctor account",
+      "assistant_fallback": "Assistant account",
+      "assistant_role": "Clinic assistant",
+      "edit_profile": "Edit profile",
+      "personal_info": "Personal information",
+      "personal_info_hint": "Email, bio, degree, and experience",
+      "clinic_settings": "Clinic settings",
+      "clinic_settings_hint": "Address and contact details for assigned branches",
+      "schedule": "Appointment schedule",
+      "schedule_hint": "Manage working hours and available times",
+      "assistant_schedule_hint": "Working hours for your assigned branches",
+      "assigned_branches": "Assigned branches",
+      "assigned_branches_hint": "View and manage your work branch information",
+      "wallet": "Wallet",
+      "wallet_hint": "Balance and transaction history",
+      "footer": "MedSuper • Professional workspace"
     },
     "appointments": {
       "title": "Appointments",
@@ -1063,6 +1090,8 @@
     },
     "clinical_requests": {
       "title": "Clinical requests",
+      "patient_context": "Patient record",
+      "assistant_approval_note": "Prescription drafts created by assistants require doctor approval before they can be sent to a pharmacy.",
       "open": "Prescriptions and lab requests",
       "prescriptions": "Prescriptions",
       "labs": "Lab requests",

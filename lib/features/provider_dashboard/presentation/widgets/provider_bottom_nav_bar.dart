@@ -112,38 +112,43 @@ class _NavBarItem extends StatelessWidget {
     final label = tab.labelKey.tr();
     final text = label == tab.labelKey ? tab.fallbackLabel : label;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        decoration: BoxDecoration(
-          color: selected
-              ? brandBlue.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              selected ? tab.activeIcon : tab.icon,
-              size: 24,
-              color: selected ? brandBlue : AppColors.mutedText2,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: text,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: selected
+                ? brandBlue.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                selected ? tab.activeIcon : tab.icon,
+                size: 24,
                 color: selected ? brandBlue : AppColors.mutedText2,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: selected ? brandBlue : AppColors.mutedText2,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

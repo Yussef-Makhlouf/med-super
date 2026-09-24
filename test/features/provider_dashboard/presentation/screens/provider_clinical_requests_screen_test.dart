@@ -27,6 +27,21 @@ class _DoctorSessionController extends SessionController {
   );
 }
 
+class _AssistantSessionController extends SessionController {
+  @override
+  Future<Session?> build() async => Session(
+    user: User(
+      id: 'assistant-1',
+      phone: '+201000000001',
+      roles: [UserRole.clinicStaff],
+      activeRole: UserRole.clinicStaff,
+      displayName: 'Clinic Assistant',
+    ),
+    onboardingComplete: true,
+    passwordComplete: true,
+  );
+}
+
 void main() {
   testWidgets('shows patient scoped prescription history and lab tab', (
     tester,
@@ -48,6 +63,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('الطلبات الطبية'), findsOneWidget);
     expect(find.text('إنشاء روشتة'), findsOneWidget);
+    expect(find.text('Sara'), findsOneWidget);
+    expect(find.text('ملف المريض'), findsOneWidget);
     expect(
       find.text('لا توجد روشتات صادرة من فريق الرعاية حتى الآن.'),
       findsOneWidget,
@@ -99,6 +116,49 @@ void main() {
     expect(find.text('رفض'), findsOneWidget);
   });
 
+  testWidgets(
+    'assistant sees the doctor-approval boundary, not signoff actions',
+    (tester) async {
+      final pending = ProviderPrescription(
+        id: 'rx-pending-assistant',
+        patientId: 'patient-1',
+        status: 'PENDING_DOCTOR_APPROVAL',
+        version: 1,
+        createdAt: DateTime.utc(2026, 9, 23),
+        createdByRole: 'CLINIC_STAFF',
+        items: const [],
+      );
+      await pumpLocalizedWidget(
+        tester,
+        const ProviderClinicalRequestsScreen(
+          patientId: 'patient-1',
+          patientName: 'Sara',
+        ),
+        overrides: [
+          sessionControllerProvider.overrideWith(
+            _AssistantSessionController.new,
+          ),
+          providerPrescriptionsProvider.overrideWith((ref) async => [pending]),
+          providerPrescriptionDetailProvider.overrideWith(
+            (ref, id) async => pending,
+          ),
+          providerPharmacyOrdersProvider.overrideWith((ref) async => const []),
+          providerLabOrdersProvider.overrideWith((ref) async => const []),
+        ],
+      );
+
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'مسودة الروشتة التي ينشئها المساعد تحتاج اعتماد الطبيب قبل إرسالها للصيدلية.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('اعتماد وتوقيع'), findsNothing);
+      expect(find.text('رفض'), findsNothing);
+    },
+  );
+
   testWidgets('shows the pharmacy quote, fulfillment, and status ownership', (
     tester,
   ) async {
@@ -144,7 +204,9 @@ void main() {
       ),
       overrides: [
         sessionControllerProvider.overrideWith(_DoctorSessionController.new),
-        providerPrescriptionsProvider.overrideWith((ref) async => [prescription]),
+        providerPrescriptionsProvider.overrideWith(
+          (ref) async => [prescription],
+        ),
         providerPrescriptionDetailProvider.overrideWith(
           (ref, id) async => prescription,
         ),
@@ -154,7 +216,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('استلام من العيادة'), findsOneWidget);
+    expect(find.text('طريقة الاستلام: توصيل إلى العيادة'), findsOneWidget);
     expect(find.text('تسعير الصيدلية'), findsOneWidget);
     expect(find.text('125.00 EGP'), findsOneWidget);
     expect(find.text('جهز هذا المبلغ قبل الاستلام.'), findsOneWidget);
@@ -234,7 +296,10 @@ void main() {
     await tester.tap(find.text('طلب تحاليل'));
     await tester.pumpAndSettle();
 
-    expect(find.text('اختر طريقة السحب والفرع، ثم أرفق طلب التحاليل قبل الإرسال.'), findsOneWidget);
+    expect(
+      find.text('اختر طريقة السحب والفرع، ثم أرفق طلب التحاليل قبل الإرسال.'),
+      findsOneWidget,
+    );
     expect(find.text('زيارة فرع المعمل'), findsOneWidget);
     expect(find.text('سحب العينة من المنزل'), findsOneWidget);
     expect(find.text('مرفقات طلب التحاليل'), findsOneWidget);

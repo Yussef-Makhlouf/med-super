@@ -83,6 +83,26 @@ delivery-capable pharmacy branch and follows the delivery-in-progress status.
 The backend still has no courier integration or persisted clinic destination,
 so it cannot route a courier to a specific clinic address yet.
 
+## Doctor and assistant surface polish — 2026-09-24
+
+The shared provider dashboard now distinguishes the assistant's clinic
+schedule from the doctor's schedule and uses the active locale for calendar
+weekday/month labels. Calendar navigation has localized accessible labels and
+48px interaction targets. Provider navigation, notification, profile, and
+calendar controls expose clearer semantics and touch feedback.
+
+The profile is localized and role-aware: assistants see their own session
+identity and assigned-branch workspace links, and the screen no longer reads
+the supervising doctor's account as the assistant's profile. Clinical request
+history displays the scoped patient context; assistant prescription drafts
+explain that physician approval is required, while sign-off remains doctor-only.
+
+Focused widget tests passed **12/12** across provider home, profile, and
+clinical requests. Changed-file analysis completed with **8 info-level lint
+notices** (primarily radio-control deprecations and style hints); no errors
+were reported for the selected files. Arabic/English localization key sets
+are symmetric. Live backend and device verification remain pending.
+
 ## Visit-status verification: 2026-09-18
 
 ### Scheduling guard update: 2026-09-18

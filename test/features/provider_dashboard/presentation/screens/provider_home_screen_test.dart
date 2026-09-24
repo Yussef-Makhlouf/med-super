@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/network/dio_client.dart';
@@ -23,10 +24,12 @@ import '../../../../helpers/pump_localized_widget.dart';
 /// The week strip always shows Saturday..Friday of the week containing the
 /// selected date, in fixed slots 0..6 (`providerCalendarDayTile-$index`).
 /// Saturday is Dart weekday 6, so index = (weekday - 6) mod 7.
-int _tileIndexForWeekday(int isoWeekday) => (isoWeekday - DateTime.saturday) % 7;
+int _tileIndexForWeekday(int isoWeekday) =>
+    (isoWeekday - DateTime.saturday) % 7;
 
-Finder _dayTile(int isoWeekday) =>
-    find.byKey(Key('providerCalendarDayTile-${_tileIndexForWeekday(isoWeekday)}'));
+Finder _dayTile(int isoWeekday) => find.byKey(
+  Key('providerCalendarDayTile-${_tileIndexForWeekday(isoWeekday)}'),
+);
 
 /// The small "working day" dot (`AppBadge.dot`, a circular `Container`)
 /// under a day tile's date — rendered only when the doctor has a schedule
@@ -66,6 +69,7 @@ Future<void> _settle(WidgetTester tester) async {
 Future<void> _pumpHome(
   WidgetTester tester, {
   bool noOpenSlots = false,
+  Locale startLocale = const Locale('ar'),
 }) async {
   final storage = SecureStorageService(const FlutterSecureStorage());
   final dio = buildDioClient(storage: storage);
@@ -73,6 +77,7 @@ Future<void> _pumpHome(
   await pumpLocalizedWidget(
     tester,
     const ProviderHomeScreen(),
+    startLocale: startLocale,
     overrides: [
       dioProvider.overrideWithValue(dio),
       // The mock `/slots` endpoint generates 09:00-16:30 slots for every
@@ -102,7 +107,23 @@ Future<void> _selectWeekday(WidgetTester tester, int isoWeekday) async {
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('ar');
+    await initializeDateFormatting('en');
   });
+
+  testWidgets(
+    'ProviderHomeScreen formats the calendar using the active locale',
+    (tester) async {
+      await _pumpHome(tester, startLocale: const Locale('en'));
+      await _settle(tester);
+
+      final expectedMonth = DateFormat(
+        'MMMM yyyy',
+        'en',
+      ).format(DateTime.now());
+      expect(find.text(expectedMonth), findsOneWidget);
+      expect(find.text('Schedule'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'ProviderHomeScreen renders working hours for a day that has a template',
