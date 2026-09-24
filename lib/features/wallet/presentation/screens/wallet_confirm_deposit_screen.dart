@@ -45,6 +45,8 @@ class _WalletConfirmDepositScreenState
       // A PENDING ledger row now exists, so the history is already stale
       // even though the balance hasn't moved.
       ref.invalidate(walletTransactionsProvider);
+      ref.invalidate(walletTransactionHistoryProvider);
+      ref.invalidate(walletTransactionDetailProvider);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

@@ -43,6 +43,8 @@ class WalletDashboardScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(walletBalanceProvider);
           ref.invalidate(walletTransactionsProvider);
+          ref.invalidate(walletTransactionHistoryProvider);
+          ref.invalidate(walletTransactionDetailProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

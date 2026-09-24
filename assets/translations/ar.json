@@ -270,6 +270,7 @@
     "title": "طلباتي",
     "empty": "لا توجد طلبات بعد",
     "search_hint": "البحث برقم الطلب...",
+    "clear_search": "مسح البحث عن الطلبات",
     "tab_current": "طلبات حالية",
     "tab_previous": "طلبات سابقة",
     "tab_pharmacy": "الصيدلية",
@@ -296,7 +297,9 @@
     "consultation_fee": "سعر الكشفية: {}",
     "empty_title": "لا يوجد أطباء",
     "empty_subtitle": "جرّب تخصصاً أو كلمة بحث أخرى",
-    "load_more": "تحميل المزيد"
+    "load_more": "تحميل المزيد",
+    "retry_load_more": "أعد محاولة تحميل النتائج",
+    "load_more_failed": "تعذر تحميل المزيد من النتائج. تحقق من اتصالك وحاول مرة أخرى."
   },
   "doctor_profile": {
     "title": "تفاصيل الطبيب",
@@ -318,6 +321,7 @@
     "yesterday": "الأمس",
     "earlier": "في وقت سابق",
     "load_more": "تحميل المزيد",
+    "load_more_failed": "تعذر تحميل المزيد من التنبيهات. تحقق من اتصالك وحاول مرة أخرى.",
     "time_now": "الآن",
     "time_minutes_ago": "منذ {count} دقيقة",
     "time_hours_ago": "منذ {count} ساعة"
@@ -798,6 +802,8 @@
     "recent_transactions": "أحدث المعاملات",
     "view_all": "عرض الكل",
     "no_transactions": "لا توجد معاملات حالية",
+    "load_more": "تحميل المزيد من المعاملات",
+    "load_more_failed": "تعذر تحميل المزيد من المعاملات. ما زال السجل الحالي متاحاً.",
     "step_amount": "المبلغ",
     "step_payment_details": "البيانات",
     "step_confirm": "تأكيد",

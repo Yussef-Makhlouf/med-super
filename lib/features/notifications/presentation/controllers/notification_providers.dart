@@ -30,8 +30,9 @@ final listNotificationsUseCaseProvider = Provider<ListNotificationsUseCase>(
 
 final markNotificationReadUseCaseProvider =
     Provider<MarkNotificationReadUseCase>(
-      (ref) =>
-          MarkNotificationReadUseCase(ref.watch(notificationRepositoryProvider)),
+      (ref) => MarkNotificationReadUseCase(
+        ref.watch(notificationRepositoryProvider),
+      ),
     );
 
 class NotificationListState {
@@ -39,11 +40,13 @@ class NotificationListState {
     required this.items,
     required this.nextCursor,
     this.isLoadingMore = false,
+    this.loadMoreFailed = false,
   });
 
   final List<AppNotification> items;
   final String? nextCursor;
   final bool isLoadingMore;
+  final bool loadMoreFailed;
 
   bool get hasMore => nextCursor != null;
 
@@ -52,11 +55,13 @@ class NotificationListState {
     String? nextCursor,
     bool clearNextCursor = false,
     bool? isLoadingMore,
+    bool? loadMoreFailed,
   }) {
     return NotificationListState(
       items: items ?? this.items,
       nextCursor: clearNextCursor ? null : (nextCursor ?? this.nextCursor),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
     );
   }
 }
@@ -86,20 +91,33 @@ class NotificationListController
     final current = state.asData?.value;
     if (current == null || !current.hasMore || current.isLoadingMore) return;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, loadMoreFailed: false),
+    );
     final result = await ref
         .read(listNotificationsUseCaseProvider)
         .call(cursor: current.nextCursor);
 
     state = result.when(
-      ok: (page) => AsyncData(
-        NotificationListState(
-          items: [...current.items, ...page.items],
-          nextCursor: page.nextCursor,
-          isLoadingMore: false,
-        ),
+      ok: (page) {
+        final seenIds = current.items.map((item) => item.id).toSet();
+        final newItems = page.items
+            .where((item) => seenIds.add(item.id))
+            .toList(growable: false);
+        final nextCursor = page.nextCursor == current.nextCursor
+            ? null
+            : page.nextCursor;
+        return AsyncData(
+          NotificationListState(
+            items: [...current.items, ...newItems],
+            nextCursor: nextCursor,
+            isLoadingMore: false,
+          ),
+        );
+      },
+      err: (failure) => AsyncData(
+        current.copyWith(isLoadingMore: false, loadMoreFailed: true),
       ),
-      err: (failure) => AsyncData(current.copyWith(isLoadingMore: false)),
     );
   }
 
@@ -125,28 +143,39 @@ class NotificationListController
     if (current == null) return;
 
     final unread = current.items.where((n) => n.isUnread).toList();
+    final markedReadIds = <String>{};
     for (final notification in unread) {
-      await ref.read(markNotificationReadUseCaseProvider).call(notification.id);
+      final result = await ref
+          .read(markNotificationReadUseCaseProvider)
+          .call(notification.id);
+      if (result case Ok()) markedReadIds.add(notification.id);
     }
 
+    final latest = state.asData?.value ?? current;
     state = AsyncData(
-      current.copyWith(
+      latest.copyWith(
         items: [
-          for (final item in current.items) item.copyWith(isUnread: false),
+          for (final item in latest.items)
+            markedReadIds.contains(item.id)
+                ? item.copyWith(isUnread: false)
+                : item,
         ],
       ),
     );
   }
 }
 
-final notificationListControllerProvider = NotifierProvider<
-  NotificationListController,
-  AsyncValue<NotificationListState>
->(NotificationListController.new);
+final notificationListControllerProvider =
+    NotifierProvider<
+      NotificationListController,
+      AsyncValue<NotificationListState>
+    >(NotificationListController.new);
 
 final unreadNotificationCountProvider = Provider<int>((ref) {
-  return ref.watch(notificationListControllerProvider).maybeWhen(
-    data: (state) => state.items.where((n) => n.isUnread).length,
-    orElse: () => 0,
-  );
+  return ref
+      .watch(notificationListControllerProvider)
+      .maybeWhen(
+        data: (state) => state.items.where((n) => n.isUnread).length,
+        orElse: () => 0,
+      );
 });

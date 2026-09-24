@@ -253,7 +253,7 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: const AspectRatio(
+                            child: AspectRatio(
                               aspectRatio: 1,
                               child: AuthBlobHeroIllustration(
                                 icon: SolarIconsBold.lockKeyhole,

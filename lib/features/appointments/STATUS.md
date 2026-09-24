@@ -6,6 +6,11 @@ reschedule → confirm, and list/card tap → detail. Reschedule's slot-picker
 only works when the appointment's `doctorClinicAffiliationId` happens to
 follow the mock naming convention — see "Known gaps" below.
 
+**Patient interaction polish (2026-09-24):** upcoming/past filters expose a
+single selected button state to assistive technology, use material press
+feedback, and provide a 48dp minimum tap height. Profile and notification
+header actions now expose localized tooltips.
+
 ## What's real
 
 Matches `clinic-reservations` Phase 4 (File 10 §2.3 / File 12 Part 35)

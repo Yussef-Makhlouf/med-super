@@ -125,9 +125,9 @@ class _PatientAppointmentsScreenState
                 alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   'appointments.title'.tr(),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineSmall?.copyWith(color: AppPalette.primary),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppPalette.primary,
+                  ),
                 ),
               ),
             ),
@@ -150,8 +150,12 @@ class _PatientAppointmentsScreenState
                   // phase actually produces, File 12 Part 35.1) reads as
                   // "past" until a real completed/no-show status exists.
                   final appts = _selectedTab == 0
-                      ? state.items.where((a) => a.status == 'CONFIRMED').toList()
-                      : state.items.where((a) => a.status != 'CONFIRMED').toList();
+                      ? state.items
+                            .where((a) => a.status == 'CONFIRMED')
+                            .toList()
+                      : state.items
+                            .where((a) => a.status != 'CONFIRMED')
+                            .toList();
 
                   return Column(
                     children: [
@@ -268,9 +272,10 @@ class _ApptHeader extends ConsumerWidget {
     final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => context.go('/patient/profile'),
-          child: const CircleAvatar(
+        IconButton(
+          tooltip: 'profile.title'.tr(),
+          onPressed: () => context.go('/patient/profile'),
+          icon: const CircleAvatar(
             radius: 22,
             backgroundColor: AppPalette.primarySoft,
             child: Icon(SolarIconsBold.userRounded, color: AppPalette.primary),
@@ -282,9 +287,7 @@ class _ApptHeader extends ConsumerWidget {
           children: [
             Text(
               'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(
-                color: AppPalette.inkMuted,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: AppPalette.inkMuted),
             ),
             Text(
               displayName,
@@ -294,12 +297,16 @@ class _ApptHeader extends ConsumerWidget {
         ),
         const Spacer(),
         IconButton(
+          tooltip: 'notifications.title'.tr(),
           onPressed: () => context.go('/patient/notifications'),
           icon: Badge(
             smallSize: 8,
             backgroundColor: Colors.red,
             isLabelVisible: hasUnread,
-            child: const Icon(Icons.notifications_outlined, color: AppPalette.ink),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: AppPalette.ink,
+            ),
           ),
         ),
       ],
@@ -318,7 +325,7 @@ class _TabRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -357,20 +364,34 @@ class _TabBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: Semantics(
+        label: label,
+        button: true,
+        selected: isActive,
+        inMutuallyExclusiveGroup: true,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isActive ? AppPalette.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isActive ? Colors.white : AppPalette.inkFaint,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+        child: ExcludeSemantics(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isActive ? AppPalette.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isActive ? Colors.white : AppPalette.inkFaint,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ),
         ),

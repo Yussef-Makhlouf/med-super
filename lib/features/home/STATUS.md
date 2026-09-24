@@ -24,3 +24,8 @@ excluded from semantics so screen readers announce each action once. The care
 illustration is bundled locally; specialties and featured doctors still use
 the same real providers and search card. No new API fields or sample health
 data were added.
+
+**Orders navigation polish (2026-09-24):** the patient orders header now uses
+the localized guest name and accessible profile/notification actions. Pharmacy
+and lab tabs have announced selected states and 48dp touch height; the order
+search field exposes a localized clear action.

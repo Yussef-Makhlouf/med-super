@@ -426,6 +426,8 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
           // (`CaptureInternalWalletPaymentUseCase`) and a ledger row written.
           ref.invalidate(walletBalanceProvider);
           ref.invalidate(walletTransactionsProvider);
+          ref.invalidate(walletTransactionHistoryProvider);
+          ref.invalidate(walletTransactionDetailProvider);
         }
         // `go` (not `pushReplacement`) deliberately clears the whole ad-hoc
         // stack this booking flow built up (home → doctor detail → confirm)

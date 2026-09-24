@@ -563,6 +563,7 @@ class SessionController extends _$SessionController {
     ref.invalidate(myAppointmentsRefreshProvider);
     ref.invalidate(walletBalanceProvider);
     ref.invalidate(walletTransactionsProvider);
+    ref.invalidate(walletTransactionHistoryProvider);
     ref.invalidate(walletTransactionDetailProvider);
     ref.invalidate(refundStatusProvider);
   }

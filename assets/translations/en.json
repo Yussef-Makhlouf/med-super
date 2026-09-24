@@ -270,6 +270,7 @@
     "title": "Orders",
     "empty": "No orders yet",
     "search_hint": "Search by order number...",
+    "clear_search": "Clear order search",
     "tab_current": "Current",
     "tab_previous": "Previous",
     "tab_pharmacy": "Pharmacy",
@@ -296,7 +297,9 @@
     "consultation_fee": "Consultation fee: {}",
     "empty_title": "No doctors found",
     "empty_subtitle": "Try another specialty or search term",
-    "load_more": "Load more"
+    "load_more": "Load more",
+    "retry_load_more": "Retry loading results",
+    "load_more_failed": "Couldn't load more results. Check your connection and try again."
   },
   "doctor_profile": {
     "title": "Doctor details",
@@ -318,6 +321,7 @@
     "yesterday": "Yesterday",
     "earlier": "Earlier",
     "load_more": "Load more",
+    "load_more_failed": "Couldn't load more notifications. Check your connection and try again.",
     "time_now": "Just now",
     "time_minutes_ago": "{count} min ago",
     "time_hours_ago": "{count} hr ago"
@@ -798,6 +802,8 @@
     "recent_transactions": "Recent Transactions",
     "view_all": "View All",
     "no_transactions": "No transactions found",
+    "load_more": "Load more transactions",
+    "load_more_failed": "Couldn't load more transactions. Your current history is still available.",
     "step_amount": "Amount",
     "step_payment_details": "Details",
     "step_confirm": "Confirm",

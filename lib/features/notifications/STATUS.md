@@ -18,3 +18,9 @@ Wired to `clinic-reservations` Phase 8 (Notifications):
 **Shared by both surfaces:** patient tab (`/patient/notifications`) and provider
 screen (`/provider/notifications`) use the same datasource — the backend always
 scopes rows to the authenticated user.
+
+**Inbox resilience polish (2026-09-24):** cursor-page failures retain the
+visible notifications and cursor and expose a localized retry action; repeated
+notification IDs are deduplicated, and a repeated cursor ends pagination.
+"Mark all as read" updates each row only after that row's PATCH succeeds, so a
+partial backend failure no longer makes unread items appear read locally.

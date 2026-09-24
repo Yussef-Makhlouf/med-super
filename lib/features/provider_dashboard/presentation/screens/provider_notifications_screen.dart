@@ -68,8 +68,9 @@ class ProviderNotificationsScreen extends ConsumerWidget {
             child: AsyncValueView<NotificationListState>(
               value: listAsync,
               loadingWidget: const CardSkeletonList(count: 3),
-              onRetry: () =>
-                  ref.read(notificationListControllerProvider.notifier).refresh(),
+              onRetry: () => ref
+                  .read(notificationListControllerProvider.notifier)
+                  .refresh(),
               data: (state) {
                 if (state.items.isEmpty) {
                   return Center(
@@ -117,14 +118,37 @@ class ProviderNotificationsScreen extends ConsumerWidget {
                                 padding: EdgeInsets.all(16),
                                 child: CircularProgressIndicator(),
                               )
-                            : TextButton(
-                                onPressed: () => ref
-                                    .read(
-                                      notificationListControllerProvider
-                                          .notifier,
-                                    )
-                                    .loadMore(),
-                                child: Text('notifications.load_more'.tr()),
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (state.loadMoreFailed)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: Text(
+                                        'notifications.load_more_failed'.tr(),
+                                        textAlign: TextAlign.center,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: AppColors.mutedText,
+                                        ),
+                                      ),
+                                    ),
+                                  TextButton(
+                                    onPressed: () => ref
+                                        .read(
+                                          notificationListControllerProvider
+                                              .notifier,
+                                        )
+                                        .loadMore(),
+                                    style: TextButton.styleFrom(
+                                      minimumSize: const Size(48, 48),
+                                    ),
+                                    child: Text(
+                                      state.loadMoreFailed
+                                          ? 'common.retry'.tr()
+                                          : 'notifications.load_more'.tr(),
+                                    ),
+                                  ),
+                                ],
                               ),
                       ),
                   ],

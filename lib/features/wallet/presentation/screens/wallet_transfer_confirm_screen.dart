@@ -43,6 +43,8 @@ class _WalletTransferConfirmScreenState
       );
       ref.invalidate(walletBalanceProvider);
       ref.invalidate(walletTransactionsProvider);
+      ref.invalidate(walletTransactionHistoryProvider);
+      ref.invalidate(walletTransactionDetailProvider);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

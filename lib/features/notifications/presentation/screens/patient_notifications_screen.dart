@@ -109,14 +109,42 @@ class PatientNotificationsScreen extends ConsumerWidget {
                                   padding: EdgeInsets.all(16),
                                   child: CircularProgressIndicator(),
                                 )
-                              : TextButton(
-                                  onPressed: () => ref
-                                      .read(
-                                        notificationListControllerProvider
-                                            .notifier,
-                                      )
-                                      .loadMore(),
-                                  child: Text('notifications.load_more'.tr()),
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (state.loadMoreFailed)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
+                                        child: Text(
+                                          'notifications.load_more_failed'.tr(),
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: AppPalette.inkMuted,
+                                              ),
+                                        ),
+                                      ),
+                                    TextButton(
+                                      onPressed: () => ref
+                                          .read(
+                                            notificationListControllerProvider
+                                                .notifier,
+                                          )
+                                          .loadMore(),
+                                      style: TextButton.styleFrom(
+                                        minimumSize: const Size(48, 48),
+                                      ),
+                                      child: Text(
+                                        state.loadMoreFailed
+                                            ? 'common.retry'.tr()
+                                            : 'notifications.load_more'.tr(),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                         ),
                     ],
@@ -142,9 +170,12 @@ class PatientNotificationsScreen extends ConsumerWidget {
           local.month == now.month &&
           local.day == now.day) {
         today.add(item);
-      } else if (local.year == now.year &&
-          local.month == now.month &&
-          local.day == now.day - 1) {
+      } else if (DateTime(
+            now.year,
+            now.month,
+            now.day,
+          ).difference(DateTime(local.year, local.month, local.day)).inDays ==
+          1) {
         yesterday.add(item);
       } else {
         earlier.add(item);

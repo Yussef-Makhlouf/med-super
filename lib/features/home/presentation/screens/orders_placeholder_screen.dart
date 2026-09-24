@@ -59,7 +59,7 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
     final session = ref.watch(sessionControllerProvider).asData?.value;
     final displayName = session?.user.displayName?.trim().isNotEmpty == true
         ? session!.user.displayName!
-        : 'أحمد محمد';
+        : 'profile.guest_name'.tr();
 
     return Scaffold(
       backgroundColor: AppPalette.paper,
@@ -109,9 +109,10 @@ class _OrdersHeader extends ConsumerWidget {
     final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => context.go('/patient/profile'),
-          child: const CircleAvatar(
+        IconButton(
+          tooltip: 'profile.title'.tr(),
+          onPressed: () => context.go('/patient/profile'),
+          icon: const CircleAvatar(
             radius: 22,
             backgroundColor: AppPalette.primarySoft,
             child: Icon(SolarIconsBold.userRounded, color: AppPalette.primary),
@@ -135,6 +136,7 @@ class _OrdersHeader extends ConsumerWidget {
         ),
         const Spacer(),
         IconButton(
+          tooltip: 'notifications.title'.tr(),
           onPressed: () => context.go('/patient/notifications'),
           icon: Badge(
             smallSize: 8,
@@ -159,6 +161,7 @@ class _OrderSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: 'orders.search_hint'.tr(),
         hintStyle: const TextStyle(color: AppPalette.inkFaint),
@@ -166,6 +169,13 @@ class _OrderSearchBar extends StatelessWidget {
           SolarIconsOutline.magnifier,
           color: AppPalette.inkMuted,
         ),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'orders.clear_search'.tr(),
+                onPressed: controller.clear,
+                icon: const Icon(Icons.close_rounded),
+              ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -200,7 +210,7 @@ class _VendorTabRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppPalette.surfaceSunken,
@@ -238,29 +248,42 @@ class _TabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: Semantics(
+        label: label,
+        button: true,
+        selected: isActive,
+        inMutuallyExclusiveGroup: true,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isActive ? AppPalette.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: AppPalette.primary.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isActive ? Colors.white : AppPalette.inkFaint,
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+        child: ExcludeSemantics(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isActive ? AppPalette.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: AppPalette.primary.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isActive ? Colors.white : AppPalette.inkFaint,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -303,9 +326,7 @@ class _PharmacyOrdersTab extends ConsumerWidget {
             .where(
               (o) =>
                   query.isEmpty ||
-                  shortOrderId(
-                    o.id,
-                  ).toLowerCase().contains(query.toLowerCase()),
+                  shortOrderId(o.id).toLowerCase().contains(query.toLowerCase()),
             )
             .toList();
         if (visible.isEmpty) {
@@ -523,7 +544,9 @@ class _LabOrdersTab extends ConsumerWidget {
             .where(
               (o) =>
                   query.isEmpty ||
-                  shortOrderId(o.id).toLowerCase().contains(query.toLowerCase()),
+                  shortOrderId(
+                    o.id,
+                  ).toLowerCase().contains(query.toLowerCase()),
             )
             .toList();
         if (visible.isEmpty) {
