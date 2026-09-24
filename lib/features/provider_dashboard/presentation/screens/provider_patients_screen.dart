@@ -329,6 +329,8 @@ class _ProviderPatientsScreenState
                         const SizedBox(width: 4),
                         Text(
                           patient.patientPhone,
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.left,
                           style: const TextStyle(
                             color: AppColors.mutedText2,
                             fontSize: 13,

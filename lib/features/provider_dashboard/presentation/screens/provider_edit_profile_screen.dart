@@ -292,6 +292,7 @@ class _ProviderEditProfileScreenState
                             controller: TextEditingController(
                               text: account.phone,
                             ),
+                            keyboardType: TextInputType.phone,
                             readOnly: true,
                           ),
                           const SizedBox(height: 16),

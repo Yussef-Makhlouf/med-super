@@ -286,6 +286,7 @@ class _ProviderAppointmentDetailScreenState
               SolarIconsOutline.phone,
               'provider_dashboard.appointments.patient_phone'.tr(),
               appointment.patientPhone,
+              valueDirection: TextDirection.ltr,
             ),
             _row(
               SolarIconsOutline.clockCircle,
@@ -567,7 +568,12 @@ class _ProviderAppointmentDetailScreenState
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
   );
 
-  Widget _row(IconData icon, String label, String value) => Padding(
+  Widget _row(
+    IconData icon,
+    String label,
+    String value, {
+    TextDirection? valueDirection,
+  }) => Padding(
     padding: const EdgeInsets.only(top: 10),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,6 +594,7 @@ class _ProviderAppointmentDetailScreenState
               const SizedBox(height: 2),
               Text(
                 value,
+                textDirection: valueDirection,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

@@ -249,6 +249,12 @@ class _WalletConfirmDepositScreenState
                         ),
                         Text(
                           row.value,
+                          textDirection: row.label == 'payments.phone'.tr()
+                              ? TextDirection.ltr
+                              : null,
+                          textAlign: row.label == 'payments.phone'.tr()
+                              ? TextAlign.left
+                              : null,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

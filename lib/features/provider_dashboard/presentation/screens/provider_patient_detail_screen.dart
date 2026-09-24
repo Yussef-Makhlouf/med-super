@@ -76,6 +76,8 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     patient.patientPhone,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.mutedText2,

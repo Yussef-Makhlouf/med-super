@@ -202,6 +202,8 @@ class _CredentialBoxState extends State<_CredentialBox> {
               Expanded(
                 child: Text(
                   displayValue,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

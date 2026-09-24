@@ -9,6 +9,7 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
+import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_branch_search_providers.dart';
 import 'package:med_super/features/lab_booking/presentation/widgets/lab_order_status_pill.dart';
@@ -94,10 +95,13 @@ class _PrescriptionHistory extends ConsumerWidget {
             label: 'provider_dashboard.clinical_requests.create_prescription'
                 .tr(),
             onPressed: () async {
-              final values = await showModalBottomSheet<Map<String, dynamic>>(
+              final values = await showModalBottomSheet<_PrescriptionDraft>(
                 context: context,
                 isScrollControlled: true,
-                builder: (_) => _PrescriptionForm(patientName: patientName),
+                builder: (_) => _PrescriptionForm(
+                  patientName: patientName,
+                  collectPharmacySubmission: isDoctor,
+                ),
               );
               if (values == null || !context.mounted) return;
               try {
@@ -107,11 +111,45 @@ class _PrescriptionHistory extends ConsumerWidget {
                       patientId: patientId,
                       appointmentId: appointmentId,
                       documentType: 'PRESCRIPTION',
-                      images: values['images'] as List<PrescriptionImage>,
-                      notes: values['notes'] as String?,
+                      images: values.images,
+                      notes: values.notes,
                     );
                 if (!context.mounted) return;
                 ref.invalidate(providerPrescriptionsProvider);
+                if (values.pharmacySubmission != null &&
+                    result.status == 'ACCEPTED') {
+                  try {
+                    await ref
+                        .read(providerClinicalUseCasesProvider)
+                        .createPharmacyOrder(
+                          patientId: patientId,
+                          prescriptionId: result.prescriptionId,
+                          fulfillmentType:
+                              values.pharmacySubmission!.fulfillment,
+                          pharmacyBranchId:
+                              values.pharmacySubmission!.branchId,
+                        );
+                    ref.invalidate(providerPharmacyOrdersProvider);
+                    if (context.mounted) {
+                      _snack(
+                        context,
+                        'provider_dashboard.clinical_requests.pharmacy_sent'
+                            .tr(),
+                        success: true,
+                      );
+                    }
+                    return;
+                  } catch (_) {
+                    if (context.mounted) {
+                      _snack(
+                        context,
+                        'provider_dashboard.clinical_requests.prescription_saved_order_not_sent'
+                            .tr(),
+                      );
+                    }
+                    return;
+                  }
+                }
                 final message = result.status == 'PENDING_DOCTOR_APPROVAL'
                     ? 'provider_dashboard.clinical_requests.submitted_for_approval'
                           .tr()
@@ -258,25 +296,8 @@ class _PrescriptionCard extends ConsumerWidget {
               ),
             for (final order in pharmacyOrders)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'provider_dashboard.clinical_requests.pharmacy_status'
-                            .tr(),
-                        style: const TextStyle(color: AppColors.mutedText2),
-                      ),
-                    ),
-                    Chip(
-                      label: Text(
-                        'provider_dashboard.clinical_requests.pharmacy_status_${order.status}'
-                            .tr(),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
+                padding: const EdgeInsets.only(top: 12),
+                child: _PharmacyOrderProgressCard(order: order),
               ),
             if (canApprove && record.pendingApproval) ...[
               const SizedBox(height: 8),
@@ -292,7 +313,7 @@ class _PrescriptionCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: FilledButton(
+                    child: OutlinedButton(
                       onPressed: () => _decide(context, ref, approve: true),
                       child: Text(
                         'provider_dashboard.clinical_requests.approve'.tr(),
@@ -301,8 +322,20 @@ class _PrescriptionCard extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _approveAndCreatePharmacyOrder(context, ref),
+                  icon: const Icon(Icons.local_pharmacy_outlined),
+                  label: Text(
+                    'provider_dashboard.clinical_requests.approve_and_send'
+                        .tr(),
+                  ),
+                ),
+              ),
             ],
-            if (canApprove && record.signed)
+            if (canApprove && record.signed && pharmacyOrders.isEmpty)
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: TextButton.icon(
@@ -409,9 +442,15 @@ class _PrescriptionCard extends ConsumerWidget {
       );
       return;
     }
-    final selection = await showDialog<({String branchId, String fulfillment})>(
+    final selection = await showModalBottomSheet<_PharmacySubmission>(
       context: context,
-      builder: (context) => _PharmacyOrderDialog(branches: branches),
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _PharmacySubmissionSheet(
+        branches: branches,
+        titleKey: 'provider_dashboard.clinical_requests.pharmacy_title',
+        actionKey: 'provider_dashboard.clinical_requests.send',
+      ),
     );
     if (selection == null) return;
     try {
@@ -442,81 +481,388 @@ class _PrescriptionCard extends ConsumerWidget {
       }
     }
   }
+
+  Future<void> _approveAndCreatePharmacyOrder(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    late final List<Pharmacy> branches;
+    try {
+      branches = await ref.read(pharmaciesProvider.future);
+    } catch (_) {
+      if (context.mounted) {
+        _snack(context, 'provider_dashboard.clinical_requests.save_error'.tr());
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (branches.isEmpty) {
+      _snack(context, 'provider_dashboard.clinical_requests.no_pharmacies'.tr());
+      return;
+    }
+    final selection = await showModalBottomSheet<_PharmacySubmission>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _PharmacySubmissionSheet(
+        branches: branches,
+        titleKey: 'provider_dashboard.clinical_requests.approve_and_send_title',
+        actionKey: 'provider_dashboard.clinical_requests.approve_and_send',
+      ),
+    );
+    if (selection == null) return;
+
+    try {
+      await ref
+          .read(providerClinicalUseCasesProvider)
+          .decidePrescription(
+            id: record.id,
+            version: record.version,
+            approve: true,
+          );
+      ref.invalidate(providerPrescriptionDetailProvider(record.id));
+      onRefresh();
+    } catch (error) {
+      onRefresh();
+      if (context.mounted) {
+        _snack(
+          context,
+          _isConflict(error)
+              ? 'provider_dashboard.clinical_requests.conflict'.tr()
+              : 'provider_dashboard.clinical_requests.save_error'.tr(),
+        );
+      }
+      return;
+    }
+
+    try {
+      await ref
+          .read(providerClinicalUseCasesProvider)
+          .createPharmacyOrder(
+            patientId: patientId,
+            prescriptionId: record.id,
+            fulfillmentType: selection.fulfillment,
+            pharmacyBranchId: selection.branchId,
+          );
+      ref.invalidate(providerPharmacyOrdersProvider);
+      if (context.mounted) {
+        _snack(
+          context,
+          'provider_dashboard.clinical_requests.pharmacy_sent'.tr(),
+          success: true,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _snack(
+          context,
+          'provider_dashboard.clinical_requests.approval_saved_order_not_sent'
+              .tr(),
+        );
+      }
+    }
+  }
 }
 
-class _PharmacyOrderDialog extends StatefulWidget {
-  const _PharmacyOrderDialog({required this.branches});
+class _PharmacySubmission {
+  const _PharmacySubmission({
+    required this.branchId,
+    required this.fulfillment,
+  });
+
+  final String branchId;
+  final String fulfillment;
+}
+
+class _PharmacySubmissionSheet extends StatefulWidget {
+  const _PharmacySubmissionSheet({
+    required this.branches,
+    required this.titleKey,
+    required this.actionKey,
+  });
+
   final List<Pharmacy> branches;
+  final String titleKey;
+  final String actionKey;
+
   @override
-  State<_PharmacyOrderDialog> createState() => _PharmacyOrderDialogState();
+  State<_PharmacySubmissionSheet> createState() =>
+      _PharmacySubmissionSheetState();
 }
 
-class _PharmacyOrderDialogState extends State<_PharmacyOrderDialog> {
-  String? branchId;
-  String fulfillment = 'PICKUP';
+class _PharmacySubmissionSheetState extends State<_PharmacySubmissionSheet> {
+  String? _branchId;
+  String _fulfillment = 'PICKUP';
+
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text('provider_dashboard.clinical_requests.pharmacy_title'.tr()),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        8,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.titleKey.tr(),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'provider_dashboard.clinical_requests.pharmacy_form_hint'.tr(),
+              style: const TextStyle(color: AppColors.mutedText2),
+            ),
+            const SizedBox(height: 16),
+            _PharmacySubmissionFields(
+              branches: widget.branches,
+              branchId: _branchId,
+              fulfillment: _fulfillment,
+              onBranchChanged: (value) => setState(() => _branchId = value),
+              onFulfillmentChanged: (value) => setState(() {
+                _fulfillment = value;
+                _branchId = null;
+              }),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _branchId == null
+                    ? null
+                    : () => Navigator.pop(
+                        context,
+                        _PharmacySubmission(
+                          branchId: _branchId!,
+                          fulfillment: _fulfillment,
+                        ),
+                      ),
+                child: Text(widget.actionKey.tr()),
+              ),
+            ),
+            Center(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('provider_dashboard.clinical_requests.cancel'.tr()),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _PharmacySubmissionFields extends StatelessWidget {
+  const _PharmacySubmissionFields({
+    required this.branches,
+    required this.branchId,
+    required this.fulfillment,
+    required this.onBranchChanged,
+    required this.onFulfillmentChanged,
+  });
+
+  final List<Pharmacy> branches;
+  final String? branchId;
+  final String fulfillment;
+  final ValueChanged<String?> onBranchChanged;
+  final ValueChanged<String> onFulfillmentChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final eligibleBranches = branches
+        .where((branch) => fulfillment == 'PICKUP' || branch.deliveryCapable)
+        .toList(growable: false);
+    final selectedBranchId = eligibleBranches.any(
+      (branch) => branch.id == branchId,
+    )
+        ? branchId
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'provider_dashboard.clinical_requests.fulfillment'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 6),
+        ...const ['PICKUP', 'CLINIC_HANDOVER', 'DELIVERY'].map(
+          (value) => Card(
+            margin: const EdgeInsets.only(bottom: 6),
+            elevation: 0,
+            color: value == fulfillment
+                ? AppColors.tealBg
+                : AppColors.surfaceCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              side: BorderSide(
+                color: value == fulfillment
+                    ? AppColors.tealAccent
+                    : AppColors.borderLight,
+              ),
+            ),
+            child: RadioListTile<String>(
+              value: value,
+              groupValue: fulfillment,
+              contentPadding: const EdgeInsetsDirectional.fromSTEB(8, 2, 12, 2),
+              title: Text(
+                'provider_dashboard.clinical_requests.fulfillment_$value'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onChanged: (selected) {
+                if (selected != null) onFulfillmentChanged(selected);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         DropdownButtonFormField<String>(
-          initialValue:
-              widget.branches
-                  .where((b) => fulfillment != 'DELIVERY' || b.deliveryCapable)
-                  .any((b) => b.id == branchId)
-              ? branchId
-              : null,
+          initialValue: selectedBranchId,
+          isExpanded: true,
           decoration: InputDecoration(
             labelText: 'provider_dashboard.clinical_requests.pharmacy_branch'
                 .tr(),
           ),
-          items: widget.branches
-              .where((b) => fulfillment != 'DELIVERY' || b.deliveryCapable)
+          items: eligibleBranches
               .map(
-                (b) => DropdownMenuItem<String>(
-                  value: b.id,
-                  child: Text(b.name, overflow: TextOverflow.ellipsis),
-                ),
-              )
-              .toList(),
-          onChanged: (value) => setState(() => branchId = value),
-        ),
-        DropdownButtonFormField<String>(
-          initialValue: fulfillment,
-          decoration: InputDecoration(
-            labelText: 'provider_dashboard.clinical_requests.fulfillment'.tr(),
-          ),
-          items: ['PICKUP', 'DELIVERY', 'CLINIC_HANDOVER']
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
+                (branch) => DropdownMenuItem<String>(
+                  value: branch.id,
                   child: Text(
-                    'provider_dashboard.clinical_requests.fulfillment_$value'
-                        .tr(),
+                    '${branch.name} — ${branch.address}',
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               )
               .toList(),
-          onChanged: (value) => setState(() => fulfillment = value ?? 'PICKUP'),
+          onChanged: onBranchChanged,
+        ),
+        if (eligibleBranches.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'provider_dashboard.clinical_requests.no_pharmacies'.tr(),
+              style: const TextStyle(color: AppColors.errorRed),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PharmacyOrderProgressCard extends StatelessWidget {
+  const _PharmacyOrderProgressCard({required this.order});
+
+  final PharmacyOrderDetail order;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      border: Border.all(color: AppColors.borderLight),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.local_pharmacy_outlined,
+              size: 18,
+              color: AppColors.tealAccent,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'provider_dashboard.clinical_requests.pharmacy_status'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Chip(
+            label: Text(
+              'provider_dashboard.clinical_requests.pharmacy_status_${order.status}'
+                  .tr(),
+            ),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${'provider_dashboard.clinical_requests.fulfillment'.tr()}: ${'provider_dashboard.clinical_requests.fulfillment_${order.fulfillmentType}'.tr()}',
+          style: const TextStyle(color: AppColors.mutedText2, fontSize: 12),
+        ),
+        if (order.quote != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warningAmberBg,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(color: AppColors.warningAmberBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'provider_dashboard.clinical_requests.price_section'.tr(),
+                  style: const TextStyle(
+                    color: AppColors.warningAmberText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'provider_dashboard.clinical_requests.quoted_total'.tr(),
+                  style: const TextStyle(color: AppColors.mutedText2),
+                ),
+                Directionality(
+                  textDirection: ui.TextDirection.ltr,
+                  child: Text(
+                    '${order.quote!.totalPrice} ${order.quote!.currency}',
+                    style: const TextStyle(
+                      color: AppColors.ink900,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Text(
+                  'provider_dashboard.clinical_requests.price_preparation_hint'
+                      .tr(),
+                  style: const TextStyle(color: AppColors.warningAmberText),
+                ),
+                if (order.quote!.note?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'provider_dashboard.clinical_requests.quote_note'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  Text(order.quote!.note!),
+                ],
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          'provider_dashboard.clinical_requests.status_updated_by_pharmacy'
+              .tr(),
+          style: const TextStyle(color: AppColors.mutedText2, fontSize: 12),
         ),
       ],
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: Text('provider_dashboard.clinical_requests.cancel'.tr()),
-      ),
-      FilledButton(
-        onPressed: branchId == null
-            ? null
-            : () => Navigator.pop(context, (
-                branchId: branchId!,
-                fulfillment: fulfillment,
-              )),
-        child: Text('provider_dashboard.clinical_requests.send'.tr()),
-      ),
-    ],
   );
 }
 
@@ -687,16 +1033,36 @@ class _RequestImagesRow extends StatelessWidget {
   );
 }
 
-class _PrescriptionForm extends StatefulWidget {
-  const _PrescriptionForm({required this.patientName});
-  final String patientName;
-  @override
-  State<_PrescriptionForm> createState() => _PrescriptionFormState();
+class _PrescriptionDraft {
+  const _PrescriptionDraft({
+    required this.images,
+    required this.notes,
+    this.pharmacySubmission,
+  });
+
+  final List<PrescriptionImage> images;
+  final String? notes;
+  final _PharmacySubmission? pharmacySubmission;
 }
 
-class _PrescriptionFormState extends State<_PrescriptionForm> {
+class _PrescriptionForm extends ConsumerStatefulWidget {
+  const _PrescriptionForm({
+    required this.patientName,
+    required this.collectPharmacySubmission,
+  });
+
+  final String patientName;
+  final bool collectPharmacySubmission;
+
+  @override
+  ConsumerState<_PrescriptionForm> createState() => _PrescriptionFormState();
+}
+
+class _PrescriptionFormState extends ConsumerState<_PrescriptionForm> {
   final _notes = TextEditingController();
   List<PrescriptionImage> _images = const [];
+  String? _branchId;
+  String _fulfillment = 'PICKUP';
 
   @override
   void dispose() {
@@ -705,54 +1071,126 @@ class _PrescriptionFormState extends State<_PrescriptionForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(
-      left: 20,
-      right: 20,
-      top: 20,
-      bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-    ),
-    child: ListView(
-      shrinkWrap: true,
-      children: [
-        Text(
-          'provider_dashboard.clinical_requests.create_prescription'.tr(),
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+  Widget build(BuildContext context) {
+    final branches = widget.collectPharmacySubmission
+        ? ref.watch(pharmaciesProvider)
+        : null;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.viewInsetsOf(context).bottom + 20,
         ),
-        Text(
-          widget.patientName,
-          style: const TextStyle(color: AppColors.mutedText2),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Text(
+              'provider_dashboard.clinical_requests.create_prescription'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+            ),
+            Text(
+              widget.patientName,
+              style: const TextStyle(color: AppColors.mutedText2),
+            ),
+            const SizedBox(height: 16),
+            _ClinicalImagePicker(
+              onChanged: (images) => setState(() => _images = images),
+            ),
+            TextField(
+              controller: _notes,
+              maxLength: 500,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
+              ),
+            ),
+            if (widget.collectPharmacySubmission) ...[
+              const SizedBox(height: 8),
+              Text(
+                'provider_dashboard.clinical_requests.pharmacy_submission_title'
+                    .tr(),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'provider_dashboard.clinical_requests.pharmacy_form_hint'.tr(),
+                style: const TextStyle(color: AppColors.mutedText2),
+              ),
+              const SizedBox(height: 8),
+              branches!.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (_, _) => _RetryPanel(
+                  onRetry: () => ref.invalidate(pharmaciesProvider),
+                ),
+                data: (items) => items.isEmpty
+                    ? Text(
+                        'provider_dashboard.clinical_requests.no_pharmacies'
+                            .tr(),
+                        style: const TextStyle(color: AppColors.errorRed),
+                      )
+                    : _PharmacySubmissionFields(
+                        branches: items,
+                        branchId: _branchId,
+                        fulfillment: _fulfillment,
+                        onBranchChanged: (value) =>
+                            setState(() => _branchId = value),
+                        onFulfillmentChanged: (value) => setState(() {
+                          _fulfillment = value;
+                          _branchId = null;
+                        }),
+                      ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                if (_images.isEmpty) {
+                  _snack(
+                    context,
+                    'provider_dashboard.clinical_requests.image_required'.tr(),
+                  );
+                  return;
+                }
+                if (widget.collectPharmacySubmission && _branchId == null) {
+                  _snack(
+                    context,
+                    'provider_dashboard.clinical_requests.branch_required'.tr(),
+                  );
+                  return;
+                }
+                Navigator.pop(
+                  context,
+                  _PrescriptionDraft(
+                    images: _images,
+                    notes: _notes.text.trim().isEmpty
+                        ? null
+                        : _notes.text.trim(),
+                    pharmacySubmission: widget.collectPharmacySubmission
+                        ? _PharmacySubmission(
+                            branchId: _branchId!,
+                            fulfillment: _fulfillment,
+                          )
+                        : null,
+                  ),
+                );
+              },
+              child: Text(
+                (widget.collectPharmacySubmission
+                        ? 'provider_dashboard.clinical_requests.submit_and_send'
+                        : 'provider_dashboard.clinical_requests.submit')
+                    .tr(),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        _ClinicalImagePicker(onChanged: (images) => _images = images),
-        TextField(
-          controller: _notes,
-          maxLength: 500,
-          maxLines: 2,
-          decoration: InputDecoration(
-            labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        FilledButton(
-          onPressed: () {
-            if (_images.isEmpty) {
-              _snack(
-                context,
-                'provider_dashboard.clinical_requests.image_required'.tr(),
-              );
-              return;
-            }
-            Navigator.pop(context, {
-              'images': _images,
-              'notes': _notes.text.trim(),
-            });
-          },
-          child: Text('provider_dashboard.clinical_requests.submit'.tr()),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _ClinicalImagePicker extends StatefulWidget {
@@ -856,6 +1294,7 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
   String? _branchId;
   String _collectionType = 'VISIT';
   bool _saving = false;
+  String? _submitError;
   @override
   void dispose() {
     _notes.dispose();
@@ -865,105 +1304,176 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
   @override
   Widget build(BuildContext context) {
     final labs = ref.watch(labBranchesProvider);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        top: 18,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 18,
-      ),
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          Text(
-            'provider_dashboard.clinical_requests.create_lab'.tr(),
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-          ),
-          const SizedBox(height: 12),
-          labs.when(
-            data: (branches) {
-              final eligible = _collectionType == 'HOME_COLLECTION'
-                  ? branches.where((b) => b.homeCollectionCapable).toList()
-                  : branches;
-              return DropdownButtonFormField<String>(
-                initialValue: eligible.any((b) => b.id == _branchId)
-                    ? _branchId
-                    : null,
-                decoration: InputDecoration(
-                  labelText: 'provider_dashboard.clinical_requests.lab_branch'
-                      .tr(),
+    final canSubmit = !_saving && _branchId != null && _images.isNotEmpty;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.viewInsetsOf(context).bottom + 20,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.biotech_outlined,
+                  color: AppColors.tealAccent,
                 ),
-                items: eligible
-                    .map(
-                      (b) => DropdownMenuItem(
-                        value: b.id,
-                        child: Text(b.name, overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _branchId = value),
-              );
-            },
-            error: (_, _) => TextButton(
-              onPressed: () => ref.invalidate(labBranchesProvider),
-              child: Text('provider_dashboard.clinical_requests.retry'.tr()),
-            ),
-            loading: () => const LinearProgressIndicator(),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _collectionType,
-            decoration: InputDecoration(
-              labelText: 'provider_dashboard.clinical_requests.collection'.tr(),
-            ),
-            items: ['VISIT', 'HOME_COLLECTION']
-                .map(
-                  (v) => DropdownMenuItem(
-                    value: v,
-                    child: Text(
-                      v == 'VISIT'
-                          ? 'provider_dashboard.clinical_requests.branch_visit'
-                                .tr()
-                          : 'provider_dashboard.clinical_requests.home_collection'
-                                .tr(),
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  'provider_dashboard.clinical_requests.create_lab'.tr(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
                   ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() {
-              _collectionType = v ?? 'VISIT';
-              _branchId = null;
-            }),
-          ),
-          const SizedBox(height: 12),
-          _ClinicalImagePicker(onChanged: (images) => _images = images),
-          TextField(
-            controller: _notes,
-            maxLength: 500,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: _saving || _branchId == null || _images.isEmpty
-                ? null
-                : _submit,
-            child: _saving
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text('provider_dashboard.clinical_requests.submit'.tr()),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.tealBg,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+              ),
+              child: Text(
+                'provider_dashboard.clinical_requests.lab_form_hint'.tr(),
+                style: const TextStyle(color: AppColors.infoTealText),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'provider_dashboard.clinical_requests.collection'.tr(),
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _LabCollectionChoices(
+              collectionType: _collectionType,
+              onChanged: (value) => setState(() {
+                _collectionType = value;
+                _branchId = null;
+              }),
+            ),
+            if (_collectionType == 'HOME_COLLECTION') ...[
+              const SizedBox(height: 4),
+              Text(
+                'provider_dashboard.clinical_requests.home_collection_helper'
+                    .tr(),
+                style: const TextStyle(color: AppColors.mutedText2),
+              ),
+            ],
+            const SizedBox(height: 20),
+            labs.when(
+              data: (branches) => _LabBranchField(
+                branches: branches,
+                branchId: _branchId,
+                collectionType: _collectionType,
+                onChanged: (value) => setState(() => _branchId = value),
+              ),
+              error: (_, _) => _RetryPanel(
+                onRetry: () => ref.invalidate(labBranchesProvider),
+              ),
+              loading: () => const LinearProgressIndicator(),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'provider_dashboard.clinical_requests.lab_attachments_title'.tr(),
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'provider_dashboard.clinical_requests.lab_attachments_hint'.tr(),
+              style: const TextStyle(color: AppColors.mutedText2),
+            ),
+            const SizedBox(height: 8),
+            _ClinicalImagePicker(
+              onChanged: (images) => setState(() => _images = images),
+            ),
+            TextField(
+              controller: _notes,
+              maxLength: 500,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'provider_dashboard.clinical_requests.notes'.tr(),
+              ),
+            ),
+            if (_submitError != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warningAmberBg,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppColors.warningAmberBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.warningAmberText,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _submitError!,
+                        style: const TextStyle(
+                          color: AppColors.warningAmberText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            if (!canSubmit)
+              Text(
+                'provider_dashboard.clinical_requests.lab_submit_requirements'
+                    .tr(),
+                style: const TextStyle(color: AppColors.mutedText2),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: canSubmit ? _submit : null,
+                icon: _saving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_outlined),
+                label: Text('provider_dashboard.clinical_requests.submit'.tr()),
+              ),
+            ),
+            Center(
+              child: TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text('provider_dashboard.clinical_requests.cancel'.tr()),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Future<void> _submit() async {
-    setState(() => _saving = true);
+    if (_saving || _branchId == null || _images.isEmpty) return;
+    setState(() {
+      _saving = true;
+      _submitError = null;
+    });
     try {
       final uploaded = await ref
           .read(providerClinicalUseCasesProvider)
@@ -990,10 +1500,113 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
       if (mounted) Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
-        setState(() => _saving = false);
+        setState(() {
+          _saving = false;
+          _submitError = _requestFailureMessage(error);
+        });
         _snack(context, _requestFailureMessage(error));
       }
     }
+  }
+}
+
+class _LabCollectionChoices extends StatelessWidget {
+  const _LabCollectionChoices({
+    required this.collectionType,
+    required this.onChanged,
+  });
+
+  final String collectionType;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      for (final value in const ['VISIT', 'HOME_COLLECTION'])
+        Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          elevation: 0,
+          color: value == collectionType
+              ? AppColors.tealBg
+              : AppColors.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            side: BorderSide(
+              color: value == collectionType
+                  ? AppColors.tealAccent
+                  : AppColors.borderLight,
+            ),
+          ),
+          child: RadioListTile<String>(
+            value: value,
+            groupValue: collectionType,
+            contentPadding: const EdgeInsetsDirectional.fromSTEB(8, 4, 12, 4),
+            title: Text(
+              (value == 'VISIT'
+                      ? 'provider_dashboard.clinical_requests.branch_visit'
+                      : 'provider_dashboard.clinical_requests.home_collection')
+                  .tr(),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            onChanged: (selected) {
+              if (selected != null) onChanged(selected);
+            },
+          ),
+        ),
+    ],
+  );
+}
+
+class _LabBranchField extends StatelessWidget {
+  const _LabBranchField({
+    required this.branches,
+    required this.branchId,
+    required this.collectionType,
+    required this.onChanged,
+  });
+
+  final List<LabBranch> branches;
+  final String? branchId;
+  final String collectionType;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final eligibleBranches = collectionType == 'HOME_COLLECTION'
+        ? branches.where((branch) => branch.homeCollectionCapable).toList()
+        : branches;
+    final selectedBranchId = eligibleBranches.any(
+      (branch) => branch.id == branchId,
+    )
+        ? branchId
+        : null;
+    if (eligibleBranches.isEmpty) {
+      return Text(
+        'provider_dashboard.clinical_requests.no_lab_branches'.tr(),
+        style: const TextStyle(color: AppColors.errorRed),
+      );
+    }
+    return DropdownButtonFormField<String>(
+      initialValue: selectedBranchId,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'provider_dashboard.clinical_requests.lab_branch'.tr(),
+        helperText: 'provider_dashboard.clinical_requests.lab_branch_hint'
+            .tr(),
+      ),
+      items: eligibleBranches
+          .map(
+            (branch) => DropdownMenuItem<String>(
+              value: branch.id,
+              child: Text(
+                '${branch.name} — ${branch.address}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: onChanged,
+    );
   }
 }
 
@@ -1437,7 +2050,10 @@ void _snack(BuildContext context, String text, {bool success = false}) =>
 String _prescriptionTitle(ProviderPrescription prescription) {
   final names = prescription.items
       .map((item) => item.drugName)
-      .where((name) => name.isNotEmpty)
+      .where(
+        (name) =>
+            name.isNotEmpty && !name.trimLeft().startsWith('[DEV PLACEHOLDER]'),
+      )
       .join(', ');
   return names.isEmpty
       ? 'provider_dashboard.clinical_requests.prescription'.tr()

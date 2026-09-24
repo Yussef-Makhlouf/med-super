@@ -329,6 +329,12 @@ class _ProfileTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textDirection: keyboardType == TextInputType.phone
+          ? TextDirection.ltr
+          : null,
+      textAlign: keyboardType == TextInputType.phone
+          ? TextAlign.left
+          : TextAlign.start,
       textInputAction: textInputAction,
       readOnly: readOnly,
       validator: validator,

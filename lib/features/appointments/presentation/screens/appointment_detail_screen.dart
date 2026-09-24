@@ -292,6 +292,7 @@ class _DetailBody extends StatelessWidget {
                 _InfoRow(
                   icon: SolarIconsOutline.phone,
                   label: appt.clinicPhone,
+                  textDirection: TextDirection.ltr,
                 ),
               ],
             ],
@@ -379,10 +380,15 @@ class _DetailBody extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    this.textDirection,
+  });
 
   final IconData icon;
   final String label;
+  final TextDirection? textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +398,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
+          textDirection: textDirection,
           style: const TextStyle(fontSize: 14, color: AppPalette.ink),
         ),
       ],

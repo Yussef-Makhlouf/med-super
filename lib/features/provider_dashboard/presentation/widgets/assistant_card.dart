@@ -76,6 +76,8 @@ class AssistantCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     assistant.phone,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.mutedText2,

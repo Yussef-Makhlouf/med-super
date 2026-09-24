@@ -53,6 +53,36 @@ patient; it does not create one shared clinical record.
 Focused DTO/widget tests and static analysis passed on 2026-09-23. Live
 backend/device verification remains pending.
 
+## Pharmacy submission and quote visibility — 2026-09-24
+
+For doctors, the prescription form now gathers the pharmacy branch and
+fulfillment method together with the document. A pending assistant
+prescription uses the same sheet when the doctor approves it, so sign-off and
+queue submission are one user action while remaining two existing server
+writes. If queue submission fails after sign-off, the signed prescription is
+retained and can be sent again; the UI does not imply an atomic backend
+transaction that does not exist.
+
+The provider history now shows the pharmacy's server-returned fulfillment
+status, quoted total, pharmacist note, and a collection reminder. Pharmacy
+staff remain the only actor that can price or progress the pharmacy order;
+the provider view is intentionally read-only for those fields.
+
+The provider lab-request sheet now groups collection method, eligible lab
+branch, attachments, and notes in that order. Selecting home collection
+filters to branches that advertise that capability; it does not infer an
+address, price, or test catalogue that the backend does not provide.
+
+## Clinic delivery and OCR placeholder cleanup — 2026-09-24
+
+Legacy `[DEV PLACEHOLDER]` item names are hidden in provider prescription
+cards; when the no-op OCR service has no vendor configured, new uploads retain
+the prescription image without fabricating medication rows. Clinic fulfillment
+is labeled as delivery to the clinic and, like home delivery, requires a
+delivery-capable pharmacy branch and follows the delivery-in-progress status.
+The backend still has no courier integration or persisted clinic destination,
+so it cannot route a courier to a specific clinic address yet.
+
 ## Visit-status verification: 2026-09-18
 
 ### Scheduling guard update: 2026-09-18
