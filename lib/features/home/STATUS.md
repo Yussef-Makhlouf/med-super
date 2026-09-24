@@ -15,3 +15,12 @@ App shell and tab navigation otherwise. The `appointments` screen here is now
 wired to the real Phase 4 flow (see `lib/features/appointments/`, not this
 folder); the `orders` tab is real (pharmacy + lab lists). The `notifications`
 tab is wired to `lib/features/notifications/` (`GET/PATCH /v1/notifications`).
+
+**Visual refresh (2026-09-24):** the patient home now leads with doctor search,
+appointments, prescription upload, and wallet actions. All four quick actions
+now use coordinated local illustrations; the two new compact assets are
+transparent and optimized for card display. Their artwork is decorative and
+excluded from semantics so screen readers announce each action once. The care
+illustration is bundled locally; specialties and featured doctors still use
+the same real providers and search card. No new API fields or sample health
+data were added.

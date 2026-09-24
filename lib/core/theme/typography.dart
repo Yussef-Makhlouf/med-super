@@ -21,15 +21,14 @@ TextTheme buildTextTheme({Brightness brightness = Brightness.light}) {
     FontWeight fontWeight, {
     double? letterSpacing,
     double? height,
-  }) =>
-      (role ?? const TextStyle()).merge(
-        TextStyle(
-          fontSize: fontSize,
-          fontWeight: fontWeight,
-          letterSpacing: letterSpacing,
-          height: height,
-        ),
-      );
+  }) => (role ?? const TextStyle()).merge(
+    TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      letterSpacing: letterSpacing,
+      height: height,
+    ),
+  );
 
   return withFamily.copyWith(
     displayLarge: scale(
@@ -80,30 +79,20 @@ TextTheme buildTextTheme({Brightness brightness = Brightness.light}) {
       FontWeight.w700,
       height: 1.35,
     ),
-    titleSmall: scale(
-      withFamily.titleSmall,
-      14,
-      FontWeight.w600,
-      height: 1.35,
-    ),
+    titleSmall: scale(withFamily.titleSmall, 14, FontWeight.w600, height: 1.35),
     bodyLarge: scale(withFamily.bodyLarge, 16, FontWeight.w400, height: 1.5),
     bodyMedium: scale(withFamily.bodyMedium, 14, FontWeight.w400, height: 1.5),
-    bodySmall: scale(
-      withFamily.bodySmall,
-      12,
-      FontWeight.w400,
-      height: 1.45,
-    ),
+    bodySmall: scale(withFamily.bodySmall, 13, FontWeight.w400, height: 1.45),
     labelLarge: scale(withFamily.labelLarge, 14, FontWeight.w600, height: 1.3),
     labelMedium: scale(
       withFamily.labelMedium,
-      12,
+      13,
       FontWeight.w700,
       height: 1.3,
     ),
     labelSmall: scale(
       withFamily.labelSmall,
-      11,
+      12,
       FontWeight.w700,
       letterSpacing: 0.2,
       height: 1.3,

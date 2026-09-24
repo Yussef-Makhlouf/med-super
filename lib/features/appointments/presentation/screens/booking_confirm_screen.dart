@@ -12,7 +12,6 @@ import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/payments/domain/payment_amount.dart';
 import 'package:med_super/core/payments/presentation/widgets/payment_customer_sheet.dart';
-import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
@@ -209,8 +208,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       _amountError = null;
     });
     if (method != AppointmentPaymentMethod.wallet || !_partialAllowed) return;
-    final available =
-        ref.read(walletBalanceProvider).asData?.value.availableBalance;
+    final available = ref
+        .read(walletBalanceProvider)
+        .asData
+        ?.value
+        .availableBalance;
     if (available == null || available >= widget.request.consultationFee) {
       return;
     }
@@ -231,9 +233,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     }
     final parsed = PaymentAmount.tryParse(_amountController.text);
     if (parsed == null) {
-      setState(
-        () => _amountError = 'appointments.payment_amount_invalid'.tr(),
-      );
+      setState(() => _amountError = 'appointments.payment_amount_invalid'.tr());
       return false;
     }
     final amount = num.parse(parsed);
@@ -257,12 +257,16 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       return false;
     }
     if (_method == AppointmentPaymentMethod.wallet) {
-      final available =
-          ref.read(walletBalanceProvider).asData?.value.availableBalance;
+      final available = ref
+          .read(walletBalanceProvider)
+          .asData
+          ?.value
+          .availableBalance;
       if (available != null && amount > available) {
         setState(
-          () => _amountError = 'appointments.wallet_insufficient_for_amount'
-              .tr(namedArgs: {'balance': available.toStringAsFixed(2)}),
+          () => _amountError = 'appointments.wallet_insufficient_for_amount'.tr(
+            namedArgs: {'balance': available.toStringAsFixed(2)},
+          ),
         );
         return false;
       }
@@ -299,9 +303,9 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
         _stage = _Stage.held;
         _failure = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(failureMessage(failure))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failureMessage(failure))));
       return;
     }
     final message = switch (failure) {
@@ -665,7 +669,7 @@ class _PaymentMethodPicker extends ConsumerWidget {
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.ink900,
+            color: AppPalette.ink,
           ),
         ),
         const SizedBox(height: 10),
@@ -688,9 +692,10 @@ class _PaymentMethodPicker extends ConsumerWidget {
           subtitle: switch (available) {
             null => 'appointments.wallet_balance_unavailable'.tr(),
             final b when b <= 0 => 'appointments.wallet_empty'.tr(),
-            final b when b < walletFloor => 'appointments.wallet_insufficient'.tr(
-              namedArgs: {'balance': b.toStringAsFixed(2)},
-            ),
+            final b when b < walletFloor =>
+              'appointments.wallet_insufficient'.tr(
+                namedArgs: {'balance': b.toStringAsFixed(2)},
+              ),
             final b when b < fee => 'appointments.wallet_partial_ok'.tr(
               namedArgs: {'balance': b.toStringAsFixed(2)},
             ),
@@ -740,7 +745,9 @@ class _MethodTile extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: Material(
-        color: isSelected ? AppColors.patientPrimary.withValues(alpha: 0.06) : Colors.white,
+        color: isSelected
+            ? AppPalette.primary.withValues(alpha: 0.06)
+            : Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.md),
         child: InkWell(
           onTap: enabled ? () => onChanged(method) : null,
@@ -750,15 +757,13 @@ class _MethodTile extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.md),
               border: Border.all(
-                color: isSelected
-                    ? AppColors.patientPrimary
-                    : AppColors.borderLight,
+                color: isSelected ? AppPalette.primary : AppPalette.border,
                 width: isSelected ? 2 : 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, size: 22, color: AppColors.patientPrimary),
+                Icon(icon, size: 22, color: AppPalette.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -769,7 +774,7 @@ class _MethodTile extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.ink900,
+                          color: AppPalette.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -777,7 +782,7 @@ class _MethodTile extends StatelessWidget {
                         subtitle,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: AppColors.mutedText2,
+                          color: AppPalette.inkMuted,
                         ),
                       ),
                     ],
@@ -786,7 +791,7 @@ class _MethodTile extends StatelessWidget {
                 Radio<AppointmentPaymentMethod>(
                   value: method,
                   groupValue: selected,
-                  activeColor: AppColors.patientPrimary,
+                  activeColor: AppPalette.primary,
                   onChanged: enabled
                       ? (value) {
                           if (value != null) onChanged(value);
@@ -839,13 +844,13 @@ class _PaymentAmountField extends StatelessWidget {
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.ink900,
+            color: AppPalette.ink,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           'appointments.payment_amount_hint'.tr(namedArgs: {'min': minLabel}),
-          style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+          style: const TextStyle(fontSize: 12, color: AppPalette.inkMuted),
         ),
         const SizedBox(height: 10),
         AppTextField(
@@ -871,7 +876,7 @@ class _PaymentAmountField extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.mutedText2,
+                  color: AppPalette.inkMuted,
                 ),
               ),
             ),

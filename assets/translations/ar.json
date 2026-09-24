@@ -18,6 +18,7 @@
     "coming_soon": "قريباً",
     "or": "أو",
     "view_all": "عرض الكل",
+    "back": "رجوع",
     "edit": "تعديل",
     "delete": "حذف",
     "cancel": "إلغاء"
@@ -46,6 +47,8 @@
     "role_flavor_mismatch": "هذا الدور لا يتوافق مع هذا التطبيق. استخدم تطبيق المريض أو مزود الخدمة.",
     "password_label": "كلمة المرور",
     "password_hint": "أدخل كلمة المرور الخاصة بك",
+    "show_password": "إظهار كلمة المرور",
+    "hide_password": "إخفاء كلمة المرور",
     "confirm_password_label": "تأكيد كلمة المرور",
     "confirm_password_hint": "أعد إدخال كلمة المرور",
     "password_required": "كلمة المرور مطلوبة",
@@ -119,9 +122,19 @@
     "provider_patients": "المرضى",
     "provider_profile": "الملف الشخصي"
   },
+  "splash": {
+    "tagline": "رعاية مترابطة.",
+    "accessibility": "ميدسوبر. رعاية مترابطة."
+  },
   "home": {
     "welcome": "أهلاً بك،",
     "search_hint": "ابحث عن أطباء، تخصصات، صيدليات...",
+    "care_title": "رعايتك أصبحت أسهل.",
+    "care_subtitle": "ابحث عن الرعاية وتابع خطوتك القادمة.",
+    "care_illustration_semantics": "تقويم ورمز للرعاية وعبوة دواء",
+    "find_doctor": "ابحث عن طبيب",
+    "find_doctor_sub": "ابحث بالاسم أو التخصص",
+    "appointments_sub": "راجع مواعيدك وأدر حجوزاتك",
     "special_offer": "عرض خاص",
     "promo_title": "خصم 30% على جميع تحاليل الشاملة",
     "promo_subtitle": "يسري العرض حتى نهاية شهر أكتوبر",

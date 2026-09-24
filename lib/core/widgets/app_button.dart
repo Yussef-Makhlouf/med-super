@@ -83,20 +83,42 @@ class AppButton extends StatelessWidget {
   final double? borderRadius;
   final bool fullWidth;
 
-  Widget get _child => isLoading
-      ? const SizedBox(
+  TextStyle _labelStyle(BuildContext context) =>
+      Theme.of(context).textTheme.labelLarge!.copyWith(
+        fontSize: _variant == _AppButtonVariant.text ? 15 : 16,
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+      );
+
+  Widget _child(BuildContext context) => isLoading
+      ? SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: switch (_variant) {
+              _AppButtonVariant.filled =>
+                foregroundColor ??
+                    (backgroundColor == null
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Colors.white),
+              _AppButtonVariant.outlined || _AppButtonVariant.text =>
+                foregroundColor ?? Theme.of(context).colorScheme.primary,
+            },
+          ),
         )
       : (icon != null
             ? Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [icon!, const SizedBox(width: 8), Text(label)],
+                children: [
+                  icon!,
+                  const SizedBox(width: 8),
+                  Text(label, style: _labelStyle(context)),
+                ],
               )
-            : Text(label));
+            : Text(label, style: _labelStyle(context)));
 
-  Size? get _minimumSize => fullWidth ? const Size(double.infinity, 52) : null;
+  Size? get _minimumSize => fullWidth ? const Size(double.infinity, 56) : null;
 
   ButtonStyle? get _filledStyle =>
       (backgroundColor == null &&
@@ -142,13 +164,16 @@ class AppButton extends StatelessWidget {
     _AppButtonVariant.filled => ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: _filledStyle,
-      child: _child,
+      child: _child(context),
     ),
     _AppButtonVariant.outlined => OutlinedButton(
       onPressed: isLoading ? null : onPressed,
       style: _outlinedStyle,
-      child: _child,
+      child: _child(context),
     ),
-    _AppButtonVariant.text => TextButton(onPressed: onPressed, child: _child),
+    _AppButtonVariant.text => TextButton(
+      onPressed: onPressed,
+      child: _child(context),
+    ),
   };
 }

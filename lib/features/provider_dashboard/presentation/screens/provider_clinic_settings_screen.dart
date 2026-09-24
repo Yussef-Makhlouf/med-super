@@ -69,13 +69,17 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
         );
         ref.invalidate(myClinicsProvider);
       },
-      err: (failure) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(providerFailureMessage(failure))),
-      ),
+      err: (failure) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(providerFailureMessage(failure)))),
     );
   }
 
-  void _openBranch(BuildContext context, DoctorClinic clinic, {required bool isAssistant}) {
+  void _openBranch(
+    BuildContext context,
+    DoctorClinic clinic, {
+    required bool isAssistant,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -92,7 +96,9 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _ClinicBranchEditSheet(clinic: clinic, isAssistant: isAssistant),
       ),
     );
@@ -123,7 +129,8 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
         title: Text(
           async.maybeWhen(
             data: (clinics) {
-              if (clinics.isEmpty) return 'provider_dashboard.clinics.title'.tr();
+              if (clinics.isEmpty)
+                return 'provider_dashboard.clinics.title'.tr();
               final distinctClinicIds = clinics.map((c) => c.clinicId).toSet();
               return distinctClinicIds.length == 1
                   ? clinics.first.clinicName
@@ -166,11 +173,14 @@ class ProviderClinicSettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               itemCount: clinics.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) =>
-                  _ClinicBranchListTile(
-                    clinic: clinics[index],
-                    onTap: () => _openBranch(context, clinics[index], isAssistant: isAssistant),
-                  ),
+              itemBuilder: (context, index) => _ClinicBranchListTile(
+                clinic: clinics[index],
+                onTap: () => _openBranch(
+                  context,
+                  clinics[index],
+                  isAssistant: isAssistant,
+                ),
+              ),
             ),
           );
         },
@@ -197,7 +207,10 @@ class _ClinicBranchListTile extends StatelessWidget {
         'provider_dashboard.clinics.affiliation_active'.tr(),
         const Color(0xFF10B981),
       ),
-      _ => ('provider_dashboard.clinics.affiliation_paused'.tr(), Colors.orange),
+      _ => (
+        'provider_dashboard.clinics.affiliation_paused'.tr(),
+        Colors.orange,
+      ),
     };
 
     return Material(
@@ -230,7 +243,10 @@ class _ClinicBranchListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       clinic.address.line1,
-                      style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText2,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -239,7 +255,10 @@ class _ClinicBranchListTile extends StatelessWidget {
               const SizedBox(width: 8),
               AppBadge.soft(label: label, color: color),
               const SizedBox(width: 4),
-              Icon(AppNavIcons.chevronForward(context), color: AppColors.mutedText2),
+              Icon(
+                AppNavIcons.chevronForward(context),
+                color: AppColors.mutedText2,
+              ),
             ],
           ),
         ),
@@ -252,7 +271,10 @@ class _ClinicBranchListTile extends StatelessWidget {
 /// [_ClinicBranchListTile]. Save stays disabled until a field actually
 /// changes, so a tap-in-tap-out never fires a needless request.
 class _ClinicBranchEditSheet extends ConsumerStatefulWidget {
-  const _ClinicBranchEditSheet({required this.clinic, required this.isAssistant});
+  const _ClinicBranchEditSheet({
+    required this.clinic,
+    required this.isAssistant,
+  });
 
   final DoctorClinic clinic;
 
@@ -269,7 +291,8 @@ class _ClinicBranchEditSheet extends ConsumerStatefulWidget {
       _ClinicBranchEditSheetState();
 }
 
-class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> {
+class _ClinicBranchEditSheetState
+    extends ConsumerState<_ClinicBranchEditSheet> {
   late final TextEditingController _phone;
   late final TextEditingController _timezone;
   late final TextEditingController _line1;
@@ -283,7 +306,9 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
   @override
   void initState() {
     super.initState();
-    _phone = TextEditingController(text: _toLocalEgyptPhone(widget.clinic.phone));
+    _phone = TextEditingController(
+      text: _toLocalEgyptPhone(widget.clinic.phone),
+    );
     _timezone = TextEditingController(text: widget.clinic.ianaTimezone);
     _line1 = TextEditingController(text: widget.clinic.address.line1);
     _city = TextEditingController(text: widget.clinic.address.city);
@@ -374,10 +399,13 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
             addressLine1: changed['line1'],
             addressCity: changed['city'],
           );
-      result.when(ok: (_) {}, err: (failure) {
-        ok = false;
-        lastFailure = failure;
-      });
+      result.when(
+        ok: (_) {},
+        err: (failure) {
+          ok = false;
+          lastFailure = failure;
+        },
+      );
     }
 
     if (ok && changedFee != null) {
@@ -385,14 +413,16 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
           .read(setMyAffiliationActiveUseCaseProvider)
           .call(
             affiliationId: widget.clinic.affiliationId,
-            active:
-                widget.clinic.affiliationStatus == AffiliationStatus.active,
+            active: widget.clinic.affiliationStatus == AffiliationStatus.active,
             consultFee: changedFee,
           );
-      result.when(ok: (_) {}, err: (failure) {
-        ok = false;
-        lastFailure = failure;
-      });
+      result.when(
+        ok: (_) {},
+        err: (failure) {
+          ok = false;
+          lastFailure = failure;
+        },
+      );
     }
 
     if (!mounted) return;
@@ -525,7 +555,10 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                           clinic.displayTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: AppColors.mutedText2),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.mutedText2,
+                          ),
                         ),
                       ],
                     ),
@@ -593,7 +626,9 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                       controller: _consultFee,
                       label:
                           '${'provider_dashboard.clinics.consult_fee'.tr()} (${clinic.currency})',
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       textDirection: ui.TextDirection.ltr,
                       textAlign: TextAlign.left,
                       // Consult fee is doctor-only (commercial term of the
@@ -603,9 +638,12 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                       validator: widget.isAssistant
                           ? null
                           : (value) {
-                              final parsed = double.tryParse((value ?? '').trim());
+                              final parsed = double.tryParse(
+                                (value ?? '').trim(),
+                              );
                               if (parsed == null || parsed <= 0) {
-                                return 'provider_dashboard.clinics.consult_fee'.tr();
+                                return 'provider_dashboard.clinics.consult_fee'
+                                    .tr();
                               }
                               return null;
                             },
@@ -616,7 +654,10 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
               const SizedBox(height: 8),
               Text(
                 'provider_dashboard.clinics.verification_admin_note'.tr(),
-                style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.mutedText2,
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -644,7 +685,9 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                               )
                             : Text(
                                 'provider_dashboard.clinics.save'.tr(),
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                       ),
                     ),
@@ -677,7 +720,7 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
-                  height: 46,
+                  height: 52,
                   child: OutlinedButton.icon(
                     onPressed: _saving ? null : _delete,
                     style: OutlinedButton.styleFrom(
@@ -719,7 +762,11 @@ class _ClinicBranchEditSheetState extends ConsumerState<_ClinicBranchEditSheet> 
     ),
     child: Row(
       children: [
-        const Icon(SolarIconsOutline.infoCircle, size: 16, color: Colors.orange),
+        const Icon(
+          SolarIconsOutline.infoCircle,
+          size: 16,
+          color: Colors.orange,
+        ),
         const SizedBox(width: 8),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 12))),
       ],

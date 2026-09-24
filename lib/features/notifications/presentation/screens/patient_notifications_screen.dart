@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
@@ -40,7 +40,7 @@ class PatientNotificationsScreen extends ConsumerWidget {
     final listAsync = ref.watch(notificationListControllerProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppPalette.paper,
       body: SafeArea(
         child: Column(
           children: [
@@ -90,9 +90,11 @@ class PatientNotificationsScreen extends ConsumerWidget {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: InkWell(
-                              onTap: () =>
-                                  _onTap(context, ref, notification),
-                              borderRadius: BorderRadius.circular(14),
+                              onTap: () => _onTap(context, ref, notification),
+                              borderRadius: BorderRadius.circular(16),
+                              splashColor: AppPalette.primary.withValues(
+                                alpha: 0.06,
+                              ),
                               child: NotificationCard(
                                 notification: notification,
                               ),
@@ -128,9 +130,7 @@ class PatientNotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Map<String, List<AppNotification>> _groupByDay(
-    List<AppNotification> items,
-  ) {
+  Map<String, List<AppNotification>> _groupByDay(List<AppNotification> items) {
     final now = DateTime.now();
     final today = <AppNotification>[];
     final yesterday = <AppNotification>[];
@@ -170,9 +170,6 @@ class _NotifHeader extends StatelessWidget {
 
   final String displayName;
 
-  static const _ink = Color(0xFF1A2B4A);
-  static const _muted = Color(0xFF8A94A6);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -182,8 +179,8 @@ class _NotifHeader extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: brandBlue,
-            borderRadius: BorderRadius.circular(12),
+            color: AppPalette.primary,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: const Icon(Icons.notifications, color: Colors.white, size: 20),
         ),
@@ -193,12 +190,12 @@ class _NotifHeader extends StatelessWidget {
           children: [
             Text(
               'home.welcome'.tr(),
-              style: textTheme.bodyMedium?.copyWith(color: _muted),
+              style: textTheme.bodyMedium?.copyWith(color: AppPalette.inkMuted),
             ),
             Text(
               displayName,
               style: textTheme.titleMedium?.copyWith(
-                color: _ink,
+                color: AppPalette.ink,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -216,8 +213,6 @@ class _TitleRow extends StatelessWidget {
   final bool hasUnread;
   final VoidCallback onMarkAllRead;
 
-  static const _ink = Color(0xFF1A2B4A);
-
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -226,7 +221,7 @@ class _TitleRow extends StatelessWidget {
         Text(
           'notifications.title'.tr(),
           style: textTheme.headlineSmall?.copyWith(
-            color: _ink,
+            color: AppPalette.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -235,15 +230,13 @@ class _TitleRow extends StatelessWidget {
           TextButton(
             onPressed: onMarkAllRead,
             style: TextButton.styleFrom(
-              foregroundColor: brandBlue,
+              foregroundColor: AppPalette.primary,
               padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(
               'notifications.mark_all_read'.tr(),
               style: textTheme.bodySmall?.copyWith(
-                color: brandBlue,
+                color: AppPalette.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -265,7 +258,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: const Color(0xFF1A2B4A),
+          color: AppPalette.ink,
           fontWeight: FontWeight.w700,
         ),
       ),

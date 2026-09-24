@@ -18,6 +18,7 @@
     "coming_soon": "Coming soon",
     "or": "or",
     "view_all": "View all",
+    "back": "Back",
     "edit": "Edit",
     "delete": "Delete",
     "cancel": "Cancel"
@@ -46,6 +47,8 @@
     "role_flavor_mismatch": "This role doesn't match this app. Use the patient or provider app.",
     "password_label": "Password",
     "password_hint": "Enter a strong password",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
     "confirm_password_label": "Confirm password",
     "confirm_password_hint": "Re-enter your password",
     "password_required": "Password is required",
@@ -119,9 +122,19 @@
     "provider_patients": "Patients",
     "provider_profile": "Profile"
   },
+  "splash": {
+    "tagline": "Care, connected.",
+    "accessibility": "MedSuper. Care, connected."
+  },
   "home": {
     "welcome": "Welcome,",
     "search_hint": "Search doctors, specialties, pharmacies...",
+    "care_title": "Care, made easier.",
+    "care_subtitle": "Find care and keep your next step in view.",
+    "care_illustration_semantics": "A calendar, care symbol, and medicine capsule",
+    "find_doctor": "Find a doctor",
+    "find_doctor_sub": "Search by specialty or name",
+    "appointments_sub": "Review visits and manage bookings",
     "special_offer": "Special offer",
     "promo_title": "30% off all comprehensive labs",
     "promo_subtitle": "Offer valid until end of October",

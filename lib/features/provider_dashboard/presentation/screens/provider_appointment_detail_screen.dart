@@ -34,7 +34,8 @@ Future<bool?> showProviderAppointmentDetailSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => ProviderAppointmentDetailScreen(appointmentId: appointmentId),
+    builder: (_) =>
+        ProviderAppointmentDetailScreen(appointmentId: appointmentId),
   );
 }
 
@@ -86,7 +87,10 @@ class _ProviderAppointmentDetailScreenState
       appointment,
       DateTime.now(),
     );
-    if (_mutating || next == null || availability != DoctorAppointmentVisitActionAvailability.available) return;
+    if (_mutating ||
+        next == null ||
+        availability != DoctorAppointmentVisitActionAvailability.available)
+      return;
 
     setState(() => _mutating = true);
     final result = await ref
@@ -106,7 +110,10 @@ class _ProviderAppointmentDetailScreenState
           _visitOverride = updated;
         });
         ref.invalidate(doctorAppointmentsProvider);
-        _showSnack('provider_dashboard.visit_status.updated'.tr(), success: true);
+        _showSnack(
+          'provider_dashboard.visit_status.updated'.tr(),
+          success: true,
+        );
       },
       err: (failure) {
         setState(() => _mutating = false);
@@ -246,10 +253,8 @@ class _ProviderAppointmentDetailScreenState
             child: AsyncValueView<DoctorAppointment>(
               value: async,
               onRetry: _refresh,
-              data: (appointment) => _body(
-                _visitOverride ?? appointment,
-                scrollController,
-              ),
+              data: (appointment) =>
+                  _body(_visitOverride ?? appointment, scrollController),
             ),
           ),
         ],
@@ -257,7 +262,10 @@ class _ProviderAppointmentDetailScreenState
     );
   }
 
-  Widget _body(DoctorAppointment appointment, ScrollController scrollController) {
+  Widget _body(
+    DoctorAppointment appointment,
+    ScrollController scrollController,
+  ) {
     final status = doctorAppointmentStatusStyle(appointment.status);
 
     return ListView(
@@ -393,14 +401,22 @@ class _ProviderAppointmentDetailScreenState
       appointment,
       DateTime.now(),
     );
-    final completed = availability == DoctorAppointmentVisitActionAvailability.terminal;
-    final enabled = availability == DoctorAppointmentVisitActionAvailability.available && !_mutating;
+    final completed =
+        availability == DoctorAppointmentVisitActionAvailability.terminal;
+    final enabled =
+        availability == DoctorAppointmentVisitActionAvailability.available &&
+        !_mutating;
     final hint = switch (availability) {
-      DoctorAppointmentVisitActionAvailability.available => 'provider_dashboard.visit_status.next_hint'.tr(),
-      DoctorAppointmentVisitActionAvailability.tooEarly => 'provider_dashboard.visit_status.available_near_time'.tr(),
-      DoctorAppointmentVisitActionAvailability.outsideWindow => 'provider_dashboard.visit_status.outside_window'.tr(),
-      DoctorAppointmentVisitActionAvailability.terminal => 'provider_dashboard.visit_status.complete_hint'.tr(),
-      DoctorAppointmentVisitActionAvailability.unavailable => 'provider_dashboard.visit_status.unavailable'.tr(),
+      DoctorAppointmentVisitActionAvailability.available =>
+        'provider_dashboard.visit_status.next_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.tooEarly =>
+        'provider_dashboard.visit_status.available_near_time'.tr(),
+      DoctorAppointmentVisitActionAvailability.outsideWindow =>
+        'provider_dashboard.visit_status.outside_window'.tr(),
+      DoctorAppointmentVisitActionAvailability.terminal =>
+        'provider_dashboard.visit_status.complete_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.unavailable =>
+        'provider_dashboard.visit_status.unavailable'.tr(),
     };
 
     return AnimatedContainer(
@@ -436,40 +452,46 @@ class _ProviderAppointmentDetailScreenState
             ),
           ),
           const SizedBox(height: 14),
-          if (availability == DoctorAppointmentVisitActionAvailability.available || completed) SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: FilledButton.icon(
-              onPressed: enabled ? () => _advanceVisitStatus(appointment) : null,
-              icon: _mutating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      completed
-                          ? SolarIconsBold.checkCircle
-                          : doctorVisitStatusStyle(next!).icon,
-                    ),
-              label: Text(
-                completed
-                    ? 'provider_dashboard.visit_status.complete'.tr()
-                    : next == DoctorVisitStatus.inDoctorRoom
-                    ? 'provider_dashboard.visit_status.action_in_doctor_room'.tr()
-                    : 'provider_dashboard.visit_status.action_left'.tr(),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: visual.color,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: visual.color.withValues(alpha: 0.12),
-                disabledForegroundColor: visual.color,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+          if (availability ==
+                  DoctorAppointmentVisitActionAvailability.available ||
+              completed)
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton.icon(
+                onPressed: enabled
+                    ? () => _advanceVisitStatus(appointment)
+                    : null,
+                icon: _mutating
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        completed
+                            ? SolarIconsBold.checkCircle
+                            : doctorVisitStatusStyle(next!).icon,
+                      ),
+                label: Text(
+                  completed
+                      ? 'provider_dashboard.visit_status.complete'.tr()
+                      : next == DoctorVisitStatus.inDoctorRoom
+                      ? 'provider_dashboard.visit_status.action_in_doctor_room'
+                            .tr()
+                      : 'provider_dashboard.visit_status.action_left'.tr(),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: visual.color,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: visual.color.withValues(alpha: 0.12),
+                  disabledForegroundColor: visual.color,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -548,7 +570,8 @@ class _ProviderAppointmentDetailScreenState
   }
 
   String _paymentMethodLabel(String method) => switch (method) {
-    'PAY_AT_CLINIC' => 'provider_dashboard.appointments.method_pay_at_clinic'.tr(),
+    'PAY_AT_CLINIC' =>
+      'provider_dashboard.appointments.method_pay_at_clinic'.tr(),
     'INTERNAL_WALLET' =>
       'provider_dashboard.appointments.method_internal_wallet'.tr(),
     'FAWRY' => 'provider_dashboard.appointments.method_fawry'.tr(),
@@ -565,7 +588,10 @@ class _ProviderAppointmentDetailScreenState
       borderRadius: BorderRadius.circular(AppRadii.lg),
       boxShadow: AppShadows.resting,
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
   );
 
   Widget _row(

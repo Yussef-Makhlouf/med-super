@@ -201,7 +201,10 @@ class ProviderAppointmentCard extends StatelessWidget {
                   if (appointment.status == DoctorAppointmentStatus.confirmed)
                     DoctorVisitStatusBadge(status: appointment.visitStatus)
                   else
-                    AppBadge.soft(label: lifecycleStatus.label, color: lifecycleStatus.color),
+                    AppBadge.soft(
+                      label: lifecycleStatus.label,
+                      color: lifecycleStatus.color,
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -233,7 +236,7 @@ class ProviderAppointmentCard extends StatelessWidget {
                     if (onReschedule != null)
                       Expanded(
                         child: SizedBox(
-                          height: 48,
+                          height: 52,
                           child: ElevatedButton(
                             onPressed: busy ? null : onReschedule,
                             style: ElevatedButton.styleFrom(
@@ -256,13 +259,15 @@ class ProviderAppointmentCard extends StatelessWidget {
                     if (onCancel != null)
                       Expanded(
                         child: SizedBox(
-                          height: 48,
+                          height: 52,
                           child: OutlinedButton(
                             onPressed: busy ? null : onCancel,
                             style: OutlinedButton.styleFrom(
                               backgroundColor: AppColors.surfaceApp,
                               foregroundColor: AppColors.errorRed,
-                              side: const BorderSide(color: AppColors.borderLight),
+                              side: const BorderSide(
+                                color: AppColors.borderLight,
+                              ),
                               shape: const StadiumBorder(),
                             ),
                             child: Text(

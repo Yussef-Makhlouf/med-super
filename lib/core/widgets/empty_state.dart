@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -26,7 +27,7 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 64, color: colorScheme.outlineVariant),
+              Icon(icon, size: 60, color: colorScheme.onSurfaceVariant),
               const SizedBox(height: 16),
             ],
             Text(
@@ -41,7 +42,7 @@ class EmptyState extends StatelessWidget {
               Text(
                 subtitle!,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.outlineVariant,
+                  color: AppPalette.inkMuted,
                 ),
                 textAlign: TextAlign.center,
               ),

@@ -1,8 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:med_super/core/theme/app_colors.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 import '../controllers/wallet_providers.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/quick_action_tile.dart';
@@ -12,6 +11,7 @@ import 'wallet_add_balance_screen.dart';
 import 'wallet_pay_bills_screen.dart';
 import 'wallet_transaction_detail_screen.dart';
 import 'wallet_transaction_history_screen.dart';
+
 // import 'wallet_transfer_screen.dart'; // Unused while "تحويل" is commented out below.
 
 class WalletDashboardScreen extends ConsumerWidget {
@@ -24,14 +24,18 @@ class WalletDashboardScreen extends ConsumerWidget {
     final balanceAsync = ref.watch(walletBalanceProvider);
     final transactionsAsync = ref.watch(walletTransactionsProvider);
 
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppPalette.paper,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppPalette.paper,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.ink900, size: 20),
+          tooltip: 'common.back'.tr(),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppPalette.ink,
+            size: 20,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -51,7 +55,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 24,
-                  color: AppColors.ink900,
+                  color: AppPalette.ink,
                 ),
               ),
               const SizedBox(height: 6),
@@ -59,7 +63,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                 'wallet.dashboard_subtitle'.tr(),
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppColors.mutedText2,
+                  color: AppPalette.inkMuted,
                 ),
               ),
               const SizedBox(height: 20),
@@ -99,9 +103,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: Center(
-                    child: Text('common.error'.tr()),
-                  ),
+                  child: Center(child: Text('common.error'.tr())),
                 ),
               ),
               const SizedBox(height: 24),
@@ -132,13 +134,14 @@ class WalletDashboardScreen extends ConsumerWidget {
                   Expanded(
                     child: WalletQuickActionTile(
                       icon: Icons.history,
-                      iconBg: const Color(0xFFF0FDF4),
-                      iconColor: const Color(0xFF16A34A),
+                      iconBg: AppPalette.successSoft,
+                      iconColor: AppPalette.success,
                       title: 'wallet.transaction_history'.tr(),
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const WalletTransactionHistoryScreen(),
+                            builder: (_) =>
+                                const WalletTransactionHistoryScreen(),
                           ),
                         );
                       },
@@ -148,8 +151,8 @@ class WalletDashboardScreen extends ConsumerWidget {
                   Expanded(
                     child: WalletQuickActionTile(
                       icon: Icons.event_note_outlined,
-                      iconBg: const Color(0xFFEFF6FF),
-                      iconColor: brandBlue,
+                      iconBg: AppPalette.primarySoft,
+                      iconColor: AppPalette.primary,
                       title: 'wallet.pay_bills'.tr(),
                       onTap: () {
                         Navigator.of(context).push(
@@ -171,14 +174,15 @@ class WalletDashboardScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: AppColors.ink900,
+                      color: AppPalette.ink,
                     ),
                   ),
                   TextButton(
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const WalletTransactionHistoryScreen(),
+                          builder: (_) =>
+                              const WalletTransactionHistoryScreen(),
                         ),
                       );
                     },
@@ -195,7 +199,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Text(
                           'wallet.no_transactions'.tr(),
-                          style: const TextStyle(color: AppColors.mutedText2),
+                          style: const TextStyle(color: AppPalette.inkMuted),
                         ),
                       ),
                     );
@@ -228,9 +232,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                error: (err, _) => Center(
-                  child: Text('common.error'.tr()),
-                ),
+                error: (err, _) => Center(child: Text('common.error'.tr())),
               ),
             ],
           ),

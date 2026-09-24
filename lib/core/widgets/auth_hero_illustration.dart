@@ -11,12 +11,14 @@ class AuthBlobHeroIllustration extends StatelessWidget {
     required this.icon,
     this.tileSize = 120,
     this.iconSize = 64,
+    this.child,
     super.key,
   });
 
   final IconData icon;
   final double tileSize;
   final double iconSize;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +60,7 @@ class AuthBlobHeroIllustration extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: iconSize),
+            child: child ?? Icon(icon, color: Colors.white, size: iconSize),
           ),
         ],
       ),

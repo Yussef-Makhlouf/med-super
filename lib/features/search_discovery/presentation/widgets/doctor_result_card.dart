@@ -65,6 +65,7 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppPalette.border),
         boxShadow: AppShadows.resting,
       ),
       child: Material(
@@ -73,9 +74,9 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
         child: InkWell(
           onTap: () => _guardedTap(widget.onTap),
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          hoverColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
+          hoverColor: AppPalette.primary.withValues(alpha: 0.03),
+          splashColor: AppPalette.primary.withValues(alpha: 0.06),
+          highlightColor: AppPalette.primary.withValues(alpha: 0.03),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -108,7 +109,7 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                           Text(
                             doctor.name,
                             style: textTheme.titleMedium?.copyWith(
-                              color: AppPalette.primary,
+                              color: AppPalette.ink,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -128,9 +129,7 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                                   fallback: doctor.specialty,
                                 ),
                                 style: textTheme.bodyMedium?.copyWith(
-                                  color: AppPalette.primary.withValues(
-                                    alpha: 0.85,
-                                  ),
+                                  color: AppPalette.secondary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               );
@@ -172,14 +171,21 @@ class _DoctorResultCardState extends State<DoctorResultCard> {
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
-                  height: 48,
+                  height: 56,
                   child: FilledButton(
                     onPressed: () => _guardedTap(widget.onBook),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppPalette.primary,
                       foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      textStyle: textTheme.titleSmall?.copyWith(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadii.md),
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
                       ),
                     ),
                     child: Text(
@@ -227,4 +233,3 @@ class _MetaRow extends StatelessWidget {
     );
   }
 }
-

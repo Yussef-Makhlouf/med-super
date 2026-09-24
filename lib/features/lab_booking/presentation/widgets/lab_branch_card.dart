@@ -187,6 +187,6 @@ class _CtaButton extends StatelessWidget {
             borderRadius: AppRadii.pill,
           );
 
-    return SizedBox(height: 44, child: button);
+    return SizedBox(height: 52, child: button);
   }
 }

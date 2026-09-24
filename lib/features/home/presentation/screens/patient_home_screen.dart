@@ -9,8 +9,6 @@ import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/app_spacing.dart';
-import 'package:med_super/core/theme/color_schemes.dart';
-import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
@@ -34,7 +32,7 @@ class PatientHomeScreen extends ConsumerWidget {
     final session = ref.watch(sessionControllerProvider).asData?.value;
     final displayName = session?.user.displayName?.trim().isNotEmpty == true
         ? session!.user.displayName!
-        : 'أحمد محمد';
+        : null;
 
     return Scaffold(
       backgroundColor: AppPalette.paper,
@@ -60,7 +58,7 @@ class PatientHomeScreen extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.lg),
                       const StaggeredReveal(index: 1, child: _HomeSearchBar()),
                       const SizedBox(height: AppSpacing.lg),
-                      const StaggeredReveal(index: 2, child: _PromoBanner()),
+                      const StaggeredReveal(index: 2, child: _CareHero()),
                       const SizedBox(height: AppSpacing.lg),
                       const StaggeredReveal(index: 3, child: _QuickActions()),
                       const SizedBox(height: AppSpacing.xxl),
@@ -113,7 +111,7 @@ class PatientHomeScreen extends ConsumerWidget {
 class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({required this.displayName});
 
-  final String displayName;
+  final String? displayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -121,10 +119,13 @@ class _HomeHeader extends ConsumerWidget {
     final hasUnread = ref.watch(unreadNotificationCountProvider) > 0;
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => context.go('/patient/profile'),
-          child: const CircleAvatar(
-            radius: 22,
+        IconButton(
+          tooltip: 'nav.profile'.tr(),
+          onPressed: () => context.go('/patient/profile'),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          icon: const CircleAvatar(
+            radius: 21,
             backgroundColor: AppPalette.primarySoft,
             child: Icon(SolarIconsBold.userRounded, color: AppPalette.primary),
           ),
@@ -142,20 +143,22 @@ class _HomeHeader extends ConsumerWidget {
                   color: AppPalette.inkMuted,
                 ),
               ),
-              Text(
-                displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.titleMedium?.copyWith(color: AppPalette.ink),
-              ),
+              if (displayName != null)
+                Text(
+                  displayName!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium?.copyWith(color: AppPalette.ink),
+                ),
             ],
           ),
         ),
         IconButton(
+          tooltip: 'nav.notifications'.tr(),
           onPressed: () => context.go('/patient/notifications'),
           icon: Badge(
             smallSize: 8,
-            backgroundColor: Colors.red,
+            backgroundColor: AppPalette.error,
             isLabelVisible: hasUnread,
             child: const Icon(
               Icons.notifications_outlined,
@@ -206,109 +209,121 @@ class _HomeSearchBar extends StatelessWidget {
   }
 }
 
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner();
+class _CareHero extends StatelessWidget {
+  const _CareHero();
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.xl),
-        // `AlignmentDirectional`, not physical `Alignment` — the white
-        // headline below sits at `centerStart`, so the gradient's darkest
-        // stop (the brand accent) must resolve to that same logical edge in
-        // every locale (a physical `Alignment.centerRight` matched `ar` by
-        // coincidence but broke contrast in `en`).
-        gradient: const LinearGradient(
-          begin: AlignmentDirectional.centerStart,
-          end: AlignmentDirectional.centerEnd,
-          colors: [AppPalette.primary, Color(0xFF4AA3F5), Color(0xFFB8D9FF)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppPalette.primary.withValues(alpha: 0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      // `Clip.antiAlias` so the watermark icon below is clipped to the same
-      // rounded corners as the banner itself, rather than poking past them.
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          // A flat gradient card with text on it isn't a hero — it's a
-          // placeholder. This gives the banner an actual visual identity (a
-          // lab-test icon, matching `promo_title`'s "labs" copy and the
-          // testTube icon already used for the same action in
-          // `_QuickActions`), pinned to the gradient's palest stop — the
-          // opposite edge from the white headline — so it never competes
-          // with the text for contrast.
-          PositionedDirectional(
-            end: -28,
-            top: -18,
-            child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.16,
-                child: Icon(
-                  SolarIconsBold.testTube,
-                  size: 148,
-                  color: Colors.white,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final artWidth = constraints.maxWidth < 360 ? 112.0 : 142.0;
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: AppPalette.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppPalette.primary.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
               ),
-            ),
+            ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
             children: [
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: AppBadge.filled(
-                  label: 'home.special_offer'.tr(),
-                  color: AppPalette.success,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'home.promo_title'.tr(),
-                style: textTheme.titleLarge?.copyWith(color: Colors.white),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'home.promo_subtitle'.tr(),
-                style: textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.9),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: FilledButton(
-                  onPressed: () => context.push('/patient/lab/upload'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppPalette.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
+              PositionedDirectional(
+                end: -34,
+                top: -54,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 168,
+                    height: 168,
+                    decoration: BoxDecoration(
+                      color: AppPalette.primarySoft.withValues(alpha: 0.62),
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  child: Text(
-                    'home.book_now'.tr(),
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              PositionedDirectional(
+                end: 8,
+                bottom: -4,
+                child: IgnorePointer(
+                  child: Image.asset(
+                    'assets/illustrations/care_overview.png',
+                    width: artWidth,
+                    height: 158,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'home.care_illustration_semantics'.tr(),
+                  ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 184),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(18, 16, 14, 14),
+                  child: SizedBox(
+                    width: constraints.maxWidth - artWidth - 36,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'home.care_title'.tr(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.titleLarge?.copyWith(
+                            color: AppPalette.ink,
+                            height: 1.22,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'home.care_subtitle'.tr(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: AppPalette.inkMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 56,
+                          child: FilledButton.icon(
+                            onPressed: () =>
+                                context.push('/patient/home/search'),
+                            icon: const Icon(
+                              SolarIconsOutline.magnifier,
+                              size: 18,
+                            ),
+                            label: Text(
+                              'home.find_doctor'.tr(),
+                              style: textTheme.labelLarge?.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                height: 1.25,
+                              ),
+                            ),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              textStyle: textTheme.labelLarge,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -318,113 +333,150 @@ class _QuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Match the tallest card (wallet's Arabic subtitle wraps to two lines)
-    // so the three tiles stay the same height side by side.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.biotech_outlined,
-              iconColor: brandBlue,
-              title: 'home.book_labs'.tr(),
-              subtitle: 'home.book_labs_sub'.tr(),
-              onTap: () => context.push('/patient/lab/upload'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.upload_file_outlined,
-              iconColor: const Color(0xFF14B8A6),
-              title: 'home.upload_rx'.tr(),
-              subtitle: 'home.upload_rx_sub'.tr(),
-              onTap: () {
-                ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
-                ref.read(selectedDeliveryMethodProvider.notifier).reset();
-                ref.read(selectedPharmacyProvider.notifier).clear();
-                ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
-                ref.invalidate(pharmacySearchProvider);
-                ref.invalidate(prescriptionUploadControllerProvider);
-                context.push('/patient/pharmacy/upload');
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.account_balance_wallet_outlined,
-              iconColor: brandBlue,
-              title: 'home.wallet'.tr(),
-              subtitle: 'home.wallet_sub'.tr(),
-              onTap: () => context.push('/patient/home/wallet'),
-            ),
-          ),
-        ],
+    final actions = [
+      _CareAction(
+        title: 'home.find_doctor'.tr(),
+        subtitle: 'home.find_doctor_sub'.tr(),
+        icon: SolarIconsOutline.stethoscope,
+        illustration: 'assets/illustrations/doctor_discovery.png',
+        onTap: () => context.push('/patient/home/search'),
       ),
+      _CareAction(
+        title: 'nav.appointments'.tr(),
+        subtitle: 'home.appointments_sub'.tr(),
+        icon: SolarIconsOutline.calendarMinimalistic,
+        illustration: 'assets/illustrations/appointment_calendar.png',
+        onTap: () => context.go('/patient/appointments'),
+      ),
+      _CareAction(
+        title: 'home.upload_rx'.tr(),
+        subtitle: 'home.upload_rx_sub'.tr(),
+        icon: SolarIconsOutline.pills,
+        illustration: 'assets/illustrations/pharmacy_order.png',
+        onTap: () {
+          ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
+          ref.read(selectedDeliveryMethodProvider.notifier).reset();
+          ref.read(selectedPharmacyProvider.notifier).clear();
+          ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
+          ref.invalidate(pharmacySearchProvider);
+          ref.invalidate(prescriptionUploadControllerProvider);
+          context.push('/patient/pharmacy/upload');
+        },
+      ),
+      _CareAction(
+        title: 'home.wallet'.tr(),
+        subtitle: 'home.wallet_sub'.tr(),
+        icon: SolarIconsOutline.walletMoney,
+        illustration: 'assets/illustrations/wallet.png',
+        onTap: () => context.push('/patient/home/wallet'),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 620 ? 4 : 2;
+        final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: actions.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: textScale > 1.25 ? 148 : 126,
+          ),
+          itemBuilder: (context, index) =>
+              _QuickActionCard(action: actions[index]),
+        );
+      },
     );
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
-    required this.icon,
-    required this.iconColor,
+class _CareAction {
+  const _CareAction({
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.onTap,
+    this.illustration,
   });
 
-  final IconData icon;
-  final Color iconColor;
   final String title;
   final String subtitle;
+  final IconData icon;
+  final String? illustration;
   final VoidCallback onTap;
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({required this.action});
+
+  final _CareAction action;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return TapScale(
-      onTap: onTap,
+      onTap: action.onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppPalette.border),
           boxShadow: AppShadows.resting,
         ),
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 10, 12),
+        child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadii.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    action.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleSmall?.copyWith(
+                      color: AppPalette.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    action.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppPalette.inkMuted,
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: iconColor, size: 20),
             ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.titleSmall?.copyWith(
-                color: AppPalette.ink,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                color: AppPalette.inkMuted,
-              ),
+            const SizedBox(width: 4),
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: action.illustration == null
+                  ? DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppPalette.primarySoft.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                      ),
+                      child: Icon(
+                        action.icon,
+                        color: AppPalette.primary,
+                        size: 24,
+                      ),
+                    )
+                  : Image.asset(
+                      action.illustration!,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true,
+                    ),
             ),
           ],
         ),
@@ -482,9 +534,9 @@ class _SpecialtiesRow extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     'home.specialties_empty'.tr(),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppPalette.inkMuted,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppPalette.inkMuted),
                   ),
                 ],
               ),

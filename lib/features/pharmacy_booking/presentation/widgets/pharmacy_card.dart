@@ -46,111 +46,113 @@ class PharmacyCard extends StatelessWidget {
     return Opacity(
       opacity: disabled ? 0.5 : 1,
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(
-          color: isSelected ? AppColors.patientPrimary : AppColors.borderLight,
-          width: isSelected ? 2 : 1,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.patientPrimary
+                : AppColors.borderLight,
+            width: isSelected ? 2 : 1,
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: onViewDetails,
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: onViewDetails,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                    ),
+                    child: const Icon(
+                      SolarIconsBold.pills,
+                      color: Color(0xFF15803D),
+                      size: 22,
+                    ),
                   ),
-                  child: const Icon(
-                    SolarIconsBold.pills,
-                    color: Color(0xFF15803D),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        pharmacy.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink900,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          pharmacy.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        pharmacy.address,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.mutedText2,
+                        const SizedBox(height: 2),
+                        Text(
+                          pharmacy.address,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.mutedText2,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if (onViewDetails != null)
+                  if (onViewDetails != null)
+                    const Icon(
+                      SolarIconsOutline.altArrowRight,
+                      color: AppColors.mutedText2,
+                    ),
+                ],
+              ),
+            ),
+            if (pharmacy.distanceKm != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
                   const Icon(
-                    SolarIconsOutline.altArrowRight,
+                    SolarIconsOutline.routing,
+                    size: 14,
                     color: AppColors.mutedText2,
                   ),
-              ],
-            ),
-          ),
-          if (pharmacy.distanceKm != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    'pharmacy_booking.select_pharmacy.distance_km'.tr(
+                      args: [pharmacy.distanceKm!.toStringAsFixed(1)],
+                    ),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.mutedText2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.borderLight),
             const SizedBox(height: 12),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  SolarIconsOutline.routing,
-                  size: 14,
-                  color: AppColors.mutedText2,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'pharmacy_booking.select_pharmacy.distance_km'.tr(
-                    args: [pharmacy.distanceKm!.toStringAsFixed(1)],
-                  ),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.mutedText2,
-                  ),
+                pharmacy.deliveryCapable
+                    ? const _DeliveryBadge()
+                    : (disabled
+                          ? const _NoDeliveryBadge()
+                          : const SizedBox.shrink()),
+                _CtaButton(
+                  isSelected: isSelected,
+                  onSelect: disabled ? null : onSelect,
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.borderLight),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              pharmacy.deliveryCapable
-                  ? const _DeliveryBadge()
-                  : (disabled
-                        ? const _NoDeliveryBadge()
-                        : const SizedBox.shrink()),
-              _CtaButton(
-                isSelected: isSelected,
-                onSelect: disabled ? null : onSelect,
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
       ),
     );
   }
@@ -269,6 +271,6 @@ class _CtaButton extends StatelessWidget {
             borderRadius: AppRadii.pill,
           );
 
-    return SizedBox(height: 40, child: button);
+    return SizedBox(height: 52, child: button);
   }
 }
