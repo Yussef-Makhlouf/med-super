@@ -61,9 +61,11 @@ class PatientHomeScreen extends ConsumerWidget {
                       const StaggeredReveal(index: 2, child: _CareHero()),
                       const SizedBox(height: AppSpacing.lg),
                       const StaggeredReveal(index: 3, child: _QuickActions()),
+                      const SizedBox(height: AppSpacing.md),
+                      const StaggeredReveal(index: 4, child: _LabServiceCard()),
                       const SizedBox(height: AppSpacing.xxl),
                       StaggeredReveal(
-                        index: 4,
+                        index: 5,
                         child: SectionHeader(
                           title: 'home.specialties'.tr(),
                           actionLabel: 'common.view_all'.tr(),
@@ -77,14 +79,14 @@ class PatientHomeScreen extends ConsumerWidget {
                 ),
               ),
               const SliverToBoxAdapter(
-                child: StaggeredReveal(index: 5, child: _SpecialtiesRow()),
+                child: StaggeredReveal(index: 6, child: _SpecialtiesRow()),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: StaggeredReveal(
-                    index: 6,
+                    index: 7,
                     child: SectionHeader(title: 'home.featured_doctors'.tr()),
                   ),
                 ),
@@ -94,7 +96,7 @@ class PatientHomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: const SliverToBoxAdapter(
                   child: StaggeredReveal(
-                    index: 7,
+                    index: 8,
                     child: _FeaturedDoctorsList(),
                   ),
                 ),
@@ -302,12 +304,14 @@ class _CareHero extends StatelessWidget {
                             label: Text(
                               'home.find_doctor'.tr(),
                               style: textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 height: 1.25,
                               ),
                             ),
                             style: FilledButton.styleFrom(
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 14,
                               ),
@@ -390,6 +394,112 @@ class _QuickActions extends ConsumerWidget {
               _QuickActionCard(action: actions[index]),
         );
       },
+    );
+  }
+}
+
+class _LabServiceCard extends StatelessWidget {
+  const _LabServiceCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final destinationLabel = 'home.lab_service_cta'.tr();
+
+    return Semantics(
+      button: true,
+      label: '${'home.lab_service_title'.tr()}. '
+          '${'home.lab_service_subtitle'.tr()}. $destinationLabel',
+      child: TapScale(
+        onTap: () => context.push('/patient/lab/upload'),
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppPalette.border),
+            boxShadow: AppShadows.resting,
+          ),
+          child: Stack(
+            children: [
+              PositionedDirectional(
+                end: -18,
+                top: -28,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      color: AppPalette.primarySoft.withValues(alpha: 0.7),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 14, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'home.lab_service_title'.tr(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.titleSmall?.copyWith(
+                              color: AppPalette.ink,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'home.lab_service_subtitle'.tr(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: AppPalette.inkMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                destinationLabel,
+                                style: textTheme.labelLarge?.copyWith(
+                                  color: AppPalette.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                                color: AppPalette.primary,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Image.asset(
+                      'assets/illustrations/lab_service.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -565,6 +675,7 @@ class _SpecialtyItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final visual = specialtyVisualForCode(specialty.code);
+    final illustration = specialtyIllustrationFor(specialty);
     final name = specialty.localizedName(context.locale.languageCode);
     return SizedBox(
       width: 78,
@@ -588,7 +699,19 @@ class _SpecialtyItem extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: AppShadows.resting,
               ),
-              child: Icon(visual.icon, color: visual.color, size: 28),
+              clipBehavior: Clip.antiAlias,
+              child: illustration == null
+                  ? Center(
+                      child: Icon(visual.icon, color: visual.color, size: 28),
+                    )
+                  : Image.asset(
+                      illustration,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true,
+                      errorBuilder: (_, _, _) => Center(
+                        child: Icon(visual.icon, color: visual.color, size: 28),
+                      ),
+                    ),
             ),
             const SizedBox(height: 8),
             Text(

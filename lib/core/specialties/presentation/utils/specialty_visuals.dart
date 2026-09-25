@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_super/core/specialties/domain/entities/specialty.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 
 /// Client-side icon/color for a specialty row — the backend's static seed
@@ -60,4 +61,37 @@ SpecialtyVisual specialtyVisualForCode(String code) {
     if (normalized.contains(entry.key)) return entry.value;
   }
   return _defaultVisual;
+}
+
+/// Local artwork for the specialties represented in the patient home.
+///
+/// The live catalog uses UUIDs for `code`, so use the Arabic catalog name as
+/// the stable presentation fallback while still supporting keyword codes in
+/// mock data. Unmapped specialties keep the existing icon treatment.
+String? specialtyIllustrationFor(Specialty specialty) {
+  final code = specialty.code.toUpperCase();
+  final name = specialty.nameAr;
+
+  if (code.contains('CARDIO') || name.contains('القلب')) {
+    return 'assets/illustrations/specialty_cardiology.png';
+  }
+  if (code.contains('PEDIA') ||
+      code.contains('CHILD') ||
+      name.contains('الأطفال')) {
+    return 'assets/illustrations/specialty_pediatrics.png';
+  }
+  if (code.contains('DERMA') ||
+      code.contains('SKIN') ||
+      name.contains('جلدية')) {
+    return 'assets/illustrations/specialty_dermatology.png';
+  }
+  if (code.contains('DENT') || name.contains('الأسنان')) {
+    return 'assets/illustrations/specialty_dental.png';
+  }
+  if (code.contains('OPHTHALM') ||
+      code.contains('EYE') ||
+      name.contains('العيون')) {
+    return 'assets/illustrations/specialty_ophthalmology.png';
+  }
+  return null;
 }

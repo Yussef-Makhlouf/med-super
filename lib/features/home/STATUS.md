@@ -25,6 +25,15 @@ illustration is bundled locally; specialties and featured doctors still use
 the same real providers and search card. No new API fields or sample health
 data were added.
 
+**Patient home service and specialty artwork (2026-09-25):** added a dedicated
+lab-testing card that opens the existing `/patient/lab/upload` flow; it does
+not claim to offer direct test-catalog selection. Five locally bundled
+transparent illustrations cover the home specialties (cardiology, pediatrics,
+dermatology, dental, and ophthalmology). The live catalog uses UUID codes, so
+artwork selection also checks the existing Arabic specialty names and falls
+back to the established icon for unknown entries. The doctor-search hero
+button now explicitly uses white foreground styling for its label and icon.
+
 **Orders navigation polish (2026-09-24):** the patient orders header now uses
 the localized guest name and accessible profile/notification actions. Pharmacy
 and lab tabs have announced selected states and 48dp touch height; the order
