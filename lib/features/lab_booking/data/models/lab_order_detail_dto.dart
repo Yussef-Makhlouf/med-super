@@ -42,8 +42,7 @@ class LabOrderDetailDto {
           .map(
             (item) => LabOrderItem(
               id: item['id'] as String? ?? '',
-              catalogCode: item['catalogCode'] as String? ?? '',
-              displayName: item['displayName'] as String? ?? '',
+              testName: item['testName'] as String? ?? '',
               unitPrice: item['unitPrice'] as String?,
               resultState: item['resultState'] as String? ?? '',
             ),

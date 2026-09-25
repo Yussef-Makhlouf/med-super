@@ -11,23 +11,18 @@ class LabOrderRemoteDatasource {
   final Dio _dio;
 
   /// `POST /v1/lab-orders`, `PATIENT`-role (`clinic-reservations`
-  /// `CreateLabOrderUseCase`). Either [testCodes] or [prescriptionId] must be
-  /// given — `med-super` only ever exercises the [prescriptionId] path today
-  /// (the direct catalog-selection path has no picker UI yet: `test_catalog`
-  /// is unseeded and has no read endpoint, see `lab_booking/STATUS.md`).
+  /// `CreateLabOrderUseCase`). Every order is based on an uploaded referral.
   Future<LabOrderCreateResult> create({
     required String labBranchId,
     required String collectionType,
-    String? prescriptionId,
-    List<String>? testCodes,
+    required String prescriptionId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.labOrders,
       data: {
         'labBranchId': labBranchId,
         'collectionType': collectionType,
-        if (prescriptionId != null) 'prescriptionId': prescriptionId,
-        if (testCodes != null && testCodes.isNotEmpty) 'testCodes': testCodes,
+        'prescriptionId': prescriptionId,
       },
     );
     return LabOrderCreateDto.fromJson(

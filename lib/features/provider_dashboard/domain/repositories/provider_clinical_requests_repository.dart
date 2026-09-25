@@ -29,13 +29,11 @@ abstract interface class ProviderClinicalRequestsRepository {
     required bool approve,
     String? reason,
   });
-  Future<List<ProviderLabTest>> searchLabCatalog(String search);
   Future<ProviderLabRequestResult> createLabOrder({
     required String patientId,
     required String labBranchId,
     required String collectionType,
-    required List<String> testCodes,
-    String? prescriptionId,
+    required String prescriptionId,
     String? appointmentId,
   });
   Future<ProviderLabBatchResult> createLabOrderBatch(

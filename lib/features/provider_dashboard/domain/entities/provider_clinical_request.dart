@@ -99,12 +99,6 @@ class ProviderPrescriptionBatchItemResult extends ProviderPrescriptionResult {
   final String patientId;
 }
 
-class ProviderLabTest {
-  const ProviderLabTest({required this.code, required this.displayName});
-  final String code;
-  final String displayName;
-}
-
 class ProviderLabRequestResult {
   const ProviderLabRequestResult({
     required this.labOrderId,
@@ -120,16 +114,14 @@ class ProviderLabRequest {
     required this.patientId,
     required this.labBranchId,
     required this.collectionType,
-    required this.testCodes,
-    this.prescriptionId,
+    required this.prescriptionId,
     this.appointmentId,
   });
 
   final String patientId;
   final String labBranchId;
   final String collectionType;
-  final List<String> testCodes;
-  final String? prescriptionId;
+  final String prescriptionId;
   final String? appointmentId;
 }
 

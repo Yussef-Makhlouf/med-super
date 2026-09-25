@@ -52,20 +52,16 @@ class ProviderClinicalRequestUseCases {
     approve: approve,
     reason: reason,
   );
-  Future<List<ProviderLabTest>> searchLabCatalog(String search) =>
-      _repository.searchLabCatalog(search);
   Future<ProviderLabRequestResult> createLabOrder({
     required String patientId,
     required String labBranchId,
     required String collectionType,
-    required List<String> testCodes,
-    String? prescriptionId,
+    required String prescriptionId,
     String? appointmentId,
   }) => _repository.createLabOrder(
     patientId: patientId,
     labBranchId: labBranchId,
     collectionType: collectionType,
-    testCodes: testCodes,
     prescriptionId: prescriptionId,
     appointmentId: appointmentId,
   );

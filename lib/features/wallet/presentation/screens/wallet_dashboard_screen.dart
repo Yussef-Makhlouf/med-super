@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import '../controllers/wallet_providers.dart';
 import '../widgets/balance_card.dart';
@@ -23,6 +24,7 @@ class WalletDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceAsync = ref.watch(walletBalanceProvider);
     final transactionsAsync = ref.watch(walletTransactionsProvider);
+    final isMock = ref.watch(appConfigProvider).isMock;
 
     return Scaffold(
       backgroundColor: AppPalette.paper,
@@ -149,22 +151,24 @@ class WalletDashboardScreen extends ConsumerWidget {
                       },
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: WalletQuickActionTile(
-                      icon: Icons.event_note_outlined,
-                      iconBg: AppPalette.primarySoft,
-                      iconColor: AppPalette.primary,
-                      title: 'wallet.pay_bills'.tr(),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const WalletPayBillsScreen(),
+                  if (isMock) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: WalletQuickActionTile(
+                        icon: Icons.event_note_outlined,
+                        iconBg: AppPalette.primarySoft,
+                        iconColor: AppPalette.primary,
+                        title: 'wallet.pay_bills'.tr(),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const WalletPayBillsScreen(),
+                            ),
                           ),
-                        );
-                      },
+                        },
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
               const SizedBox(height: 28),

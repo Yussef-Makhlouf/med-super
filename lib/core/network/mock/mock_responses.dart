@@ -1768,15 +1768,7 @@ const _mockLabOrderDetailJson = {
   'createdAt': '2026-09-05T08:00:00.000Z',
   'updatedAt': '2026-09-05T09:30:00.000Z',
   'branchId': 'aaaaaaaa-0000-4000-8000-000000000001',
-  'items': [
-    {
-      'id': '55555555-5555-4555-8555-555555555555',
-      'catalogCode': 'CBC',
-      'displayName': 'صورة دم كاملة',
-      'unitPrice': '120.00',
-      'resultState': 'PENDING',
-    },
-  ],
+  'items': [],
   'quote': {
     'totalPrice': '120.00',
     'currency': 'EGP',

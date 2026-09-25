@@ -32,8 +32,9 @@ fixed 2-decimal **strings** (`"350.00"`), and enums are SCREAMING_SNAKE
 
 ## Mock-only (no backend counterpart at all)
 
-These still hit `MockInterceptor` on invented paths and will 404 the moment
-`BASE_URL` points at a real server:
+These still use mock-only paths. Transfer is not offered, and pay-bills and
+refund-request actions are hidden whenever a real `BASE_URL` is configured,
+so production users do not hit routes the backend does not provide:
 
 - `POST /v1/wallet/transfers` + the transfer-out flow — the wallet is prepaid
   only; there is no transfer/withdraw concept on the backend. `TransactionType.withdrawal`
@@ -43,23 +44,22 @@ These still hit `MockInterceptor` on invented paths and will 404 the moment
   patient-requested. There is no refund-request API.
 - Linked cards and pay-bills screens — design-only, no endpoint of any kind.
 
-## Top-up stops at the checkout URL
+## Top-up opens external checkout and waits for confirmation
 
 The 3-step flow is now amount → billing details → review, and the review
-step calls the real endpoint. What it *cannot* do is finish the payment:
-`redirectUrl` is a Paymob iframe, and the app still has neither
-`webview_flutter` nor `url_launcher`. So `WalletTopUpPendingScreen` shows
-the URL for copying and says plainly that the balance won't move until the
-payment is confirmed — which is the truth, since only the capture webhook
-credits it (`ProcessWalletTopUpUseCase`).
+step calls the real endpoint. `WalletTopUpPendingScreen` opens `redirectUrl`
+in the device's external browser through `url_launcher` and retains a copy
+fallback. The app does not claim the payment succeeded: the balance changes
+only after Paymob's capture webhook credits it (`ProcessWalletTopUpUseCase`).
+The Paymob gateway and live webhook still need production credentials and
+verification before this path can launch (`DEC-001`).
 
 The saved-card picker that used to be step 2 (Visa ****4242 / Apple Pay)
 was **deleted**, not rewired: the real endpoint is card-only and takes no
 payment-method parameter, so there was nothing behind those options. What
 it does require — `customer` — nothing collected before now.
 
-Adding an in-app browser is the one remaining piece; nothing else about
-this flow needs to change when it lands.
+The current external-browser flow does not require an in-app WebView.
 
 ## Spending the wallet
 

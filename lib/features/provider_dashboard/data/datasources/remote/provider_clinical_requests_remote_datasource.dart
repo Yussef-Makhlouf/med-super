@@ -131,25 +131,11 @@ class ProviderClinicalRequestsRemoteDatasource {
     );
   }
 
-  Future<List<ProviderLabTest>> searchLabCatalog(String search) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.labOrderCatalog,
-      queryParameters: {if (search.trim().isNotEmpty) 'search': search.trim()},
-    );
-    final rows = response.data?['items'] as List<dynamic>? ?? const [];
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(ProviderLabTestDto.fromJson)
-        .map((dto) => dto.toEntity())
-        .toList(growable: false);
-  }
-
   Future<ProviderLabRequestResult> createLabOrder({
     required String patientId,
     required String labBranchId,
     required String collectionType,
-    required List<String> testCodes,
-    String? prescriptionId,
+    required String prescriptionId,
     String? appointmentId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -158,10 +144,7 @@ class ProviderClinicalRequestsRemoteDatasource {
         'patientId': patientId,
         'labBranchId': labBranchId,
         'collectionType': collectionType,
-        'testCodes': testCodes,
-        ...?((prescriptionId != null)
-            ? {'prescriptionId': prescriptionId}
-            : null),
+        'prescriptionId': prescriptionId,
         ...?((appointmentId != null) ? {'appointmentId': appointmentId} : null),
       },
     );
@@ -184,10 +167,7 @@ class ProviderClinicalRequestsRemoteDatasource {
                 'patientId': request.patientId,
                 'labBranchId': request.labBranchId,
                 'collectionType': request.collectionType,
-                if (request.testCodes.isNotEmpty)
-                  'testCodes': request.testCodes,
-                if (request.prescriptionId != null)
-                  'prescriptionId': request.prescriptionId,
+                'prescriptionId': request.prescriptionId,
                 if (request.appointmentId != null)
                   'appointmentId': request.appointmentId,
               },

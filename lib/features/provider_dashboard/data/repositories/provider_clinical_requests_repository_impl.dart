@@ -61,21 +61,17 @@ class ProviderClinicalRequestsRepositoryImpl
     reason: reason,
   );
   @override
-  Future<List<ProviderLabTest>> searchLabCatalog(String search) =>
-      _remote.searchLabCatalog(search);
   @override
   Future<ProviderLabRequestResult> createLabOrder({
     required String patientId,
     required String labBranchId,
     required String collectionType,
-    required List<String> testCodes,
-    String? prescriptionId,
+    required String prescriptionId,
     String? appointmentId,
   }) => _remote.createLabOrder(
     patientId: patientId,
     labBranchId: labBranchId,
     collectionType: collectionType,
-    testCodes: testCodes,
     prescriptionId: prescriptionId,
     appointmentId: appointmentId,
   );

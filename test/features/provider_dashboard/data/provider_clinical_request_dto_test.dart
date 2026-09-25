@@ -49,16 +49,6 @@ void main() {
     expect(prescription.images.single.url, 'https://private.example/image-1');
   });
 
-  test('maps the provider lab catalog contract', () {
-    final test = ProviderLabTestDto.fromJson({
-      'code': 'CBC',
-      'displayName': 'Complete Blood Count',
-    }).toEntity();
-
-    expect(test.code, 'CBC');
-    expect(test.displayName, 'Complete Blood Count');
-  });
-
   test(
     'omits an absent pharmacy branch from provider pharmacy requests',
     () async {

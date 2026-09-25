@@ -71,7 +71,6 @@ abstract final class ApiPaths {
   static const labTests = '/v1/lab-tests';
   static const labBranches = '/v1/lab-branches';
   static const labOrders = '/v1/lab-orders';
-  static const labOrderCatalog = '/v1/lab-orders/catalog';
 
   // Provider registration
   static const providerRegistrationSubmit = '/v1/provider/registration';

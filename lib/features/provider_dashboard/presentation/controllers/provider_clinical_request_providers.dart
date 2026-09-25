@@ -38,8 +38,3 @@ final providerPharmacyOrdersProvider =
     FutureProvider<List<PharmacyOrderDetail>>(
       (ref) => ref.watch(providerClinicalUseCasesProvider).pharmacyOrders(),
     );
-final providerLabCatalogProvider =
-    FutureProvider.family<List<ProviderLabTest>, String>(
-      (ref, query) =>
-          ref.watch(providerClinicalUseCasesProvider).searchLabCatalog(query),
-    );

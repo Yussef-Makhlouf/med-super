@@ -62,17 +62,3 @@ class ProviderPrescriptionResultDto {
   ProviderPrescriptionResult toEntity() =>
       ProviderPrescriptionResult(prescriptionId: id, status: status);
 }
-
-class ProviderLabTestDto {
-  const ProviderLabTestDto({required this.code, required this.displayName});
-  final String code;
-  final String displayName;
-  factory ProviderLabTestDto.fromJson(Map<String, dynamic> json) =>
-      ProviderLabTestDto(
-        code: json['code'] as String? ?? '',
-        displayName:
-            json['displayName'] as String? ?? json['code'] as String? ?? '',
-      );
-  ProviderLabTest toEntity() =>
-      ProviderLabTest(code: code, displayName: displayName);
-}

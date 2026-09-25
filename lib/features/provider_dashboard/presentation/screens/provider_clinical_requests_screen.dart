@@ -1069,7 +1069,7 @@ class _LabCard extends StatelessWidget {
                 child: Text(
                   order.items.isEmpty
                       ? 'provider_dashboard.clinical_requests.lab_request'.tr()
-                      : order.items.map((e) => e.displayName).join(', '),
+                      : order.items.map((e) => e.testName).join(', '),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -1595,7 +1595,6 @@ class _LabRequestFormState extends ConsumerState<_LabRequestForm> {
             patientId: widget.patientId,
             labBranchId: _branchId!,
             collectionType: _collectionType,
-            testCodes: const [],
             prescriptionId: uploaded.prescriptionId,
             appointmentId: widget.appointmentId,
           );
@@ -2064,7 +2063,6 @@ class _BatchRequestSheetState extends ConsumerState<_BatchRequestSheet> {
               patientId: id,
               labBranchId: _labBranchId!,
               collectionType: _collectionType,
-              testCodes: const [],
               prescriptionId: upload.prescriptionId,
             );
             results.add('$patientName: ${order.status} (${order.labOrderId})');

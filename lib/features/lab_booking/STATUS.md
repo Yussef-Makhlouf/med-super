@@ -48,15 +48,12 @@ lab price catalog, payment is explicitly out of scope (`DEC-002`), and
 price/appointment/prep instructions are only ever set later by lab staff
 via `SubmitLabQuoteUseCase`, never chosen by the patient at request time.
 
-## Known remaining gap
+## Product decision: no test catalog
 
-**Direct catalog-test selection** (`testCodes` on `POST /v1/lab-orders`) is
-not wired to any screen. It's the backend's nominally primary path, but
-`test_catalog` is unseeded in `db:seed` and has no read endpoint — building
-a picker over an empty, unreachable table would be its own fabrication.
-Every request this feature creates goes through the `prescriptionId` path
-only. Un-deferring this needs a `GET /test-catalog`-style endpoint plus seed
-data, tracked as a follow-up, not built here.
+The user explicitly excluded any test catalog on 2026-09-25. Requests are
+created only from an uploaded referral linked by `prescriptionId`; neither
+the patient app nor provider surfaces expose a test picker or catalog API.
+Historical order item names remain readable for existing results.
 
 ## Not affected by ADR-006
 

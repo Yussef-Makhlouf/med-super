@@ -187,7 +187,7 @@ class _OrderDetailBody extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            item.displayName,
+                            item.testName,
                             style: const TextStyle(color: AppColors.ink900),
                           ),
                         ),
