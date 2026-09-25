@@ -1,8 +1,7 @@
 /// One item from `GET /v1/appointments` or `GET /v1/appointments/{id}`
 /// (File 12 Part 35.17's response shape, extended with `doctorId`/
 /// `doctorName`/`clinicBranchId`/`clinicName`/`clinicAddressLine1`/
-/// `clinicCity`/`clinicPhone` for display — see the backend's
-/// `feature/appointment-summary-doctor-clinic-details` branch). `status` is
+/// `clinicCity`/`clinicPhone` for display). `status` is
 /// a raw backend `AppointmentStatus` value (`CONFIRMED`, `CANCELLED`,
 /// `RESCHEDULED`, ...).
 class AppointmentSummary {

@@ -3,23 +3,17 @@
 **Label:** `PARTIAL` (doctor detail: `BACKEND_READY`, wire format
 reconciled and live-verified 2026-08-15; availability: `BACKEND_READY`;
 booking hand-off to `lib/features/appointments`: `BACKEND_READY`, gated on
-`affiliationId` below)
+visible active affiliation)
 
-- Doctor detail (`GET /v1/doctors/{id}`) — calls the real Phase 2 contract.
-  `DoctorProfileDto.fromJson` now dispatches on shape: the real response
-  nests everything under `{doctor: {...raw Prisma fields, user,
-  specialty}, affiliations: [...raw DoctorClinicAffiliation rows with
-  clinic_branch.{address, clinic}]}` (no dedicated response DTO on the
-  backend — `GetDoctorUseCase` returns raw repository rows), handled by
-  `DoctorProfileDto._fromRealJson`; the mock's flat convenience shape
-  (`_fromMockJson`) is unchanged. Verified live 2026-08-15 against a real
-  running backend (Docker Postgres/Redis, `npm run start:dev`) — the exact
-  JSON this parser was written against was fetched via curl from
-  `GET /v1/doctors/{id}` on a real seeded+verified doctor, not guessed.
+- Doctor detail (`GET /v1/doctors/{id}`) — calls the current flat
+  `DoctorDetail` contract. It exposes top-level `affiliationId` and a list of
+  visible affiliation summaries; `DoctorProfileDto.fromJson` maps this
+  response shape directly, along with the matching mock shape. The backend
+  `GetDoctorUseCase` tests the primary affiliation and summary projection.
   Several UI fields (experience years, bio, qualifications, fellowships,
   languages, "online now") have **no backing column anywhere in the Phase
   2 schema** — they parse to empty/zero/false against a real backend by
-  design, not a bug to chase; see `_fromRealJson`'s doc comment.
+  design, not a bug to chase; see `DoctorProfileDto.fromJson`'s doc comment.
 - Availability (`GET /v1/doctors/{doctorId}/slots`) — added 2026-08-14,
   matches the real, tested backend Phase 3 contract exactly (verified
   against `GetDoctorSlotsUseCase`'s response shape). Hold/booking now goes
@@ -30,19 +24,14 @@ booking hand-off to `lib/features/appointments`: `BACKEND_READY`, gated on
   `ianaTimezone` value falls back to a UTC-labeled display rather than
   silently mislabeling it. See
   `lib/features/provider_profile/domain/utils/slot_grouping.dart`.
-- `clinicBranchId`/`ianaTimezone`/`affiliationId` on `DoctorProfile` are
-  currently mock-only fields (`branch-{doctorId}` / `'Africa/Cairo'` /
-  `affiliation-{doctorId}`) standing in for what the real doctor-detail
-  response should expose once its wire format is confirmed — see
-  `DoctorProfileDto._firstAffiliationId` for the forward-compatible parse
-  attempt against the real `{doctor, affiliations}` shape, which is
-  untested against a live backend.
+- `clinicBranchId`/`ianaTimezone`/`affiliationId` are read from the real
+  primary affiliation when present. Their mock defaults remain mock-only.
 - Phase 4 (Appointments) is real and wired now — `doctor_details_screen`'s
   "Book Now" pushes into `lib/features/appointments` when both a slot and
-  `profile.affiliationId` are selected/present. Booking is *disabled*, not
-  broken, when `affiliationId` is null (i.e. against a real, unreconciled
-  backend response today) — this is the correct degraded behavior, not a
-  bug to silently "fix" by fabricating an id.
+  `profile.affiliationId` are selected/present. Booking is disabled when no
+  visible active affiliation exists; the current backend returns the primary
+  affiliation at the top level and in `affiliations[]`, so a real doctor with
+  an active affiliation can be booked without fabricating an id.
 - Clinic detail (`GET /v1/clinics/{clinicId}`) — the parent/chain-level
   screen (`clinic_profile.dart` / `clinic_details_screen.dart` /
   `patientClinicDetails` route) was **removed 2026-08-28**: a clinic chain

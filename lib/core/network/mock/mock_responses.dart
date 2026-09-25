@@ -607,7 +607,8 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'is_online': true,
     'clinic_name': 'مركز الرؤية لطب العيون',
     'languages': ['العربية', 'الإنجليزية'],
-    'bio': 'استشارية طب وجراحة العيون، متخصصة في جراحات الليزك والمياه البيضاء.',
+    'bio':
+        'استشارية طب وجراحة العيون، متخصصة في جراحات الليزك والمياه البيضاء.',
     'qualifications': ['البورد المصري في طب وجراحة العيون'],
     'fellowships': ['زمالة جراحات الشبكية'],
     'photo_url': null,
@@ -780,10 +781,12 @@ class _MockHold {
   });
   final String slotId;
   final String doctorClinicAffiliationId;
+
   /// Mutable so the Fawry mock can extend it the way
   /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
   DateTime expiresAt;
   final String? rescheduledFromAppointmentId;
+
   /// First `paymentAmount` on this hold wins — a retry with a different
   /// amount is ignored, matching the real initiate-online use-case.
   String? lockedPaymentAmount;
@@ -846,10 +849,11 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         // Same fee/minimum the mock payment paths validate against.
         'fullAmount': _kMockConsultFee.toStringAsFixed(2),
         'currency': 'EGP',
-        'minPaymentAmount': (_kMockMinAppointmentPayment < _kMockConsultFee
-                ? _kMockMinAppointmentPayment
-                : _kMockConsultFee)
-            .toStringAsFixed(2),
+        'minPaymentAmount':
+            (_kMockMinAppointmentPayment < _kMockConsultFee
+                    ? _kMockMinAppointmentPayment
+                    : _kMockConsultFee)
+                .toStringAsFixed(2),
       },
     };
   });
@@ -890,8 +894,10 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       'data': {
         'paymentIntentId': 'mock-pi-${DateTime.now().microsecondsSinceEpoch}',
         'method': method,
-        'referenceCode':
-            '${DateTime.now().millisecondsSinceEpoch}'.padLeft(11, '0'),
+        'referenceCode': '${DateTime.now().millisecondsSinceEpoch}'.padLeft(
+          11,
+          '0',
+        ),
         'expiresAt': expiresAt.toIso8601String(),
         // The first attempt's amount is kept on a retry, like the backend.
         'amount': resolved.amount,
@@ -1519,10 +1525,7 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
   interceptor.register('POST', '/confirm-receipt', (options) {
     return {
       'statusCode': 200,
-      'data': {
-        'pharmacyOrderId': _mockPharmacyOrderId,
-        'status': 'FULFILLED',
-      },
+      'data': {'pharmacyOrderId': _mockPharmacyOrderId, 'status': 'FULFILLED'},
     };
   });
 
@@ -1585,6 +1588,102 @@ const _mockSpecialtiesJson = <Map<String, dynamic>>[
   {
     'code': 'OPHTHALMOLOGY',
     'name_ar': 'طب العيون',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GENERAL_PRACTICE',
+    'name_ar': 'طب عام',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ORTHOPEDICS',
+    'name_ar': 'جراحة العظام',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'OTOLARYNGOLOGY',
+    'name_ar': 'أنف وأذن وحنجرة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'NEUROLOGY',
+    'name_ar': 'طب المخ والأعصاب',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'PSYCHIATRY',
+    'name_ar': 'الطب النفسي',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GYNECOLOGY',
+    'name_ar': 'أمراض النساء والتوليد',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'UROLOGY',
+    'name_ar': 'المسالك البولية',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ENDOCRINOLOGY',
+    'name_ar': 'الغدد الصماء',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GASTROENTEROLOGY',
+    'name_ar': 'الجهاز الهضمي',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'PULMONOLOGY',
+    'name_ar': 'الصدر',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'FAMILY_MEDICINE',
+    'name_ar': 'طب الأسرة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'RHEUMATOLOGY',
+    'name_ar': 'أمراض الروماتيزم',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'HEMATOLOGY',
+    'name_ar': 'أمراض الدم',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'NEPHROLOGY',
+    'name_ar': 'أمراض الكلى',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ALLERGY_IMMUNOLOGY',
+    'name_ar': 'الحساسية والمناعة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'INTERNAL_MEDICINE',
+    'name_ar': 'الباطنة العامة',
     'parent_code': null,
     'version': 1,
   },
@@ -2732,7 +2831,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       }
       final note = body['note'] as String?;
       appointment['status'] = 'CANCELLED';
-      appointment['version'] = ((appointment['version'] as num?)?.toInt() ?? 1) + 1;
+      appointment['version'] =
+          ((appointment['version'] as num?)?.toInt() ?? 1) + 1;
       appointment['cancelledReason'] = note == null || note.isEmpty
           ? 'PROVIDER_REQUEST'
           : 'PROVIDER_REQUEST: $note';
@@ -2912,7 +3012,6 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       'data': {'items': items, 'nextCursor': null},
     };
   });
-
 }
 
 /// Phase 8 notifications — mirrors `GET/PATCH /v1/notifications`.
@@ -2931,7 +3030,9 @@ void registerNotificationMocks(MockInterceptor interceptor) {
 
     final index = _mockNotificationStore.rows.indexWhere((n) => n['id'] == id);
     if (index != -1) {
-      final updated = Map<String, dynamic>.from(_mockNotificationStore.rows[index]);
+      final updated = Map<String, dynamic>.from(
+        _mockNotificationStore.rows[index],
+      );
       updated['read_at'] = DateTime.now().toUtc().toIso8601String();
       _mockNotificationStore.rows[index] = updated;
       _mockNotificationStore.persist();
@@ -2957,7 +3058,8 @@ void registerNotificationMocks(MockInterceptor interceptor) {
       items = items.where((row) => row['read_at'] == null).toList();
     }
 
-    final limit = int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
+    final limit =
+        int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
     final page = items.take(limit).toList();
 
     return {
@@ -3088,12 +3190,9 @@ _MockPaymentAmount _mockResolvePaymentAmount(dynamic raw) {
   }
   if (requested > _kMockConsultFee) {
     return _MockPaymentAmount.err(
-      _error(
-        422,
-        'PAYMENT_AMOUNT_EXCEEDS_FEE',
-        'المبلغ أكبر من قيمة الكشف.',
-        {'fullAmount': _kMockConsultFee.toStringAsFixed(2)},
-      ),
+      _error(422, 'PAYMENT_AMOUNT_EXCEEDS_FEE', 'المبلغ أكبر من قيمة الكشف.', {
+        'fullAmount': _kMockConsultFee.toStringAsFixed(2),
+      }),
     );
   }
   return _MockPaymentAmount.ok(requested.toStringAsFixed(2));
@@ -3129,7 +3228,11 @@ void registerWalletMocks(MockInterceptor interceptor) {
     final body = _body(options) ?? {};
     final amount = double.tryParse('${body['amount']}') ?? 0.0;
     if (amount <= 0) {
-      return _error(400, 'INVALID_AMOUNT', 'قيمة الشحن يجب أن تكون أكبر من صفر.');
+      return _error(
+        400,
+        'INVALID_AMOUNT',
+        'قيمة الشحن يجب أن تكون أكبر من صفر.',
+      );
     }
 
     final stamp = DateTime.now().millisecondsSinceEpoch;

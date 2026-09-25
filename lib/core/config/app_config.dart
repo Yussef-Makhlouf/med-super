@@ -19,6 +19,39 @@ final class AppConfig {
 
   bool get isDebug => kDebugMode;
 
+  /// Stops store/profile builds from silently shipping the local mock API or
+  /// an insecure API origin. Internal release-track builds may use staging.
+  void validateForStartup() {
+    validateBuildConfiguration(
+      isReleaseBuild: kReleaseMode,
+      env: env,
+      baseUrl: baseUrl,
+      mockBaseUrl: _mockBaseUrl,
+    );
+  }
+
+  @visibleForTesting
+  static void validateBuildConfiguration({
+    required bool isReleaseBuild,
+    required String env,
+    required String baseUrl,
+    required String mockBaseUrl,
+  }) {
+    if (!isReleaseBuild) return;
+
+    if (env != 'staging' && env != 'production') {
+      throw StateError('Release builds require ENV=staging or ENV=production.');
+    }
+
+    final uri = Uri.tryParse(baseUrl);
+    if (baseUrl == mockBaseUrl ||
+        uri == null ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty) {
+      throw StateError('Release builds require a real HTTPS BASE_URL.');
+    }
+  }
+
   /// Web Push certificate key pair's public key (Firebase Console → Project
   /// Settings → Cloud Messaging → Web Push certificates). Required by
   /// `FirebaseMessaging.getToken()` on web only — mobile ignores it.

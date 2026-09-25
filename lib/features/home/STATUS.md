@@ -34,7 +34,27 @@ artwork selection also checks the existing Arabic specialty names and falls
 back to the established icon for unknown entries. The doctor-search hero
 button now explicitly uses white foreground styling for its label and icon.
 
+**Specialty and order display refresh (2026-09-25):** added coordinated local
+artwork for the other 16 specialties in the backend seed catalog. The home row
+maps specialty UUIDs through their Arabic catalog names and uses icon fallback
+for any specialty added later. The mock specialty catalog now mirrors the
+backend's 21 seeded names. Specialty tiles use larger rounded artwork on home
+and a responsive illustrated grid on the full list. Patient pharmacy and lab
+order cards now use service illustrations, logical RTL status borders, and
+available real summary data such as lab test names, collection method, pharmacy
+quote notes, status, date, and price. No extra backend data or staff actions
+were added.
+
 **Orders navigation polish (2026-09-24):** the patient orders header now uses
 the localized guest name and accessible profile/notification actions. Pharmacy
 and lab tabs have announced selected states and 48dp touch height; the order
 search field exposes a localized clear action.
+
+**Service discovery refresh (2026-09-25):** replaced the single home hero and
+duplicated quick-action grid with a swipeable, five-page service carousel for
+doctor search, prescription upload, lab requests, appointments, and wallet.
+Each page opens its existing route, with the pharmacy draft reset retained.
+Carousel controls have expanded touch targets, localized English/Arabic labels,
+and dynamic height for larger text. Main home content is capped and centered on
+wide screens while remaining full-width on phones. Service discovery reuses
+existing app capabilities; no new backend services are implied.

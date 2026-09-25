@@ -11,11 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/payments/domain/payment_amount.dart';
-import 'package:med_super/core/payments/presentation/widgets/payment_customer_sheet.dart';
+import 'package:med_super/core/payments/presentation/widgets/fawry_customer_sheet.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
-import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/staggered_reveal.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -89,6 +88,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     final initial = widget.initialHold;
     if (initial != null) {
       _hold = initial;
+      _setAmountText(
+        PaymentAmount.fromNum(
+          initial.fullAmount ?? widget.request.consultationFee,
+        ),
+      );
       _stage = _Stage.held;
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _startCountdown(initial.expiresAt),
@@ -142,6 +146,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
     result.when(
       ok: (hold) {
+        _setAmountText(
+          PaymentAmount.fromNum(
+            hold.fullAmount ?? widget.request.consultationFee,
+          ),
+        );
         setState(() {
           _hold = hold;
           _stage = _Stage.held;
@@ -190,6 +199,21 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   /// reschedule hold), so only a full payment is offered.
   num? get _minAmount => _hold?.minPaymentAmount;
 
+  /// Once the server creates a hold, its fee and currency are authoritative.
+  /// Fall back to the doctor card only while a hold is loading or for legacy
+  /// reschedule responses that do not carry payment fields.
+  num get _fee => _hold?.fullAmount ?? widget.request.consultationFee;
+  String get _currency => _hold?.currency ?? widget.request.currency;
+
+  /// Preserve a valid caret position whenever the fee is copied into the
+  /// editable amount field programmatically.
+  void _setAmountText(String value) {
+    _amountController.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+
   /// A partial amount is only offered when the method takes one and the
   /// server gave a minimum below the fee (a fee ≤ the minimum can only be
   /// paid in full anyway).
@@ -197,8 +221,12 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     final min = _minAmount;
     return _method.supportsPartialPayment &&
         min != null &&
-        min < widget.request.consultationFee;
+        min < _fee;
   }
+
+  /// Keep the amount visible for wallet and Fawry even when the server
+  /// disables partial payments; in that case it displays the full fee only.
+  bool get _showPaymentAmount => _method.supportsPartialPayment;
 
   /// Wallet with less than the fee: start the field at what the wallet can
   /// actually cover instead of a full fee that would fail validation.
@@ -207,18 +235,22 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       _method = method;
       _amountError = null;
     });
+    if (method.supportsPartialPayment &&
+        _amountController.text.trim().isEmpty) {
+      _setAmountText(PaymentAmount.fromNum(_fee));
+    }
     if (method != AppointmentPaymentMethod.wallet || !_partialAllowed) return;
     final available = ref
         .read(walletBalanceProvider)
         .asData
         ?.value
         .availableBalance;
-    if (available == null || available >= widget.request.consultationFee) {
+    if (available == null || available >= _fee) {
       return;
     }
     // Floor to the cent so rounding never proposes more than the balance.
-    _amountController.text = PaymentAmount.fromNum(
-      (available * 100).floor() / 100,
+    _setAmountText(
+      PaymentAmount.fromNum((available * 100).floor() / 100),
     );
   }
 
@@ -246,12 +278,10 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
       );
       return false;
     }
-    if (amount > widget.request.consultationFee) {
+    if (amount > _fee) {
       setState(
         () => _amountError = 'appointments.payment_amount_exceeds_fee'.tr(
-          namedArgs: {
-            'fee': PaymentAmount.fromNum(widget.request.consultationFee),
-          },
+          namedArgs: {'fee': PaymentAmount.fromNum(_fee)},
         ),
       );
       return false;
@@ -282,22 +312,21 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     if (!_partialAllowed) return null;
     final parsed = PaymentAmount.tryParse(_amountController.text);
     if (parsed == null) return null;
-    if (num.parse(parsed) == widget.request.consultationFee) return null;
+    if (num.parse(parsed) == _fee) return null;
     return parsed;
   }
 
-  String _displayedPayAmount() {
+  String? _displayedPayAmount() {
     if (!_partialAllowed) {
-      return PaymentAmount.fromNum(widget.request.consultationFee);
+      return PaymentAmount.fromNum(_fee);
     }
-    return PaymentAmount.tryParse(_amountController.text) ??
-        PaymentAmount.fromNum(widget.request.consultationFee);
+    return PaymentAmount.tryParse(_amountController.text);
   }
 
   void _applyAmountFailure(Failure failure) {
-    // No amount field on screen (full payment only) — an inline error would
-    // be invisible, so show a snackbar instead. The hold is still valid:
-    // the server rolls back without consuming it.
+    // Partial payment is unavailable and the visible amount is read-only —
+    // surface an inline snackbar rather than attaching an unusable field
+    // error. The hold is still valid: the server rolls back without consuming it.
     if (!_partialAllowed) {
       setState(() {
         _stage = _Stage.held;
@@ -357,7 +386,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
   /// deliberately doesn't set [_confirmed] or route to the success screen.
   Future<void> _payWithFawry(AppointmentHold hold) async {
     final session = ref.read(sessionControllerProvider).asData?.value;
-    final customer = await showPaymentCustomerSheet(
+    final customer = await showFawryCustomerSheet(
       context,
       initialPhone: session?.user.phone,
     );
@@ -387,8 +416,11 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
             // that's the first attempt's amount, not what was sent now.
             builder: (_) => FawryPaymentScreen(
               initiation: initiation,
-              paidAmount: initiation.amount ?? _displayedPayAmount(),
-              currency: initiation.currency ?? widget.request.currency,
+              paidAmount:
+                  initiation.amount ??
+                  _displayedPayAmount() ??
+                  PaymentAmount.fromNum(_fee),
+              currency: initiation.currency ?? _currency,
             ),
           ),
         );
@@ -468,30 +500,33 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
                 children: [
                   StaggeredReveal(
                     index: 0,
-                    child: _SummaryCard(request: widget.request),
+                    child: _SummaryCard(
+                      request: widget.request,
+                      fee: _fee,
+                      currency: _currency,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   _PaymentMethodPicker(
                     selected: _method,
-                    fee: widget.request.consultationFee,
+                    fee: _fee,
                     minAmount: _minAmount,
                     enabled: _stage == _Stage.held,
                     onChanged: _onMethodChanged,
                   ),
-                  if (_partialAllowed) ...[
+                  if (_showPaymentAmount) ...[
                     const SizedBox(height: 20),
                     _PaymentAmountField(
                       controller: _amountController,
-                      currency: widget.request.currency,
-                      fee: widget.request.consultationFee,
-                      minAmount: _minAmount!,
+                      currency: _currency,
+                      fee: _fee,
+                      minAmount: _partialAllowed ? _minAmount : null,
                       errorText: _amountError,
                       enabled: _stage == _Stage.held,
+                      partialAllowed: _partialAllowed,
                       onChanged: (_) => setState(() => _amountError = null),
                       onPayFull: () {
-                        _amountController.text = PaymentAmount.fromNum(
-                          widget.request.consultationFee,
-                        );
+                        _setAmountText(PaymentAmount.fromNum(_fee));
                         setState(() => _amountError = null);
                       },
                     ),
@@ -514,7 +549,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               onConfirm: _pay,
               method: _method,
               payAmountLabel: _displayedPayAmount(),
-              currency: widget.request.currency,
+              currency: _currency,
             ),
           ],
         ),
@@ -566,15 +601,20 @@ class _Header extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.request});
+  const _SummaryCard({
+    required this.request,
+    required this.fee,
+    required this.currency,
+  });
 
   final BookingRequest request;
+  final num fee;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
-    final feeLabel = request.currency == 'EGP'
-        ? '${request.consultationFee} ج.م'
-        : '${request.consultationFee} ${request.currency}';
+    final formattedFee = PaymentAmount.fromNum(fee);
+    final feeLabel = currency == 'EGP' ? '$formattedFee ج.م' : '$formattedFee $currency';
     return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +686,7 @@ class _PaymentMethodPicker extends ConsumerWidget {
   });
 
   final AppointmentPaymentMethod selected;
-  final int fee;
+  final num fee;
   final bool enabled;
   final ValueChanged<AppointmentPaymentMethod> onChanged;
 
@@ -816,6 +856,7 @@ class _PaymentAmountField extends StatelessWidget {
     required this.fee,
     required this.minAmount,
     required this.enabled,
+    required this.partialAllowed,
     required this.onChanged,
     required this.onPayFull,
     this.errorText,
@@ -823,9 +864,10 @@ class _PaymentAmountField extends StatelessWidget {
 
   final TextEditingController controller;
   final String currency;
-  final int fee;
-  final num minAmount;
+  final num fee;
+  final num? minAmount;
   final bool enabled;
+  final bool partialAllowed;
   final String? errorText;
   final ValueChanged<String> onChanged;
   final VoidCallback onPayFull;
@@ -835,66 +877,176 @@ class _PaymentAmountField extends StatelessWidget {
     final feeLabel = currency == 'EGP'
         ? '${PaymentAmount.fromNum(fee)} ج.م'
         : '${PaymentAmount.fromNum(fee)} $currency';
-    final minLabel = currency == 'EGP'
-        ? '${PaymentAmount.fromNum(minAmount)} ج.م'
-        : '${PaymentAmount.fromNum(minAmount)} $currency';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'appointments.payment_amount'.tr(),
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppPalette.ink,
+    final minLabel = minAmount == null
+        ? null
+        : currency == 'EGP'
+        ? '${PaymentAmount.fromNum(minAmount!)} ج.م'
+        : '${PaymentAmount.fromNum(minAmount!)} $currency';
+    return AppSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'appointments.payment_amount'.tr(),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppPalette.ink,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'appointments.payment_amount_hint'.tr(namedArgs: {'min': minLabel}),
-          style: const TextStyle(fontSize: 12, color: AppPalette.inkMuted),
-        ),
-        const SizedBox(height: 10),
-        AppTextField(
-          label: 'appointments.payment_amount_label'.tr(),
-          controller: controller,
-          hint: PaymentAmount.fromNum(fee),
-          errorText: errorText,
-          readOnly: !enabled,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          textInputAction: TextInputAction.done,
-          textDirection: ui.TextDirection.ltr,
-          textAlign: TextAlign.start,
-          maxLength: 12,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          const SizedBox(height: 4),
+          Text(
+            partialAllowed
+                ? 'appointments.payment_amount_hint'.tr(
+                    namedArgs: {'min': minLabel!},
+                  )
+                : 'appointments.full_payment_only_hint'.tr(),
+            style: const TextStyle(fontSize: 12, color: AppPalette.inkMuted),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppPalette.primarySoft.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'appointments.total_fee_label'.tr(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppPalette.inkMuted,
+                    ),
+                  ),
+                ),
+                Directionality(
+                  textDirection: ui.TextDirection.ltr,
+                  child: Text(
+                    feeLabel,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppPalette.primary,
+                      fontFeatures: [ui.FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'appointments.payment_amount_label'.tr(),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppPalette.inkMuted,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Container(
+            constraints: const BoxConstraints(minHeight: 62),
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 10, 8),
+            decoration: BoxDecoration(
+              color: enabled ? AppPalette.surface : AppPalette.surfaceSunken,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: Border.all(
+                color: errorText == null ? AppPalette.border : AppPalette.error,
+                width: errorText == null ? 1 : 1.5,
+              ),
+            ),
+            child: Row(
+              textDirection: ui.TextDirection.ltr,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    enabled: enabled,
+                    readOnly: !partialAllowed,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    textInputAction: TextInputAction.done,
+                    textDirection: ui.TextDirection.ltr,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppPalette.ink,
+                      fontFeatures: [ui.FontFeature.tabularFigures()],
+                    ),
+                    maxLength: 12,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                    onChanged: onChanged,
+                    decoration: InputDecoration(
+                      hintText: PaymentAmount.fromNum(fee),
+                      hintStyle: const TextStyle(
+                        color: AppPalette.inkFaint,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      counterText: '',
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppPalette.primarySoft,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: Text(
+                    currency == 'EGP' ? 'ج.م' : currency,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppPalette.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (errorText != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              errorText!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppPalette.error,
+                height: 1.3,
+              ),
+            ),
           ],
-          onChanged: onChanged,
-          suffix: Padding(
-            padding: const EdgeInsets.only(left: 12, right: 12),
-            child: Center(
-              child: Text(
-                currency == 'EGP' ? 'ج.م' : currency,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppPalette.inkMuted,
+          const SizedBox(height: 6),
+          if (partialAllowed)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: enabled ? onPayFull : null,
+                child: Text(
+                  'appointments.pay_full_fee'.tr(namedArgs: {'fee': feeLabel}),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton(
-            onPressed: enabled ? onPayFull : null,
-            child: Text(
-              'appointments.pay_full_fee'.tr(namedArgs: {'fee': feeLabel}),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -970,23 +1122,16 @@ class _ConfirmBar extends StatelessWidget {
   final _Stage stage;
   final VoidCallback onConfirm;
   final AppointmentPaymentMethod method;
-  final String payAmountLabel;
+  final String? payAmountLabel;
   final String currency;
 
   @override
   Widget build(BuildContext context) {
-    final canConfirm = stage == _Stage.held;
+    final canConfirm = stage == _Stage.held && payAmountLabel != null;
     final isBusy = stage == _Stage.holding || stage == _Stage.confirming;
-    final amountSuffix = currency == 'EGP'
-        ? '$payAmountLabel ج.م'
-        : '$payAmountLabel $currency';
-    final label = method.isSynchronous
-        ? 'appointments.confirm_booking_with_amount'.tr(
-            namedArgs: {'amount': amountSuffix},
-          )
-        : 'appointments.continue_to_payment_with_amount'.tr(
-            namedArgs: {'amount': amountSuffix},
-          );
+    final label = payAmountLabel == null
+        ? 'appointments.enter_payment_amount'.tr()
+        : _labelForAmount(payAmountLabel!, currency, method);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 17, 16, 16),
       decoration: const BoxDecoration(
@@ -1027,5 +1172,20 @@ class _ConfirmBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _labelForAmount(
+    String amount,
+    String currency,
+    AppointmentPaymentMethod method,
+  ) {
+    final amountSuffix = currency == 'EGP' ? '$amount ج.م' : '$amount $currency';
+    return method.isSynchronous
+        ? 'appointments.confirm_booking_with_amount'.tr(
+            namedArgs: {'amount': amountSuffix},
+          )
+        : 'appointments.continue_to_payment_with_amount'.tr(
+            namedArgs: {'amount': amountSuffix},
+          );
   }
 }

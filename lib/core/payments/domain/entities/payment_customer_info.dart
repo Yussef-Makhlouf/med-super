@@ -1,14 +1,16 @@
-/// Paymob's `billing_data` requires a name/email/phone on every online
-/// payment regardless of method, so both `POST /v1/wallet/top-up` and
-/// `POST /v1/appointments/{holdId}/payments` nest this object
-/// (`clinic-reservations` `PaymentCustomerInfoDto`, File 12 Part 50).
+import 'payment_phone_info.dart';
+
+/// Paymob's wallet top-up `billing_data` requires name/email/phone, so
+/// `POST /v1/wallet/top-up` nests this object (`clinic-reservations`
+/// `PaymentCustomerInfoDto`, File 12 Part 50). Appointment Fawry uses the
+/// smaller [PaymentPhoneInfo] contract instead.
 ///
 /// Collected from a checkout form rather than read off the session:
 /// `identity-auth` exports only a masked-phone projection cross-module and
 /// no email at all, so the profile genuinely cannot supply these.
 ///
-/// Lives in `core/` because two unrelated features send it — same rationale
-/// as `core/specialties/`.
+/// This remains separate from the appointment Fawry contact model because
+/// Paymob's card top-up contract needs billing fields that Fawry does not.
 class PaymentCustomerInfo {
   const PaymentCustomerInfo({
     required this.firstName,

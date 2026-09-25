@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -5,6 +7,26 @@ plugins {
     id("com.google.firebase.crashlytics")
     // END: FlutterFire Configuration
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val releaseSigningProperties = Properties()
+val releaseSigningPropertiesFile = rootProject.file("key.properties")
+if (releaseSigningPropertiesFile.isFile) {
+    releaseSigningPropertiesFile.inputStream().use(releaseSigningProperties::load)
+}
+
+val releaseTasksRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+val releaseSigningKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val missingReleaseSigningKeys = releaseSigningKeys.filter {
+    releaseSigningProperties.getProperty(it).isNullOrBlank()
+}
+if (releaseTasksRequested && missingReleaseSigningKeys.isNotEmpty()) {
+    throw GradleException(
+        "Release signing is not configured. Add ${missingReleaseSigningKeys.joinToString()} " +
+            "to android/key.properties. See docs/ANDROID_RELEASE.md."
+    )
 }
 
 android {
@@ -23,14 +45,26 @@ android {
     defaultConfig {
         applicationId = "com.medsuper.med_super"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // Google Play requires API 36 for new app submissions from 2026-08-31.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (missingReleaseSigningKeys.isEmpty()) {
+                storeFile = rootProject.file(releaseSigningProperties.getProperty("storeFile")!!)
+                storePassword = releaseSigningProperties.getProperty("storePassword")!!
+                keyAlias = releaseSigningProperties.getProperty("keyAlias")!!
+                keyPassword = releaseSigningProperties.getProperty("keyPassword")!!
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

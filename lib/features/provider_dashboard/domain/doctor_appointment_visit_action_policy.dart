@@ -7,24 +7,21 @@ import 'entities/doctor_appointment.dart';
 /// derived state is stale.
 enum DoctorAppointmentVisitActionAvailability {
   available,
-  tooEarly,
-  outsideWindow,
   terminal,
   unavailable,
 }
 
+/// Visit transitions belong to an individual confirmed appointment, not its
+/// scheduled slot time. A short visit or an early arrival must not be blocked
+/// by the calendar. The backend remains authoritative for scope, version, and
+/// valid transition order.
 class DoctorAppointmentVisitActionPolicy {
-  const DoctorAppointmentVisitActionPolicy({
-    this.earlyArrivalWindow = const Duration(minutes: 30),
-  });
+  const DoctorAppointmentVisitActionPolicy();
 
   static const standard = DoctorAppointmentVisitActionPolicy();
 
-  final Duration earlyArrivalWindow;
-
   DoctorAppointmentVisitActionAvailability evaluate(
     DoctorAppointment appointment,
-    DateTime now,
   ) {
     if (!appointment.isActionable) {
       return DoctorAppointmentVisitActionAvailability.unavailable;
@@ -33,14 +30,6 @@ class DoctorAppointmentVisitActionPolicy {
       return DoctorAppointmentVisitActionAvailability.terminal;
     }
 
-    final current = now.toUtc();
-    final opensAt = appointment.startAt.toUtc().subtract(earlyArrivalWindow);
-    if (current.isBefore(opensAt)) {
-      return DoctorAppointmentVisitActionAvailability.tooEarly;
-    }
-    if (current.isAfter(appointment.endAt.toUtc())) {
-      return DoctorAppointmentVisitActionAvailability.outsideWindow;
-    }
     return DoctorAppointmentVisitActionAvailability.available;
   }
 }

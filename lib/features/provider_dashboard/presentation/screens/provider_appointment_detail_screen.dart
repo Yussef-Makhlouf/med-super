@@ -30,9 +30,11 @@ Future<bool?> showProviderAppointmentDetailSheet(
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    useSafeArea: true,
+    backgroundColor: AppColors.surfaceApp,
+    clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (_) =>
         ProviderAppointmentDetailScreen(appointmentId: appointmentId),
@@ -85,7 +87,6 @@ class _ProviderAppointmentDetailScreenState
     final next = appointment.visitStatus.next;
     final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
       appointment,
-      DateTime.now(),
     );
     if (_mutating ||
         next == null ||
@@ -223,27 +224,46 @@ class _ProviderAppointmentDetailScreenState
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.75,
-      maxChildSize: 0.95,
+      initialChildSize: 0.86,
+      maxChildSize: 0.96,
       builder: (context, scrollController) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
+            padding: const EdgeInsets.only(top: 10, bottom: 2),
+            child: Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(22, 8, 16, 8),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
-                    'provider_dashboard.appointments.title'.tr(),
+                    'provider_dashboard.appointments.detail_title'.tr(),
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                       color: AppColors.ink900,
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
+                IconButton.filledTonal(
+                  tooltip:
+                      MaterialLocalizations.of(context).closeButtonTooltip,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.mutedText2,
+                    fixedSize: const Size(42, 42),
+                  ),
+                  icon: const Icon(SolarIconsOutline.closeCircle, size: 20),
                   onPressed: () => Navigator.of(context).pop(_changed),
                 ),
               ],
@@ -270,22 +290,40 @@ class _ProviderAppointmentDetailScreenState
 
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      padding: const EdgeInsetsDirectional.fromSTEB(18, 4, 18, 28),
       children: [
         _card(
           children: [
             Row(
               children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: brandBlue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    SolarIconsOutline.user,
+                    color: brandBlue,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     appointment.patientName,
                     style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
                       color: AppColors.ink900,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 8),
                 AppBadge.soft(label: status.label, color: status.color),
               ],
             ),
@@ -298,8 +336,8 @@ class _ProviderAppointmentDetailScreenState
             ),
             _row(
               SolarIconsOutline.clockCircle,
-              'provider_dashboard.appointments.title'.tr(),
-              '${formatAppointmentTime(appointment.startAt)} - ${formatAppointmentTime(appointment.endAt)}',
+              'provider_dashboard.appointments.appointment_time'.tr(),
+              '${formatAppointmentTime(appointment.startAt)} – ${formatAppointmentTime(appointment.endAt)}',
             ),
             _row(
               SolarIconsOutline.buildings,
@@ -325,27 +363,9 @@ class _ProviderAppointmentDetailScreenState
               ),
           ],
         ),
-        if (appointment.payment case final payment?) ...[
-          const SizedBox(height: 12),
-          _paymentCard(payment),
-        ],
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ProviderClinicalRequestsScreen(
-                patientId: appointment.patientId,
-                patientName: appointment.patientName,
-                appointmentId: appointment.appointmentId,
-              ),
-            ),
-          ),
-          icon: const Icon(Icons.medical_services_outlined),
-          label: Text('provider_dashboard.clinical_requests.open'.tr()),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         _visitStatusPanel(appointment),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         if (appointment.isActionable && !appointment.canChangeBooking)
           Text(
             'provider_dashboard.visit_status.booking_locked'.tr(),
@@ -357,34 +377,124 @@ class _ProviderAppointmentDetailScreenState
             ),
           ),
         if (appointment.canChangeBooking) ...[
-          SizedBox(
-            height: 56,
-            child: ElevatedButton.icon(
-              onPressed: _mutating ? null : () => _reschedule(appointment),
-              icon: const Icon(SolarIconsOutline.restart),
-              label: Text('provider_dashboard.reschedule.action'.tr()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brandBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: const StadiumBorder(),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 54,
+                  child: OutlinedButton.icon(
+                    onPressed: _mutating
+                        ? null
+                        : () => _reschedule(appointment),
+                    icon: const Icon(SolarIconsOutline.restart, size: 18),
+                    label: Text(
+                      'provider_dashboard.reschedule.action'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: brandBlue,
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: brandBlue.withValues(alpha: 0.20),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 56,
-            child: OutlinedButton.icon(
-              onPressed: _mutating ? null : () => _cancel(appointment),
-              icon: const Icon(SolarIconsOutline.closeCircle),
-              label: Text('provider_dashboard.cancel.action'.tr()),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.errorRed,
-                shape: const StadiumBorder(),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 54,
+                  child: TextButton.icon(
+                    onPressed: _mutating ? null : () => _cancel(appointment),
+                    icon: const Icon(SolarIconsOutline.closeCircle, size: 18),
+                    label: Text(
+                      'provider_dashboard.cancel.action'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.errorRed,
+                      backgroundColor: AppColors.errorRed.withValues(
+                        alpha: 0.045,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
+        if (appointment.payment case final payment?) ...[
+          const SizedBox(height: 18),
+          _paymentCard(payment),
+        ],
+        const SizedBox(height: 12),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ProviderClinicalRequestsScreen(
+                  patientId: appointment.patientId,
+                  patientName: appointment.patientName,
+                  appointmentId: appointment.appointmentId,
+                ),
+              ),
+            ),
+            borderRadius: BorderRadius.circular(18),
+            child: Ink(
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 12, 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: brandBlue.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(
+                      SolarIconsOutline.documentMedicine,
+                      color: brandBlue,
+                      size: 19,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'provider_dashboard.clinical_requests.open'.tr(),
+                      style: const TextStyle(
+                        color: AppColors.ink900,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Directionality.of(context) == TextDirection.rtl
+                        ? SolarIconsOutline.altArrowLeft
+                        : SolarIconsOutline.altArrowRight,
+                    color: AppColors.mutedText2,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         if (_mutating)
           const Padding(
             padding: EdgeInsets.only(top: 16),
@@ -399,7 +509,6 @@ class _ProviderAppointmentDetailScreenState
     final next = appointment.visitStatus.next;
     final availability = DoctorAppointmentVisitActionPolicy.standard.evaluate(
       appointment,
-      DateTime.now(),
     );
     final completed =
         availability == DoctorAppointmentVisitActionAvailability.terminal;
@@ -409,10 +518,6 @@ class _ProviderAppointmentDetailScreenState
     final hint = switch (availability) {
       DoctorAppointmentVisitActionAvailability.available =>
         'provider_dashboard.visit_status.next_hint'.tr(),
-      DoctorAppointmentVisitActionAvailability.tooEarly =>
-        'provider_dashboard.visit_status.available_near_time'.tr(),
-      DoctorAppointmentVisitActionAvailability.outsideWindow =>
-        'provider_dashboard.visit_status.outside_window'.tr(),
       DoctorAppointmentVisitActionAvailability.terminal =>
         'provider_dashboard.visit_status.complete_hint'.tr(),
       DoctorAppointmentVisitActionAvailability.unavailable =>
@@ -424,34 +529,56 @@ class _ProviderAppointmentDetailScreenState
       curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: visual.color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: visual.color.withValues(alpha: 0.22)),
-        boxShadow: AppShadows.resting,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: AppShadows.raised,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'provider_dashboard.visit_status.title'.tr(),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: AppColors.ink900,
-            ),
+          Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 240),
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: visual.color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(visual.icon, color: visual.color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'provider_dashboard.visit_status.title'.tr(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.mutedText2,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    DoctorVisitStatusBadge(status: appointment.visitStatus),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          DoctorVisitStatusBadge(status: appointment.visitStatus),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             hint,
             style: const TextStyle(
-              fontSize: 12,
-              height: 1.45,
-              color: AppColors.mutedText2,
+              fontSize: 13,
+              height: 1.55,
+              color: AppColors.bodyText,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           if (availability ==
                   DoctorAppointmentVisitActionAvailability.available ||
               completed)
@@ -482,12 +609,13 @@ class _ProviderAppointmentDetailScreenState
                       : 'provider_dashboard.visit_status.action_left'.tr(),
                 ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: visual.color,
+                  backgroundColor: brandBlue,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: visual.color.withValues(alpha: 0.12),
+                  disabledBackgroundColor: AppColors.surfaceMuted,
                   disabledForegroundColor: visual.color,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(17),
                   ),
                 ),
               ),
@@ -582,10 +710,11 @@ class _ProviderAppointmentDetailScreenState
   };
 
   Widget _card({required List<Widget> children}) => Container(
-    padding: const EdgeInsets.all(18),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: AppColors.borderSubtle),
       boxShadow: AppShadows.resting,
     ),
     child: Column(

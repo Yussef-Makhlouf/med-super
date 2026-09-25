@@ -47,34 +47,41 @@ class PatientHomeScreen extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Column(
-                    children: [
-                      StaggeredReveal(
-                        index: 0,
-                        child: _HomeHeader(displayName: displayName),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Column(
+                        children: [
+                          StaggeredReveal(
+                            index: 0,
+                            child: _HomeHeader(displayName: displayName),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          const StaggeredReveal(
+                            index: 1,
+                            child: _HomeSearchBar(),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          const StaggeredReveal(
+                            index: 2,
+                            child: _ServiceCarousel(),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          StaggeredReveal(
+                            index: 3,
+                            child: SectionHeader(
+                              title: 'home.specialties'.tr(),
+                              actionLabel: 'common.view_all'.tr(),
+                              onAction: () =>
+                                  context.push('/patient/home/specialties'),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      const StaggeredReveal(index: 1, child: _HomeSearchBar()),
-                      const SizedBox(height: AppSpacing.lg),
-                      const StaggeredReveal(index: 2, child: _CareHero()),
-                      const SizedBox(height: AppSpacing.lg),
-                      const StaggeredReveal(index: 3, child: _QuickActions()),
-                      const SizedBox(height: AppSpacing.md),
-                      const StaggeredReveal(index: 4, child: _LabServiceCard()),
-                      const SizedBox(height: AppSpacing.xxl),
-                      StaggeredReveal(
-                        index: 5,
-                        child: SectionHeader(
-                          title: 'home.specialties'.tr(),
-                          actionLabel: 'common.view_all'.tr(),
-                          onAction: () =>
-                              context.push('/patient/home/specialties'),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -83,21 +90,33 @@ class PatientHomeScreen extends ConsumerWidget {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: StaggeredReveal(
-                    index: 7,
-                    child: SectionHeader(title: 'home.featured_doctors'.tr()),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: StaggeredReveal(
+                        index: 7,
+                        child: SectionHeader(
+                          title: 'home.featured_doctors'.tr(),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: const SliverToBoxAdapter(
-                  child: StaggeredReveal(
-                    index: 8,
-                    child: _FeaturedDoctorsList(),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: StaggeredReveal(
+                        index: 8,
+                        child: _FeaturedDoctorsList(),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -211,388 +230,334 @@ class _HomeSearchBar extends StatelessWidget {
   }
 }
 
-class _CareHero extends StatelessWidget {
-  const _CareHero();
+class _ServiceCarousel extends ConsumerStatefulWidget {
+  const _ServiceCarousel();
+
+  @override
+  ConsumerState<_ServiceCarousel> createState() => _ServiceCarouselState();
+}
+
+class _ServiceCarouselState extends ConsumerState<_ServiceCarousel> {
+  final PageController _controller = PageController(viewportFraction: 1);
+  int _activePage = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final artWidth = constraints.maxWidth < 360 ? 112.0 : 142.0;
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.xl),
-            border: Border.all(color: AppPalette.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.primary.withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              PositionedDirectional(
-                end: -34,
-                top: -54,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 168,
-                    height: 168,
-                    decoration: BoxDecoration(
-                      color: AppPalette.primarySoft.withValues(alpha: 0.62),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-              PositionedDirectional(
-                end: 8,
-                bottom: -4,
-                child: IgnorePointer(
-                  child: Image.asset(
-                    'assets/illustrations/care_overview.png',
-                    width: artWidth,
-                    height: 158,
-                    fit: BoxFit.contain,
-                    semanticLabel: 'home.care_illustration_semantics'.tr(),
-                  ),
-                ),
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 184),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(18, 16, 14, 14),
-                  child: SizedBox(
-                    width: constraints.maxWidth - artWidth - 36,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'home.care_title'.tr(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleLarge?.copyWith(
-                            color: AppPalette.ink,
-                            height: 1.22,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'home.care_subtitle'.tr(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: AppPalette.inkMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 56,
-                          child: FilledButton.icon(
-                            onPressed: () =>
-                                context.push('/patient/home/search'),
-                            icon: const Icon(
-                              SolarIconsOutline.magnifier,
-                              size: 18,
-                            ),
-                            label: Text(
-                              'home.find_doctor'.tr(),
-                              style: textTheme.labelLarge?.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                height: 1.25,
-                              ),
-                            ),
-                            style: FilledButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
-                              textStyle: textTheme.labelLarge,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _QuickActions extends ConsumerWidget {
-  const _QuickActions();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final actions = [
-      _CareAction(
+    final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+    final services = [
+      _HomeService(
         title: 'home.find_doctor'.tr(),
         subtitle: 'home.find_doctor_sub'.tr(),
+        image: 'assets/illustrations/doctor_discovery.png',
+        cta: 'home.service_doctors_cta'.tr(),
         icon: SolarIconsOutline.stethoscope,
-        illustration: 'assets/illustrations/doctor_discovery.png',
         onTap: () => context.push('/patient/home/search'),
       ),
-      _CareAction(
-        title: 'nav.appointments'.tr(),
-        subtitle: 'home.appointments_sub'.tr(),
-        icon: SolarIconsOutline.calendarMinimalistic,
-        illustration: 'assets/illustrations/appointment_calendar.png',
-        onTap: () => context.go('/patient/appointments'),
-      ),
-      _CareAction(
+      _HomeService(
         title: 'home.upload_rx'.tr(),
         subtitle: 'home.upload_rx_sub'.tr(),
+        image: 'assets/illustrations/pharmacy_order.png',
+        cta: 'home.service_pharmacy_cta'.tr(),
         icon: SolarIconsOutline.pills,
-        illustration: 'assets/illustrations/pharmacy_order.png',
-        onTap: () {
-          ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
-          ref.read(selectedDeliveryMethodProvider.notifier).reset();
-          ref.read(selectedPharmacyProvider.notifier).clear();
-          ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
-          ref.invalidate(pharmacySearchProvider);
-          ref.invalidate(prescriptionUploadControllerProvider);
-          context.push('/patient/pharmacy/upload');
-        },
+        onTap: () => _openPharmacy(context, ref),
       ),
-      _CareAction(
+      _HomeService(
+        title: 'home.lab_service_title'.tr(),
+        subtitle: 'home.lab_service_subtitle'.tr(),
+        image: 'assets/illustrations/lab_service.png',
+        cta: 'home.service_labs_cta'.tr(),
+        icon: SolarIconsOutline.testTube,
+        onTap: () => context.push('/patient/lab/upload'),
+      ),
+      _HomeService(
+        title: 'nav.appointments'.tr(),
+        subtitle: 'home.appointments_sub'.tr(),
+        image: 'assets/illustrations/appointment_calendar.png',
+        cta: 'home.service_appointments_cta'.tr(),
+        icon: SolarIconsOutline.calendarMinimalistic,
+        onTap: () => context.go('/patient/appointments'),
+      ),
+      _HomeService(
         title: 'home.wallet'.tr(),
         subtitle: 'home.wallet_sub'.tr(),
+        image: 'assets/illustrations/wallet.png',
+        cta: 'home.service_wallet_cta'.tr(),
         icon: SolarIconsOutline.walletMoney,
-        illustration: 'assets/illustrations/wallet.png',
         onTap: () => context.push('/patient/home/wallet'),
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 620 ? 4 : 2;
-        final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: actions.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: textScale > 1.25 ? 148 : 126,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'home.services'.tr(),
+                style: textTheme.titleMedium?.copyWith(
+                  color: AppPalette.ink,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Text(
+              'home.swipe_services'.tr(),
+              style: textTheme.labelSmall?.copyWith(color: AppPalette.inkMuted),
+            ),
+            const SizedBox(width: 5),
+            const Icon(
+              Icons.swap_horiz_rounded,
+              size: 16,
+              color: AppPalette.inkMuted,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: textScale > 1.2 ? 240 : 204,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: services.length,
+            onPageChanged: (index) => setState(() => _activePage = index),
+            itemBuilder: (context, index) => _HomeServiceCard(
+              service: services[index],
+              pageIndex: index,
+            ),
           ),
-          itemBuilder: (context, index) =>
-              _QuickActionCard(action: actions[index]),
-        );
-      },
-    );
-  }
-}
-
-class _LabServiceCard extends StatelessWidget {
-  const _LabServiceCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final destinationLabel = 'home.lab_service_cta'.tr();
-
-    return Semantics(
-      button: true,
-      label: '${'home.lab_service_title'.tr()}. '
-          '${'home.lab_service_subtitle'.tr()}. $destinationLabel',
-      child: TapScale(
-        onTap: () => context.push('/patient/lab/upload'),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            border: Border.all(color: AppPalette.border),
-            boxShadow: AppShadows.resting,
-          ),
-          child: Stack(
-            children: [
-              PositionedDirectional(
-                end: -18,
-                top: -28,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 112,
-                    height: 112,
-                    decoration: BoxDecoration(
-                      color: AppPalette.primarySoft.withValues(alpha: 0.7),
-                      shape: BoxShape.circle,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(services.length, (index) {
+            final active = index == _activePage;
+            return Semantics(
+              button: true,
+              selected: active,
+              label: services[index].title,
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _controller.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 380),
+                    curve: Curves.easeOutCubic,
+                  ),
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      width: active ? 24 : 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? AppPalette.primary
+                            : AppPalette.border,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
                     ),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 14, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'home.lab_service_title'.tr(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.titleSmall?.copyWith(
-                              color: AppPalette.ink,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'home.lab_service_subtitle'.tr(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: AppPalette.inkMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                destinationLabel,
-                                style: textTheme.labelLarge?.copyWith(
-                                  color: AppPalette.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 16,
-                                color: AppPalette.primary,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Image.asset(
-                      'assets/illustrations/lab_service.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          }),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _CareAction {
-  const _CareAction({
+class _HomeService {
+  const _HomeService({
     required this.title,
     required this.subtitle,
+    required this.image,
+    required this.cta,
     required this.icon,
     required this.onTap,
-    this.illustration,
   });
 
   final String title;
   final String subtitle;
+  final String image;
+  final String cta;
   final IconData icon;
-  final String? illustration;
   final VoidCallback onTap;
 }
 
-class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({required this.action});
+class _HomeServiceCard extends StatelessWidget {
+  const _HomeServiceCard({required this.service, required this.pageIndex});
 
-  final _CareAction action;
+  final _HomeService service;
+  final int pageIndex;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return TapScale(
-      onTap: action.onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          border: Border.all(color: AppPalette.border),
-          boxShadow: AppShadows.resting,
-        ),
-        padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 10, 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    action.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: AppPalette.ink,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    action.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppPalette.inkMuted,
-                    ),
-                  ),
-                ],
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 2),
+      child: Semantics(
+        button: true,
+        label: '${service.title}. ${service.subtitle}. ${service.cta}',
+        child: TapScale(
+          onTap: service.onTap,
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: pageIndex.isEven
+                    ? const [Color(0xFF2452D9), Color(0xFF163BAA)]
+                    : const [Color(0xFF126E75), Color(0xFF0C535F)],
               ),
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              boxShadow: [
+                BoxShadow(
+                  color: AppPalette.primary.withValues(alpha: 0.16),
+                  blurRadius: 25,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            SizedBox(
-              width: 48,
-              height: 48,
-              child: action.illustration == null
-                  ? DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppPalette.primarySoft.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(AppRadii.md),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final artWidth = constraints.maxWidth < 360 ? 112.0 : 142.0;
+                return Stack(
+                  children: [
+                    PositionedDirectional(
+                      end: -38,
+                      top: -58,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 190,
+                          height: 190,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        action.icon,
-                        color: AppPalette.primary,
-                        size: 24,
-                      ),
-                    )
-                  : Image.asset(
-                      action.illustration!,
-                      fit: BoxFit.contain,
-                      excludeFromSemantics: true,
                     ),
+                    PositionedDirectional(
+                      end: 0,
+                      bottom: -3,
+                      child: IgnorePointer(
+                        child: Image.asset(
+                          service.image,
+                          width: artWidth,
+                          height: 164,
+                          fit: BoxFit.contain,
+                          excludeFromSemantics: true,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        18,
+                        15,
+                        14,
+                        14,
+                      ),
+                      child: SizedBox(
+                        width: constraints.maxWidth - artWidth - 34,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(service.icon, color: Colors.white, size: 23),
+                            const SizedBox(height: 7),
+                            Text(
+                              service.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                height: 1.16,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              service.subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.82),
+                                height: 1.3,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadii.pill),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                  12,
+                                  7,
+                                  8,
+                                  7,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        service.cta,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: textTheme.labelMedium?.copyWith(
+                                          color: AppPalette.primary,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 7),
+                                    const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 16,
+                                      color: AppPalette.primary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+void _openPharmacy(BuildContext context, WidgetRef ref) {
+  ref.read(uploadedPrescriptionImagesProvider.notifier).clear();
+  ref.read(selectedDeliveryMethodProvider.notifier).reset();
+  ref.read(selectedPharmacyProvider.notifier).clear();
+  ref.read(pharmacySearchQueryProvider.notifier).setQuery('');
+  ref.invalidate(pharmacySearchProvider);
+  ref.invalidate(prescriptionUploadControllerProvider);
+  context.push('/patient/pharmacy/upload');
 }
 
 /// Real `GET /v1/specialties` list (public, no auth) — replaces the
@@ -607,25 +572,25 @@ class _SpecialtiesRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final specialties = ref.watch(specialtiesProvider);
     return SizedBox(
-      height: 118,
+      height: 146,
       child: AsyncValueView(
         value: specialties,
         onRetry: () => ref.invalidate(specialtiesProvider),
-        // Matches the loaded row's own shape (circle + label) rather than a
+        // Matches the loaded row's own shape (art tile + label) rather than a
         // generic spinner, so the layout doesn't jump once data arrives.
         loadingWidget: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: 5,
+          itemCount: 7,
           separatorBuilder: (_, _) => const SizedBox(width: 12),
           itemBuilder: (_, _) => const SizedBox(
-            width: 78,
+            width: 98,
             child: Column(
               children: [
-                SkeletonLoader(width: 64, height: 64, borderRadius: 32),
+                SkeletonLoader(width: 82, height: 82, borderRadius: 24),
                 SizedBox(height: 8),
-                SkeletonLoader(width: 48, height: 12, borderRadius: 6),
+                SkeletonLoader(width: 70, height: 12, borderRadius: 6),
               ],
             ),
           ),
@@ -678,7 +643,7 @@ class _SpecialtyItem extends StatelessWidget {
     final illustration = specialtyIllustrationFor(specialty);
     final name = specialty.localizedName(context.locale.languageCode);
     return SizedBox(
-      width: 78,
+      width: 98,
       child: TapScale(
         onTap: () => context.push(
           '/patient/home/search'
@@ -688,28 +653,27 @@ class _SpecialtyItem extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 82,
+              height: 82,
               decoration: BoxDecoration(
-                // Tinted with the specialty's own icon color rather than
-                // flat white — reinforces the per-specialty color coding
-                // already carried by the icon (see specialty_visuals.dart)
+                // Tinted with the specialty's own accent rather than flat
+                // white, matching the visual mapping in specialty_visuals.dart.
                 // instead of introducing a new one.
                 color: visual.color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: AppShadows.resting,
               ),
               clipBehavior: Clip.antiAlias,
               child: illustration == null
                   ? Center(
-                      child: Icon(visual.icon, color: visual.color, size: 28),
+                      child: Icon(visual.icon, color: visual.color, size: 32),
                     )
                   : Image.asset(
                       illustration,
                       fit: BoxFit.contain,
                       excludeFromSemantics: true,
                       errorBuilder: (_, _, _) => Center(
-                        child: Icon(visual.icon, color: visual.color, size: 28),
+                        child: Icon(visual.icon, color: visual.color, size: 32),
                       ),
                     ),
             ),
@@ -717,9 +681,12 @@ class _SpecialtyItem extends StatelessWidget {
             Text(
               name,
               textAlign: TextAlign.center,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: textTheme.labelMedium?.copyWith(color: AppPalette.ink),
+              style: textTheme.labelMedium?.copyWith(
+                color: AppPalette.ink,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),

@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:med_super/core/config/app_config.dart';
 import 'package:med_super/core/notifications/fcm_service.dart';
 import 'package:med_super/core/storage/hive_service.dart';
 import 'package:med_super/firebase_options.dart';
 
 Future<void> bootstrap(Widget Function() appBuilder) async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppConfig.instance.validateForStartup();
 
   // Preferred orientation: portrait + landscape.
   await SystemChrome.setPreferredOrientations([

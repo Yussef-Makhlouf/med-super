@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
+import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/core/widgets/skeleton_loader.dart';
@@ -18,21 +21,12 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/book_walkin_appointment_sheet.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
-import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_cancel_appointment_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 
-/// The doctor's appointment queue, backed by
-/// `GET /v1/doctors/me/appointments` (File 12 Part 49.7).
-///
-/// The old accept/reject queue is gone: a real appointment is already
-/// `CONFIRMED` when the doctor first sees it (the patient held the slot and
-/// paid), so there is nothing to accept. The provider actions are **cancel**
-/// and **reschedule**, both on the detail screen and inline here.
-///
-/// Paging is cursor-based and accumulated locally rather than through the
-/// Riverpod family, because "load more" has to append to what is already on
-/// screen; the family provider still owns the *first* page of every distinct
-/// filter combination, and changing any filter resets the accumulator.
+/// Daily visit-workflow board, backed by the doctor's scoped appointments.
+/// The home tab is the availability calendar; this tab helps the clinic move
+/// confirmed patients through waiting → in-room → left and review the visit
+/// record. Booking changes remain in the detail sheet.
 class ProviderAppointmentsScreen extends ConsumerStatefulWidget {
   const ProviderAppointmentsScreen({this.openAppointmentId, super.key});
 
@@ -48,14 +42,9 @@ class ProviderAppointmentsScreen extends ConsumerStatefulWidget {
 
 class _ProviderAppointmentsScreenState
     extends ConsumerState<ProviderAppointmentsScreen> {
-  static const _segmentStatuses = <DoctorAppointmentStatus>[
-    DoctorAppointmentStatus.cancelled,
-    DoctorAppointmentStatus.completed,
-    DoctorAppointmentStatus.confirmed,
-  ];
-
   late DateTime _selectedDate; // Today, until the doctor picks another date
-  int _selectedSegment = 2; // Upcoming
+  int _selectedVisitStage = 0;
+  bool _historyMode = false;
   String? _branchId; // null = every branch the doctor works at
 
   final List<DoctorAppointment> _items = [];
@@ -63,9 +52,6 @@ class _ProviderAppointmentsScreenState
   bool _loading = true;
   bool _loadingMore = false;
   Failure? _error;
-
-  /// Guards against a double-tapped action firing two mutations.
-  bool _mutating = false;
 
   // Tracks which notification-provided appointment id has already triggered
   // the auto-open, so a rebuild of this screen (tab switch, go_router
@@ -127,9 +113,6 @@ class _ProviderAppointmentsScreenState
     _onFilterChanged(() => _selectedDate = DateTime(picked.year, picked.month, picked.day));
   }
 
-  DoctorAppointmentStatus get _selectedStatus =>
-      _segmentStatuses[_selectedSegment];
-
   /// Local midnight-to-midnight. The backend applies **both** bounds, so this
   /// is a real single-day window rather than "everything up to tomorrow".
   ({DateTime from, DateTime to}) get _dayRange {
@@ -160,7 +143,7 @@ class _ProviderAppointmentsScreenState
         .call(
           from: range.from,
           to: range.to,
-          status: _selectedStatus,
+          status: _historyMode ? null : DoctorAppointmentStatus.confirmed,
           clinicBranchId: _branchId,
           cursor: cursor,
         );
@@ -196,37 +179,6 @@ class _ProviderAppointmentsScreenState
     // own close button, so the mutated-or-not result isn't reliable — always
     // refetch on close instead of trusting the returned value.
     if (mounted) await _reload();
-  }
-
-  Future<void> _cancel(DoctorAppointment appointment) async {
-    if (_mutating) return;
-    final confirmed = await showProviderCancelDialog(
-      context,
-      patientName: appointment.patientName,
-    );
-    if (confirmed == null || !mounted) return;
-
-    setState(() => _mutating = true);
-    final result = await ref
-        .read(cancelDoctorAppointmentUseCaseProvider)
-        .call(appointmentId: appointment.appointmentId, note: confirmed.note);
-    if (!mounted) return;
-    setState(() => _mutating = false);
-
-    result.when(
-      ok: (outcome) {
-        _showSnack(
-          outcome.refundAmount > 0
-              ? 'provider_dashboard.cancel.success_with_refund'.tr(
-                  args: [outcome.refundAmount.toStringAsFixed(2), 'EGP'],
-                )
-              : 'provider_dashboard.cancel.success'.tr(),
-          success: true,
-        );
-        _reload();
-      },
-      err: (failure) => _showSnack(providerFailureMessage(failure)),
-    );
   }
 
   Future<void> _openBookWalkIn() async {
@@ -294,16 +246,18 @@ class _ProviderAppointmentsScreenState
                 padding: const EdgeInsets.all(20),
                 children: [
                   _summaryTile(textTheme),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   _dayPicker(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   clinicsAsync.maybeWhen(
                     data: _branchFilter,
                     orElse: () => const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 16),
+                  _workspaceMode(),
+                  const SizedBox(height: 12),
                   _segments(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   _list(),
                 ],
               ),
@@ -315,70 +269,219 @@ class _ProviderAppointmentsScreenState
   }
 
   Widget _summaryTile(TextTheme textTheme) {
-    final count = _items.length;
+    String countLabel(int count) => '$count${_nextCursor == null ? '' : '+'}';
+
+    final appointments = _items
+        .where((item) => item.status == DoctorAppointmentStatus.confirmed)
+        .toList();
+    final history = _items
+        .where((item) => item.status != DoctorAppointmentStatus.confirmed)
+        .toList();
+    final waiting = appointments
+        .where((item) => item.visitStatus == DoctorVisitStatus.waiting)
+        .length;
+    final inRoom = appointments
+        .where((item) => item.visitStatus == DoctorVisitStatus.inDoctorRoom)
+        .length;
+    final dateLabel = DateFormat.yMMMMEEEEd(
+      context.locale.toString(),
+    ).format(_selectedDate);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [brandBlue, brandBlue.withValues(alpha: 0.86)],
+        ),
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        boxShadow: AppShadows.resting,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'provider_dashboard.appointments.summary_title'.tr(),
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ink900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'provider_dashboard.appointments.summary_count'.tr(
-                    args: ['$count${_nextCursor != null ? '+' : ''}'],
-                  ),
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.mutedText2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: brandBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  _loading ? '--' : count.toString().padLeft(2, '0'),
-                  style: const TextStyle(
-                    color: brandBlue,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                    height: 1.1,
-                  ),
-                ),
-                Text(
-                  'provider_dashboard.appointments.summary_total'.tr(),
-                  style: const TextStyle(
-                    color: brandBlue,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: brandBlue.withValues(alpha: 0.16),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            (_historyMode
+                    ? 'provider_dashboard.appointments.history_title'
+                    : 'provider_dashboard.appointments.workflow_title')
+                .tr(),
+            style: textTheme.titleLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            dateLabel,
+            style: textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.82),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _loading
+                          ? '—'
+                          : countLabel(
+                              _historyMode ? history.length : appointments.length,
+                            ),
+                      style: const TextStyle(
+                        color: brandBlue,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'provider_dashboard.appointments.metric_total'.tr(),
+                      style: const TextStyle(
+                        color: brandBlue,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  children: [
+                    _inlineSummaryMetric(
+                      label: (_historyMode
+                              ? 'provider_dashboard.appointments.metric_cancelled'
+                              : 'provider_dashboard.appointments.metric_waiting')
+                          .tr(),
+                      value: _loading
+                          ? '—'
+                          : _historyMode
+                          ? countLabel(
+                              history
+                                  .where((item) => item.status == DoctorAppointmentStatus.cancelled)
+                                  .length,
+                            )
+                          : countLabel(waiting),
+                      icon: _historyMode
+                          ? Icons.event_busy_outlined
+                          : SolarIconsOutline.clockCircle,
+                    ),
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 24),
+                      child: Divider(
+                        height: 12,
+                        color: Colors.white.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    _inlineSummaryMetric(
+                      label: (_historyMode
+                              ? 'provider_dashboard.appointments.metric_completed'
+                              : 'provider_dashboard.appointments.metric_in_room')
+                          .tr(),
+                      value: _loading
+                          ? '—'
+                          : _historyMode
+                          ? countLabel(
+                              history
+                                  .where((item) => item.status == DoctorAppointmentStatus.completed)
+                                  .length,
+                            )
+                          : countLabel(inRoom),
+                      icon: _historyMode
+                          ? Icons.check_circle_outline
+                          : Icons.medical_services_outlined,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inlineSummaryMetric({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) => Row(
+    children: [
+      Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.9)),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        value,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 19,
+          height: 1.1,
+        ),
+      ),
+    ],
+  );
+
+  Widget _workspaceMode() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            _historyMode
+                ? 'provider_dashboard.appointments.history_title'.tr()
+                : 'provider_dashboard.appointments.visit_flow_title'.tr(),
+            style: const TextStyle(
+              color: AppColors.ink900,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () => _onFilterChanged(() {
+            _historyMode = !_historyMode;
+            _selectedVisitStage = 0;
+          }),
+          icon: Icon(
+            _historyMode ? Icons.arrow_back_rounded : Icons.history_rounded,
+            size: 18,
+          ),
+          label: Text(
+            _historyMode
+                ? 'provider_dashboard.appointments.back_to_visits'.tr()
+                : 'provider_dashboard.appointments.open_history'.tr(),
+          ),
+        ),
+      ],
     );
   }
 
@@ -530,46 +633,99 @@ class _ProviderAppointmentsScreenState
   }
 
   Widget _segments() {
+    if (_historyMode) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, size: 18, color: AppColors.mutedText2),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'provider_dashboard.appointments.history_hint'.tr(),
+                style: const TextStyle(
+                  color: AppColors.mutedText2,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     const labels = [
-      'provider_dashboard.appointments.segment_cancelled',
-      'provider_dashboard.appointments.segment_completed',
-      'provider_dashboard.appointments.segment_upcoming',
+      'provider_dashboard.appointments.visit_all',
+      'provider_dashboard.visit_status.waiting',
+      'provider_dashboard.visit_status.in_doctor_room',
+      'provider_dashboard.visit_status.left',
     ];
     return Container(
-      height: 52,
+      height: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadii.md),
       ),
-      child: Row(
-        children: List.generate(labels.length, (index) {
-          final selected = _selectedSegment == index;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => _onFilterChanged(() => _selectedSegment = index),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: selected ? brandBlue : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                  boxShadow: selected ? AppShadows.resting : null,
-                ),
-                child: Center(
-                  child: Text(
-                    labels[index].tr(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: selected ? Colors.white : AppColors.mutedText2,
-                      fontSize: 13,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(labels.length, (index) {
+            final selected = _selectedVisitStage == index;
+            return Padding(
+              padding: const EdgeInsetsDirectional.only(end: 4),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadii.sm),
+                onTap: () => setState(() => _selectedVisitStage = index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: selected ? brandBlue : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    boxShadow: selected ? AppShadows.resting : null,
+                  ),
+                  child: Center(
+                    child: Text(
+                      labels[index].tr(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: selected ? Colors.white : AppColors.mutedText2,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
     );
+  }
+
+  List<DoctorAppointment> get _visibleItems {
+    final rows = _historyMode
+        ? _items.where((item) => item.status != DoctorAppointmentStatus.confirmed)
+        : _items.where((item) => item.status == DoctorAppointmentStatus.confirmed);
+    final filtered = rows.where((item) {
+      if (_historyMode || _selectedVisitStage == 0) return true;
+      return switch (_selectedVisitStage) {
+        1 => item.visitStatus == DoctorVisitStatus.waiting,
+        2 => item.visitStatus == DoctorVisitStatus.inDoctorRoom,
+        3 => item.visitStatus == DoctorVisitStatus.left,
+        _ => true,
+      };
+    }).toList();
+    filtered.sort((a, b) => a.startAt.compareTo(b.startAt));
+    return filtered;
   }
 
   Widget _list() {
@@ -580,45 +736,227 @@ class _ProviderAppointmentsScreenState
       return ErrorBanner(message: providerFailureMessage(error), onRetry: _reload);
     }
 
-    if (_items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        child: EmptyState(
-          title: 'provider_dashboard.appointments.empty_title'.tr(),
-          subtitle: 'provider_dashboard.appointments.empty_subtitle'.tr(),
-          icon: SolarIconsOutline.calendarMinimalistic,
-        ),
+    final visibleItems = _visibleItems;
+    if (visibleItems.isEmpty) {
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            child: EmptyState(
+              title: _historyMode
+                  ? 'provider_dashboard.appointments.history_empty_title'.tr()
+                  : 'provider_dashboard.appointments.stage_empty_title'.tr(),
+              subtitle: _historyMode
+                  ? 'provider_dashboard.appointments.history_empty_subtitle'.tr()
+                  : 'provider_dashboard.appointments.stage_empty_subtitle'.tr(),
+              icon: SolarIconsOutline.calendarMinimalistic,
+            ),
+          ),
+          if (_nextCursor != null) _loadMoreButton(),
+        ],
       );
     }
 
     return Column(
       children: [
-        for (final appointment in _items)
+        for (final appointment in visibleItems)
           Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: ProviderAppointmentCard(
-              appointment: appointment,
-              busy: _mutating,
-              onTap: () => _openDetail(appointment),
-              onCancel: () => _cancel(appointment),
-              onReschedule: () => _openDetail(appointment),
-            ),
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _appointmentCard(appointment),
           ),
-        if (_nextCursor != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4, bottom: 24),
-            child: OutlinedButton(
-              onPressed: _loadingMore ? null : _loadMore,
-              child: _loadingMore
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('provider_dashboard.appointments.load_more'.tr()),
-            ),
-          ),
+        if (_nextCursor != null) _loadMoreButton(),
       ],
+    );
+  }
+
+  Widget _loadMoreButton() => Padding(
+    padding: const EdgeInsets.only(top: 4, bottom: 24),
+    child: OutlinedButton(
+      onPressed: _loadingMore ? null : _loadMore,
+      child: _loadingMore
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Text('provider_dashboard.appointments.load_more'.tr()),
+    ),
+  );
+
+  Widget _appointmentCard(DoctorAppointment appointment) {
+    final active = appointment.status == DoctorAppointmentStatus.confirmed;
+    final payment = appointment.payment;
+    final remaining = payment?.remainingBalance ?? 0;
+    final status = doctorAppointmentStatusStyle(appointment.status);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: InkWell(
+        onTap: () => _openDetail(appointment),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.borderLight),
+            boxShadow: AppShadows.resting,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 64,
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: brandBlue.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          formatAppointmentTime(appointment.startAt),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.ink900,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          formatAppointmentTime(appointment.endAt),
+                          style: const TextStyle(
+                            color: AppColors.mutedText2,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment.patientName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.ink900,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          appointment.patientPhone,
+                          textDirection: ui.TextDirection.ltr,
+                          style: const TextStyle(
+                            color: AppColors.mutedText2,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (active)
+                    DoctorVisitStatusBadge(status: appointment.visitStatus)
+                  else
+                    AppBadge.soft(label: status.label, color: status.color),
+                ],
+              ),
+              const SizedBox(height: 13),
+              Row(
+                children: [
+                  const Icon(
+                    SolarIconsOutline.mapPoint,
+                    size: 16,
+                    color: AppColors.mutedText2,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '${appointment.clinicCity} · ${appointment.clinicAddressLine1}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.mutedText2,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (active && payment != null && remaining > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.payments_outlined,
+                        size: 16,
+                        color: Color(0xFFB45309),
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          'provider_dashboard.appointments.balance_due'.tr(),
+                          style: const TextStyle(
+                            color: AppColors.ink900,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${remaining.toStringAsFixed(2)} ${payment.currency}',
+                        style: const TextStyle(
+                          color: Color(0xFF92400E),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 11),
+              Row(
+                children: [
+                  Text(
+                    'provider_dashboard.appointments.open_visit'.tr(),
+                    style: const TextStyle(
+                      color: brandBlue,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Directionality.of(context) == ui.TextDirection.rtl
+                        ? Icons.arrow_back_rounded
+                        : Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: brandBlue,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

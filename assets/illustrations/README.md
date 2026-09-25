@@ -16,10 +16,26 @@ Original raster illustrations generated for the MedSuper patient app with the bu
 | `specialty_dermatology.png` | Dermatology specialty tile | Dermatoscope, skin sample, and teal droplet; downsampled to 384 × 384. |
 | `specialty_dental.png` | Dental specialty tile | Tooth model, dental mirror, and sparkle; downsampled to 384 × 384. |
 | `specialty_ophthalmology.png` | Ophthalmology specialty tile | Eye and optical lens; downsampled to 384 × 384. |
+| `specialty_general_medicine.png` | General medicine specialty tile | Medical bag and stethoscope. |
+| `specialty_orthopedics.png` | Orthopedics specialty tile | Knee joint model. |
+| `specialty_ent.png` | Ear, nose, and throat specialty tile | Ear model and tuning fork. |
+| `specialty_neurology.png` | Neurology specialty tile | Brain model with neural detail. |
+| `specialty_psychiatry.png` | Psychiatry specialty tile | Calm abstract profile and thought bubbles. |
+| `specialty_gynecology.png` | Gynecology specialty tile | Non-graphic reproductive-system model. |
+| `specialty_urology.png` | Urology specialty tile | Kidney pair model. |
+| `specialty_endocrinology.png` | Endocrinology specialty tile | Thyroid model and molecule. |
+| `specialty_gastroenterology.png` | Gastroenterology specialty tile | Stomach and intestine model. |
+| `specialty_pulmonology.png` | Pulmonology specialty tile | Lungs with airflow detail. |
+| `specialty_family_medicine.png` | Family medicine specialty tile | Three abstract figures and a care cross. |
+| `specialty_rheumatology.png` | Rheumatology specialty tile | Hand joints and joint model. |
+| `specialty_hematology.png` | Hematology specialty tile | Blood drop and microscope. |
+| `specialty_nephrology.png` | Nephrology specialty tile | Kidneys and filtration droplet. |
+| `specialty_allergy_immunology.png` | Allergy and immunology specialty tile | Immune shield and pollen. |
+| `specialty_internal_medicine.png` | Internal medicine specialty tile | Clinical chart with organ symbols. |
 
 No embedded copy, patient photography, brand marks, or medical claims are included. Keep app labels and accessibility descriptions in the localized Flutter UI, not baked into these images.
 
-Flutter bundles this directory through the `assets/illustrations/` entry in `pubspec.yaml`. Example:
+The 16 new specialty images were generated as a consistent 4×4 transparent illustration sheet and exported as individual 384 × 384 PNGs. Flutter bundles this directory through the `assets/illustrations/` entry in `pubspec.yaml`. Example:
 
 ```dart
 Image.asset(

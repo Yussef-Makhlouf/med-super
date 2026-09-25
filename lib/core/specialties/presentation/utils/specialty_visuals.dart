@@ -30,29 +30,86 @@ const _visualsByKeyword = <String, SpecialtyVisual>{
   'CHILD': SpecialtyVisual(icon: Icons.child_care, color: Color(0xFF06B6D4)),
   'DERMA': SpecialtyVisual(icon: Icons.spa_outlined, color: Color(0xFF14B8A6)),
   'SKIN': SpecialtyVisual(icon: Icons.spa_outlined, color: Color(0xFF14B8A6)),
-  'DENTAL': SpecialtyVisual(icon: Icons.medical_services_outlined, color: brandBlue),
-  'DENT': SpecialtyVisual(icon: Icons.medical_services_outlined, color: brandBlue),
+  'DENTAL': SpecialtyVisual(
+    icon: Icons.medical_services_outlined,
+    color: brandBlue,
+  ),
+  'DENT': SpecialtyVisual(
+    icon: Icons.medical_services_outlined,
+    color: brandBlue,
+  ),
   'OPHTHALM': SpecialtyVisual(
     icon: Icons.visibility_outlined,
     color: Color(0xFFF97316),
   ),
-  'EYE': SpecialtyVisual(icon: Icons.visibility_outlined, color: Color(0xFFF97316)),
-  'ORTHO': SpecialtyVisual(icon: Icons.accessibility_new, color: Color(0xFF8B5CF6)),
-  'NEURO': SpecialtyVisual(icon: Icons.psychology_outlined, color: Color(0xFF6366F1)),
-  'OTOLARYNGOLOGY': SpecialtyVisual(icon: Icons.hearing_outlined, color: Color(0xFF0EA5E9)),
-  'GYN': SpecialtyVisual(icon: Icons.pregnant_woman_outlined, color: Color(0xFFEC4899)),
-  'PSYCH': SpecialtyVisual(icon: Icons.psychology_alt_outlined, color: Color(0xFF8B5CF6)),
-  'GENERAL': SpecialtyVisual(icon: Icons.local_hospital_outlined, color: brandBlue),
-  'UROLOGY': SpecialtyVisual(icon: Icons.water_drop_outlined, color: Color(0xFF0891B2)),
-  'ENDOCRINOLOGY': SpecialtyVisual(icon: Icons.science_outlined, color: Color(0xFFF59E0B)),
-  'GASTROENTEROLOGY': SpecialtyVisual(icon: Icons.restaurant_outlined, color: Color(0xFF84CC16)),
-  'PULMONOLOGY': SpecialtyVisual(icon: Icons.air_outlined, color: Color(0xFF3B82F6)),
-  'RHEUMAT': SpecialtyVisual(icon: Icons.healing_outlined, color: Color(0xFFF43F5E)),
-  'HEMAT': SpecialtyVisual(icon: Icons.bloodtype_outlined, color: Color(0xFFDC2626)),
-  'NEPHR': SpecialtyVisual(icon: Icons.filter_alt_outlined, color: Color(0xFF22D3EE)),
-  'ALLERGY': SpecialtyVisual(icon: Icons.local_florist_outlined, color: Color(0xFFA855F7)),
-  'FAMILY': SpecialtyVisual(icon: Icons.family_restroom_outlined, color: Color(0xFF16A34A)),
-  'INTERNAL': SpecialtyVisual(icon: Icons.health_and_safety_outlined, color: Color(0xFF64748B)),
+  'EYE': SpecialtyVisual(
+    icon: Icons.visibility_outlined,
+    color: Color(0xFFF97316),
+  ),
+  'ORTHO': SpecialtyVisual(
+    icon: Icons.accessibility_new,
+    color: Color(0xFF8B5CF6),
+  ),
+  'NEURO': SpecialtyVisual(
+    icon: Icons.psychology_outlined,
+    color: Color(0xFF6366F1),
+  ),
+  'OTOLARYNGOLOGY': SpecialtyVisual(
+    icon: Icons.hearing_outlined,
+    color: Color(0xFF0EA5E9),
+  ),
+  'GYN': SpecialtyVisual(
+    icon: Icons.pregnant_woman_outlined,
+    color: Color(0xFFEC4899),
+  ),
+  'PSYCH': SpecialtyVisual(
+    icon: Icons.psychology_alt_outlined,
+    color: Color(0xFF8B5CF6),
+  ),
+  'GENERAL': SpecialtyVisual(
+    icon: Icons.local_hospital_outlined,
+    color: brandBlue,
+  ),
+  'UROLOGY': SpecialtyVisual(
+    icon: Icons.water_drop_outlined,
+    color: Color(0xFF0891B2),
+  ),
+  'ENDOCRINOLOGY': SpecialtyVisual(
+    icon: Icons.science_outlined,
+    color: Color(0xFFF59E0B),
+  ),
+  'GASTROENTEROLOGY': SpecialtyVisual(
+    icon: Icons.restaurant_outlined,
+    color: Color(0xFF84CC16),
+  ),
+  'PULMONOLOGY': SpecialtyVisual(
+    icon: Icons.air_outlined,
+    color: Color(0xFF3B82F6),
+  ),
+  'RHEUMAT': SpecialtyVisual(
+    icon: Icons.healing_outlined,
+    color: Color(0xFFF43F5E),
+  ),
+  'HEMAT': SpecialtyVisual(
+    icon: Icons.bloodtype_outlined,
+    color: Color(0xFFDC2626),
+  ),
+  'NEPHR': SpecialtyVisual(
+    icon: Icons.filter_alt_outlined,
+    color: Color(0xFF22D3EE),
+  ),
+  'ALLERGY': SpecialtyVisual(
+    icon: Icons.local_florist_outlined,
+    color: Color(0xFFA855F7),
+  ),
+  'FAMILY': SpecialtyVisual(
+    icon: Icons.family_restroom_outlined,
+    color: Color(0xFF16A34A),
+  ),
+  'INTERNAL': SpecialtyVisual(
+    icon: Icons.health_and_safety_outlined,
+    color: Color(0xFF64748B),
+  ),
 };
 
 SpecialtyVisual specialtyVisualForCode(String code) {
@@ -72,26 +129,43 @@ String? specialtyIllustrationFor(Specialty specialty) {
   final code = specialty.code.toUpperCase();
   final name = specialty.nameAr;
 
-  if (code.contains('CARDIO') || name.contains('القلب')) {
-    return 'assets/illustrations/specialty_cardiology.png';
-  }
-  if (code.contains('PEDIA') ||
-      code.contains('CHILD') ||
-      name.contains('الأطفال')) {
-    return 'assets/illustrations/specialty_pediatrics.png';
-  }
-  if (code.contains('DERMA') ||
-      code.contains('SKIN') ||
-      name.contains('جلدية')) {
-    return 'assets/illustrations/specialty_dermatology.png';
-  }
-  if (code.contains('DENT') || name.contains('الأسنان')) {
-    return 'assets/illustrations/specialty_dental.png';
-  }
-  if (code.contains('OPHTHALM') ||
-      code.contains('EYE') ||
-      name.contains('العيون')) {
-    return 'assets/illustrations/specialty_ophthalmology.png';
+  const illustrations =
+      <({List<String> codes, List<String> names, String file})>[
+        (codes: ['CARDIO'], names: ['القلب'], file: 'cardiology'),
+        (codes: ['PEDIA', 'CHILD'], names: ['الأطفال'], file: 'pediatrics'),
+        (codes: ['DERMA', 'SKIN'], names: ['جلدية'], file: 'dermatology'),
+        (codes: ['DENT'], names: ['الأسنان'], file: 'dental'),
+        (codes: ['OPHTHALM', 'EYE'], names: ['العيون'], file: 'ophthalmology'),
+        (codes: ['ORTHO'], names: ['العظام'], file: 'orthopedics'),
+        (codes: ['OTOLARYNG'], names: ['أنف وأذن وحنجرة'], file: 'ent'),
+        (codes: ['NEURO'], names: ['المخ والأعصاب'], file: 'neurology'),
+        (codes: ['PSYCH'], names: ['النفسي'], file: 'psychiatry'),
+        (codes: ['GYN'], names: ['النساء والتوليد'], file: 'gynecology'),
+        (codes: ['UROLOGY'], names: ['المسالك البولية'], file: 'urology'),
+        (codes: ['ENDOCRIN'], names: ['الغدد الصماء'], file: 'endocrinology'),
+        (codes: ['GASTRO'], names: ['الهضمي'], file: 'gastroenterology'),
+        (codes: ['PULMON', 'CHEST'], names: ['الصدر'], file: 'pulmonology'),
+        (codes: ['FAMILY'], names: ['طب الأسرة'], file: 'family_medicine'),
+        (codes: ['RHEUMAT'], names: ['الروماتيزم'], file: 'rheumatology'),
+        (codes: ['HEMAT'], names: ['الدم'], file: 'hematology'),
+        (codes: ['NEPHR'], names: ['الكلى'], file: 'nephrology'),
+        (
+          codes: ['ALLERGY', 'IMMUNO'],
+          names: ['الحساسية والمناعة'],
+          file: 'allergy_immunology',
+        ),
+        (
+          codes: ['GENERAL_PRACTICE'],
+          names: ['طب عام'],
+          file: 'general_medicine',
+        ),
+        (codes: ['INTERNAL'], names: ['الباطنة'], file: 'internal_medicine'),
+      ];
+
+  for (final entry in illustrations) {
+    if (entry.codes.any(code.contains) || entry.names.any(name.contains)) {
+      return 'assets/illustrations/specialty_${entry.file}.png';
+    }
   }
   return null;
 }

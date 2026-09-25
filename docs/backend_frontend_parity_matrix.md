@@ -15,9 +15,9 @@
 
 ---
 
-## Session Update — 2026-09-18 (Appointment Visit Status)
+## Historical Session Update — 2026-09-18 (Appointment Visit Status)
 
-### Scheduling/visit lifecycle hardening — 2026-09-18
+### Scheduling/visit lifecycle hardening — 2026-09-18 (superseded 2026-09-25)
 
 - **Backend authoritative:** the visit-status use case reads the appointment's
   current slot in its transaction and allows changes only during the named
@@ -58,6 +58,22 @@
   runnable Flutter browser/emulator device was discovered. Do not label this
   UI path fully end-to-end verified until that run succeeds against
   `BASE_URL=http://localhost:3000`.
+
+---
+
+## Session Update — 2026-09-25 (Visit Timing Flexibility)
+
+- **Backend and Flutter:** provider visit-status changes no longer depend on
+  the appointment slot start or end. Doctors and assigned clinic assistants
+  can record early starts and early or delayed completions as the real clinic
+  flow requires.
+- **Protections retained:** confirmed appointment, doctor/branch scope, one
+  forward transition at a time (`WAITING → IN_DOCTOR_ROOM → LEFT`), optimistic
+  version check, and transactional audit. The update does not change booking
+  state or slot ownership.
+- **Verification state:** focused backend and Flutter test expectations were
+  updated for time-independent actions. Automated checks were not run in this
+  session; live device verification remains pending.
 
 ---
 

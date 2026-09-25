@@ -22,6 +22,7 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.textDirection,
     this.textAlign,
+    this.textStyle,
     super.key,
   });
 
@@ -47,6 +48,7 @@ class AppTextField extends StatelessWidget {
   /// region codes, fees, timezones).
   final TextDirection? textDirection;
   final TextAlign? textAlign;
+  final TextStyle? textStyle;
 
 
   @override
@@ -59,6 +61,7 @@ class AppTextField extends StatelessWidget {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       obscureText: obscureText,
+      style: textStyle,
       autofocus: autofocus,
       maxLength: maxLength,
       inputFormatters: inputFormatters,

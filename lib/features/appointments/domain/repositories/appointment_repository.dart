@@ -1,5 +1,5 @@
 import 'package:med_super/core/error/result.dart';
-import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
+import 'package:med_super/core/payments/domain/entities/payment_phone_info.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_hold.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
@@ -22,7 +22,7 @@ abstract interface class AppointmentRepository {
   Future<Result<OnlinePaymentInitiation>> initiateOnlinePayment(
     String holdId, {
     required AppointmentPaymentMethod method,
-    required PaymentCustomerInfo customer,
+    required PaymentPhoneInfo customer,
     String? paymentAmount,
   });
 
