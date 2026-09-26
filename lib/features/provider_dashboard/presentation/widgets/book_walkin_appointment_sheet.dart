@@ -18,6 +18,7 @@ import 'package:med_super/features/provider_dashboard/domain/entities/doctor_cli
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/existing_patient_confirm_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
 import 'package:solar_icons/solar_icons.dart';
@@ -89,13 +90,24 @@ class _BookWalkInAppointmentSheetState
     if (branch == null || slot == null) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final phone = normalizeEgyptPhone(_phoneController.text.trim());
+    final name = _nameController.text.trim();
+
+    final lookup = await ref.read(lookupPatientByPhoneUseCaseProvider).call(phone);
+    if (!mounted) return;
+    final existingName = lookup.when(ok: (r) => r.exists ? r.name : null, err: (_) => null);
+    if (existingName != null && existingName.trim().isNotEmpty) {
+      final confirmed = await showExistingPatientConfirmDialog(
+        context,
+        existingName: existingName,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
     setState(() {
       _submitting = true;
       _submitError = null;
     });
-
-    final phone = normalizeEgyptPhone(_phoneController.text.trim());
-    final name = _nameController.text.trim();
 
     final result = await ref
         .read(bookWalkInAppointmentUseCaseProvider)

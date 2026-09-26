@@ -724,7 +724,8 @@ class _ProviderAppointmentsScreenState
         _ => true,
       };
     }).toList();
-    filtered.sort((a, b) => a.startAt.compareTo(b.startAt));
+    // Most recent first.
+    filtered.sort((a, b) => b.startAt.compareTo(a.startAt));
     return filtered;
   }
 

@@ -14,6 +14,8 @@ class WalletTransactionModel extends WalletTransaction {
     super.resultingBalance,
     super.paymentIntentId,
     super.appointmentId,
+    super.doctorName,
+    super.cancelledBy,
   });
 
   factory WalletTransactionModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,8 @@ class WalletTransactionModel extends WalletTransaction {
       ),
       paymentIntentId: json['paymentIntentId'] as String?,
       appointmentId: json['appointmentId'] as String?,
+      doctorName: json['doctorName'] as String?,
+      cancelledBy: _cancelledByFromString(json['cancelledBy'] as String?),
     );
   }
 
@@ -45,6 +49,17 @@ class WalletTransactionModel extends WalletTransaction {
       case 'APPOINTMENT_PAYMENT':
       default:
         return TransactionType.payment;
+    }
+  }
+
+  static RefundCancelledBy? _cancelledByFromString(String? value) {
+    switch (value) {
+      case 'PATIENT':
+        return RefundCancelledBy.patient;
+      case 'DOCTOR':
+        return RefundCancelledBy.doctor;
+      default:
+        return null;
     }
   }
 

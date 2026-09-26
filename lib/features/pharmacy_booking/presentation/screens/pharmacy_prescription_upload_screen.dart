@@ -547,17 +547,20 @@ class _DeliveryMethodCard extends StatelessWidget {
             // reserve identical title height — "توصيل للمنزل" (2 words) vs
             // "تسليم في العيادة"/"استلام من الصيدلية" (3 words) would
             // otherwise wrap to a different number of lines and make this
-            // card visibly shorter than its siblings.
+            // card visibly shorter than its siblings. Height must fit two
+            // full lines at this font size/weight, or the second line gets
+            // clipped mid-word instead of wrapping.
             SizedBox(
-              height: 36,
+              height: 40,
               child: Text(
                 method.titleKey.tr(),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
+                  height: 1.2,
                   color: AppColors.ink900,
                 ),
               ),

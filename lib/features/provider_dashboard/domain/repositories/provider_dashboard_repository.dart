@@ -31,6 +31,16 @@ class RescheduleAppointmentOutcome {
   final String previousAppointmentId;
 }
 
+/// Whether a patient account already exists for a phone number, and under
+/// what name — so clinic staff can confirm this is the intended patient
+/// before a walk-in booking silently reuses that account.
+class PatientPhoneLookup {
+  const PatientPhoneLookup({required this.exists, this.name});
+
+  final bool exists;
+  final String? name;
+}
+
 abstract class ProviderDashboardRepository {
   // --- Profile ---
 
@@ -136,4 +146,6 @@ abstract class ProviderDashboardRepository {
     String? patientName,
   });
 
+  /// `GET /v1/doctors/me/appointments/patients/lookup?phone=...`
+  Future<Result<PatientPhoneLookup>> lookupPatientByPhone(String phone);
 }

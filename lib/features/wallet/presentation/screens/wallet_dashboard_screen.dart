@@ -164,7 +164,7 @@ class WalletDashboardScreen extends ConsumerWidget {
                             MaterialPageRoute(
                               builder: (_) => const WalletPayBillsScreen(),
                             ),
-                          ),
+                          );
                         },
                       ),
                     ),

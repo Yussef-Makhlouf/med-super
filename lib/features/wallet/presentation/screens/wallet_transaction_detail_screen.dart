@@ -184,6 +184,20 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
                   dateFormatted,
                   icon: Icons.calendar_today_outlined,
                 ),
+                if (tx.doctorName != null && tx.doctorName!.isNotEmpty)
+                  _buildRow(
+                    'wallet.appointment_doctor'.tr(),
+                    tx.doctorName!,
+                    icon: Icons.medical_services_outlined,
+                  ),
+                if (tx.cancelledBy != null)
+                  _buildRow(
+                    'wallet.refund_cancelled_by'.tr(),
+                    tx.cancelledBy == RefundCancelledBy.patient
+                        ? 'wallet.refund_cancelled_by_patient'.tr()
+                        : 'wallet.refund_cancelled_by_doctor'.tr(),
+                    icon: Icons.event_busy_outlined,
+                  ),
                 _buildRow(
                   'wallet.reference_number'.tr(),
                   '#${tx.paymentIntentId ?? tx.id}',

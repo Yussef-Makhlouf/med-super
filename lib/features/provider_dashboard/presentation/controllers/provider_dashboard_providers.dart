@@ -117,6 +117,10 @@ BookWalkInAppointmentUseCase bookWalkInAppointmentUseCase(Ref ref) =>
     BookWalkInAppointmentUseCase(ref.watch(providerDashboardRepositoryProvider));
 
 @riverpod
+LookupPatientByPhoneUseCase lookupPatientByPhoneUseCase(Ref ref) =>
+    LookupPatientByPhoneUseCase(ref.watch(providerDashboardRepositoryProvider));
+
+@riverpod
 GetProviderPatientsUseCase getProviderPatientsUseCase(Ref ref) =>
     GetProviderPatientsUseCase(ref.watch(providerDashboardRepositoryProvider));
 

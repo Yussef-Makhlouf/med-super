@@ -484,7 +484,7 @@ final class LocalNotificationServiceProvider
 }
 
 String _$localNotificationServiceHash() =>
-    r'1ca3171fb374ae44235a0d2518ac80aa89b7284e';
+    r'91a5036a16570caf72e4ad5f2618e68128b63d56';
 
 @ProviderFor(notificationPriorityRouter)
 final notificationPriorityRouterProvider =

@@ -266,7 +266,7 @@
     "booking_confirmed_message_wallet": "تم تأكيد موعدك مع {} الساعة {}. تم الدفع من المحفظة بنجاح.",
     "view_my_appointments": "عرض مواعيدي",
     "cancel_confirm_title": "إلغاء هذا الموعد؟",
-    "cancel_confirm_message": "لا يمكن التراجع عن هذا الإجراء. ستحتاج لحجز موعد جديد إذا غيّرت رأيك.",
+    "cancel_confirm_message": "لا يمكن التراجع عن هذا الإجراء. سيتم استرداد المبلغ المدفوع إلى محفظتك بعد خصم رسوم إلغاء بسيطة. ستحتاج لحجز موعد جديد إذا غيّرت رأيك.",
     "cancel_confirm_dismiss": "لا، احتفظ به",
     "cancel_error": "تعذّر إلغاء الموعد. الرجاء المحاولة مرة أخرى.",
     "reschedule": "إعادة الجدولة",
@@ -277,7 +277,12 @@
     "reschedule_unavailable": "إعادة الجدولة غير متاحة لهذا الموعد من هنا حالياً. يرجى التواصل مع العيادة لتغيير موعدك.",
     "detail_title": "تفاصيل الموعد",
     "detail_cancelled_reason": "ملغى: {}",
-    "detail_rescheduled_from": "تمت إعادة جدولته من الموعد #{}"
+    "detail_rescheduled_from": "تمت إعادة جدولته من الموعد #{}",
+    "detail_payment_title": "تفاصيل الدفع",
+    "detail_payment_fee": "قيمة الكشف",
+    "detail_payment_paid": "المدفوع",
+    "detail_payment_fully_paid": "تم الدفع بالكامل",
+    "detail_payment_remaining": "المتبقي (يُدفع في العيادة)"
   },
   "orders": {
     "title": "طلباتي",
@@ -854,6 +859,10 @@
     "resulting_balance": "الرصيد بعد المعاملة",
     "reference_number": "رقم المعاملة (ID)",
     "date_and_time": "التاريخ والوقت",
+    "appointment_doctor": "الطبيب",
+    "refund_cancelled_by": "تم الإلغاء بواسطة",
+    "refund_cancelled_by_patient": "المريض",
+    "refund_cancelled_by_doctor": "الطبيب/العيادة",
     "service": "نوع الخدمة",
     "doctor": "اسم المريض",
     "doctor_name": "اسم الطبيب",
@@ -918,6 +927,7 @@
     "status_active": "نشط",
     "status_suspended": "موقوف",
     "create_failed": "فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.",
+    "phone_already_exists": "يوجد حساب بالفعل مسجل بهذا الرقم",
     "add_sheet_subtitle": "سيتم إنشاء حساب جديد وإرسال بيانات الدخول للمساعد",
     "name_hint": "مثال: سارة أحمد",
     "name_required": "الاسم مطلوب",
@@ -1062,7 +1072,11 @@
       "submit": "تأكيد الحجز",
       "success": "تم حجز الموعد بنجاح.",
       "selected_slot": "الموعد المختار",
-      "change_slot": "تغيير"
+      "change_slot": "تغيير",
+      "existing_patient_title": "حساب مسجل بهذا الرقم",
+      "existing_patient_message": "لقينا حساب لمريض بنفس هذا الرقم باسم \"{name}\". هل هذا هو المريض الذي تقصده؟",
+      "existing_patient_confirm": "نعم، هذا هو المريض",
+      "existing_patient_deny": "لا، تحقق من الرقم"
     },
     "status": {
       "confirmed": "مؤكد",
