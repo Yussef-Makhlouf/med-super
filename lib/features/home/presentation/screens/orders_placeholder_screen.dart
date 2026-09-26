@@ -667,7 +667,7 @@ class _LabOrderCard extends StatelessWidget {
                 if (order.items.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
-                    order.items.first.displayName,
+                    order.items.first.testName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleSmall?.copyWith(
