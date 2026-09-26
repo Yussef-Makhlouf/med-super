@@ -25,6 +25,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_tab.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/existing_patient_confirm_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
@@ -1103,6 +1104,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
   final _nameController = TextEditingController();
   late DoctorClinic _branch;
   DoctorSlot? _slot;
+  DateTime? _selectedDay;
   bool _submitting = false;
   String? _error;
 
@@ -1111,6 +1113,8 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     super.initState();
     _branch = widget.initialBranch;
     _slot = widget.slot;
+    final local = widget.slot.startAtUtc.toLocal();
+    _selectedDay = DateTime(local.year, local.month, local.day);
   }
 
   @override
@@ -1127,6 +1131,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
       // The originally tapped slot belongs to the old branch — a new one
       // must be picked before submitting is possible again.
       _slot = null;
+      _selectedDay = null;
     });
   }
 
@@ -1134,13 +1139,25 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     final slot = _slot;
     if (slot == null) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final phone = normalizeEgyptPhone(_phoneController.text.trim());
+    final name = _nameController.text.trim();
+
+    final lookup = await ref.read(lookupPatientByPhoneUseCaseProvider).call(phone);
+    if (!mounted) return;
+    final existingName = lookup.when(ok: (r) => r.exists ? r.name : null, err: (_) => null);
+    if (existingName != null && existingName.trim().isNotEmpty) {
+      final confirmed = await showExistingPatientConfirmDialog(
+        context,
+        existingName: existingName,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
     });
-
-    final phone = normalizeEgyptPhone(_phoneController.text.trim());
-    final name = _nameController.text.trim();
 
     final result = await ref
         .read(bookWalkInAppointmentUseCaseProvider)
@@ -1403,14 +1420,92 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
             icon: SolarIconsOutline.calendarMinimalistic,
           );
         }
-        final sorted = [...slots]
+
+        final byDay = <DateTime, List<DoctorSlot>>{};
+        for (final slot in slots) {
+          final local = slot.startAtUtc.toLocal();
+          final day = DateTime(local.year, local.month, local.day);
+          (byDay[day] ??= []).add(slot);
+        }
+        final days = byDay.keys.toList()..sort();
+
+        final selectedDay =
+            (_selectedDay != null && byDay.containsKey(_selectedDay))
+            ? _selectedDay!
+            : days.first;
+        if (_selectedDay != selectedDay) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedDay = selectedDay);
+          });
+        }
+
+        final daySlots = (byDay[selectedDay] ?? const <DoctorSlot>[])
           ..sort((a, b) => a.startAtUtc.compareTo(b.startAtUtc));
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [for (final slot in sorted) _slotChip(slot)],
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 68,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: days.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) =>
+                    _dayChip(days[index], days[index] == selectedDay),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [for (final slot in daySlots) _slotChip(slot)],
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _dayChip(DateTime day, bool selected) {
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedDay = day;
+        _slot = null;
+      }),
+      child: Container(
+        width: 68,
+        decoration: BoxDecoration(
+          color: selected ? brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: selected ? brandBlue : AppColors.borderLight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'provider_dashboard.weekday.${day.weekday}'.tr(),
+              style: TextStyle(
+                fontSize: 11,
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : AppColors.mutedText2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${day.day}/${day.month}',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.ink900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

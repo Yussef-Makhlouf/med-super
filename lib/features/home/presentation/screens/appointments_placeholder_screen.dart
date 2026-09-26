@@ -149,12 +149,18 @@ class _PatientAppointmentsScreenState
                   // rescheduled — the only other statuses this backend
                   // phase actually produces, File 12 Part 35.1) reads as
                   // "past" until a real completed/no-show status exists.
+                  // Backend paginates oldest-first (stable cursor order);
+                  // show most recent on top without disturbing that order.
                   final appts = _selectedTab == 0
                       ? state.items
                             .where((a) => a.status == 'CONFIRMED')
                             .toList()
+                            .reversed
+                            .toList()
                       : state.items
                             .where((a) => a.status != 'CONFIRMED')
+                            .toList()
+                            .reversed
                             .toList();
 
                   return Column(

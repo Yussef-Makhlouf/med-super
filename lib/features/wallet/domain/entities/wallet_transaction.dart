@@ -9,9 +9,13 @@ enum TransactionType { deposit, withdrawal, payment, refund }
 /// [completed] immediately.
 enum TransactionStatus { completed, pending, failed }
 
+/// Who cancelled the appointment this `REFUND` transaction reverses.
+enum RefundCancelledBy { patient, doctor }
+
 /// One row of `GET /v1/wallet/transactions` (File 12 Part 50.3) — a ledger
-/// projection, not a receipt: the backend carries no title, service name,
-/// doctor name, or fee breakdown for a wallet movement.
+/// projection, not a receipt: the backend carries no title or fee
+/// breakdown for a wallet movement, but does now cross-reference the
+/// appointment for a doctor name and, on a `REFUND` row, who cancelled.
 class WalletTransaction {
   final String id;
   final TransactionType type;
@@ -30,6 +34,13 @@ class WalletTransaction {
   final String? paymentIntentId;
   final String? appointmentId;
 
+  /// The doctor [appointmentId] was with — `null` when this transaction has
+  /// no linked appointment (e.g. a `TOP_UP`).
+  final String? doctorName;
+
+  /// Set only on a `REFUND` row whose appointment was cancelled.
+  final RefundCancelledBy? cancelledBy;
+
   const WalletTransaction({
     required this.id,
     required this.type,
@@ -40,6 +51,8 @@ class WalletTransaction {
     this.resultingBalance,
     this.paymentIntentId,
     this.appointmentId,
+    this.doctorName,
+    this.cancelledBy,
   });
 }
 

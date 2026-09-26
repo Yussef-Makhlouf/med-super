@@ -4,6 +4,7 @@ import '../../models/doctor_account_profile_dto.dart';
 import '../../models/doctor_appointment_dto.dart';
 import '../../models/doctor_clinic_dto.dart';
 import '../../models/doctor_schedule_template_dto.dart';
+import '../../models/patient_phone_lookup_dto.dart';
 import '../../../domain/entities/doctor_appointment.dart';
 import '../../../domain/entities/doctor_schedule_template.dart';
 
@@ -103,6 +104,12 @@ abstract class ProviderDashboardRemoteDatasource {
     String clinicBranchId,
     CreateWalkInAppointmentRequestDto body,
   );
+
+  /// `GET /v1/doctors/me/appointments/patients/lookup?phone=...` — checks
+  /// whether a patient account already exists for this phone before a
+  /// walk-in booking silently reuses it (that reuse never overwrites the
+  /// existing account's name).
+  Future<PatientPhoneLookupDto> lookupPatientByPhone(String phone);
 }
 
 class ProviderDashboardRemoteDatasourceImpl
@@ -332,4 +339,12 @@ class ProviderDashboardRemoteDatasourceImpl
     return CreateWalkInAppointmentResultDto.fromJson(_obj(response));
   }
 
+  @override
+  Future<PatientPhoneLookupDto> lookupPatientByPhone(String phone) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.doctorMeAppointments}/patients/lookup',
+      queryParameters: {'phone': phone},
+    );
+    return PatientPhoneLookupDto.fromJson(_obj(response));
+  }
 }

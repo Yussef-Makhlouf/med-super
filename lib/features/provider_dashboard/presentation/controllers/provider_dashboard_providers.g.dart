@@ -959,6 +959,55 @@ final class BookWalkInAppointmentUseCaseProvider
 String _$bookWalkInAppointmentUseCaseHash() =>
     r'637975491734b066a59f52c6ac86fb1f68ce1431';
 
+@ProviderFor(lookupPatientByPhoneUseCase)
+final lookupPatientByPhoneUseCaseProvider =
+    LookupPatientByPhoneUseCaseProvider._();
+
+final class LookupPatientByPhoneUseCaseProvider
+    extends
+        $FunctionalProvider<
+          LookupPatientByPhoneUseCase,
+          LookupPatientByPhoneUseCase,
+          LookupPatientByPhoneUseCase
+        >
+    with $Provider<LookupPatientByPhoneUseCase> {
+  LookupPatientByPhoneUseCaseProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lookupPatientByPhoneUseCaseProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lookupPatientByPhoneUseCaseHash();
+
+  @$internal
+  @override
+  $ProviderElement<LookupPatientByPhoneUseCase> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LookupPatientByPhoneUseCase create(Ref ref) {
+    return lookupPatientByPhoneUseCase(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LookupPatientByPhoneUseCase value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LookupPatientByPhoneUseCase>(value),
+    );
+  }
+}
+
+String _$lookupPatientByPhoneUseCaseHash() =>
+    r'e213d6a97047223be409ae6acd9f2ab2e5b2d2bd';
+
 @ProviderFor(getProviderPatientsUseCase)
 final getProviderPatientsUseCaseProvider =
     GetProviderPatientsUseCaseProvider._();

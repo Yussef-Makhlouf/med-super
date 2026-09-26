@@ -237,4 +237,10 @@ class ProviderDashboardRepositoryImpl implements ProviderDashboardRepository {
     return (await _remote.getMyAppointment(result.appointmentId)).toEntity();
   });
 
+  @override
+  Future<Result<PatientPhoneLookup>> lookupPatientByPhone(String phone) =>
+      _guard(() async {
+        final dto = await _remote.lookupPatientByPhone(phone);
+        return PatientPhoneLookup(exists: dto.exists, name: dto.name);
+      });
 }
