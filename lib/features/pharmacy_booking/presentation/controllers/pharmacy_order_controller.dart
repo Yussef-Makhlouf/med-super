@@ -33,6 +33,7 @@ class PharmacyOrderController
     required String prescriptionId,
     required String fulfillmentType,
     String? pharmacyBranchId,
+    String? appointmentId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -50,6 +51,7 @@ class PharmacyOrderController
             lat: position?.latitude,
             lng: position?.longitude,
             pharmacyBranchId: pharmacyBranchId,
+            appointmentId: appointmentId,
           );
     });
     // Without this, the orders-tab list (`pharmacyOrdersProvider`) is a

@@ -172,6 +172,14 @@ side-by-side secondary actions. Arabic and English labels are localized. Visit
 status and booking action behavior are unchanged by this visual update. Live
 device verification remains pending.
 
+## Clinical request status refresh
+
+Provider/clinic-assistant prescription and lab order history refreshes from
+the API every 15 seconds while its tab and route are visible and the app is
+foregrounded. Returning to the app triggers an immediate refetch. Inactive
+tabs and backgrounded apps pause polling; pharmacists and lab staff remain the
+actors that update their respective order workflows.
+
 ### What changed, and why the old shapes were wrong
 
 * **`Appointment` → `DoctorAppointment`.** The old entity carried `medId` and
@@ -206,6 +214,14 @@ Avatar upload stays unavailable (`DEC-009`, no object-storage decision); the
 UI shows a "coming soon" message rather than faking an upload. Password
 change should go through `POST /v1/auth/password/set`, not the invented
 `/v1/provider/change-password` — that screen has not been rewired yet.
+
+## Clinic handover destination
+
+Clinic handover submissions from a provider select an eligible appointment
+for the same patient and send `appointmentId`; the backend verifies provider
+scope and derives the receiving clinic. This applies to both new signed
+prescriptions and existing prescription submissions without altering the
+pharmacy quote flow.
 
 ## Known gaps in this feature
 

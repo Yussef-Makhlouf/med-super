@@ -8,6 +8,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/active_refresh_scope.dart';
 import 'package:med_super/core/widgets/empty_state.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_branch.dart';
@@ -19,6 +20,7 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dar
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_detail.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/provider_clinical_request.dart';
+import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_clinical_request_providers.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_dashboard_providers.dart';
 
@@ -52,28 +54,79 @@ class ProviderClinicalRequestsScreen extends ConsumerWidget {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          _PatientContextBanner(patientName: patientName),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _PrescriptionHistory(
-                  patientId: patientId,
-                  patientName: patientName,
-                  appointmentId: appointmentId,
-                ),
-                _LabHistory(
-                  patientId: patientId,
-                  patientName: patientName,
-                  appointmentId: appointmentId,
-                ),
-              ],
-            ),
-          ),
-        ],
+      body: _ClinicalHistoryTabs(
+        patientId: patientId,
+        patientName: patientName,
+        appointmentId: appointmentId,
       ),
     ),
+  );
+}
+
+class _ClinicalHistoryTabs extends StatefulWidget {
+  const _ClinicalHistoryTabs({
+    required this.patientId,
+    required this.patientName,
+    this.appointmentId,
+  });
+
+  final String patientId;
+  final String patientName;
+  final String? appointmentId;
+
+  @override
+  State<_ClinicalHistoryTabs> createState() => _ClinicalHistoryTabsState();
+}
+
+class _ClinicalHistoryTabsState extends State<_ClinicalHistoryTabs> {
+  TabController? _controller;
+  int _selectedIndex = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = DefaultTabController.of(context);
+    if (_controller == controller) return;
+    _controller?.removeListener(_handleTabChanged);
+    _controller = controller..addListener(_handleTabChanged);
+    _selectedIndex = controller.index;
+  }
+
+  void _handleTabChanged() {
+    final index = _controller?.index;
+    if (index == null || index == _selectedIndex) return;
+    setState(() => _selectedIndex = index);
+  }
+
+  @override
+  void dispose() {
+    _controller?.removeListener(_handleTabChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      _PatientContextBanner(patientName: widget.patientName),
+      Expanded(
+        child: TabBarView(
+          children: [
+            _PrescriptionHistory(
+              patientId: widget.patientId,
+              patientName: widget.patientName,
+              appointmentId: widget.appointmentId,
+              isActive: _selectedIndex == 0,
+            ),
+            _LabHistory(
+              patientId: widget.patientId,
+              patientName: widget.patientName,
+              appointmentId: widget.appointmentId,
+              isActive: _selectedIndex == 1,
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 }
 
@@ -130,10 +183,12 @@ class _PrescriptionHistory extends ConsumerWidget {
   const _PrescriptionHistory({
     required this.patientId,
     required this.patientName,
+    required this.isActive,
     this.appointmentId,
   });
   final String patientId;
   final String patientName;
+  final bool isActive;
   final String? appointmentId;
 
   @override
@@ -145,155 +200,176 @@ class _PrescriptionHistory extends ConsumerWidget {
     final pharmacyOrders =
         ref.watch(providerPharmacyOrdersProvider).asData?.value ??
         const <PharmacyOrderDetail>[];
-    return Column(
-      children: [
-        if (canCreate && !isDoctor)
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: brandBlue.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              border: Border.all(color: brandBlue.withValues(alpha: 0.18)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.info_outline, size: 18, color: brandBlue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'provider_dashboard.clinical_requests.assistant_approval_note'
-                        .tr(),
-                    style: const TextStyle(
-                      color: AppColors.ink700,
-                      height: 1.4,
-                      fontSize: 12,
+    return ActiveRefreshScope(
+      enabled: isActive,
+      onRefresh: () async {
+        await Future.wait([
+          ref.refresh(providerPrescriptionsProvider.future),
+          ref.refresh(providerPharmacyOrdersProvider.future),
+        ]);
+      },
+      child: Column(
+        children: [
+          if (canCreate && !isDoctor)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: brandBlue.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(color: brandBlue.withValues(alpha: 0.18)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 18, color: brandBlue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'provider_dashboard.clinical_requests.assistant_approval_note'
+                          .tr(),
+                      style: const TextStyle(
+                        color: AppColors.ink700,
+                        height: 1.4,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          if (canCreate)
+            _CreateAction(
+              label: 'provider_dashboard.clinical_requests.create_prescription'
+                  .tr(),
+              onPressed: () async {
+                final values = await showModalBottomSheet<_PrescriptionDraft>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => _PrescriptionForm(
+                    patientId: patientId,
+                    patientName: patientName,
+                    currentAppointmentId: appointmentId,
+                    collectPharmacySubmission: isDoctor,
+                  ),
+                );
+                if (values == null || !context.mounted) return;
+                try {
+                  final result = await ref
+                      .read(providerClinicalUseCasesProvider)
+                      .uploadClinicalDocument(
+                        patientId: patientId,
+                        appointmentId: appointmentId,
+                        documentType: 'PRESCRIPTION',
+                        images: values.images,
+                        notes: values.notes,
+                      );
+                  if (!context.mounted) return;
+                  ref.invalidate(providerPrescriptionsProvider);
+                  if (values.pharmacySubmission != null &&
+                      result.status == 'ACCEPTED') {
+                    try {
+                      await ref
+                          .read(providerClinicalUseCasesProvider)
+                          .createPharmacyOrder(
+                            patientId: patientId,
+                            prescriptionId: result.prescriptionId,
+                            fulfillmentType:
+                                values.pharmacySubmission!.fulfillment,
+                            pharmacyBranchId:
+                                values.pharmacySubmission!.branchId,
+                            appointmentId:
+                                values.pharmacySubmission!.appointmentId,
+                          );
+                      ref.invalidate(providerPharmacyOrdersProvider);
+                      if (context.mounted) {
+                        _snack(
+                          context,
+                          'provider_dashboard.clinical_requests.pharmacy_sent'
+                              .tr(),
+                          success: true,
+                        );
+                      }
+                      return;
+                    } catch (_) {
+                      if (context.mounted) {
+                        _snack(
+                          context,
+                          'provider_dashboard.clinical_requests.prescription_saved_order_not_sent'
+                              .tr(),
+                        );
+                      }
+                      return;
+                    }
+                  }
+                  final message = result.status == 'PENDING_DOCTOR_APPROVAL'
+                      ? 'provider_dashboard.clinical_requests.submitted_for_approval'
+                            .tr()
+                      : 'provider_dashboard.clinical_requests.created'.tr();
+                  _snack(context, message, success: true);
+                } catch (error) {
+                  if (!context.mounted) return;
+                  _snack(context, _requestFailureMessage(error));
+                }
+              },
+            ),
+          if (canCreate)
+            _BatchAction(
+              type: _BatchRequestType.prescription,
+              initialPatientId: patientId,
+            ),
+          Expanded(
+            child: AsyncValueView<List<ProviderPrescription>>(
+              value: async,
+              onRetry: () => ref.invalidate(providerPrescriptionsProvider),
+              data: (all) {
+                final records = all
+                    .where((r) => r.patientId == patientId)
+                    .toList(growable: false);
+                if (records.isEmpty) {
+                  return EmptyState(
+                    title:
+                        'provider_dashboard.clinical_requests.empty_prescriptions'
+                            .tr(),
+                    icon: Icons.medication_outlined,
+                  );
+                }
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await Future.wait([
+                      ref.refresh(providerPrescriptionsProvider.future),
+                      ref.refresh(providerPharmacyOrdersProvider.future),
+                    ]);
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                    itemCount: records.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) => _PrescriptionCard(
+                      record: records[index],
+                      patientId: patientId,
+                      currentAppointmentId: appointmentId,
+                      canApprove: isDoctor,
+                      pharmacyOrders: pharmacyOrders
+                          .where(
+                            (order) =>
+                                order.patientId == patientId &&
+                                order.prescriptionId == records[index].id,
+                          )
+                          .toList(growable: false),
+                      onRefresh: () {
+                        ref.invalidate(providerPrescriptionsProvider);
+                        ref.invalidate(providerPharmacyOrdersProvider);
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-        if (canCreate)
-          _CreateAction(
-            label: 'provider_dashboard.clinical_requests.create_prescription'
-                .tr(),
-            onPressed: () async {
-              final values = await showModalBottomSheet<_PrescriptionDraft>(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => _PrescriptionForm(
-                  patientName: patientName,
-                  collectPharmacySubmission: isDoctor,
-                ),
-              );
-              if (values == null || !context.mounted) return;
-              try {
-                final result = await ref
-                    .read(providerClinicalUseCasesProvider)
-                    .uploadClinicalDocument(
-                      patientId: patientId,
-                      appointmentId: appointmentId,
-                      documentType: 'PRESCRIPTION',
-                      images: values.images,
-                      notes: values.notes,
-                    );
-                if (!context.mounted) return;
-                ref.invalidate(providerPrescriptionsProvider);
-                if (values.pharmacySubmission != null &&
-                    result.status == 'ACCEPTED') {
-                  try {
-                    await ref
-                        .read(providerClinicalUseCasesProvider)
-                        .createPharmacyOrder(
-                          patientId: patientId,
-                          prescriptionId: result.prescriptionId,
-                          fulfillmentType:
-                              values.pharmacySubmission!.fulfillment,
-                          pharmacyBranchId: values.pharmacySubmission!.branchId,
-                        );
-                    ref.invalidate(providerPharmacyOrdersProvider);
-                    if (context.mounted) {
-                      _snack(
-                        context,
-                        'provider_dashboard.clinical_requests.pharmacy_sent'
-                            .tr(),
-                        success: true,
-                      );
-                    }
-                    return;
-                  } catch (_) {
-                    if (context.mounted) {
-                      _snack(
-                        context,
-                        'provider_dashboard.clinical_requests.prescription_saved_order_not_sent'
-                            .tr(),
-                      );
-                    }
-                    return;
-                  }
-                }
-                final message = result.status == 'PENDING_DOCTOR_APPROVAL'
-                    ? 'provider_dashboard.clinical_requests.submitted_for_approval'
-                          .tr()
-                    : 'provider_dashboard.clinical_requests.created'.tr();
-                _snack(context, message, success: true);
-              } catch (error) {
-                if (!context.mounted) return;
-                _snack(context, _requestFailureMessage(error));
-              }
-            },
-          ),
-        if (canCreate)
-          _BatchAction(
-            type: _BatchRequestType.prescription,
-            initialPatientId: patientId,
-          ),
-        Expanded(
-          child: AsyncValueView<List<ProviderPrescription>>(
-            value: async,
-            onRetry: () => ref.invalidate(providerPrescriptionsProvider),
-            data: (all) {
-              final records = all
-                  .where((r) => r.patientId == patientId)
-                  .toList(growable: false);
-              if (records.isEmpty) {
-                return EmptyState(
-                  title:
-                      'provider_dashboard.clinical_requests.empty_prescriptions'
-                          .tr(),
-                  icon: Icons.medication_outlined,
-                );
-              }
-              return RefreshIndicator(
-                onRefresh: () async =>
-                    ref.invalidate(providerPrescriptionsProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                  itemCount: records.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) => _PrescriptionCard(
-                    record: records[index],
-                    patientId: patientId,
-                    canApprove: isDoctor,
-                    pharmacyOrders: pharmacyOrders
-                        .where(
-                          (order) =>
-                              order.patientId == patientId &&
-                              order.prescriptionId == records[index].id,
-                        )
-                        .toList(growable: false),
-                    onRefresh: () =>
-                        ref.invalidate(providerPrescriptionsProvider),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -302,12 +378,14 @@ class _PrescriptionCard extends ConsumerWidget {
   const _PrescriptionCard({
     required this.record,
     required this.patientId,
+    this.currentAppointmentId,
     required this.canApprove,
     required this.pharmacyOrders,
     required this.onRefresh,
   });
   final ProviderPrescription record;
   final String patientId;
+  final String? currentAppointmentId;
   final bool canApprove;
   final List<PharmacyOrderDetail> pharmacyOrders;
   final VoidCallback onRefresh;
@@ -551,6 +629,8 @@ class _PrescriptionCard extends ConsumerWidget {
       showDragHandle: true,
       builder: (context) => _PharmacySubmissionSheet(
         branches: branches,
+        patientId: patientId,
+        currentAppointmentId: currentAppointmentId,
         titleKey: 'provider_dashboard.clinical_requests.pharmacy_title',
         actionKey: 'provider_dashboard.clinical_requests.send',
       ),
@@ -564,6 +644,7 @@ class _PrescriptionCard extends ConsumerWidget {
             prescriptionId: record.id,
             fulfillmentType: selection.fulfillment,
             pharmacyBranchId: selection.branchId,
+            appointmentId: selection.appointmentId,
           );
       if (context.mounted) {
         _snack(
@@ -612,6 +693,8 @@ class _PrescriptionCard extends ConsumerWidget {
       showDragHandle: true,
       builder: (context) => _PharmacySubmissionSheet(
         branches: branches,
+        patientId: patientId,
+        currentAppointmentId: currentAppointmentId,
         titleKey: 'provider_dashboard.clinical_requests.approve_and_send_title',
         actionKey: 'provider_dashboard.clinical_requests.approve_and_send',
       ),
@@ -649,6 +732,7 @@ class _PrescriptionCard extends ConsumerWidget {
             prescriptionId: record.id,
             fulfillmentType: selection.fulfillment,
             pharmacyBranchId: selection.branchId,
+            appointmentId: selection.appointmentId,
           );
       ref.invalidate(providerPharmacyOrdersProvider);
       if (context.mounted) {
@@ -674,22 +758,28 @@ class _PharmacySubmission {
   const _PharmacySubmission({
     required this.branchId,
     required this.fulfillment,
+    this.appointmentId,
   });
 
   final String branchId;
   final String fulfillment;
+  final String? appointmentId;
 }
 
 class _PharmacySubmissionSheet extends StatefulWidget {
   const _PharmacySubmissionSheet({
     required this.branches,
+    required this.patientId,
     required this.titleKey,
     required this.actionKey,
+    this.currentAppointmentId,
   });
 
   final List<Pharmacy> branches;
+  final String patientId;
   final String titleKey;
   final String actionKey;
+  final String? currentAppointmentId;
 
   @override
   State<_PharmacySubmissionSheet> createState() =>
@@ -699,6 +789,7 @@ class _PharmacySubmissionSheet extends StatefulWidget {
 class _PharmacySubmissionSheetState extends State<_PharmacySubmissionSheet> {
   String? _branchId;
   String _fulfillment = 'PICKUP';
+  String? _clinicAppointmentId;
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -734,17 +825,33 @@ class _PharmacySubmissionSheetState extends State<_PharmacySubmissionSheet> {
                 _branchId = null;
               }),
             ),
+            if (_fulfillment == 'CLINIC_HANDOVER') ...[
+              const SizedBox(height: 12),
+              _ProviderClinicAppointmentPicker(
+                patientId: widget.patientId,
+                currentAppointmentId: widget.currentAppointmentId,
+                selectedId: _clinicAppointmentId,
+                onChanged: (value) =>
+                    setState(() => _clinicAppointmentId = value),
+              ),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _branchId == null
+                onPressed:
+                    _branchId == null ||
+                        (_fulfillment == 'CLINIC_HANDOVER' &&
+                            _clinicAppointmentId == null)
                     ? null
                     : () => Navigator.pop(
                         context,
                         _PharmacySubmission(
                           branchId: _branchId!,
                           fulfillment: _fulfillment,
+                          appointmentId: _fulfillment == 'CLINIC_HANDOVER'
+                              ? _clinicAppointmentId
+                              : null,
                         ),
                       ),
                 child: Text(widget.actionKey.tr()),
@@ -761,6 +868,144 @@ class _PharmacySubmissionSheetState extends State<_PharmacySubmissionSheet> {
       ),
     ),
   );
+}
+
+class _ProviderClinicAppointmentPicker extends ConsumerStatefulWidget {
+  const _ProviderClinicAppointmentPicker({
+    required this.patientId,
+    required this.selectedId,
+    required this.onChanged,
+    this.currentAppointmentId,
+  });
+
+  final String patientId;
+  final String? currentAppointmentId;
+  final String? selectedId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  ConsumerState<_ProviderClinicAppointmentPicker> createState() =>
+      _ProviderClinicAppointmentPickerState();
+}
+
+class _ProviderClinicAppointmentPickerState
+    extends ConsumerState<_ProviderClinicAppointmentPicker> {
+  final List<DoctorAppointment> _more = [];
+  String? _nextCursor;
+  bool _hasLoadedMore = false;
+  bool _loadingMore = false;
+  bool _loadMoreFailed = false;
+
+  Future<void> _loadMore(String cursor) async {
+    if (_loadingMore) return;
+    setState(() {
+      _loadingMore = true;
+      _loadMoreFailed = false;
+    });
+    final result = await ref
+        .read(getDoctorAppointmentsUseCaseProvider)
+        .call(cursor: cursor, limit: 50);
+    if (!mounted) return;
+    result.when(
+      ok: (page) => setState(() {
+        _more.addAll(page.items);
+        _hasLoadedMore = true;
+        _nextCursor = page.nextCursor == cursor ? null : page.nextCursor;
+        _loadingMore = false;
+      }),
+      err: (_) => setState(() {
+        _loadingMore = false;
+        _loadMoreFailed = true;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final first = ref.watch(doctorAppointmentsProvider(limit: 50));
+    final contextual = widget.currentAppointmentId == null
+        ? null
+        : ref
+              .watch(
+                doctorAppointmentDetailProvider(widget.currentAppointmentId!),
+              )
+              .asData
+              ?.value;
+    final byId = <String, DoctorAppointment>{};
+    for (final appointment in [
+      if (contextual != null) contextual,
+      ...?first.asData?.value.items,
+      ..._more,
+    ]) {
+      if (appointment.patientId == widget.patientId &&
+          appointment.isClinicHandoverEligible) {
+        byId[appointment.appointmentId] = appointment;
+      }
+    }
+    final appointments = byId.values.toList()
+      ..sort((a, b) => b.startAt.compareTo(a.startAt));
+    final cursor = _hasLoadedMore
+        ? _nextCursor
+        : first.asData?.value.nextCursor;
+    final selectedId = byId.containsKey(widget.selectedId)
+        ? widget.selectedId
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: selectedId,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'provider_dashboard.clinical_requests.clinic_appointment'
+                .tr(),
+            hintText:
+                'provider_dashboard.clinical_requests.clinic_appointment_hint'
+                    .tr(),
+          ),
+          items: appointments.map((appointment) {
+            final date = DateFormat(
+              'yyyy-MM-dd HH:mm',
+              'en',
+            ).format(appointment.startAt.toLocal());
+            return DropdownMenuItem(
+              value: appointment.appointmentId,
+              child: Text(
+                '${appointment.clinicName} · $date',
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: appointments.isEmpty ? null : widget.onChanged,
+        ),
+        if (first.isLoading || _loadingMore) const LinearProgressIndicator(),
+        if (first.hasError)
+          TextButton(
+            onPressed: () =>
+                ref.invalidate(doctorAppointmentsProvider(limit: 50)),
+            child: Text('provider_dashboard.clinical_requests.retry'.tr()),
+          ),
+        if (!first.isLoading && appointments.isEmpty)
+          Text(
+            'provider_dashboard.clinical_requests.no_clinic_appointments'.tr(),
+          ),
+        if (cursor != null)
+          TextButton(
+            onPressed: _loadingMore ? null : () => _loadMore(cursor),
+            child: Text(
+              'provider_dashboard.clinical_requests.more_clinic_appointments'
+                  .tr(),
+            ),
+          ),
+        if (_loadMoreFailed)
+          TextButton(
+            onPressed: cursor == null ? null : () => _loadMore(cursor),
+            child: Text('provider_dashboard.clinical_requests.retry'.tr()),
+          ),
+      ],
+    );
+  }
 }
 
 class _PharmacySubmissionFields extends StatelessWidget {
@@ -975,75 +1220,96 @@ class _LabHistory extends ConsumerWidget {
   const _LabHistory({
     required this.patientId,
     required this.patientName,
+    required this.isActive,
     this.appointmentId,
   });
   final String patientId;
   final String patientName;
+  final bool isActive;
   final String? appointmentId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Column(
-    children: [
-      if ((ref.watch(sessionControllerProvider).asData?.value?.user.isDoctor ??
-              false) ||
-          (ref
-                  .watch(sessionControllerProvider)
-                  .asData
-                  ?.value
-                  ?.user
-                  .isAssistant ??
-              false))
-        _CreateAction(
-          label: 'provider_dashboard.clinical_requests.create_lab'.tr(),
-          onPressed: () async {
-            final created = await showModalBottomSheet<bool>(
-              context: context,
-              isScrollControlled: true,
-              builder: (_) => _LabRequestForm(
-                patientId: patientId,
-                appointmentId: appointmentId,
-              ),
-            );
-            if (created == true) ref.invalidate(providerLabOrdersProvider);
-          },
-        ),
-      if ((ref.watch(sessionControllerProvider).asData?.value?.user.isDoctor ??
-              false) ||
-          (ref
-                  .watch(sessionControllerProvider)
-                  .asData
-                  ?.value
-                  ?.user
-                  .isAssistant ??
-              false))
-        _BatchAction(type: _BatchRequestType.lab, initialPatientId: patientId),
-      Expanded(
-        child: AsyncValueView<List<LabOrderDetail>>(
-          value: ref.watch(providerLabOrdersProvider),
-          onRetry: () => ref.invalidate(providerLabOrdersProvider),
-          data: (all) {
-            final records = all
-                .where((r) => r.patientId == patientId)
-                .toList(growable: false);
-            if (records.isEmpty) {
-              return EmptyState(
-                title: 'provider_dashboard.clinical_requests.empty_labs'.tr(),
-                icon: Icons.biotech_outlined,
+  Widget build(BuildContext context, WidgetRef ref) => ActiveRefreshScope(
+    enabled: isActive,
+    onRefresh: () =>
+        ref.refresh(providerLabOrdersProvider.future).then((_) {}),
+    child: Column(
+      children: [
+        if ((ref
+                    .watch(sessionControllerProvider)
+                    .asData
+                    ?.value
+                    ?.user
+                    .isDoctor ??
+                false) ||
+            (ref
+                    .watch(sessionControllerProvider)
+                    .asData
+                    ?.value
+                    ?.user
+                    .isAssistant ??
+                false))
+          _CreateAction(
+            label: 'provider_dashboard.clinical_requests.create_lab'.tr(),
+            onPressed: () async {
+              final created = await showModalBottomSheet<bool>(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => _LabRequestForm(
+                  patientId: patientId,
+                  appointmentId: appointmentId,
+                ),
               );
-            }
-            return RefreshIndicator(
-              onRefresh: () async => ref.invalidate(providerLabOrdersProvider),
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                itemCount: records.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (_, i) => _LabCard(order: records[i]),
-              ),
-            );
-          },
+              if (created == true) ref.invalidate(providerLabOrdersProvider);
+            },
+          ),
+        if ((ref
+                    .watch(sessionControllerProvider)
+                    .asData
+                    ?.value
+                    ?.user
+                    .isDoctor ??
+                false) ||
+            (ref
+                    .watch(sessionControllerProvider)
+                    .asData
+                    ?.value
+                    ?.user
+                    .isAssistant ??
+                false))
+          _BatchAction(
+            type: _BatchRequestType.lab,
+            initialPatientId: patientId,
+          ),
+        Expanded(
+          child: AsyncValueView<List<LabOrderDetail>>(
+            value: ref.watch(providerLabOrdersProvider),
+            onRetry: () => ref.invalidate(providerLabOrdersProvider),
+            data: (all) {
+              final records = all
+                  .where((r) => r.patientId == patientId)
+                  .toList(growable: false);
+              if (records.isEmpty) {
+                return EmptyState(
+                  title: 'provider_dashboard.clinical_requests.empty_labs'.tr(),
+                  icon: Icons.biotech_outlined,
+                );
+              }
+              return RefreshIndicator(
+                onRefresh: () =>
+                    ref.refresh(providerLabOrdersProvider.future).then((_) {}),
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: records.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) => _LabCard(order: records[i]),
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 }
 
@@ -1152,12 +1418,16 @@ class _PrescriptionDraft {
 
 class _PrescriptionForm extends ConsumerStatefulWidget {
   const _PrescriptionForm({
+    required this.patientId,
     required this.patientName,
     required this.collectPharmacySubmission,
+    this.currentAppointmentId,
   });
 
+  final String patientId;
   final String patientName;
   final bool collectPharmacySubmission;
+  final String? currentAppointmentId;
 
   @override
   ConsumerState<_PrescriptionForm> createState() => _PrescriptionFormState();
@@ -1168,6 +1438,7 @@ class _PrescriptionFormState extends ConsumerState<_PrescriptionForm> {
   List<PrescriptionImage> _images = const [];
   String? _branchId;
   String _fulfillment = 'PICKUP';
+  String? _clinicAppointmentId;
 
   @override
   void dispose() {
@@ -1250,6 +1521,16 @@ class _PrescriptionFormState extends ConsumerState<_PrescriptionForm> {
                         }),
                       ),
               ),
+              if (_fulfillment == 'CLINIC_HANDOVER') ...[
+                const SizedBox(height: 12),
+                _ProviderClinicAppointmentPicker(
+                  patientId: widget.patientId,
+                  currentAppointmentId: widget.currentAppointmentId,
+                  selectedId: _clinicAppointmentId,
+                  onChanged: (value) =>
+                      setState(() => _clinicAppointmentId = value),
+                ),
+              ],
             ],
             const SizedBox(height: 16),
             FilledButton(
@@ -1268,6 +1549,16 @@ class _PrescriptionFormState extends ConsumerState<_PrescriptionForm> {
                   );
                   return;
                 }
+                if (widget.collectPharmacySubmission &&
+                    _fulfillment == 'CLINIC_HANDOVER' &&
+                    _clinicAppointmentId == null) {
+                  _snack(
+                    context,
+                    'provider_dashboard.clinical_requests.clinic_appointment_hint'
+                        .tr(),
+                  );
+                  return;
+                }
                 Navigator.pop(
                   context,
                   _PrescriptionDraft(
@@ -1279,6 +1570,9 @@ class _PrescriptionFormState extends ConsumerState<_PrescriptionForm> {
                         ? _PharmacySubmission(
                             branchId: _branchId!,
                             fulfillment: _fulfillment,
+                            appointmentId: _fulfillment == 'CLINIC_HANDOVER'
+                                ? _clinicAppointmentId
+                                : null,
                           )
                         : null,
                   ),

@@ -89,11 +89,13 @@ class ProviderClinicalRequestsRepositoryImpl
     required String patientId,
     required String prescriptionId,
     required String fulfillmentType,
+    String? appointmentId,
     String? pharmacyBranchId,
   }) => _remote.createPharmacyOrder(
     patientId: patientId,
     prescriptionId: prescriptionId,
     fulfillmentType: fulfillmentType,
+    appointmentId: appointmentId,
     pharmacyBranchId: pharmacyBranchId,
   );
 }

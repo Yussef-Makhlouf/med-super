@@ -21,6 +21,7 @@ class PharmacyOrderRemoteDatasource {
     double? lat,
     double? lng,
     String? pharmacyBranchId,
+    String? appointmentId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.pharmacyOrders,
@@ -30,6 +31,7 @@ class PharmacyOrderRemoteDatasource {
         if (lat != null) 'lat': lat,
         if (lng != null) 'lng': lng,
         if (pharmacyBranchId != null) 'pharmacyBranchId': pharmacyBranchId,
+        if (appointmentId != null) 'appointmentId': appointmentId,
       },
     );
     return PharmacyOrderCreateDto.fromJson(

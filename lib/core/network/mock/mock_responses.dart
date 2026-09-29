@@ -434,6 +434,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     return {'statusCode': 200, 'data': _userPayload()};
   });
 
+  // The current-device path contains the broader devices path. Keep it first.
+  interceptor.register('DELETE', ApiPaths.authCurrentDevice, (_) {
+    return {'statusCode': 204, 'data': null};
+  });
+
   interceptor.register('POST', ApiPaths.authDevices, (_) {
     return {
       'statusCode': 200,
@@ -1529,8 +1534,48 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
     };
   });
 
-  interceptor.register('POST', ApiPaths.pharmacyOrders, (options) {
+  Map<String, dynamic> createOrder(
+    RequestOptions options, {
+    bool provider = false,
+  }) {
     final body = _body(options) ?? const {};
+    final fulfillmentType = body['fulfillmentType'] as String?;
+    final appointmentId = body['appointmentId'] as String?;
+    if (fulfillmentType == 'CLINIC_HANDOVER') {
+      if (appointmentId == null || appointmentId.isEmpty) {
+        return _error(400, 'VALIDATION_ERROR', 'اختر موعد العيادة أولاً.');
+      }
+      const eligible = {'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'};
+      if (provider) {
+        final matches = _mockProviderDashboardStore.appointments.where(
+          (item) =>
+              item['appointmentId'] == appointmentId &&
+              item['patientId'] == body['patientId'],
+        );
+        if (matches.isEmpty || !eligible.contains(matches.first['status'])) {
+          return _error(
+            422,
+            'APPOINTMENT_NOT_ELIGIBLE',
+            'الموعد غير مؤهل للتسليم إلى العيادة.',
+          );
+        }
+      } else {
+        final appointment = _mockAppointments[appointmentId];
+        if (appointment == null || !eligible.contains(appointment.status)) {
+          return _error(
+            422,
+            'APPOINTMENT_NOT_ELIGIBLE',
+            'الموعد غير مؤهل للتسليم إلى العيادة.',
+          );
+        }
+      }
+    } else if (appointmentId != null) {
+      return _error(
+        400,
+        'VALIDATION_ERROR',
+        'الموعد متاح للتسليم إلى العيادة فقط.',
+      );
+    }
     final branchId = body['pharmacyBranchId'] as String?;
     return {
       'statusCode': 200,
@@ -1540,7 +1585,16 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
         'broadcastedBranchIds': [?branchId],
       },
     };
-  });
+  }
+
+  // The provider path must precede the broader patient path in this
+  // first-matching mock interceptor.
+  interceptor.register(
+    'POST',
+    '${ApiPaths.pharmacyOrders}/provider',
+    (options) => createOrder(options, provider: true),
+  );
+  interceptor.register('POST', ApiPaths.pharmacyOrders, createOrder);
 
   // Detail — registered before the bare list pattern below.
   interceptor.register('GET', '${ApiPaths.pharmacyOrders}/', (options) {
@@ -2271,6 +2325,31 @@ class _MockNotificationStore {
 }
 
 final _mockNotificationStore = _MockNotificationStore();
+
+final _mockNotificationPreferencesByPhone =
+    <String, List<Map<String, dynamic>>>{};
+
+List<Map<String, dynamic>> _mockNotificationPreferencesForCurrentUser() {
+  final phone = _mockAuth.phone ?? 'mock-default-user';
+  return _mockNotificationPreferencesByPhone.putIfAbsent(
+    phone,
+    () => [
+      for (final tier in const [
+        'TRANSACTIONAL',
+        'INFORMATIONAL',
+        'SAFETY_CRITICAL',
+        'MARKETING',
+      ])
+        for (final channel in const ['PUSH', 'SMS'])
+          {
+            'tier': tier,
+            'channel': channel,
+            'enabled': true,
+            'userDisableable': tier != 'SAFETY_CRITICAL',
+          },
+    ],
+  );
+}
 
 // ─── Hive-backed mock store ────────────────────────────────────────────────────
 
@@ -3008,6 +3087,70 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
 
 /// Phase 8 notifications — mirrors `GET/PATCH /v1/notifications`.
 void registerNotificationMocks(MockInterceptor interceptor) {
+  // Preferences is a more specific route than the inbox list path; register
+  // first because MockInterceptor uses first-match substring routing.
+  interceptor.register('PUT', ApiPaths.notificationPreferences, (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
+    }
+    final preferences = _body(options)?['preferences'];
+    if (preferences is! List || preferences.isEmpty) {
+      return _error(400, 'VALIDATION_ERROR', 'تفضيلات الإشعارات غير صالحة.');
+    }
+    final rows = _mockNotificationPreferencesForCurrentUser();
+    for (final entry in preferences.whereType<Map<String, dynamic>>()) {
+      if (entry['tier'] == 'SAFETY_CRITICAL' && entry['enabled'] == false) {
+        return _error(
+          422,
+          'SAFETY_CRITICAL_NOTIFICATION_NOT_DISABLEABLE',
+          'لا يمكن تعطيل الإشعارات الحرِجة المتعلقة بسلامتك.',
+        );
+      }
+    }
+    for (final entry in preferences.whereType<Map<String, dynamic>>()) {
+      final index = rows.indexWhere(
+        (row) =>
+            row['tier'] == entry['tier'] &&
+            row['channel'] == entry['channel'],
+      );
+      if (index >= 0 && entry['enabled'] is bool) {
+        rows[index] = {
+          ...rows[index],
+          'enabled': entry['enabled'],
+        };
+      }
+    }
+    return {'statusCode': 204, 'data': <String, dynamic>{}};
+  });
+
+  interceptor.register('GET', ApiPaths.notificationPreferences, (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
+    }
+    return {
+      'statusCode': 200,
+      // MockInterceptor stores response bodies as a JSON object. Wrap the
+      // array in the same API envelope shape; ResponseEnvelopeInterceptor
+      // unwraps it to the list expected by the datasource.
+      'data': {
+        'success': true,
+        'data': _mockNotificationPreferencesForCurrentUser()
+            .map((preference) => Map<String, dynamic>.from(preference))
+            .toList(growable: false),
+      },
+    };
+  });
+
   // More specific `/read` paths must register before the list route — both
   // contain `/v1/notifications` and MockInterceptor is first-registered-wins.
   interceptor.register('PATCH', '${ApiPaths.notifications}/', (options) {

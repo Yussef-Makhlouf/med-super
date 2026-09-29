@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/widgets/active_refresh_scope.dart';
 import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
 import 'package:med_super/features/lab_booking/presentation/controllers/lab_order_list_providers.dart';
@@ -98,8 +99,18 @@ class _PatientOrdersScreenState extends ConsumerState<PatientOrdersScreen> {
             const SizedBox(height: 16),
             Expanded(
               child: _selectedVendorTab == 0
-                  ? _PharmacyOrdersTab(query: _query)
-                  : _LabOrdersTab(query: _query),
+                  ? ActiveRefreshScope(
+                      onRefresh: () async {
+                        await ref.refresh(pharmacyOrdersProvider.future);
+                      },
+                      child: _PharmacyOrdersTab(query: _query),
+                    )
+                  : ActiveRefreshScope(
+                      onRefresh: () async {
+                        await ref.refresh(labOrdersProvider.future);
+                      },
+                      child: _LabOrdersTab(query: _query),
+                    ),
             ),
           ],
         ),

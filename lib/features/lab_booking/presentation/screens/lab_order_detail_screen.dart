@@ -10,6 +10,7 @@ import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/active_refresh_scope.dart';
 import 'package:med_super/core/widgets/result_file_thumbnail.dart';
 import 'package:med_super/core/widgets/section_header.dart';
 import 'package:med_super/features/lab_booking/domain/entities/lab_order_detail.dart';
@@ -71,10 +72,16 @@ class LabOrderDetailScreen extends ConsumerWidget {
               context.canPop() ? context.pop() : context.go('/patient/orders'),
         ),
       ),
-      body: AsyncValueView(
-        value: detailAsync,
-        onRetry: () => ref.invalidate(labOrderDetailProvider(orderId)),
-        data: (order) => _OrderDetailBody(order: order),
+      body: ActiveRefreshScope(
+        onRefresh: () async {
+          await ref.refresh(labOrderDetailProvider(orderId).future);
+          await ref.refresh(labOrdersProvider.future);
+        },
+        child: AsyncValueView(
+          value: detailAsync,
+          onRetry: () => ref.invalidate(labOrderDetailProvider(orderId)),
+          data: (order) => _OrderDetailBody(order: order),
+        ),
       ),
     );
   }

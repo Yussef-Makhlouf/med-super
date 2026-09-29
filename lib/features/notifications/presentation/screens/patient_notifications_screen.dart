@@ -46,7 +46,10 @@ class PatientNotificationsScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: _NotifHeader(displayName: displayName),
+              child: _NotifHeader(
+                displayName: displayName,
+                onPreferences: () => context.push('/notifications/preferences'),
+              ),
             ),
             const SizedBox(height: 12),
             Padding(
@@ -197,9 +200,10 @@ class PatientNotificationsScreen extends ConsumerWidget {
 }
 
 class _NotifHeader extends StatelessWidget {
-  const _NotifHeader({required this.displayName});
+  const _NotifHeader({required this.displayName, required this.onPreferences});
 
   final String displayName;
+  final VoidCallback onPreferences;
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +237,11 @@ class _NotifHeader extends StatelessWidget {
           ],
         ),
         const Spacer(),
+        IconButton(
+          tooltip: 'notifications.preferences_title'.tr(),
+          onPressed: onPreferences,
+          icon: const Icon(Icons.tune_rounded, color: AppPalette.inkMuted),
+        ),
       ],
     );
   }

@@ -45,6 +45,7 @@ abstract interface class ProviderClinicalRequestsRepository {
     required String patientId,
     required String prescriptionId,
     required String fulfillmentType,
+    String? appointmentId,
     String? pharmacyBranchId,
   });
 }

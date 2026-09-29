@@ -62,3 +62,10 @@ operations to `medsuper-laboratory-dashboard`, a separate Next.js app.
 That's unchanged — this feature is the distinct patient-facing booking/
 tracking flow, analogous to how patient doctor-search is distinct from the
 doctor dashboard.
+
+## Live order status refresh
+
+Patient lab order lists and order details refresh from the API every 15
+seconds while visible and foregrounded, with an immediate refetch on app
+resume. Polling pauses while the app or screen is inactive; the API remains
+the source of truth.

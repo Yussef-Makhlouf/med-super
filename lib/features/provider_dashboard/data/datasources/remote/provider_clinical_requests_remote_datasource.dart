@@ -218,6 +218,7 @@ class ProviderClinicalRequestsRemoteDatasource {
     required String patientId,
     required String prescriptionId,
     required String fulfillmentType,
+    String? appointmentId,
     String? pharmacyBranchId,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
@@ -226,6 +227,7 @@ class ProviderClinicalRequestsRemoteDatasource {
         'patientId': patientId,
         'prescriptionId': prescriptionId,
         'fulfillmentType': fulfillmentType,
+        if (appointmentId != null) 'appointmentId': appointmentId,
         ...?((pharmacyBranchId != null)
             ? {'pharmacyBranchId': pharmacyBranchId}
             : null),

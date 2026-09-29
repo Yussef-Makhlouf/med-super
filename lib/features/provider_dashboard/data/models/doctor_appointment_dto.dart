@@ -116,6 +116,7 @@ class DoctorAppointmentDto {
   DoctorAppointment toEntity() => DoctorAppointment(
     appointmentId: appointmentId,
     status: DoctorAppointmentStatusX.fromWire(status),
+    statusCode: status,
     slotId: slotId,
     startAt: startAt,
     endAt: endAt,

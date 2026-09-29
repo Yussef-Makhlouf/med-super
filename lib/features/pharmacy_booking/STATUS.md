@@ -45,3 +45,19 @@ Closing an `OUT_FOR_DELIVERY` order was staff-only (`complete`) until this pass,
 ## Not affected by ADR-006
 
 `ADR-006-PROVIDER-SURFACE-SPLIT.md` (2026-08-14) routes future **pharmacy dashboard** (pharmacy *staff* operations) work to a separate Next.js web app. This feature is the *patient-facing* booking flow, a different surface — unaffected either way.
+
+## Live order status refresh
+
+Patient order lists and pharmacy order details refresh from the API every 15
+seconds while their route/tab is visible and the app is foregrounded. Returning
+to the app triggers an immediate refetch. Polling is paused when the app is
+backgrounded or the screen is inactive; the API remains the source of truth.
+
+## Clinic handover destination
+
+When `CLINIC_HANDOVER` is selected, the review screen requires one of the
+patient's `CONFIRMED`, `CHECKED_IN`, `IN_PROGRESS`, or `COMPLETED` appointments
+and sends its `appointmentId` with the pharmacy order. The backend verifies
+patient ownership and derives the receiving clinic from that appointment.
+Other fulfillment types omit `appointmentId`; the quote and fulfillment state
+machine are unchanged.

@@ -16,6 +16,7 @@ class ProviderPageHeader extends StatelessWidget
     this.unreadNotificationsCount = 0,
     this.avatarUrl,
     this.onNotificationTap,
+    this.onSettingsTap,
     this.onAvatarTap,
     super.key,
   });
@@ -24,6 +25,7 @@ class ProviderPageHeader extends StatelessWidget
   final int unreadNotificationsCount;
   final String? avatarUrl;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onSettingsTap;
   final VoidCallback? onAvatarTap;
 
   @override
@@ -79,6 +81,16 @@ class ProviderPageHeader extends StatelessWidget
                     ),
                 ],
               ),
+              if (onSettingsTap != null)
+                IconButton(
+                  tooltip: 'notifications.preferences_title'.tr(),
+                  onPressed: onSettingsTap,
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.ink700,
+                    size: 22,
+                  ),
+                ),
               // Center: Screen Title
               Expanded(
                 child: Center(

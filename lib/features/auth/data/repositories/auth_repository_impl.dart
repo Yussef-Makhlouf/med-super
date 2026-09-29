@@ -184,11 +184,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> logout() async {
+  Future<Result<void>> logout({String? fcmToken}) async {
     try {
       final refreshToken = await _storage.refreshToken;
       if (refreshToken != null) {
-        await _remote.logout(refreshToken: refreshToken);
+        await _remote.logout(refreshToken: refreshToken, fcmToken: fcmToken);
       }
     } catch (_) {
       // Always clear local session even if remote logout fails.

@@ -20,6 +20,7 @@ import 'package:med_super/features/pharmacy_booking/presentation/controllers/pre
 import 'package:med_super/features/provider_registration/presentation/controllers/registration_form_controller.dart';
 import 'package:med_super/core/notifications/push_notification_coordinator.dart';
 import 'package:med_super/features/notifications/data/register_fcm_device.dart';
+import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 import 'package:med_super/features/wallet/presentation/controllers/wallet_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -150,14 +151,80 @@ class SessionController extends _$SessionController {
   }
 
   StreamSubscription<String>? _fcmTokenRefreshSub;
+  Future<void>? _pushRegistrationTask;
+  int _pushRegistrationEpoch = -1;
+  final Set<Future<bool>> _activeTokenRegistrations = {};
+  Timer? _pushRetryTimer;
+  int _pushRetrySeconds = 5;
+  int _pushEpoch = 0;
 
   void _registerPushDevice() {
-    registerFcmDeviceIfAvailable(ref);
-    // FCM can rotate this device's token at any point during the session;
-    // without re-registering it, the backend keeps a token that no longer
-    // resolves and pushes silently stop arriving.
-    _fcmTokenRefreshSub ??= listenForFcmTokenRefresh(ref);
-    unawaited(ref.read(pushNotificationCoordinatorProvider).start());
+    if (_pushRegistrationTask != null && _pushRegistrationEpoch == _pushEpoch) {
+      return;
+    }
+    final epoch = _pushEpoch;
+    _pushRegistrationEpoch = epoch;
+    final task = _startAndRegisterPush(epoch);
+    _pushRegistrationTask = task;
+    unawaited(
+      task.whenComplete(() {
+        if (_pushRegistrationTask == task) _pushRegistrationTask = null;
+      }),
+    );
+  }
+
+  /// Rechecks the token after foregrounding: this covers an APNs token that
+  /// arrived after initial sign-in and retries transient registration errors.
+  void retryPushRegistration() {
+    if (state.asData?.value != null) _registerPushDevice();
+  }
+
+  Future<void> _startAndRegisterPush(int epoch) async {
+    try {
+      final permitted = await ref
+          .read(pushNotificationCoordinatorProvider)
+          .start();
+      if (!permitted || epoch != _pushEpoch) return;
+
+      _fcmTokenRefreshSub ??= listenForFcmTokenRefresh(ref, (token) {
+        if (epoch != _pushEpoch) return;
+        unawaited(_registerToken(epoch, refreshedToken: token));
+      });
+      await _registerToken(epoch);
+    } catch (_) {
+      if (epoch == _pushEpoch) _schedulePushRetry(epoch);
+    }
+  }
+
+  Future<void> _registerToken(int epoch, {String? refreshedToken}) async {
+    if (epoch != _pushEpoch) return;
+    final registration = registerFcmDeviceIfAvailable(
+      ref,
+      refreshedToken: refreshedToken,
+    );
+    _activeTokenRegistrations.add(registration);
+    try {
+      final succeeded = await registration;
+      if (epoch != _pushEpoch) return;
+      if (succeeded) {
+        _pushRetryTimer?.cancel();
+        _pushRetryTimer = null;
+        _pushRetrySeconds = 5;
+      } else {
+        _schedulePushRetry(epoch);
+      }
+    } finally {
+      _activeTokenRegistrations.remove(registration);
+    }
+  }
+
+  void _schedulePushRetry(int epoch) {
+    if (_pushRetryTimer != null || epoch != _pushEpoch) return;
+    _pushRetryTimer = Timer(Duration(seconds: _pushRetrySeconds), () {
+      _pushRetryTimer = null;
+      retryPushRegistration();
+    });
+    _pushRetrySeconds = (_pushRetrySeconds * 2).clamp(5, 300);
   }
 
   bool _readOnboardingComplete() {
@@ -234,7 +301,8 @@ class SessionController extends _$SessionController {
         }
         final session = Session(
           user: value,
-          onboardingComplete: value.profileComplete || _readOnboardingComplete(),
+          onboardingComplete:
+              value.profileComplete || _readOnboardingComplete(),
           passwordComplete: _readPasswordComplete(),
         );
         state = AsyncData(session);
@@ -254,7 +322,9 @@ class SessionController extends _$SessionController {
   /// right after the account is confirmed (so `value.id` is known),
   /// before the new `Session` is published.
   Future<void> _claimRegistrationDraft(String userId) async {
-    final draftController = ref.read(registrationFormControllerProvider.notifier);
+    final draftController = ref.read(
+      registrationFormControllerProvider.notifier,
+    );
     await draftController.discardIfOwnedByDifferentUser(userId);
     await draftController.stampDraftOwner(userId);
   }
@@ -278,7 +348,9 @@ class SessionController extends _$SessionController {
   /// occasionally miss a real PENDING doctor once in a rare double-failure
   /// than to ever block or fail the login itself over this check.
   Future<void> _resyncDoctorRegistrationStatus() async {
-    var result = await ref.read(myDoctorRegistrationStatusUseCaseProvider).call();
+    var result = await ref
+        .read(myDoctorRegistrationStatusUseCaseProvider)
+        .call();
     if (result case Err()) {
       result = await ref.read(myDoctorRegistrationStatusUseCaseProvider).call();
     }
@@ -379,7 +451,8 @@ class SessionController extends _$SessionController {
         }
         final session = Session(
           user: value,
-          onboardingComplete: value.profileComplete || _readOnboardingComplete(),
+          onboardingComplete:
+              value.profileComplete || _readOnboardingComplete(),
           passwordComplete: true,
         );
         state = AsyncData(session);
@@ -403,7 +476,9 @@ class SessionController extends _$SessionController {
       return const Result.err(Failure.auth());
     }
 
-    final tokensResult = await ref.read(switchContextUseCaseProvider).call(role);
+    final tokensResult = await ref
+        .read(switchContextUseCaseProvider)
+        .call(role);
     switch (tokensResult) {
       case Err(:final failure):
         return Result.err(failure);
@@ -418,6 +493,7 @@ class SessionController extends _$SessionController {
       case Ok(:final value):
         final session = current.copyWith(user: value);
         state = AsyncData(session);
+        ref.invalidate(notificationListControllerProvider);
         return Result.ok(session);
     }
   }
@@ -489,13 +565,35 @@ class SessionController extends _$SessionController {
   }
 
   Future<void> logout() async {
+    // Stop all sources of new registrations before calling auth logout, then
+    // wait for any POST already in flight so DELETE cannot race behind it.
+    ++_pushEpoch;
+    _pushRetryTimer?.cancel();
+    _pushRetryTimer = null;
+    await _fcmTokenRefreshSub?.cancel();
+    _fcmTokenRefreshSub = null;
+    await ref.read(pushNotificationCoordinatorProvider).stop();
+    await Future.wait(_activeTokenRegistrations.toList());
+    String? fcmToken;
+    try {
+      fcmToken = await ref.read(fcmServiceProvider).token;
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await ref
+            .read(authRemoteDatasourceProvider)
+            .unregisterCurrentDevice(fcmToken: fcmToken);
+      }
+    } catch (_) {
+      // Local FCM token deletion and session teardown still proceed offline.
+    }
     // Best-effort: the device must end up logged out even if the server
     // call fails or times out (offline, expired token, slow network) —
     // otherwise a failed network request would leave `state` never reset to
     // `null`, so the app still looks/behaves as logged in while the user
     // already tapped logout and expects to be signed out.
     try {
-      await ref.read(logoutUseCaseProvider).call();
+      // The refresh-token endpoint can still revoke the device if the access
+      // token expired before the authenticated DELETE above completed.
+      await ref.read(logoutUseCaseProvider).call(fcmToken: fcmToken);
     } catch (_) {
       // Ignored — local session teardown below still proceeds.
     }
@@ -504,8 +602,6 @@ class SessionController extends _$SessionController {
     // same "don't leak one account's state into the next login on this
     // device" reasoning as the Hive clears below. A fresh token is minted
     // and re-registered on the next sign-in.
-    await _fcmTokenRefreshSub?.cancel();
-    _fcmTokenRefreshSub = null;
     await ref.read(fcmServiceProvider).deleteToken();
     await _writeOnboardingComplete(false);
     await _writePasswordComplete(false);
@@ -566,6 +662,7 @@ class SessionController extends _$SessionController {
     ref.invalidate(walletTransactionHistoryProvider);
     ref.invalidate(walletTransactionDetailProvider);
     ref.invalidate(refundStatusProvider);
+    ref.invalidate(notificationListControllerProvider);
   }
 }
 

@@ -63,6 +63,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
             title: 'notifications.title'.tr(),
             unreadNotificationsCount: unreadCount,
             avatarUrl: avatarUrl,
+            onSettingsTap: () => context.push('/notifications/preferences'),
           ),
           Expanded(
             child: AsyncValueView<NotificationListState>(

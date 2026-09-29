@@ -332,6 +332,20 @@
   },
   "notifications": {
     "title": "Notifications",
+    "preferences_title": "Notification settings",
+    "preferences_description": "Choose which notification types and channels you want to receive.",
+    "save_preferences": "Save preferences",
+    "critical_always_on": "Safety-critical notifications are always enabled.",
+    "channels": {
+      "PUSH": "App notifications",
+      "SMS": "SMS"
+    },
+    "tiers": {
+      "TRANSACTIONAL": "Order and appointment updates",
+      "INFORMATIONAL": "General updates",
+      "SAFETY_CRITICAL": "Critical health alerts",
+      "MARKETING": "Offers and announcements"
+    },
     "empty_title": "No notifications",
     "empty_subtitle": "Appointment, prescription, and order updates will appear here.",
     "mark_all_read": "Mark all as read",
@@ -619,7 +633,12 @@
       "total_value": "Confirmed after review",
       "estimate_disclaimer": "The pharmacy will review the prescription, send the final price and any notes, then start preparing or delivering the order.",
       "confirm_cta": "Confirm order",
-      "confirm_error": "Something went wrong confirming your order. Please try again."
+      "confirm_error": "Something went wrong confirming your order. Please try again.",
+      "clinic_appointment_label": "Appointment for clinic handover",
+      "clinic_appointment_hint": "Select the appointment and clinic",
+      "no_clinic_appointments": "No eligible appointments are available for clinic handover.",
+      "retry_appointments": "Retry loading appointments",
+      "more_appointments": "Load more appointments"
     },
     "confirmation": {
       "title": "Order sent successfully",
@@ -1185,6 +1204,10 @@
       "fulfillment_PICKUP": "Patient pickup",
       "fulfillment_DELIVERY": "Delivery",
       "fulfillment_CLINIC_HANDOVER": "Delivery to clinic",
+      "clinic_appointment": "Clinic appointment",
+      "clinic_appointment_hint": "Select this patient's appointment and clinic",
+      "no_clinic_appointments": "No eligible appointments are available for this patient.",
+      "more_clinic_appointments": "Load more appointments",
       "send": "Send request",
       "submit_and_send": "Send prescription to pharmacy",
       "no_pharmacies": "No verified pharmacy branches are available.",

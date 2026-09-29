@@ -75,11 +75,13 @@ class ProviderClinicalRequestUseCases {
     required String patientId,
     required String prescriptionId,
     required String fulfillmentType,
+    String? appointmentId,
     String? pharmacyBranchId,
   }) => _repository.createPharmacyOrder(
     patientId: patientId,
     prescriptionId: prescriptionId,
     fulfillmentType: fulfillmentType,
+    appointmentId: appointmentId,
     pharmacyBranchId: pharmacyBranchId,
   );
 }

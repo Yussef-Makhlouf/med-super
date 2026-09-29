@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:med_super/core/config/app_config.dart';
@@ -16,37 +18,68 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 /// Handles FCM token registration/refresh and foreground/background messages.
 class FcmService {
-  const FcmService(this._messaging);
+  FcmService(this._messaging);
 
   final FirebaseMessaging _messaging;
+  StreamSubscription<RemoteMessage>? _messageSubscription;
+  StreamSubscription<RemoteMessage>? _tapSubscription;
+  int _generation = 0;
 
-  Future<void> init({
+  Future<bool> init({
     required void Function(RemoteMessage) onMessage,
     required void Function(RemoteMessage) onMessageOpenedApp,
   }) async {
+    final generation = ++_generation;
     try {
-      await _messaging.requestPermission(
+      final settings = await _messaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
+      if (generation != _generation || !_canReceive(settings)) return false;
 
       // Foreground pushes never show a tray notification on their own —
       // the caller is expected to display one via LocalNotificationService.
-      FirebaseMessaging.onMessage.listen(onMessage);
+      await _messageSubscription?.cancel();
+      _messageSubscription = FirebaseMessaging.onMessage.listen(onMessage);
 
       // Tapping an OS tray notification while the app is backgrounded.
-      FirebaseMessaging.onMessageOpenedApp.listen(onMessageOpenedApp);
+      await _tapSubscription?.cancel();
+      _tapSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
+        onMessageOpenedApp,
+      );
 
       // Tapping an OS tray notification that launched the app from
       // terminated state.
       final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
+      if (generation == _generation && initialMessage != null) {
         onMessageOpenedApp(initialMessage);
       }
+      return generation == _generation;
     } catch (e) {
       if (kDebugMode) debugPrint('FcmService: init skipped — $e');
+      return false;
     }
+  }
+
+  bool _canReceive(NotificationSettings settings) =>
+      settings.authorizationStatus == AuthorizationStatus.authorized ||
+      settings.authorizationStatus == AuthorizationStatus.provisional;
+
+  Future<bool> get canReceiveNotifications async {
+    try {
+      return _canReceive(await _messaging.getNotificationSettings());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> stop() async {
+    ++_generation;
+    await _messageSubscription?.cancel();
+    await _tapSubscription?.cancel();
+    _messageSubscription = null;
+    _tapSubscription = null;
   }
 
   /// Fires whenever FCM rotates this device's token. Without re-registering
@@ -67,6 +100,13 @@ class FcmService {
 
   Future<String?> get token async {
     try {
+      // On Apple platforms FCM cannot issue a usable token before APNs has
+      // assigned its token. A later foreground retry handles that case.
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.iOS &&
+          await _messaging.getAPNSToken() == null) {
+        return null;
+      }
       final vapidKey = AppConfig.instance.fcmVapidKey;
       if (kIsWeb && vapidKey == null) {
         if (kDebugMode) {

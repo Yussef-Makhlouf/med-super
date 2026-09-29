@@ -61,7 +61,7 @@ abstract class AuthRepository {
     String? email,
   });
 
-  Future<Result<void>> logout();
+  Future<Result<void>> logout({String? fcmToken});
 
   /// S-2 fix — moves the active session to a *different* role the caller
   /// already holds (e.g. a verified doctor switching back to PATIENT).

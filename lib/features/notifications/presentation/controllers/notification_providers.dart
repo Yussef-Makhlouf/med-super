@@ -5,9 +5,12 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 import 'package:med_super/features/notifications/data/datasources/remote/notification_remote_datasource.dart';
 import 'package:med_super/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:med_super/features/notifications/domain/entities/app_notification.dart';
+import 'package:med_super/features/notifications/domain/entities/notification_preference.dart';
 import 'package:med_super/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:med_super/features/notifications/domain/usecases/get_notification_preferences_usecase.dart';
 import 'package:med_super/features/notifications/domain/usecases/list_notifications_usecase.dart';
 import 'package:med_super/features/notifications/domain/usecases/mark_notification_read_usecase.dart';
+import 'package:med_super/features/notifications/domain/usecases/update_notification_preferences_usecase.dart';
 
 final notificationRemoteDatasourceProvider =
     Provider<NotificationRemoteDatasource>((ref) {
@@ -34,6 +37,149 @@ final markNotificationReadUseCaseProvider =
         ref.watch(notificationRepositoryProvider),
       ),
     );
+
+final getNotificationPreferencesUseCaseProvider =
+    Provider<GetNotificationPreferencesUseCase>(
+      (ref) => GetNotificationPreferencesUseCase(
+        ref.watch(notificationRepositoryProvider),
+      ),
+    );
+
+final updateNotificationPreferencesUseCaseProvider =
+    Provider<UpdateNotificationPreferencesUseCase>(
+      (ref) => UpdateNotificationPreferencesUseCase(
+        ref.watch(notificationRepositoryProvider),
+      ),
+    );
+
+class NotificationPreferencesState {
+  const NotificationPreferencesState({
+    required this.preferences,
+    required this.savedPreferences,
+    this.isSaving = false,
+    this.saveFailure,
+  });
+
+  final List<NotificationPreference> preferences;
+  final List<NotificationPreference> savedPreferences;
+  final bool isSaving;
+  final Object? saveFailure;
+
+  bool get isDirty {
+    if (preferences.length != savedPreferences.length) return true;
+    for (var i = 0; i < preferences.length; i++) {
+      final current = preferences[i];
+      final saved = savedPreferences[i];
+      if (current.tier != saved.tier ||
+          current.channel != saved.channel ||
+          current.effectiveEnabled != saved.effectiveEnabled) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  NotificationPreferencesState copyWith({
+    List<NotificationPreference>? preferences,
+    List<NotificationPreference>? savedPreferences,
+    bool? isSaving,
+    Object? saveFailure,
+    bool clearSaveFailure = false,
+  }) => NotificationPreferencesState(
+    preferences: preferences ?? this.preferences,
+    savedPreferences: savedPreferences ?? this.savedPreferences,
+    isSaving: isSaving ?? this.isSaving,
+    saveFailure: clearSaveFailure ? null : (saveFailure ?? this.saveFailure),
+  );
+}
+
+class NotificationPreferencesController
+    extends Notifier<AsyncValue<NotificationPreferencesState>> {
+  @override
+  AsyncValue<NotificationPreferencesState> build() {
+    _load();
+    return const AsyncLoading();
+  }
+
+  Future<void> _load() async {
+    final result = await ref
+        .read(getNotificationPreferencesUseCaseProvider)
+        .call();
+    state = result.when(
+      ok: (preferences) {
+        final safe = List<NotificationPreference>.unmodifiable(preferences);
+        return AsyncData(
+          NotificationPreferencesState(
+            preferences: safe,
+            savedPreferences: safe,
+          ),
+        );
+      },
+      err: (failure) => AsyncError(failure, StackTrace.current),
+    );
+  }
+
+  Future<void> refresh() async {
+    if (state.asData?.value.isSaving == true) return;
+    await _load();
+  }
+
+  void setEnabled(NotificationPreference preference, bool enabled) {
+    final current = state.asData?.value;
+    if (current == null || current.isSaving || !preference.userDisableable) {
+      return;
+    }
+    final updated = [
+      for (final item in current.preferences)
+        if (item.tier == preference.tier && item.channel == preference.channel)
+          item.copyWith(enabled: enabled)
+        else
+          item,
+    ];
+    state = AsyncData(
+      current.copyWith(
+        preferences: List.unmodifiable(updated),
+        clearSaveFailure: true,
+      ),
+    );
+  }
+
+  Future<void> save() async {
+    final current = state.asData?.value;
+    if (current == null || !current.isDirty || current.isSaving) return;
+
+    state = AsyncData(current.copyWith(isSaving: true, clearSaveFailure: true));
+    final result = await ref
+        .read(updateNotificationPreferencesUseCaseProvider)
+        .call(current.preferences);
+    state = result.when(
+      ok: (_) {
+        final saved = List<NotificationPreference>.unmodifiable(
+          current.preferences
+              .map(
+                (preference) =>
+                    preference.copyWith(enabled: preference.effectiveEnabled),
+              )
+              .toList(growable: false),
+        );
+        return AsyncData(
+          NotificationPreferencesState(
+            preferences: saved,
+            savedPreferences: saved,
+          ),
+        );
+      },
+      err: (failure) =>
+          AsyncData(current.copyWith(isSaving: false, saveFailure: failure)),
+    );
+  }
+}
+
+final notificationPreferencesControllerProvider =
+    NotifierProvider<
+      NotificationPreferencesController,
+      AsyncValue<NotificationPreferencesState>
+    >(NotificationPreferencesController.new);
 
 class NotificationListState {
   const NotificationListState({
