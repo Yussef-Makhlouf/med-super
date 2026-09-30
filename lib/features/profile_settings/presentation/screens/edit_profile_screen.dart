@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -329,6 +329,12 @@ class _ProfileTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textDirection: keyboardType == TextInputType.phone
+          ? TextDirection.ltr
+          : null,
+      textAlign: keyboardType == TextInputType.phone
+          ? TextAlign.left
+          : TextAlign.start,
       textInputAction: textInputAction,
       readOnly: readOnly,
       validator: validator,

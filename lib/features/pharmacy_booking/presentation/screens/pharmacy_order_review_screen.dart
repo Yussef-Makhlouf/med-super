@@ -2,10 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_super/core/error/dio_failure_mapper.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
+import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
+import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/delivery_method.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/pharmacy_order_confirmation.dart';
@@ -34,6 +38,14 @@ class PharmacyOrderReviewScreen extends ConsumerStatefulWidget {
 class _PharmacyOrderReviewScreenState
     extends ConsumerState<PharmacyOrderReviewScreen> {
   bool _confirming = false;
+  String? _clinicAppointmentId;
+
+  static const _clinicHandoverStatuses = {
+    'CONFIRMED',
+    'CHECKED_IN',
+    'IN_PROGRESS',
+    'COMPLETED',
+  };
 
   Future<void> _confirm({
     required Pharmacy? pharmacy,
@@ -46,6 +58,10 @@ class _PharmacyOrderReviewScreenState
         .value
         ?.prescriptionId;
     if (prescriptionId == null) return;
+    if (deliveryMethod == DeliveryMethod.clinicHandover &&
+        _clinicAppointmentId == null) {
+      return;
+    }
 
     setState(() => _confirming = true);
     await ref
@@ -54,15 +70,22 @@ class _PharmacyOrderReviewScreenState
           prescriptionId: prescriptionId,
           fulfillmentType: deliveryMethod.apiValue,
           pharmacyBranchId: pharmacy.id,
+          appointmentId: deliveryMethod == DeliveryMethod.clinicHandover
+              ? _clinicAppointmentId
+              : null,
         );
     if (!mounted) return;
     setState(() => _confirming = false);
 
     final result = ref.read(pharmacyOrderControllerProvider);
     if (result.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('pharmacy_booking.review.confirm_error'.tr())),
+      final message = failureMessage(
+        mapDioToFailure(result.error!),
+        screenFallback: 'pharmacy_booking.review.confirm_error',
       );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     final confirmation = PharmacyOrderConfirmation(
@@ -76,6 +99,20 @@ class _PharmacyOrderReviewScreenState
   Widget build(BuildContext context) {
     final images = ref.watch(uploadedPrescriptionImagesProvider);
     final deliveryMethod = ref.watch(selectedDeliveryMethodProvider);
+    final appointmentState = deliveryMethod == DeliveryMethod.clinicHandover
+        ? ref.watch(myAppointmentsProvider)
+        : null;
+    final clinicAppointments =
+        appointmentState?.asData?.value.items
+            .where((item) => _clinicHandoverStatuses.contains(item.status))
+            .toList(growable: false) ??
+        const <AppointmentSummary>[];
+    final selectedClinicAppointmentId =
+        clinicAppointments.any(
+          (item) => item.appointmentId == _clinicAppointmentId,
+        )
+        ? _clinicAppointmentId
+        : null;
 
     final pharmacies = ref.watch(pharmaciesProvider).value ?? const [];
     final explicitPharmacyId = ref.watch(selectedPharmacyProvider);
@@ -119,6 +156,24 @@ class _PharmacyOrderReviewScreenState
                     method: deliveryMethod,
                     onEdit: () => context.push('/patient/pharmacy/upload'),
                   ),
+                  if (deliveryMethod == DeliveryMethod.clinicHandover) ...[
+                    const SizedBox(height: 16),
+                    _ClinicAppointmentSection(
+                      appointments: clinicAppointments,
+                      selectedId: selectedClinicAppointmentId,
+                      isLoading:
+                          (appointmentState?.isLoading ?? false) ||
+                          (appointmentState?.asData?.value.isLoadingMore ??
+                              false),
+                      hasError: appointmentState?.hasError ?? false,
+                      hasMore: appointmentState?.asData?.value.hasMore ?? false,
+                      onChanged: (value) =>
+                          setState(() => _clinicAppointmentId = value),
+                      onLoadMore: () =>
+                          ref.read(myAppointmentsProvider.notifier).loadMore(),
+                      onRetry: () => ref.invalidate(myAppointmentsProvider),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   const _CostSummarySection(),
                 ],
@@ -126,17 +181,104 @@ class _PharmacyOrderReviewScreenState
             ),
             _SubmitBar(
               isSubmitting: _confirming,
-              onConfirm: () => _confirm(
-                pharmacy: pharmacy,
-                images: images,
-                deliveryMethod: deliveryMethod,
-              ),
+              onConfirm:
+                  deliveryMethod == DeliveryMethod.clinicHandover &&
+                      selectedClinicAppointmentId == null
+                  ? null
+                  : () => _confirm(
+                      pharmacy: pharmacy,
+                      images: images,
+                      deliveryMethod: deliveryMethod,
+                    ),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _ClinicAppointmentSection extends StatelessWidget {
+  const _ClinicAppointmentSection({
+    required this.appointments,
+    required this.selectedId,
+    required this.isLoading,
+    required this.hasError,
+    required this.hasMore,
+    required this.onChanged,
+    required this.onLoadMore,
+    required this.onRetry,
+  });
+
+  final List<AppointmentSummary> appointments;
+  final String? selectedId;
+  final bool isLoading;
+  final bool hasError;
+  final bool hasMore;
+  final ValueChanged<String?> onChanged;
+  final VoidCallback onLoadMore;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      border: Border.all(color: AppColors.borderLight),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'pharmacy_booking.review.clinic_appointment_label'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: selectedId,
+          isExpanded: true,
+          decoration: InputDecoration(
+            hintText: 'pharmacy_booking.review.clinic_appointment_hint'.tr(),
+          ),
+          items: appointments.map((appointment) {
+            final date = DateFormat(
+              'yyyy-MM-dd HH:mm',
+              'en',
+            ).format(appointment.startAt.toLocal());
+            return DropdownMenuItem(
+              value: appointment.appointmentId,
+              child: Text(
+                '${appointment.clinicName} · $date',
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: appointments.isEmpty ? null : onChanged,
+        ),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: LinearProgressIndicator(),
+          ),
+        if (!isLoading && appointments.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text('pharmacy_booking.review.no_clinic_appointments'.tr()),
+          ),
+        if (hasError)
+          TextButton(
+            onPressed: onRetry,
+            child: Text('pharmacy_booking.review.retry_appointments'.tr()),
+          ),
+        if (hasMore)
+          TextButton(
+            onPressed: onLoadMore,
+            child: Text('pharmacy_booking.review.more_appointments'.tr()),
+          ),
+      ],
+    ),
+  );
 }
 
 class _OrderSummaryCard extends StatelessWidget {

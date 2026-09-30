@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 
 /// The one elevated-card shape for the app (design system v2).
 ///
@@ -30,6 +31,7 @@ class AppSurfaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppPalette.border),
         boxShadow: AppShadows.resting,
       ),
       child: child,

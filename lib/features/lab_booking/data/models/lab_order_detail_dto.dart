@@ -18,6 +18,8 @@ class LabOrderDetailDto {
     required this.rejection,
     required this.recollectionRequired,
     required this.results,
+    this.patientId,
+    this.requestImages = const [],
   });
 
   factory LabOrderDetailDto.fromJson(Map<String, dynamic> json) {
@@ -25,8 +27,11 @@ class LabOrderDetailDto {
     final rejectionJson = json['rejection'] as Map<String, dynamic>?;
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
     final resultsJson = json['results'] as List<dynamic>? ?? const [];
+    final requestImagesJson =
+        json['prescriptionImages'] as List<dynamic>? ?? const [];
     return LabOrderDetailDto(
       id: json['id'] as String? ?? '',
+      patientId: (json['patient'] as Map<String, dynamic>?)?['id'] as String?,
       status: json['status'] as String? ?? '',
       collectionType: json['collectionType'] as String? ?? '',
       createdAt: json['createdAt'] as String? ?? '',
@@ -37,8 +42,7 @@ class LabOrderDetailDto {
           .map(
             (item) => LabOrderItem(
               id: item['id'] as String? ?? '',
-              catalogCode: item['catalogCode'] as String? ?? '',
-              displayName: item['displayName'] as String? ?? '',
+              testName: item['testName'] as String? ?? '',
               unitPrice: item['unitPrice'] as String?,
               resultState: item['resultState'] as String? ?? '',
             ),
@@ -75,10 +79,21 @@ class LabOrderDetailDto {
             ),
           )
           .toList(),
+      requestImages: requestImagesJson
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (image) => LabRequestImage(
+              id: image['id'] as String? ?? '',
+              fileUrl: image['fileUrl'] as String? ?? '',
+            ),
+          )
+          .where((image) => image.fileUrl.isNotEmpty)
+          .toList(),
     );
   }
 
   final String id;
+  final String? patientId;
   final String status;
   final String collectionType;
   final String createdAt;
@@ -90,9 +105,11 @@ class LabOrderDetailDto {
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
   final List<LabOrderResultFile> results;
+  final List<LabRequestImage> requestImages;
 
   LabOrderDetail toEntity() => LabOrderDetail(
     id: id,
+    patientId: patientId,
     status: status,
     collectionType: collectionType,
     createdAt: createdAt,
@@ -104,5 +121,6 @@ class LabOrderDetailDto {
     rejection: rejection,
     recollectionRequired: recollectionRequired,
     results: results,
+    requestImages: requestImages,
   );
 }

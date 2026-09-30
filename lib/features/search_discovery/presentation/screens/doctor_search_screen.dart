@@ -100,10 +100,7 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: Icon(
-            AppNavIcons.back(context),
-            color: AppPalette.primary,
-          ),
+          icon: Icon(AppNavIcons.back(context), color: AppPalette.primary),
         ),
         title: Text(
           _title,
@@ -116,69 +113,69 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
           StaggeredReveal(
             index: 0,
             child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _queryController,
-                  onChanged: _onQueryChanged,
-                  decoration: InputDecoration(
-                    hintText: 'search.placeholder'.tr(),
-                    hintStyle: const TextStyle(color: AppPalette.inkFaint),
-                    prefixIcon: const Icon(
-                      SolarIconsOutline.magnifier,
-                      color: AppPalette.inkMuted,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.lg),
-                      borderSide: const BorderSide(color: AppPalette.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.lg),
-                      borderSide: const BorderSide(color: AppPalette.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadii.lg),
-                      borderSide: const BorderSide(
-                        color: AppPalette.primary,
-                        width: 1.5,
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _queryController,
+                    onChanged: _onQueryChanged,
+                    decoration: InputDecoration(
+                      hintText: 'search.placeholder'.tr(),
+                      hintStyle: const TextStyle(color: AppPalette.inkFaint),
+                      prefixIcon: const Icon(
+                        SolarIconsOutline.magnifier,
+                        color: AppPalette.inkMuted,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        borderSide: const BorderSide(color: AppPalette.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        borderSide: const BorderSide(color: AppPalette.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.lg),
+                        borderSide: const BorderSide(
+                          color: AppPalette.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                // Arriving with a specialty already fixed (tapped from the
-                // home screen's specialties row) means the user has already
-                // chosen what they want to see — showing the filter chips
-                // here would let them silently drift off that specialty or
-                // re-sort a single-specialty list they didn't ask to sort.
-                // Both rows only make sense for the general, unfiltered
-                // search entry point (typed into the search input).
-                if (widget.initialSpecialty == null) ...[
-                  const SizedBox(height: 12),
-                  _SpecialtyChips(
-                    selected: params.specialty,
-                    onSelected: (specialty) => ref
-                        .read(doctorSearchControllerProvider.notifier)
-                        .setSpecialty(specialty),
-                  ),
-                  const SizedBox(height: 12),
-                  _SortChips(
-                    selected: params.sort,
-                    onSelected: (sort) => ref
-                        .read(doctorSearchControllerProvider.notifier)
-                        .setSort(sort),
-                  ),
+                  // Arriving with a specialty already fixed (tapped from the
+                  // home screen's specialties row) means the user has already
+                  // chosen what they want to see — showing the filter chips
+                  // here would let them silently drift off that specialty or
+                  // re-sort a single-specialty list they didn't ask to sort.
+                  // Both rows only make sense for the general, unfiltered
+                  // search entry point (typed into the search input).
+                  if (widget.initialSpecialty == null) ...[
+                    const SizedBox(height: 12),
+                    _SpecialtyChips(
+                      selected: params.specialty,
+                      onSelected: (specialty) => ref
+                          .read(doctorSearchControllerProvider.notifier)
+                          .setSpecialty(specialty),
+                    ),
+                    const SizedBox(height: 12),
+                    _SortChips(
+                      selected: params.sort,
+                      onSelected: (sort) => ref
+                          .read(doctorSearchControllerProvider.notifier)
+                          .setSort(sort),
+                    ),
+                  ],
                 ],
-              ],
-            ),
+              ),
             ),
           ),
           Expanded(
@@ -195,7 +192,8 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                 }
                 // 1 header row + N doctors + (1 load-more row only if the
                 // backend actually said there's another page).
-                final itemCount = data.doctors.length + 1 + (data.hasMore ? 1 : 0);
+                final itemCount =
+                    data.doctors.length + 1 + (data.hasMore ? 1 : 0);
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                   itemCount: itemCount,
@@ -210,18 +208,53 @@ class _DoctorSearchScreenState extends ConsumerState<DoctorSearchScreen> {
                       );
                     }
                     if (index == itemCount - 1 && data.hasMore) {
-                      return Center(
-                        child: data.isLoadingMore
-                            ? const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: CircularProgressIndicator(),
-                              )
-                            : TextButton(
-                                onPressed: () => ref
-                                    .read(doctorSearchResultsProvider.notifier)
-                                    .loadMore(),
-                                child: Text('search.load_more'.tr()),
+                      if (data.isLoadingMore) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.4,
                               ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (data.loadMoreFailed)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'search.load_more_failed'.tr(),
+                                textAlign: TextAlign.center,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: AppPalette.error,
+                                ),
+                              ),
+                            ),
+                          OutlinedButton.icon(
+                            onPressed: () => ref
+                                .read(doctorSearchResultsProvider.notifier)
+                                .loadMore(),
+                            icon: Icon(
+                              data.loadMoreFailed
+                                  ? Icons.refresh_rounded
+                                  : Icons.expand_more_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              (data.loadMoreFailed
+                                      ? 'search.retry_load_more'
+                                      : 'search.load_more')
+                                  .tr(),
+                            ),
+                          ),
+                        ],
                       );
                     }
                     final doctor = data.doctors[index - 1];

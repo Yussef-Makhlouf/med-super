@@ -149,12 +149,17 @@ class AuthRemoteDatasource {
   Future<void> logout({
     required String refreshToken,
     bool allDevices = false,
+    String? fcmToken,
   }) async {
     // Real `LogoutDto.refreshToken` is required — sending no body at all
     // gives the backend nothing to revoke (400, not a no-op).
     await _dio.post<void>(
       ApiPaths.logout,
-      data: {'refreshToken': refreshToken, 'allDevices': allDevices},
+      data: {
+        'refreshToken': refreshToken,
+        'allDevices': allDevices,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcmToken': fcmToken,
+      },
     );
   }
 
@@ -183,6 +188,15 @@ class AuthRemoteDatasource {
         'platform': platform,
         if (appVersion != null) 'appVersion': appVersion,
       },
+    );
+  }
+
+  /// Removes only this account's registration for the current FCM token.
+  /// Must run while the access token is still valid, before auth logout.
+  Future<void> unregisterCurrentDevice({required String fcmToken}) async {
+    await _dio.delete<void>(
+      ApiPaths.authCurrentDevice,
+      data: {'fcmToken': fcmToken},
     );
   }
 }

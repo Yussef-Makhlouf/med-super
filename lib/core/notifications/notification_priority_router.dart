@@ -5,7 +5,10 @@ import 'notification_priority.dart';
 /// SAFETY_CRITICAL always shows regardless of quiet hours or mute state.
 class NotificationPriorityRouter {
   NotificationPriority classify(Map<String, dynamic> payload) {
-    final priorityStr = payload['priority'] as String?;
+    // The backend sends the template tier; accept the older priority key for
+    // compatibility with notifications already queued before this change.
+    final priorityStr =
+        payload['tier'] as String? ?? payload['priority'] as String?;
     return switch (priorityStr) {
       'SAFETY_CRITICAL' => NotificationPriority.safetyCritical,
       'TRANSACTIONAL' => NotificationPriority.transactional,

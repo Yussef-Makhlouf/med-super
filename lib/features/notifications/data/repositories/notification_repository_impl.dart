@@ -2,6 +2,7 @@ import 'package:med_super/core/error/dio_failure_mapper.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/notifications/data/datasources/remote/notification_remote_datasource.dart';
 import 'package:med_super/features/notifications/domain/entities/app_notification.dart';
+import 'package:med_super/features/notifications/domain/entities/notification_preference.dart';
 import 'package:med_super/features/notifications/domain/repositories/notification_repository.dart';
 
 class NotificationRepositoryImpl implements NotificationRepository {
@@ -34,4 +35,13 @@ class NotificationRepositoryImpl implements NotificationRepository {
   @override
   Future<Result<void>> markRead(String id) =>
       _guard(() => _remote.markRead(id));
+
+  @override
+  Future<Result<List<NotificationPreference>>> getPreferences() =>
+      _guard(_remote.getPreferences);
+
+  @override
+  Future<Result<void>> updatePreferences(
+    List<NotificationPreference> preferences,
+  ) => _guard(() => _remote.updatePreferences(preferences));
 }

@@ -19,28 +19,33 @@ import 'package:med_super/features/provider_dashboard/presentation/screens/provi
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/wallet/presentation/screens/wallet_dashboard_screen.dart';
 
-/// Provider Profile Screen pixel-perfect against mockup `profile.png`.
+/// Role-aware account and workspace settings for doctors and clinic assistants.
 class ProviderProfileScreen extends ConsumerWidget {
   const ProviderProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final doctorAccountAsync = ref.watch(doctorAccountProvider);
     final session = ref.watch(sessionControllerProvider).asData?.value;
 
-    // Assistants see a stripped-down profile: only personal info + logout.
     final isAssistant = session?.user.isAssistant ?? false;
+    final doctorAccountAsync = isAssistant
+        ? null
+        : ref.watch(doctorAccountProvider);
 
-    // For assistants: name comes from session (their own display name),
-    // subtitle shows a generic "مساعد طبي" — they have no hospital/specialty.
-    // For doctors: name comes from doctorAccountProvider, subtitle = hospital + specialty.
+    // The assistant identity comes from the active session. The provider
+    // account endpoint resolves to the supervising doctor for assistant
+    // sessions, so never use its name or portrait as the assistant's own.
     final displayName = isAssistant
-        ? (session?.user.displayName ?? 'المساعد')
-        : doctorAccountAsync.maybeWhen(
-            data: (acc) => acc.name,
-            orElse: () => session?.user.displayName ?? 'د. أحمد علي',
-          );
+        ? (session?.user.displayName ??
+              'provider_dashboard.profile.assistant_fallback'.tr())
+        : doctorAccountAsync?.maybeWhen(
+                data: (acc) => acc.name,
+                orElse: () =>
+                    session?.user.displayName ??
+                    'provider_dashboard.profile.doctor_fallback'.tr(),
+              ) ??
+              'provider_dashboard.profile.doctor_fallback'.tr();
 
     final doctorName = displayName;
 
@@ -48,15 +53,16 @@ class ProviderProfileScreen extends ConsumerWidget {
     // (`clinic-reservations` File 12 Part 45) — showing a hospital name here
     // would mean fabricating data, so this line is specialty-only now.
     final subtitle = isAssistant
-        ? 'مساعد طبي'
-        : doctorAccountAsync.maybeWhen(
-            data: (acc) => acc.specialty,
-            orElse: () => '',
-          );
+        ? 'provider_dashboard.profile.assistant_role'.tr()
+        : doctorAccountAsync?.maybeWhen(
+                data: (acc) => acc.specialty,
+                orElse: () => '',
+              ) ??
+              '';
 
     final avatarUrl = isAssistant
         ? null
-        : doctorAccountAsync.maybeWhen(
+        : doctorAccountAsync?.maybeWhen(
             data: (acc) => acc.avatarUrl,
             orElse: () => null,
           );
@@ -66,7 +72,7 @@ class ProviderProfileScreen extends ConsumerWidget {
       body: Column(
         children: [
           ProviderPageHeader(
-            title: 'الملف الشخصي',
+            title: 'provider_dashboard.profile.title'.tr(),
             avatarUrl: avatarUrl,
             onAvatarTap: () {}, // already on the profile screen
           ),
@@ -78,46 +84,53 @@ class ProviderProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 12),
                   // Centered Avatar with edit pencil badge
                   Center(
-                    child: GestureDetector(
-                      onTap: isAssistant
-                          ? null
-                          : () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const ProviderEditProfileScreen(),
+                    child: Semantics(
+                      button: !isAssistant,
+                      label: isAssistant
+                          ? displayName
+                          : 'provider_dashboard.profile.edit_profile'.tr(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: isAssistant
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ProviderEditProfileScreen(),
+                                ),
                               ),
+                        child: Stack(
+                          children: [
+                            AvatarCircle(
+                              radius: 55,
+                              backgroundColor: AppColors.surfaceCard,
+                              imageUrl: avatarUrl,
+                              placeholderIcon: SolarIconsBold.userCircle,
+                              placeholderIconColor: AppColors.mutedText,
                             ),
-                      child: Stack(
-                        children: [
-                          AvatarCircle(
-                            radius: 55,
-                            backgroundColor: AppColors.surfaceCard,
-                            imageUrl: avatarUrl,
-                            placeholderIcon: SolarIconsBold.userCircle,
-                            placeholderIconColor: AppColors.mutedText,
-                          ),
-                          if (!isAssistant)
-                            Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: Container(
-                                padding: const EdgeInsets.all(7),
-                                decoration: BoxDecoration(
-                                  color: brandBlue,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
+                            if (!isAssistant)
+                              Positioned(
+                                bottom: 2,
+                                right: 2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: brandBlue,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    SolarIconsOutline.pen,
+                                    size: 14,
                                     color: Colors.white,
-                                    width: 2,
                                   ),
                                 ),
-                                child: const Icon(
-                                  SolarIconsOutline.pen,
-                                  size: 14,
-                                  color: Colors.white,
-                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -137,10 +150,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  // Assistant-only: two tabs mirroring the doctor's own
-                  // Appointments/Clinic surfaces — same screens, unmodified,
-                  // just naturally scoped to the assistant's assigned
-                  // branches (via the backend's doctor-scope resolution).
+                  // Assistant workspace actions are scoped to assigned
+                  // branches by the backend.
                   if (isAssistant) const _AssistantAppointmentsClinicTabs(),
                   // Navigation Options List
                   if (!isAssistant)
@@ -148,10 +159,9 @@ class ProviderProfileScreen extends ConsumerWidget {
                       context: context,
                       icon: SolarIconsOutline.user,
                       iconColor: brandBlue,
-                      title: 'المعلومات الشخصية',
-                      subtitle: isAssistant
-                          ? 'الاسم والصورة الشخصية'
-                          : 'البريد الإلكتروني، نبذة، المؤهل العلمي، سنوات الخبرة',
+                      title: 'provider_dashboard.profile.personal_info'.tr(),
+                      subtitle: 'provider_dashboard.profile.personal_info_hint'
+                          .tr(),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ProviderEditProfileScreen(),
@@ -165,8 +175,10 @@ class ProviderProfileScreen extends ConsumerWidget {
                       context: context,
                       icon: SolarIconsOutline.buildings,
                       iconColor: const Color(0xFF10B981),
-                      title: 'إعدادات العيادة',
-                      subtitle: 'العنوان، معلومات الاتصال',
+                      title: 'provider_dashboard.profile.clinic_settings'.tr(),
+                      subtitle:
+                          'provider_dashboard.profile.clinic_settings_hint'
+                              .tr(),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ProviderClinicSettingsScreen(),
@@ -178,8 +190,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                       context: context,
                       icon: SolarIconsOutline.calendar,
                       iconColor: const Color(0xFFA855F7),
-                      title: 'جدول المواعيد',
-                      subtitle: 'ساعات العمل والحضور',
+                      title: 'provider_dashboard.profile.schedule'.tr(),
+                      subtitle: 'provider_dashboard.profile.schedule_hint'.tr(),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ProviderScheduleEditorScreen(),
@@ -191,8 +203,8 @@ class ProviderProfileScreen extends ConsumerWidget {
                       context: context,
                       icon: SolarIconsOutline.walletMoney,
                       iconColor: brandBlue,
-                      title: 'المحفظة',
-                      subtitle: 'الرصيد والمعاملات المالية',
+                      title: 'provider_dashboard.profile.wallet'.tr(),
+                      subtitle: 'provider_dashboard.profile.wallet_hint'.tr(),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           settings: const RouteSettings(
@@ -217,7 +229,7 @@ class ProviderProfileScreen extends ConsumerWidget {
                   // Logout button — AppButton.outlined, same as every other
                   // action button across the provider dashboard screens.
                   AppButton.outlined(
-                    label: 'تسجيل الخروج',
+                    label: 'profile.logout'.tr(),
                     icon: const Icon(SolarIconsOutline.logout, size: 20),
                     foregroundColor: const Color(0xFFDC2626),
                     borderRadius: AppRadii.pill,
@@ -230,14 +242,16 @@ class ProviderProfileScreen extends ConsumerWidget {
                       // sessionControllerProvider-driven redirect, which can
                       // send the user straight back into /provider/home
                       // before the session is actually cleared.
-                      await ref.read(sessionControllerProvider.notifier).logout();
+                      await ref
+                          .read(sessionControllerProvider.notifier)
+                          .logout();
                       if (!context.mounted) return;
                       context.go('/account-login');
                     },
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'الإصدار 2.4.0 • تواصل مع الدعم الفني',
+                    'provider_dashboard.profile.footer'.tr(),
                     style: textTheme.bodySmall?.copyWith(
                       color: AppColors.mutedText2,
                       fontSize: 12,
@@ -312,11 +326,8 @@ class ProviderProfileScreen extends ConsumerWidget {
   }
 }
 
-/// Assistant-only profile section: two tiles pushing to the doctor's own
-/// `ProviderScheduleEditorScreen`/`ProviderClinicSettingsScreen` unmodified —
-/// both already scope to only the assistant's assigned branches via
-/// `ResolveDoctorScopeUseCase` on the backend, so no separate assistant
-/// screens or extra filtering are needed here.
+/// Assistant-only workspace controls. The backend scopes these routes to the
+/// branches assigned to the active assistant.
 class _AssistantAppointmentsClinicTabs extends StatelessWidget {
   const _AssistantAppointmentsClinicTabs();
 
@@ -328,8 +339,8 @@ class _AssistantAppointmentsClinicTabs extends StatelessWidget {
           context: context,
           icon: SolarIconsOutline.calendar,
           iconColor: const Color(0xFFA855F7),
-          title: 'جدول المواعيد',
-          subtitle: 'ساعات العمل والحضور للفروع المخصصة لك',
+          title: 'provider_dashboard.profile.schedule'.tr(),
+          subtitle: 'provider_dashboard.profile.assistant_schedule_hint'.tr(),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const ProviderScheduleEditorScreen(),
@@ -341,8 +352,8 @@ class _AssistantAppointmentsClinicTabs extends StatelessWidget {
           context: context,
           icon: SolarIconsOutline.buildings,
           iconColor: const Color(0xFF10B981),
-          title: 'العيادة',
-          subtitle: 'الفروع المخصصة لك',
+          title: 'provider_dashboard.profile.assigned_branches'.tr(),
+          subtitle: 'provider_dashboard.profile.assigned_branches_hint'.tr(),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const ProviderClinicSettingsScreen(),

@@ -96,12 +96,14 @@ class DoctorSearchState {
     required this.totalCount,
     required this.nextCursor,
     required this.isLoadingMore,
+    this.loadMoreFailed = false,
   });
 
   final List<DoctorSummary> doctors;
   final int totalCount;
   final String? nextCursor;
   final bool isLoadingMore;
+  final bool loadMoreFailed;
 
   bool get hasMore => nextCursor != null;
 
@@ -111,17 +113,22 @@ class DoctorSearchState {
     String? nextCursor,
     bool clearNextCursor = false,
     bool? isLoadingMore,
+    bool? loadMoreFailed,
   }) => DoctorSearchState(
     doctors: doctors ?? this.doctors,
     totalCount: totalCount ?? this.totalCount,
     nextCursor: clearNextCursor ? null : (nextCursor ?? this.nextCursor),
     isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
   );
 }
 
 class DoctorSearchResultsNotifier extends AsyncNotifier<DoctorSearchState> {
+  int _buildGeneration = 0;
+
   @override
   Future<DoctorSearchState> build() async {
+    _buildGeneration++;
     final params = ref.watch(doctorSearchControllerProvider);
     final position = await ref
         .watch(doctorSearchLocationServiceProvider)
@@ -151,7 +158,10 @@ class DoctorSearchResultsNotifier extends AsyncNotifier<DoctorSearchState> {
     final current = state.value;
     if (current == null || !current.hasMore || current.isLoadingMore) return;
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    final generation = _buildGeneration;
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, loadMoreFailed: false),
+    );
     try {
       final params = ref.read(doctorSearchControllerProvider);
       final position = await ref
@@ -171,18 +181,32 @@ class DoctorSearchResultsNotifier extends AsyncNotifier<DoctorSearchState> {
         ok: (value) => value,
         err: (failure) => throw failure,
       );
+
+      if (generation != _buildGeneration) return;
+
+      final seenIds = current.doctors.map((doctor) => doctor.id).toSet();
+      final appendedDoctors = [
+        ...current.doctors,
+        for (final doctor in page.doctors)
+          if (seenIds.add(doctor.id)) doctor,
+      ];
+      final cursorRepeated = page.nextCursor == current.nextCursor;
       state = AsyncData(
         current.copyWith(
-          doctors: [...current.doctors, ...page.doctors],
+          doctors: appendedDoctors,
+          totalCount: page.totalCount,
           nextCursor: page.nextCursor,
-          clearNextCursor: page.nextCursor == null,
+          clearNextCursor: page.nextCursor == null || cursorRepeated,
           isLoadingMore: false,
+          loadMoreFailed: false,
         ),
       );
     } catch (_) {
-      // A failed "load more" keeps the existing page visible — only the
-      // spinner clears, matching PharmacySearchNotifier's behavior.
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      if (generation != _buildGeneration) return;
+      // Keep visible results and the retry cursor when one page fails.
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, loadMoreFailed: true),
+      );
     }
   }
 }

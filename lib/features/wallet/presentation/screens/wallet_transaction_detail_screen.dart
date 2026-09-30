@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/di/core_providers.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
@@ -40,7 +41,11 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
         ),
       ),
       body: detailAsync.when(
-        data: (tx) => _buildDetailBody(context, tx),
+        data: (tx) => _buildDetailBody(
+          context,
+          tx,
+          showMockOnlyActions: ref.watch(appConfigProvider).isMock,
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('common.error'.tr())),
       ),
@@ -60,7 +65,11 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
         TransactionStatus.failed => 'wallet.transaction_failed',
       };
 
-  Widget _buildDetailBody(BuildContext context, WalletTransaction tx) {
+  Widget _buildDetailBody(
+    BuildContext context,
+    WalletTransaction tx, {
+    required bool showMockOnlyActions,
+  }) {
     final dateFormatted = DateFormat('d MMMM yyyy، hh:mm a', 'ar').format(tx.createdAt);
     final isPositive = tx.type == TransactionType.deposit || tx.type == TransactionType.refund;
     final statusColor = switch (tx.status) {
@@ -175,6 +184,20 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
                   dateFormatted,
                   icon: Icons.calendar_today_outlined,
                 ),
+                if (tx.doctorName != null && tx.doctorName!.isNotEmpty)
+                  _buildRow(
+                    'wallet.appointment_doctor'.tr(),
+                    tx.doctorName!,
+                    icon: Icons.medical_services_outlined,
+                  ),
+                if (tx.cancelledBy != null)
+                  _buildRow(
+                    'wallet.refund_cancelled_by'.tr(),
+                    tx.cancelledBy == RefundCancelledBy.patient
+                        ? 'wallet.refund_cancelled_by_patient'.tr()
+                        : 'wallet.refund_cancelled_by_doctor'.tr(),
+                    icon: Icons.event_busy_outlined,
+                  ),
                 _buildRow(
                   'wallet.reference_number'.tr(),
                   '#${tx.paymentIntentId ?? tx.id}',
@@ -254,7 +277,7 @@ class WalletTransactionDetailScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          if (tx.type == TransactionType.payment) ...[
+          if (showMockOnlyActions && tx.type == TransactionType.payment) ...[
             const SizedBox(height: 12),
             AppButton.outlined(
               label: 'wallet.request_refund'.tr(),

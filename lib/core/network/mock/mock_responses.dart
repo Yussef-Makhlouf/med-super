@@ -434,6 +434,11 @@ void registerFoundationMocks(MockInterceptor interceptor) {
     return {'statusCode': 200, 'data': _userPayload()};
   });
 
+  // The current-device path contains the broader devices path. Keep it first.
+  interceptor.register('DELETE', ApiPaths.authCurrentDevice, (_) {
+    return {'statusCode': 204, 'data': null};
+  });
+
   interceptor.register('POST', ApiPaths.authDevices, (_) {
     return {
       'statusCode': 200,
@@ -607,7 +612,8 @@ List<Map<String, dynamic>> get _mockDoctorsCatalog => [
     'is_online': true,
     'clinic_name': 'مركز الرؤية لطب العيون',
     'languages': ['العربية', 'الإنجليزية'],
-    'bio': 'استشارية طب وجراحة العيون، متخصصة في جراحات الليزك والمياه البيضاء.',
+    'bio':
+        'استشارية طب وجراحة العيون، متخصصة في جراحات الليزك والمياه البيضاء.',
     'qualifications': ['البورد المصري في طب وجراحة العيون'],
     'fellowships': ['زمالة جراحات الشبكية'],
     'photo_url': null,
@@ -780,10 +786,12 @@ class _MockHold {
   });
   final String slotId;
   final String doctorClinicAffiliationId;
+
   /// Mutable so the Fawry mock can extend it the way
   /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
   DateTime expiresAt;
   final String? rescheduledFromAppointmentId;
+
   /// First `paymentAmount` on this hold wins — a retry with a different
   /// amount is ignored, matching the real initiate-online use-case.
   String? lockedPaymentAmount;
@@ -846,10 +854,11 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         // Same fee/minimum the mock payment paths validate against.
         'fullAmount': _kMockConsultFee.toStringAsFixed(2),
         'currency': 'EGP',
-        'minPaymentAmount': (_kMockMinAppointmentPayment < _kMockConsultFee
-                ? _kMockMinAppointmentPayment
-                : _kMockConsultFee)
-            .toStringAsFixed(2),
+        'minPaymentAmount':
+            (_kMockMinAppointmentPayment < _kMockConsultFee
+                    ? _kMockMinAppointmentPayment
+                    : _kMockConsultFee)
+                .toStringAsFixed(2),
       },
     };
   });
@@ -890,8 +899,10 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       'data': {
         'paymentIntentId': 'mock-pi-${DateTime.now().microsecondsSinceEpoch}',
         'method': method,
-        'referenceCode':
-            '${DateTime.now().millisecondsSinceEpoch}'.padLeft(11, '0'),
+        'referenceCode': '${DateTime.now().millisecondsSinceEpoch}'.padLeft(
+          11,
+          '0',
+        ),
         'expiresAt': expiresAt.toIso8601String(),
         // The first attempt's amount is kept on a retry, like the backend.
         'amount': resolved.amount,
@@ -1519,15 +1530,52 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
   interceptor.register('POST', '/confirm-receipt', (options) {
     return {
       'statusCode': 200,
-      'data': {
-        'pharmacyOrderId': _mockPharmacyOrderId,
-        'status': 'FULFILLED',
-      },
+      'data': {'pharmacyOrderId': _mockPharmacyOrderId, 'status': 'FULFILLED'},
     };
   });
 
-  interceptor.register('POST', ApiPaths.pharmacyOrders, (options) {
+  Map<String, dynamic> createOrder(
+    RequestOptions options, {
+    bool provider = false,
+  }) {
     final body = _body(options) ?? const {};
+    final fulfillmentType = body['fulfillmentType'] as String?;
+    final appointmentId = body['appointmentId'] as String?;
+    if (fulfillmentType == 'CLINIC_HANDOVER') {
+      if (appointmentId == null || appointmentId.isEmpty) {
+        return _error(400, 'VALIDATION_ERROR', 'اختر موعد العيادة أولاً.');
+      }
+      const eligible = {'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'};
+      if (provider) {
+        final matches = _mockProviderDashboardStore.appointments.where(
+          (item) =>
+              item['appointmentId'] == appointmentId &&
+              item['patientId'] == body['patientId'],
+        );
+        if (matches.isEmpty || !eligible.contains(matches.first['status'])) {
+          return _error(
+            422,
+            'APPOINTMENT_NOT_ELIGIBLE',
+            'الموعد غير مؤهل للتسليم إلى العيادة.',
+          );
+        }
+      } else {
+        final appointment = _mockAppointments[appointmentId];
+        if (appointment == null || !eligible.contains(appointment.status)) {
+          return _error(
+            422,
+            'APPOINTMENT_NOT_ELIGIBLE',
+            'الموعد غير مؤهل للتسليم إلى العيادة.',
+          );
+        }
+      }
+    } else if (appointmentId != null) {
+      return _error(
+        400,
+        'VALIDATION_ERROR',
+        'الموعد متاح للتسليم إلى العيادة فقط.',
+      );
+    }
     final branchId = body['pharmacyBranchId'] as String?;
     return {
       'statusCode': 200,
@@ -1537,7 +1585,16 @@ void registerPharmacyOrderMocks(MockInterceptor interceptor) {
         'broadcastedBranchIds': [?branchId],
       },
     };
-  });
+  }
+
+  // The provider path must precede the broader patient path in this
+  // first-matching mock interceptor.
+  interceptor.register(
+    'POST',
+    '${ApiPaths.pharmacyOrders}/provider',
+    (options) => createOrder(options, provider: true),
+  );
+  interceptor.register('POST', ApiPaths.pharmacyOrders, createOrder);
 
   // Detail — registered before the bare list pattern below.
   interceptor.register('GET', '${ApiPaths.pharmacyOrders}/', (options) {
@@ -1585,6 +1642,102 @@ const _mockSpecialtiesJson = <Map<String, dynamic>>[
   {
     'code': 'OPHTHALMOLOGY',
     'name_ar': 'طب العيون',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GENERAL_PRACTICE',
+    'name_ar': 'طب عام',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ORTHOPEDICS',
+    'name_ar': 'جراحة العظام',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'OTOLARYNGOLOGY',
+    'name_ar': 'أنف وأذن وحنجرة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'NEUROLOGY',
+    'name_ar': 'طب المخ والأعصاب',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'PSYCHIATRY',
+    'name_ar': 'الطب النفسي',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GYNECOLOGY',
+    'name_ar': 'أمراض النساء والتوليد',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'UROLOGY',
+    'name_ar': 'المسالك البولية',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ENDOCRINOLOGY',
+    'name_ar': 'الغدد الصماء',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'GASTROENTEROLOGY',
+    'name_ar': 'الجهاز الهضمي',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'PULMONOLOGY',
+    'name_ar': 'الصدر',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'FAMILY_MEDICINE',
+    'name_ar': 'طب الأسرة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'RHEUMATOLOGY',
+    'name_ar': 'أمراض الروماتيزم',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'HEMATOLOGY',
+    'name_ar': 'أمراض الدم',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'NEPHROLOGY',
+    'name_ar': 'أمراض الكلى',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'ALLERGY_IMMUNOLOGY',
+    'name_ar': 'الحساسية والمناعة',
+    'parent_code': null,
+    'version': 1,
+  },
+  {
+    'code': 'INTERNAL_MEDICINE',
+    'name_ar': 'الباطنة العامة',
     'parent_code': null,
     'version': 1,
   },
@@ -1669,15 +1822,7 @@ const _mockLabOrderDetailJson = {
   'createdAt': '2026-09-05T08:00:00.000Z',
   'updatedAt': '2026-09-05T09:30:00.000Z',
   'branchId': 'aaaaaaaa-0000-4000-8000-000000000001',
-  'items': [
-    {
-      'id': '55555555-5555-4555-8555-555555555555',
-      'catalogCode': 'CBC',
-      'displayName': 'صورة دم كاملة',
-      'unitPrice': '120.00',
-      'resultState': 'PENDING',
-    },
-  ],
+  'items': [],
   'quote': {
     'totalPrice': '120.00',
     'currency': 'EGP',
@@ -2180,6 +2325,31 @@ class _MockNotificationStore {
 }
 
 final _mockNotificationStore = _MockNotificationStore();
+
+final _mockNotificationPreferencesByPhone =
+    <String, List<Map<String, dynamic>>>{};
+
+List<Map<String, dynamic>> _mockNotificationPreferencesForCurrentUser() {
+  final phone = _mockAuth.phone ?? 'mock-default-user';
+  return _mockNotificationPreferencesByPhone.putIfAbsent(
+    phone,
+    () => [
+      for (final tier in const [
+        'TRANSACTIONAL',
+        'INFORMATIONAL',
+        'SAFETY_CRITICAL',
+        'MARKETING',
+      ])
+        for (final channel in const ['PUSH', 'SMS'])
+          {
+            'tier': tier,
+            'channel': channel,
+            'enabled': true,
+            'userDisableable': tier != 'SAFETY_CRITICAL',
+          },
+    ],
+  );
+}
 
 // ─── Hive-backed mock store ────────────────────────────────────────────────────
 
@@ -2732,7 +2902,8 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       }
       final note = body['note'] as String?;
       appointment['status'] = 'CANCELLED';
-      appointment['version'] = ((appointment['version'] as num?)?.toInt() ?? 1) + 1;
+      appointment['version'] =
+          ((appointment['version'] as num?)?.toInt() ?? 1) + 1;
       appointment['cancelledReason'] = note == null || note.isEmpty
           ? 'PROVIDER_REQUEST'
           : 'PROVIDER_REQUEST: $note';
@@ -2912,11 +3083,74 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
       'data': {'items': items, 'nextCursor': null},
     };
   });
-
 }
 
 /// Phase 8 notifications — mirrors `GET/PATCH /v1/notifications`.
 void registerNotificationMocks(MockInterceptor interceptor) {
+  // Preferences is a more specific route than the inbox list path; register
+  // first because MockInterceptor uses first-match substring routing.
+  interceptor.register('PUT', ApiPaths.notificationPreferences, (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
+    }
+    final preferences = _body(options)?['preferences'];
+    if (preferences is! List || preferences.isEmpty) {
+      return _error(400, 'VALIDATION_ERROR', 'تفضيلات الإشعارات غير صالحة.');
+    }
+    final rows = _mockNotificationPreferencesForCurrentUser();
+    for (final entry in preferences.whereType<Map<String, dynamic>>()) {
+      if (entry['tier'] == 'SAFETY_CRITICAL' && entry['enabled'] == false) {
+        return _error(
+          422,
+          'SAFETY_CRITICAL_NOTIFICATION_NOT_DISABLEABLE',
+          'لا يمكن تعطيل الإشعارات الحرِجة المتعلقة بسلامتك.',
+        );
+      }
+    }
+    for (final entry in preferences.whereType<Map<String, dynamic>>()) {
+      final index = rows.indexWhere(
+        (row) =>
+            row['tier'] == entry['tier'] &&
+            row['channel'] == entry['channel'],
+      );
+      if (index >= 0 && entry['enabled'] is bool) {
+        rows[index] = {
+          ...rows[index],
+          'enabled': entry['enabled'],
+        };
+      }
+    }
+    return {'statusCode': 204, 'data': <String, dynamic>{}};
+  });
+
+  interceptor.register('GET', ApiPaths.notificationPreferences, (options) {
+    final token = _bearer(options);
+    if (token == null) {
+      return _error(
+        401,
+        'UNAUTHENTICATED',
+        'يلزم تسجيل الدخول لإتمام هذا الإجراء.',
+      );
+    }
+    return {
+      'statusCode': 200,
+      // MockInterceptor stores response bodies as a JSON object. Wrap the
+      // array in the same API envelope shape; ResponseEnvelopeInterceptor
+      // unwraps it to the list expected by the datasource.
+      'data': {
+        'success': true,
+        'data': _mockNotificationPreferencesForCurrentUser()
+            .map((preference) => Map<String, dynamic>.from(preference))
+            .toList(growable: false),
+      },
+    };
+  });
+
   // More specific `/read` paths must register before the list route — both
   // contain `/v1/notifications` and MockInterceptor is first-registered-wins.
   interceptor.register('PATCH', '${ApiPaths.notifications}/', (options) {
@@ -2931,7 +3165,9 @@ void registerNotificationMocks(MockInterceptor interceptor) {
 
     final index = _mockNotificationStore.rows.indexWhere((n) => n['id'] == id);
     if (index != -1) {
-      final updated = Map<String, dynamic>.from(_mockNotificationStore.rows[index]);
+      final updated = Map<String, dynamic>.from(
+        _mockNotificationStore.rows[index],
+      );
       updated['read_at'] = DateTime.now().toUtc().toIso8601String();
       _mockNotificationStore.rows[index] = updated;
       _mockNotificationStore.persist();
@@ -2957,7 +3193,8 @@ void registerNotificationMocks(MockInterceptor interceptor) {
       items = items.where((row) => row['read_at'] == null).toList();
     }
 
-    final limit = int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
+    final limit =
+        int.tryParse(options.uri.queryParameters['limit'] ?? '') ?? 20;
     final page = items.take(limit).toList();
 
     return {
@@ -3088,12 +3325,9 @@ _MockPaymentAmount _mockResolvePaymentAmount(dynamic raw) {
   }
   if (requested > _kMockConsultFee) {
     return _MockPaymentAmount.err(
-      _error(
-        422,
-        'PAYMENT_AMOUNT_EXCEEDS_FEE',
-        'المبلغ أكبر من قيمة الكشف.',
-        {'fullAmount': _kMockConsultFee.toStringAsFixed(2)},
-      ),
+      _error(422, 'PAYMENT_AMOUNT_EXCEEDS_FEE', 'المبلغ أكبر من قيمة الكشف.', {
+        'fullAmount': _kMockConsultFee.toStringAsFixed(2),
+      }),
     );
   }
   return _MockPaymentAmount.ok(requested.toStringAsFixed(2));
@@ -3129,7 +3363,11 @@ void registerWalletMocks(MockInterceptor interceptor) {
     final body = _body(options) ?? {};
     final amount = double.tryParse('${body['amount']}') ?? 0.0;
     if (amount <= 0) {
-      return _error(400, 'INVALID_AMOUNT', 'قيمة الشحن يجب أن تكون أكبر من صفر.');
+      return _error(
+        400,
+        'INVALID_AMOUNT',
+        'قيمة الشحن يجب أن تكون أكبر من صفر.',
+      );
     }
 
     final stamp = DateTime.now().millisecondsSinceEpoch;

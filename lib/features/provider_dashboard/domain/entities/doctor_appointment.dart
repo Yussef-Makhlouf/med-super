@@ -8,7 +8,13 @@
 /// doctor "accept"/"reject" a request, but a real appointment is already
 /// `CONFIRMED` the moment the patient confirms their hold and pays. The
 /// doctor's actions are cancel and reschedule, not accept.
-enum DoctorAppointmentStatus { confirmed, cancelled, rescheduled, completed, other }
+enum DoctorAppointmentStatus {
+  confirmed,
+  cancelled,
+  rescheduled,
+  completed,
+  other,
+}
 
 /// Live, operational clinic-flow state for a confirmed appointment.
 /// Separate from [DoctorAppointmentStatus], which represents the booking
@@ -28,11 +34,12 @@ extension DoctorVisitStatusX on DoctorVisitStatus {
     DoctorVisitStatus.left => null,
   };
 
-  static DoctorVisitStatus fromWire(String? value) => switch (value?.toUpperCase()) {
-    'IN_DOCTOR_ROOM' => DoctorVisitStatus.inDoctorRoom,
-    'LEFT' => DoctorVisitStatus.left,
-    _ => DoctorVisitStatus.waiting,
-  };
+  static DoctorVisitStatus fromWire(String? value) =>
+      switch (value?.toUpperCase()) {
+        'IN_DOCTOR_ROOM' => DoctorVisitStatus.inDoctorRoom,
+        'LEFT' => DoctorVisitStatus.left,
+        _ => DoctorVisitStatus.waiting,
+      };
 }
 
 extension DoctorAppointmentStatusX on DoctorAppointmentStatus {
@@ -93,6 +100,7 @@ class DoctorAppointment {
   const DoctorAppointment({
     required this.appointmentId,
     required this.status,
+    this.statusCode,
     required this.slotId,
     required this.startAt,
     required this.endAt,
@@ -117,6 +125,17 @@ class DoctorAppointment {
 
   final String appointmentId;
   final DoctorAppointmentStatus status;
+
+  /// Exact backend status, retained for flows that must distinguish statuses
+  /// currently grouped under [DoctorAppointmentStatus.other].
+  final String? statusCode;
+
+  bool get isClinicHandoverEligible => const {
+    'CONFIRMED',
+    'CHECKED_IN',
+    'IN_PROGRESS',
+    'COMPLETED',
+  }.contains(statusCode ?? status.wireValue);
   final String slotId;
 
   /// UTC, per File 11 Part 04 — render against [ianaTimezone], never the

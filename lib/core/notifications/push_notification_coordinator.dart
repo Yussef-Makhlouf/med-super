@@ -25,34 +25,82 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
 
   final Ref _ref;
   bool _started = false;
+  bool _permitted = false;
+  bool _observing = false;
+  Future<bool>? _startFuture;
 
-  Future<void> start() async {
-    if (_started) return;
+  Future<bool> start() async {
+    if (_started && _permitted) return true;
+    if (_startFuture != null) return _startFuture!;
     _started = true;
+    final task = _startInternal();
+    _startFuture = task;
+    try {
+      return await task;
+    } finally {
+      if (_startFuture == task) _startFuture = null;
+    }
+  }
 
+  Future<bool> _startInternal() async {
     await _ref
         .read(localNotificationServiceProvider)
         .init(onTap: _handleLocalNotificationTap);
+    if (!_started) return false;
 
-    await _ref
+    final permitted = await _ref
         .read(fcmServiceProvider)
-        .init(onMessage: _handleForegroundMessage, onMessageOpenedApp: _handleTap);
+        .init(
+          onMessage: _handleForegroundMessage,
+          onMessageOpenedApp: _handleTap,
+        );
+    if (!_started) return false;
+    _permitted = permitted;
 
     // Covers a push that arrived while the app was backgrounded/killed: the
     // OS tray notification and its badge count are both correct in that
     // case, but the in-app list/bell badge weren't fetched at that point —
     // refresh them the moment the user actually returns to the app.
-    WidgetsBinding.instance.addObserver(this);
+    if (!_observing) {
+      WidgetsBinding.instance.addObserver(this);
+      _observing = true;
+    }
+    return permitted;
+  }
+
+  Future<void> stop() async {
+    if (!_started) return;
+    _started = false;
+    _permitted = false;
+    if (_observing) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observing = false;
+    }
+    // An in-flight start may enter FcmService.init after stop was requested.
+    // Wait for it to settle, then remove any listeners it created.
+    try {
+      await _startFuture;
+    } finally {
+      await _ref.read(fcmServiceProvider).stop();
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (_started && state == AppLifecycleState.resumed) {
       _ref.read(notificationListControllerProvider.notifier).refresh();
+      _ref.read(sessionControllerProvider.notifier).retryPushRegistration();
     }
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
+    if (!_started ||
+        _ref.read(sessionControllerProvider).asData?.value == null) {
+      return;
+    }
+    // The inbox and bell must refresh for every event, including marketing
+    // and data-only pushes that deliberately do not show an OS popup.
+    _ref.read(notificationListControllerProvider.notifier).refresh();
     final priority = _ref
         .read(notificationPriorityRouterProvider)
         .classify(message.data);
@@ -68,7 +116,8 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
 
     // flutter_local_notifications requires a non-negative 32-bit id;
     // messageId is unique per push, hashCode alone can be negative.
-    final id = (message.messageId ?? message.data.toString()).hashCode & 0x7fffffff;
+    final id =
+        (message.messageId ?? message.data.toString()).hashCode & 0x7fffffff;
 
     _ref
         .read(localNotificationServiceProvider)
@@ -78,12 +127,6 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
           body: body ?? '',
           payload: jsonEncode(message.data),
         );
-
-    // Nothing else invalidates the inbox list when a push lands — without
-    // this, the bell badge stays stale (showing the count from whenever the
-    // list was last fetched) even though a new notification just arrived
-    // and a tray notification is visible.
-    _ref.read(notificationListControllerProvider.notifier).refresh();
   }
 
   void _handleTap(RemoteMessage message) => _navigate(message.data);
@@ -101,11 +144,14 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
   }
 
   void _navigate(Map<String, dynamic> data) {
-    final templateCode = data['templateCode'] as String? ?? data['template_code'] as String?;
+    if (!_started) return;
+    final templateCode =
+        data['templateCode'] as String? ?? data['template_code'] as String?;
     if (templateCode == null) return;
 
     final session = _ref.read(sessionControllerProvider).asData?.value;
-    final isProvider = session?.user.isProvider ?? false;
+    if (session == null) return;
+    final isProvider = session.user.isProvider;
 
     final route = notificationDeepLink(
       templateCode: templateCode,
@@ -120,6 +166,10 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
   }
 }
 
-final pushNotificationCoordinatorProvider = Provider<PushNotificationCoordinator>(
-  (ref) => PushNotificationCoordinator(ref),
-);
+final pushNotificationCoordinatorProvider =
+    Provider<PushNotificationCoordinator>((ref) {
+      // The generated FCM service provider is auto-dispose. Keep its message
+      // subscriptions alive for the lifetime of this app-level coordinator.
+      ref.watch(fcmServiceProvider);
+      return PushNotificationCoordinator(ref);
+    });

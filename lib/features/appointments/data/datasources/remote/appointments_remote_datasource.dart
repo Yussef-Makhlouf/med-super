@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:med_super/core/constants/api_paths.dart';
-import 'package:med_super/core/payments/domain/entities/payment_customer_info.dart';
+import 'package:med_super/core/payments/domain/entities/payment_phone_info.dart';
 import 'package:med_super/features/appointments/data/models/appointment_hold_dto.dart';
 import 'package:med_super/features/appointments/data/models/appointment_summary_dto.dart';
 import 'package:med_super/features/appointments/data/models/cancelled_appointment_dto.dart';
@@ -74,7 +74,7 @@ class AppointmentsRemoteDatasource {
   Future<OnlinePaymentInitiationDto> initiateOnlinePayment(
     String holdId, {
     required AppointmentPaymentMethod method,
-    required PaymentCustomerInfo customer,
+    required PaymentPhoneInfo customer,
     String? paymentAmount,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(

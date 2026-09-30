@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/widgets/active_refresh_scope.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_button.dart';
@@ -120,13 +121,19 @@ class PharmacyOrderDetailScreen extends ConsumerWidget {
               context.canPop() ? context.pop() : context.go('/patient/orders'),
         ),
       ),
-      body: AsyncValueView(
-        value: detailAsync,
-        onRetry: () => ref.invalidate(pharmacyOrderDetailProvider(orderId)),
-        data: (order) => _OrderDetailBody(
-          order: order,
-          confirmingReceipt: confirmingReceipt,
-          onConfirmReceipt: () => _confirmReceipt(context, ref),
+      body: ActiveRefreshScope(
+        onRefresh: () async {
+          await ref.refresh(pharmacyOrderDetailProvider(orderId).future);
+          await ref.refresh(pharmacyOrdersProvider.future);
+        },
+        child: AsyncValueView(
+          value: detailAsync,
+          onRetry: () => ref.invalidate(pharmacyOrderDetailProvider(orderId)),
+          data: (order) => _OrderDetailBody(
+            order: order,
+            confirmingReceipt: confirmingReceipt,
+            onConfirmReceipt: () => _confirmReceipt(context, ref),
+          ),
         ),
       ),
     );

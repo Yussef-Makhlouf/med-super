@@ -96,11 +96,11 @@ class _PharmacySelectScreenState extends ConsumerState<PharmacySelectScreen> {
     // (and shows the skeleton while it does), so the map is fed whatever is
     // already resolved (empty before the first load completes).
     final loadedPharmacies = pharmaciesAsync.value ?? const [];
-    // Home-delivery only ever fulfils through a `deliveryCapable` branch —
+    // Both home and clinic delivery must use a `deliveryCapable` branch —
     // chosen back on step 1 (`selectedDeliveryMethodProvider`), still in
     // force here since nothing resets it between steps.
     final requiresDelivery =
-        ref.watch(selectedDeliveryMethodProvider) == DeliveryMethod.homeDelivery;
+        ref.watch(selectedDeliveryMethodProvider) != DeliveryMethod.pickup;
     bool isSelectable(Pharmacy p) => !requiresDelivery || p.deliveryCapable;
 
     final selectableIds = loadedPharmacies

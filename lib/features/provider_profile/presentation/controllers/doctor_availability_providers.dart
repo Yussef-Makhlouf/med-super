@@ -39,6 +39,10 @@ typedef DoctorAvailabilityParams = ({
 /// `FutureProvider`'s cached result — never invalidated on its own —
 /// silently continuing to show a now-`BOOKED` slot as still `OPEN` until
 /// the user manually pulls to refresh or the app restarts.
+/// Dio already retries transient transport/server failures; disabling
+/// Riverpod's broader retry avoids leaving permanent API errors in loading
+/// while the patient waits through retries. The screen exposes an explicit
+/// retry action for recovery.
 final doctorAvailabilityProvider =
     FutureProvider.family<List<AvailableDay>, DoctorAvailabilityParams>((
       ref,
@@ -53,4 +57,4 @@ final doctorAvailabilityProvider =
             ianaTimezone: params.ianaTimezone,
           );
       return result.when(ok: (value) => value, err: (failure) => throw failure);
-    });
+    }, retry: (retryCount, error) => null);

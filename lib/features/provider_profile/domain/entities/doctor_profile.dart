@@ -76,8 +76,8 @@ class DoctorProfile {
 
   /// Needed to call the real Phase 3 slots endpoint
   /// (`GET /v1/doctors/{doctorId}/slots?clinicBranchId=`) — parsed from the
-  /// real backend's `affiliations[0].clinic_branch.id`
-  /// (`DoctorProfileDto._fromRealJson`) or the mock's flat `clinic_branch_id`.
+  /// current backend's top-level `clinicBranchId` (the primary visible
+  /// affiliation) or the mock's flat `clinic_branch_id`.
   /// Null only when a doctor genuinely has no (visible) affiliation, in
   /// which case the caller falls back to [availableDays] (mock-only fake
   /// data — a doctor with zero real affiliations has nothing to show here
@@ -87,7 +87,7 @@ class DoctorProfile {
 
   /// `doctorClinicAffiliationId` — required by the real Phase 4 hold
   /// contract (`POST /v1/appointments/hold`, File 10 §2.3). Parsed from the
-  /// real backend's `affiliations[0].id`, or the mock's flat
+  /// current backend's top-level `affiliationId`, or the mock's flat
   /// `affiliation_id`. Null means "don't offer booking" (no visible
   /// affiliation), not a parsing gap. See `lib/features/appointments/STATUS.md`.
   final String? affiliationId;

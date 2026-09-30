@@ -2,9 +2,13 @@
 
 **Label:** `PARTIAL` — data layer is `BACKEND_READY` for all six Phase 4
 operations; UI covers all six: hold → confirm, list → cancel, list →
-reschedule → confirm, and list/card tap → detail. Reschedule's slot-picker
-only works when the appointment's `doctorClinicAffiliationId` happens to
-follow the mock naming convention — see "Known gaps" below.
+reschedule → confirm, and list/card tap → detail. Appointment responses carry
+the real doctor and branch identity used by the reschedule slot picker.
+
+**Patient interaction polish (2026-09-24):** upcoming/past filters expose a
+single selected button state to assistive technology, use material press
+feedback, and provide a 48dp minimum tap height. Profile and notification
+header actions now expose localized tooltips.
 
 ## What's real
 
@@ -29,8 +33,9 @@ guessed shapes:
   Fawry `referenceCode` (no `redirectUrl`) the patient pays at an outlet;
   the hold is extended to 15 minutes and the appointment is confirmed later
   by the gateway webhook, never by the client (`FawryPaymentScreen` is
-  therefore terminal, shows the amount the UI submitted — the response does
-  not echo it — and has no "I've paid" button).
+  therefore terminal and has no "I've paid" button). The request collects
+  and sends only the patient's phone; names and email are not part of this
+  appointment Fawry payload.
 - `POST /v1/appointments/{id}/cancel` — `CancelAppointmentUseCase`, wired
   to `PatientAppointmentsScreen`'s cancel button. `feeApplied`/
   `refundAmount` are computed from what the patient actually paid (a 50
@@ -83,15 +88,25 @@ resolves to the right doctorId for the reschedule slot-picker above.
 ## Payment methods
 
 `BookingConfirmScreen` shows a three-way picker plus an amount field for
-wallet and Fawry (hidden for pay-at-clinic). The field defaults to the
-full consultation fee and is omitted from the request when left at that
-value, so a full payment never depends on `MIN_APPOINTMENT_PAYMENT`. The
+wallet and Fawry (hidden for pay-at-clinic). After the hold is created, its
+server-returned `fullAmount` and `currency` are authoritative for the summary,
+amount field, wallet affordability checks, and confirmation button; the
+doctor-card fee is only a fallback while the hold is loading or on legacy
+reschedule holds without payment data. The field defaults to the full
+consultation fee and is omitted from the request when left at that value, so a
+full payment never depends on `MIN_APPOINTMENT_PAYMENT`. The button amount
+updates as the patient edits the partial amount and uses the same server fee
+and currency. The field shows the full consultation fee separately from the
+editable amount to make the two values unambiguous. The
 minimum itself is **not hardcoded** — it comes from the hold response
 (`minPaymentAmount`, `min(policy, fee)`), is shown in the field's hint,
 and is checked before submit. `minPaymentAmount: null` (policy not
-configured, or a reschedule hold) hides the field: full payment only. A
-server `422 PAYMENT_AMOUNT_BELOW_MINIMUM` still lands inline with
-`details.minAmount`.
+configured, or a reschedule hold) keeps the full fee visible but makes the
+amount read-only: full payment only. A server `422
+PAYMENT_AMOUNT_BELOW_MINIMUM` still lands inline with `details.minAmount`.
+If the editable amount is cleared or temporarily invalid, the CTA switches to
+a localized prompt and is disabled; once valid digits are entered, it mirrors
+that exact amount again.
 The wallet tile reads the real balance (`GET /v1/wallet`) and locks
 itself only when the balance is below the minimum (or the full fee when
 no partial is allowed). Choosing the wallet with less than the fee
@@ -116,27 +131,16 @@ today's backend; pay-at-clinic and wallet are unaffected.
 
 ## Known gaps
 
-- **Booking is gated on `DoctorProfile.affiliationId`**, which is
-  currently only populated by mocks (`affiliation-{doctorId}`) or a
-  best-effort parse of the real `{doctor, affiliations}` shape that has
-  never been verified against a live backend (see
-  `provider_profile/STATUS.md`). Against an unreconciled real backend,
-  "Book Now" stays disabled rather than sending a request that 404s.
-- **Reschedule's slot-picker has the same class of gap, one level worse.**
-  `AppointmentSummary` (`GET /v1/appointments`, Part 35.17) only carries
-  `doctorClinicAffiliationId` — no doctorId, no doctor name. But the real
-  Phase 3 slots endpoint is doctorId-keyed
-  (`GET /v1/doctors/{doctorId}/slots`, see
-  `get-doctor-slots.use-case.ts`'s `resolveAffiliation`) — there is no
-  affiliationId-keyed equivalent on the backend today. `RescheduleScreen`
-  recovers a doctorId by parsing the mock catalog's `affiliation-{doctorId}`
-  naming convention (`_mockOnlyDoctorIdFromAffiliation`, clearly commented
-  as mock-only); against a real backend's opaque UUID affiliation ids this
-  always fails and the screen shows a "can't reschedule from here yet"
-  message instead of guessing. Fixing this for real needs either a new
-  backend endpoint (slots-by-affiliation) or the appointment response
-  gaining a doctorId field — a backend contract change, out of frontend
-  scope.
+- **Booking identity matches the current backend contract.** The public
+  `GET /v1/doctors/{id}` response is flat camelCase, including the primary
+  `affiliationId` and the visible `affiliations` list; the Flutter DTO maps
+  these fields. `GetDoctorUseCase` tests the primary ID and affiliation
+  summaries.
+- **Rescheduling uses real appointment identity.** List and detail responses
+  include `doctorId` and `doctorName`; Flutter carries those into
+  `RescheduleTarget`, loads the actual doctor profile/slots, and retains the
+  appointment affiliation ID for rescheduling. The backend detail-use-case
+  test verifies this response mapping.
 - **No branch/doctor-staff surfaces** — everything here is patient-only,
   matching the backend's own Phase 4 scope (File 12 Part 35.8/35.14).
 - **Remaining balance is shown to the doctor, not the patient.** Doctor

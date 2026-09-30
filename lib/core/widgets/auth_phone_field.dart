@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:med_super/core/theme/app_palette.dart';
@@ -44,8 +44,9 @@ class AuthPhoneField extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       keyboardType: TextInputType.phone,
+                      textDirection: TextDirection.ltr,
                       textInputAction: textInputAction,
-                      textAlign: TextAlign.start,
+                      textAlign: TextAlign.left,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(11),
@@ -72,6 +73,8 @@ class AuthPhoneField extends StatelessWidget {
                       children: [
                         Text(
                           'auth.country_code'.tr(),
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             color: AppPalette.ink,

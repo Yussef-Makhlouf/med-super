@@ -33,6 +33,26 @@ user's 2026-09-05 request to connect the app and dashboard end-to-end.
   appointment/prep instructions) once staff sets it and the booking code
   once confirmed.
 
+Provider lab referrals (2026-09-23) use the same image-upload pipeline and
+link the uploaded `LAB_REFERRAL` document to the provider-created lab order.
+That order enters the existing branch intake queue; the existing detail
+contract returns its linked images. Provider history renders those images,
+while the backend remains authoritative for access and status.
+
+**Request retry safety (2026-09-29):** the backend requires
+`Idempotency-Key` on `POST /v1/lab-orders` and provider lab-order routes. The
+Flutter interceptor now attaches the key to lab-order writes, including
+provider referrals, and a regression test covers the provider clinical write
+routes. Unit tests were added; execution on Flutter is still pending.
+
+**Staging submission diagnosis (2026-09-30):** Cloud Run recorded patient
+`POST /v1/lab-orders` attempts returning `400 VALIDATION_ERROR`; nearby list
+reads returned `200`. Request bodies and rejected field names are not retained
+in those request logs, so the invalid input is not yet identified. The review
+screen now maps the API's Arabic `details.fields` into the error message so a
+new APK can show the actual rejected field. Successful live order creation
+has not yet been verified.
+
 ## What's deliberately gone (was fabricated, not backed by real data)
 
 Removed rather than kept as dead/misleading UI: lab rating, "starting
@@ -42,15 +62,12 @@ lab price catalog, payment is explicitly out of scope (`DEC-002`), and
 price/appointment/prep instructions are only ever set later by lab staff
 via `SubmitLabQuoteUseCase`, never chosen by the patient at request time.
 
-## Known remaining gap
+## Product decision: no test catalog
 
-**Direct catalog-test selection** (`testCodes` on `POST /v1/lab-orders`) is
-not wired to any screen. It's the backend's nominally primary path, but
-`test_catalog` is unseeded in `db:seed` and has no read endpoint — building
-a picker over an empty, unreachable table would be its own fabrication.
-Every request this feature creates goes through the `prescriptionId` path
-only. Un-deferring this needs a `GET /test-catalog`-style endpoint plus seed
-data, tracked as a follow-up, not built here.
+The user explicitly excluded any test catalog on 2026-09-25. Requests are
+created only from an uploaded referral linked by `prescriptionId`; neither
+the patient app nor provider surfaces expose a test picker or catalog API.
+Historical order item names remain readable for existing results.
 
 ## Not affected by ADR-006
 
@@ -59,3 +76,10 @@ operations to `medsuper-laboratory-dashboard`, a separate Next.js app.
 That's unchanged — this feature is the distinct patient-facing booking/
 tracking flow, analogous to how patient doctor-search is distinct from the
 doctor dashboard.
+
+## Live order status refresh
+
+Patient lab order lists and order details refresh from the API every 15
+seconds while visible and foregrounded, with an immediate refetch on app
+resume. Polling pauses while the app or screen is inactive; the API remains
+the source of truth.

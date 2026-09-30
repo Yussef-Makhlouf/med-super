@@ -17,8 +17,7 @@ class LabOrderController extends Notifier<AsyncValue<LabOrderCreateResult?>> {
   Future<void> submit({
     required String labBranchId,
     required String collectionType,
-    String? prescriptionId,
-    List<String>? testCodes,
+    required String prescriptionId,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -28,7 +27,6 @@ class LabOrderController extends Notifier<AsyncValue<LabOrderCreateResult?>> {
             labBranchId: labBranchId,
             collectionType: collectionType,
             prescriptionId: prescriptionId,
-            testCodes: testCodes,
           ),
     );
     // Without this, the orders-tab list (`labOrdersProvider`) is a separate

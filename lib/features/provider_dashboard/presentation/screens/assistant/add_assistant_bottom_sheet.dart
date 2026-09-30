@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_super/core/error/failure.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
@@ -81,7 +82,13 @@ class _AddAssistantBottomSheetState
     if (failure != null) {
       setState(() {
         _loading = false;
-        _errorMessage = 'assistants.create_failed'.tr();
+        _errorMessage = switch (failure) {
+          ConflictFailure(code: 'PHONE_ALREADY_REGISTERED') ||
+          ConflictFailure(code: 'STAFF_ALREADY_PROVISIONED') ||
+          ConflictFailure(code: 'STAFF_ASSIGNED_ELSEWHERE') =>
+            'assistants.phone_already_exists'.tr(),
+          _ => 'assistants.create_failed'.tr(),
+        };
       });
       return;
     }

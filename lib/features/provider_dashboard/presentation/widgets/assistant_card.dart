@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
@@ -76,6 +76,8 @@ class AssistantCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     assistant.phone,
+                    textDirection: TextDirection.ltr,
+                    textAlign: TextAlign.left,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.mutedText2,

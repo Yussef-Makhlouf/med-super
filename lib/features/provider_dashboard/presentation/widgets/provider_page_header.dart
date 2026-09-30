@@ -1,3 +1,6 @@
+import 'dart:ui' as ui;
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
@@ -13,6 +16,7 @@ class ProviderPageHeader extends StatelessWidget
     this.unreadNotificationsCount = 0,
     this.avatarUrl,
     this.onNotificationTap,
+    this.onSettingsTap,
     this.onAvatarTap,
     super.key,
   });
@@ -21,6 +25,7 @@ class ProviderPageHeader extends StatelessWidget
   final int unreadNotificationsCount;
   final String? avatarUrl;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onSettingsTap;
   final VoidCallback? onAvatarTap;
 
   @override
@@ -39,7 +44,7 @@ class ProviderPageHeader extends StatelessWidget
           ),
         ),
         child: Directionality(
-          textDirection: TextDirection.ltr,
+          textDirection: ui.TextDirection.ltr,
           child: Row(
             children: [
               // Left: Notification Bell
@@ -47,6 +52,11 @@ class ProviderPageHeader extends StatelessWidget
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
+                    tooltip: unreadNotificationsCount > 0
+                        ? 'provider_dashboard.header.unread_notifications'.tr(
+                            args: [unreadNotificationsCount.toString()],
+                          )
+                        : 'provider_dashboard.header.open_notifications'.tr(),
                     icon: const Icon(
                       Icons.notifications_none_rounded,
                       color: AppColors.ink700,
@@ -71,6 +81,16 @@ class ProviderPageHeader extends StatelessWidget
                     ),
                 ],
               ),
+              if (onSettingsTap != null)
+                IconButton(
+                  tooltip: 'notifications.preferences_title'.tr(),
+                  onPressed: onSettingsTap,
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.ink700,
+                    size: 22,
+                  ),
+                ),
               // Center: Screen Title
               Expanded(
                 child: Center(
@@ -90,13 +110,18 @@ class ProviderPageHeader extends StatelessWidget
               // avatar style exactly (`patient_home_screen.dart`'s
               // `_HomeHeader`: CircleAvatar radius 22, light-blue
               // background, brandBlue person icon).
-              GestureDetector(
-                onTap: onAvatarTap ?? () => context.go('/provider/profile'),
-                child: AvatarCircle(
-                  radius: 22,
-                  backgroundColor: brandBlue.withValues(alpha: 0.12),
-                  imageUrl: avatarUrl,
-                  placeholderIconColor: brandBlue,
+              Semantics(
+                button: true,
+                label: 'provider_dashboard.header.open_profile'.tr(),
+                child: InkWell(
+                  onTap: onAvatarTap ?? () => context.go('/provider/profile'),
+                  customBorder: const CircleBorder(),
+                  child: AvatarCircle(
+                    radius: 22,
+                    backgroundColor: brandBlue.withValues(alpha: 0.12),
+                    imageUrl: avatarUrl,
+                    placeholderIconColor: brandBlue,
+                  ),
                 ),
               ),
             ],

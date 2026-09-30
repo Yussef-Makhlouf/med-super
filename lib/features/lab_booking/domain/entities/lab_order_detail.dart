@@ -52,21 +52,17 @@ class LabOrderResultFile {
   final bool isCritical;
 }
 
-/// One requested test/analysis line on the order — either from direct
-/// catalog selection or (today, the only path `med-super` actually exercises)
-/// added later by staff after transcribing an uploaded prescription.
+/// A historical analysis line retained on older laboratory orders.
 class LabOrderItem {
   const LabOrderItem({
     required this.id,
-    required this.catalogCode,
-    required this.displayName,
+    required this.testName,
     required this.unitPrice,
     required this.resultState,
   });
 
   final String id;
-  final String catalogCode;
-  final String displayName;
+  final String testName;
   final String? unitPrice;
   final String resultState;
 }
@@ -91,9 +87,15 @@ class LabOrderDetail {
     required this.rejection,
     required this.recollectionRequired,
     required this.results,
+    this.requestImages = const [],
+    this.patientId,
   });
 
   final String id;
+
+  /// Present when the backend's patient summary is included in list/detail.
+  /// Provider history uses it to keep one patient's requests on their own record.
+  final String? patientId;
   final String status;
   final String collectionType;
   final String createdAt;
@@ -114,4 +116,11 @@ class LabOrderDetail {
   final LabOrderRejection? rejection;
   final bool recollectionRequired;
   final List<LabOrderResultFile> results;
+  final List<LabRequestImage> requestImages;
+}
+
+class LabRequestImage {
+  const LabRequestImage({required this.id, required this.fileUrl});
+  final String id;
+  final String fileUrl;
 }

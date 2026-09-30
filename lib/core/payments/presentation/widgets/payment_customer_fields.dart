@@ -31,8 +31,8 @@ class PaymentCustomerFormControllers {
 }
 
 /// The billing details every online payment needs
-/// ([PaymentCustomerInfo]) — shared by wallet top-up and appointment
-/// online payment so the two checkouts validate identically.
+/// ([PaymentCustomerInfo]) — used by Paymob wallet top-up. Appointment Fawry
+/// uses a phone-only contact sheet instead.
 ///
 /// Must be placed inside a [Form]; the parent owns the key and calls
 /// `validate()` before submitting.

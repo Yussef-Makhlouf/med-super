@@ -14,27 +14,33 @@ String? _currentPlatform() {
 }
 
 Future<void> _postToken(Ref ref, String token, String platform) {
-  return ref.read(authRemoteDatasourceProvider).registerDevice(
-    fcmToken: token,
-    platform: platform,
-  );
+  return ref
+      .read(authRemoteDatasourceProvider)
+      .registerDevice(fcmToken: token, platform: platform);
 }
 
 /// Best-effort registration of the device FCM token with
 /// `POST /v1/auth/devices` so push notifications can be delivered.
-Future<void> registerFcmDeviceIfAvailable(Ref ref) async {
+Future<bool> registerFcmDeviceIfAvailable(
+  Ref ref, {
+  String? refreshedToken,
+}) async {
   final platform = _currentPlatform();
-  if (platform == null) return;
+  if (platform == null) return false;
 
   try {
-    final token = await ref.read(fcmServiceProvider).token;
-    if (token == null || token.isEmpty) return;
+    final fcm = ref.read(fcmServiceProvider);
+    if (!await fcm.canReceiveNotifications) return false;
+    final token = refreshedToken ?? await fcm.token;
+    if (token == null || token.isEmpty) return false;
 
     await _postToken(ref, token, platform);
+    return true;
   } catch (e) {
     if (kDebugMode) {
       debugPrint('registerFcmDeviceIfAvailable skipped: $e');
     }
+    return false;
   }
 }
 
@@ -46,18 +52,14 @@ Future<void> registerFcmDeviceIfAvailable(Ref ref) async {
 /// device silently stops arriving until the user happens to log in again.
 ///
 /// Returns the subscription so the caller can cancel it on logout.
-StreamSubscription<String>? listenForFcmTokenRefresh(Ref ref) {
+StreamSubscription<String>? listenForFcmTokenRefresh(
+  Ref ref,
+  void Function(String token) onRefresh,
+) {
   final platform = _currentPlatform();
   if (platform == null) return null;
 
-  return ref.read(fcmServiceProvider).onTokenRefresh.listen((token) async {
-    if (token.isEmpty) return;
-    try {
-      await _postToken(ref, token, platform);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('FCM token refresh registration skipped: $e');
-      }
-    }
+  return ref.read(fcmServiceProvider).onTokenRefresh.listen((token) {
+    if (token.isNotEmpty) onRefresh(token);
   });
 }

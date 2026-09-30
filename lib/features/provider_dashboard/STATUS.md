@@ -37,25 +37,96 @@ Every route below exists in `clinic-reservations` and is exercised by
 | Reschedule | `POST /v1/doctors/me/appointments/{id}/reschedule` | completes in one transaction |
 | Walk-in booking | `POST /v1/doctors/me/appointments/branch/{clinicBranchId}/create` | DOCTOR or CLINIC_STAFF; `{patientId}` or `{patientPhone, patientName?}` + `slotId` |
 
+## Provider prescription and lab images — 2026-09-23
+
+Provider-created clinical documents use the same multipart image-upload
+pipeline as patient uploads, replacing the former structured medication/test
+entry form. The UI sends patient/appointment scope and document purpose to
+`POST /v1/prescriptions/provider/upload`. Assistant prescriptions remain
+drafts for physician approval; only signed prescriptions can be submitted to
+the existing `POST /v1/pharmacy-orders/provider` queue. Lab referrals link the
+uploaded document to `POST /v1/lab-orders/provider`, feeding the existing
+branch queue. Provider history displays persisted private image URLs.
+Multi-patient mode requires a separate image set and independent request per
+patient; it does not create one shared clinical record.
+
+Focused DTO/widget tests and static analysis passed on 2026-09-23. Live
+backend/device verification remains pending.
+
+## Pharmacy submission and quote visibility — 2026-09-24
+
+For doctors, the prescription form now gathers the pharmacy branch and
+fulfillment method together with the document. A pending assistant
+prescription uses the same sheet when the doctor approves it, so sign-off and
+queue submission are one user action while remaining two existing server
+writes. If queue submission fails after sign-off, the signed prescription is
+retained and can be sent again; the UI does not imply an atomic backend
+transaction that does not exist.
+
+The provider history now shows the pharmacy's server-returned fulfillment
+status, quoted total, pharmacist note, and a collection reminder. Pharmacy
+staff remain the only actor that can price or progress the pharmacy order;
+the provider view is intentionally read-only for those fields.
+
+The provider lab-request sheet now groups collection method, eligible lab
+branch, attachments, and notes in that order. Selecting home collection
+filters to branches that advertise that capability; it does not infer an
+address, price, or test catalogue that the backend does not provide.
+
+## Clinic delivery and OCR placeholder cleanup — 2026-09-24
+
+Legacy `[DEV PLACEHOLDER]` item names are hidden in provider prescription
+cards; when the no-op OCR service has no vendor configured, new uploads retain
+the prescription image without fabricating medication rows. Clinic fulfillment
+is labeled as delivery to the clinic and, like home delivery, requires a
+delivery-capable pharmacy branch and follows the delivery-in-progress status.
+The backend still has no courier integration or persisted clinic destination,
+so it cannot route a courier to a specific clinic address yet.
+
+## Doctor and assistant surface polish — 2026-09-24
+
+The shared provider dashboard now distinguishes the assistant's clinic
+schedule from the doctor's schedule and uses the active locale for calendar
+weekday/month labels. Calendar navigation has localized accessible labels and
+48px interaction targets. Provider navigation, notification, profile, and
+calendar controls expose clearer semantics and touch feedback.
+
+The profile is localized and role-aware: assistants see their own session
+identity and assigned-branch workspace links, and the screen no longer reads
+the supervising doctor's account as the assistant's profile. Clinical request
+history displays the scoped patient context; assistant prescription drafts
+explain that physician approval is required, while sign-off remains doctor-only.
+
+Focused widget tests passed **12/12** across provider home, profile, and
+clinical requests. Changed-file analysis completed with **8 info-level lint
+notices** (primarily radio-control deprecations and style hints); no errors
+were reported for the selected files. Arabic/English localization key sets
+are symmetric. Live backend and device verification remain pending.
+
+## Appointment workspace redesign — 2026-09-25
+
+The provider home tab remains the weekly availability calendar and open-slot
+timeline. The appointments tab is now a daily visit-follow-up workspace: it
+summarizes waiting and in-clinic visits, filters confirmed appointments by
+`WAITING` / `IN_DOCTOR_ROOM` / `LEFT`, and highlights any recorded balance due.
+Cancelled, completed, and rescheduled booking records remain available from a
+separate history view. Appointment detail remains the place for visit-status,
+clinical-request, cancel, and reschedule actions. This uses the existing
+doctor-scoped endpoint and response fields; no API or appointment lifecycle
+changes were made. Live device verification is pending.
+
 ## Visit-status verification: 2026-09-18
 
-### Scheduling guard update: 2026-09-18
+### Historical scheduling guard update (superseded 2026-09-25)
 
-The provider UI and backend now share a named 30-minute early-arrival policy:
-the next visit action is available only from 30 minutes before the current
-appointment slot's UTC `startAt` through its `endAt`. The Flutter action policy
-compares instants in UTC and hides the next-action control with localized
-guidance when too early or outside the window; the backend independently
-returns `VISIT_STATUS_TOO_EARLY` or `VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW`.
-After a reschedule, the new appointment row and its new slot are the only
-schedule used by either layer. `IN_DOCTOR_ROOM` and `LEFT` still hide cancel
-and reschedule, while the server rejects stale attempts with
-`APPOINTMENT_VISIT_IN_PROGRESS` and the client maps it to provider-facing
-Arabic/English copy.
+The original policy limited changes to 30 minutes before the slot through its
+end. That time gate and its two timing errors were removed on 2026-09-25 to let
+providers adapt to early arrivals and visits that finish ahead of schedule.
+The other protections described below remain in force.
 
-Focused domain, failure-mapping, and detail-widget tests cover timing, the
-forward state machine, booking lock, current-slot reschedule behavior, and
-localized server feedback. Device/browser manual verification remains pending.
+Focused domain, failure-mapping, and detail-widget tests cover the forward
+state machine, booking lock, reschedule behavior, and localized server
+feedback. Device/browser manual verification remains pending.
 
 The Flutter queue/detail DTO, repository, use case, generated Riverpod
 provider, localized badge, and single-step action call the route above with
@@ -80,6 +151,34 @@ appointment, so the next action uses the server-returned version.
   present in source, but a browser/emulator run with
   `--dart-define=BASE_URL=http://localhost:3000` remains required before
   claiming live-dashboard verification.
+
+### Visit-status timing flexibility — 2026-09-25
+
+The doctor or assigned clinic assistant may advance the visit status at any
+time, independent of the appointment slot's scheduled start and end. This lets
+the next patient enter when the prior visit finishes early, and lets a delayed
+visit be recorded without blocking on the clock. The backend still requires a
+confirmed appointment, caller scope, the current optimistic-lock version, and
+the next sequential transition (`WAITING → IN_DOCTOR_ROOM → LEFT`); successful
+updates remain transactional and audited. This changes no appointment booking
+status or slot, and does not enable cancel/reschedule after a visit begins.
+
+## Appointment detail sheet redesign — 2026-09-25
+
+The provider appointment detail sheet now uses a clearer patient header,
+compact branch/time details, and a highlighted visit-status card. The status
+transition is the single primary action; reschedule and cancel are quieter,
+side-by-side secondary actions. Arabic and English labels are localized. Visit
+status and booking action behavior are unchanged by this visual update. Live
+device verification remains pending.
+
+## Clinical request status refresh
+
+Provider/clinic-assistant prescription and lab order history refreshes from
+the API every 15 seconds while its tab and route are visible and the app is
+foregrounded. Returning to the app triggers an immediate refetch. Inactive
+tabs and backgrounded apps pause polling; pharmacists and lab staff remain the
+actors that update their respective order workflows.
 
 ### What changed, and why the old shapes were wrong
 
@@ -115,6 +214,14 @@ Avatar upload stays unavailable (`DEC-009`, no object-storage decision); the
 UI shows a "coming soon" message rather than faking an upload. Password
 change should go through `POST /v1/auth/password/set`, not the invented
 `/v1/provider/change-password` — that screen has not been rewired yet.
+
+## Clinic handover destination
+
+Clinic handover submissions from a provider select an eligible appointment
+for the same patient and send `appointmentId`; the backend verifies provider
+scope and derives the receiving clinic. This applies to both new signed
+prescriptions and existing prescription submissions without altering the
+pharmacy quote flow.
 
 ## Known gaps in this feature
 

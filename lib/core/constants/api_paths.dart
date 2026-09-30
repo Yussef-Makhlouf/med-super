@@ -22,6 +22,7 @@ abstract final class ApiPaths {
   static const authContextSwitch = '/v1/auth/context/switch';
   // File 12 Part 53 — registers/refreshes the caller's FCM token.
   static const authDevices = '/v1/auth/devices';
+  static const authCurrentDevice = '/v1/auth/devices/current';
 
   // Provider directory
   // Real backend route is GET /v1/doctors/search (provider-directory module) —
@@ -80,8 +81,7 @@ abstract final class ApiPaths {
   // status — their role membership stays PATIENT until an Admin verifies
   // them, so there was previously no way to check this at all (`GET
   // /v1/doctors/:doctorId` 404s for a non-Admin caller while PENDING).
-  static const providerRegistrationStatus =
-      '/v1/provider/registration/status';
+  static const providerRegistrationStatus = '/v1/provider/registration/status';
   // Doctor self-service upload of their own verification documents (license,
   // national ID, specialty certificate) — Admin can upload for any provider,
   // a DOCTOR caller only for their own doctor record (File 12 Part 48).
@@ -90,6 +90,7 @@ abstract final class ApiPaths {
 
   // Prescriptions (Phase 6)
   static const prescriptions = '/v1/prescriptions';
+  static const providerPrescriptions = '/v1/prescriptions/provider';
 
   // Pharmacy Fulfillment (Phase 7)
   static const pharmacyOrders = '/v1/pharmacy-orders';

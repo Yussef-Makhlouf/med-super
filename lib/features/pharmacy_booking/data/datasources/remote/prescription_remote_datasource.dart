@@ -44,6 +44,41 @@ class PrescriptionRemoteDatasource {
     ).toEntity();
   }
 
+  /// Provider upload counterpart to the patient flow. Uses the identical
+  /// multipart `files` contract and private-media pipeline while adding the
+  /// patient scope and explicit document purpose required by the backend.
+  Future<PrescriptionUploadResult> uploadForProvider({
+    required String patientId,
+    required String documentType,
+    required List<PrescriptionImage> images,
+    String? appointmentId,
+    String? notes,
+  }) async {
+    final formData = FormData.fromMap({
+      'patientId': patientId,
+      'documentType': documentType,
+      ...?((appointmentId != null) ? {'appointmentId': appointmentId} : null),
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      'files': images
+          .where((image) => image.bytes != null)
+          .map(
+            (image) => MultipartFile.fromBytes(
+              image.bytes!,
+              filename: image.path,
+              contentType: _mimeTypeFor(image.path),
+            ),
+          )
+          .toList(growable: false),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.providerPrescriptions}/upload',
+      data: formData,
+    );
+    return PrescriptionUploadDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    ).toEntity();
+  }
+
   /// Maps a picked file's extension to one of the backend's exact allowed
   /// MIME types (`MEDIA_CONSTANTS.DOCUMENT_MIME_TYPES`: jpeg/png/pdf) — the
   /// image picker only offers `FileType.image`, so `.jpg`/`.jpeg`/`.png` are

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/theme/app_palette.dart';
 
 /// Shimmer skeleton loader widget for responsive loading placeholders.
 class SkeletonLoader extends StatefulWidget {
@@ -30,9 +30,12 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    if (!WidgetsBinding.instance.toString().contains(
-      'TestWidgetsFlutterBinding',
-    )) {
+    final reduceMotion = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
+    if (!reduceMotion) {
       _controller.repeat(reverse: true);
     }
 
@@ -57,7 +60,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            color: AppColors.borderLight.withOpacity(_animation.value),
+            color: AppPalette.surfaceSunken.withValues(alpha: _animation.value),
             borderRadius: BorderRadius.circular(widget.borderRadius),
           ),
         );
@@ -83,7 +86,7 @@ class CardSkeletonList extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(color: AppPalette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

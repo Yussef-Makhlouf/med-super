@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:med_super/core/theme/app_colors.dart';
@@ -202,6 +202,8 @@ class _CredentialBoxState extends State<_CredentialBox> {
               Expanded(
                 child: Text(
                   displayValue,
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,

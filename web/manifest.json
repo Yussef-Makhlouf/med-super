@@ -1,11 +1,11 @@
 {
-    "name": "med_super",
-    "short_name": "med_super",
+    "name": "MedSuper",
+    "short_name": "MedSuper",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1744C7",
+    "theme_color": "#1744C7",
+    "description": "Your healthcare, connected.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

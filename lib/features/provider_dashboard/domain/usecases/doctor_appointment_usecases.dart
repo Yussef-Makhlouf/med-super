@@ -128,3 +128,16 @@ class BookWalkInAppointmentUseCase {
     );
   }
 }
+
+/// `GET /v1/doctors/me/appointments/patients/lookup?phone=...` — checks
+/// whether an account already exists for a phone before a walk-in booking
+/// reuses it, so the caller can confirm this is the intended patient.
+class LookupPatientByPhoneUseCase {
+  const LookupPatientByPhoneUseCase(this._repository);
+
+  final ProviderDashboardRepository _repository;
+
+  Future<Result<PatientPhoneLookup>> call(String phone) {
+    return _repository.lookupPatientByPhone(phone);
+  }
+}

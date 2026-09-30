@@ -133,11 +133,11 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
     // instead of appearing static — a more inviting entrance.
     _sheetController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 520),
     );
-    _sheetOffset = Tween<Offset>(begin: const Offset(0, 1.4), end: Offset.zero)
+    _sheetOffset = Tween<Offset>(begin: const Offset(0, 0.16), end: Offset.zero)
         .animate(
-          CurvedAnimation(parent: _sheetController, curve: Curves.easeOutBack),
+          CurvedAnimation(parent: _sheetController, curve: Curves.easeOutCubic),
         );
     _sheetOpacity = CurvedAnimation(
       parent: _sheetController,
@@ -253,10 +253,18 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                         child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: const AspectRatio(
+                            child: AspectRatio(
                               aspectRatio: 1,
                               child: AuthBlobHeroIllustration(
                                 icon: SolarIconsBold.lockKeyhole,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(28),
+                                  child: Image.asset(
+                                    'assets/branding/medsuper_app_icon.png',
+                                    fit: BoxFit.cover,
+                                    semanticLabel: 'splash.accessibility'.tr(),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -482,6 +490,11 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                       () => _obscurePassword =
                                                           !_obscurePassword,
                                                     ),
+                                                    tooltip:
+                                                        (_obscurePassword
+                                                                ? 'auth.show_password'
+                                                                : 'auth.hide_password')
+                                                            .tr(),
                                                     icon: Icon(
                                                       _obscurePassword
                                                           ? SolarIconsOutline
@@ -514,7 +527,7 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                               ),
                                               const SizedBox(height: 8),
                                               SizedBox(
-                                                height: 56,
+                                                height: 58,
                                                 child: ElevatedButton(
                                                   onPressed: _submitting
                                                       ? null
@@ -528,8 +541,12 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                           alpha: 0.5,
                                                         ),
                                                     elevation: 0,
-                                                    shape:
-                                                        const StadiumBorder(),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            AppRadii.lg,
+                                                          ),
+                                                    ),
                                                   ),
                                                   child: _submitting
                                                       ? const SizedBox(
@@ -548,6 +565,8 @@ class _AccountLoginScreenState extends ConsumerState<AccountLoginScreen>
                                                           style: textTheme
                                                               .titleMedium
                                                               ?.copyWith(
+                                                                fontSize: 17,
+                                                                height: 1.25,
                                                                 color: Colors
                                                                     .white,
                                                                 fontWeight:

@@ -15,6 +15,7 @@ import 'package:med_super/features/home/presentation/screens/patient_shell_scree
 import 'package:med_super/features/home/presentation/screens/patient_home_screen.dart';
 import 'package:med_super/features/home/presentation/screens/appointments_placeholder_screen.dart';
 import 'package:med_super/features/notifications/presentation/screens/patient_notifications_screen.dart';
+import 'package:med_super/features/notifications/presentation/screens/notification_preferences_screen.dart';
 import 'package:med_super/features/home/presentation/screens/orders_placeholder_screen.dart';
 import 'package:med_super/features/lab_booking/presentation/screens/lab_order_detail_screen.dart';
 import 'package:med_super/features/pharmacy_booking/presentation/screens/pharmacy_order_detail_screen.dart';
@@ -231,6 +232,11 @@ GoRouter appRouter(Ref ref) {
     },
     routes: [
       ...authRoutes,
+      GoRoute(
+        path: '/notifications/preferences',
+        name: 'notificationPreferences',
+        builder: (context, state) => const NotificationPreferencesScreen(),
+      ),
       ..._patientRoutes(),
       ...labRoutes,
       ...pharmacyRoutes,

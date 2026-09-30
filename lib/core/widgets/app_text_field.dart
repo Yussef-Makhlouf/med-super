@@ -22,6 +22,7 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.textDirection,
     this.textAlign,
+    this.textStyle,
     super.key,
   });
 
@@ -47,10 +48,12 @@ class AppTextField extends StatelessWidget {
   /// region codes, fees, timezones).
   final TextDirection? textDirection;
   final TextAlign? textAlign;
+  final TextStyle? textStyle;
 
 
   @override
   Widget build(BuildContext context) {
+    final isPhoneField = keyboardType == TextInputType.phone;
     return TextFormField(
       controller: controller,
       onChanged: onChanged,
@@ -58,14 +61,19 @@ class AppTextField extends StatelessWidget {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       obscureText: obscureText,
+      style: textStyle,
       autofocus: autofocus,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       readOnly: readOnly,
       focusNode: focusNode,
       validator: validator,
-      textDirection: textDirection ?? TextDirection.rtl,
-      textAlign: textAlign ?? TextAlign.start,
+      // Phone values are LTR even inside the Arabic/RTL app. Letting them
+      // inherit RTL can visually move a leading '+' to the end of the number.
+      textDirection:
+          textDirection ??
+          (isPhoneField ? TextDirection.ltr : TextDirection.rtl),
+      textAlign: textAlign ?? (isPhoneField ? TextAlign.left : TextAlign.start),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

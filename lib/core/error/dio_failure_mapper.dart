@@ -34,10 +34,7 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
         // code alongside it so `failureMessage()` can prefer app-local copy.
         // Known `details` keys (`minAmount`, `fullAmount`) ride along so a
         // screen can show the server's number instead of guessing.
-        return Failure.validation(
-          _validationFieldErrors(api),
-          code: api.code,
-        );
+        return Failure.validation(_validationFieldErrors(api), code: api.code);
       }
       return Failure.server(
         statusCode: api.statusCode,
@@ -116,6 +113,13 @@ Map<String, String> _validationFieldErrors(ApiException api) {
   final fields = <String, String>{'form': api.message ?? api.code};
   final details = api.details;
   if (details == null) return fields;
+  final serverFields = details['fields'];
+  if (serverFields is List) {
+    final messages = serverFields.whereType<String>().toList(growable: false);
+    if (messages.isNotEmpty) {
+      fields['form'] = messages.join('\n');
+    }
+  }
   for (final key in const ['minAmount', 'fullAmount']) {
     final value = details[key];
     if (value != null) fields[key] = value.toString();

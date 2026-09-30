@@ -14,8 +14,8 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 /// specialties row via "عرض الكل" — previously that link just opened
 /// [DoctorSearchScreen] with no specialty filter, so the full catalog had
 /// no dedicated screen at all. Reuses the same `specialtiesProvider` and
-/// `specialtyVisualForCode` the home row already uses (`GET /v1/specialties`
-/// — public, no auth), so no new data layer is needed.
+/// specialty artwork mapping as the home row (`GET /v1/specialties` — public,
+/// no auth), so no new data layer is needed.
 class AllSpecialtiesScreen extends ConsumerWidget {
   const AllSpecialtiesScreen({super.key});
 
@@ -32,10 +32,7 @@ class AllSpecialtiesScreen extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: Icon(
-            AppNavIcons.back(context),
-            color: AppPalette.primary,
-          ),
+          icon: Icon(AppNavIcons.back(context), color: AppPalette.primary),
         ),
         title: Text(
           'home.specialties'.tr(),
@@ -58,17 +55,26 @@ class AllSpecialtiesScreen extends ConsumerWidget {
                 ),
               );
             }
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 20,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: items.length,
-              itemBuilder: (context, index) =>
-                  _CategoryTile(specialty: items[index]),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 760
+                    ? 4
+                    : constraints.maxWidth >= 480
+                    ? 3
+                    : 2;
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    mainAxisExtent: 154,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) =>
+                      _CategoryTile(specialty: items[index]),
+                );
+              },
             );
           },
         ),
@@ -86,6 +92,7 @@ class _CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final visual = specialtyVisualForCode(specialty.code);
+    final illustration = specialtyIllustrationFor(specialty);
     final name = specialty.localizedName(context.locale.languageCode);
 
     return InkWell(
@@ -95,28 +102,47 @@ class _CategoryTile extends StatelessWidget {
         '&title=${Uri.encodeComponent(name)}',
       ),
       borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: AppShadows.resting,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppPalette.border),
+          boxShadow: AppShadows.resting,
+        ),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 82,
+              height: 82,
+              decoration: BoxDecoration(
+                color: visual.color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: illustration == null
+                  ? Icon(visual.icon, color: visual.color, size: 34)
+                  : Image.asset(
+                      illustration,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) =>
+                          Icon(visual.icon, color: visual.color, size: 34),
+                    ),
             ),
-            child: Icon(visual.icon, color: visual.color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.labelMedium?.copyWith(color: AppPalette.ink),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.labelMedium?.copyWith(
+                color: AppPalette.ink,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

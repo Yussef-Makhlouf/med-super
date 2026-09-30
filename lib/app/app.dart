@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:med_super/app/router/app_router.dart';
+import 'package:med_super/app/widgets/app_launch_splash.dart';
 import 'package:med_super/core/theme/app_theme.dart';
 import 'package:med_super/core/theme/breakpoints.dart';
 
@@ -34,7 +35,7 @@ class App extends ConsumerWidget {
       // Responsive wrapper
       builder: (context, child) {
         return ResponsiveBreakpoints.builder(
-          child: child!,
+          child: AppLaunchSplash(child: child!),
           breakpoints: appBreakpoints,
         );
       },

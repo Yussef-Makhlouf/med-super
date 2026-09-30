@@ -37,7 +37,6 @@ void main() {
           labBranchId: any(named: 'labBranchId'),
           collectionType: any(named: 'collectionType'),
           prescriptionId: any(named: 'prescriptionId'),
-          testCodes: any(named: 'testCodes'),
         ),
       ).thenAnswer(
         (_) async => const LabOrderCreateResult(
@@ -59,7 +58,6 @@ void main() {
           labBranchId: 'branch-1',
           collectionType: 'VISIT',
           prescriptionId: 'presc-1',
-          testCodes: null,
         ),
       ).called(1);
       expect(
@@ -77,7 +75,6 @@ void main() {
         labBranchId: any(named: 'labBranchId'),
         collectionType: any(named: 'collectionType'),
         prescriptionId: any(named: 'prescriptionId'),
-        testCodes: any(named: 'testCodes'),
       ),
     ).thenThrow(Exception('network down'));
 

@@ -37,6 +37,7 @@ class _TapScaleState extends State<TapScale> {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return Material(
       type: MaterialType.transparency,
       child: InkWell(
@@ -45,11 +46,17 @@ class _TapScaleState extends State<TapScale> {
         onTapCancel: () => _setPressed(false),
         onTapUp: (_) => _setPressed(false),
         borderRadius: widget.borderRadius,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        hoverColor: Colors.transparent,
+        splashColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.08),
+        highlightColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.04),
+        hoverColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.03),
         child: AnimatedScale(
-          scale: _pressed ? widget.scale : 1,
+          scale: !reduceMotion && _pressed ? widget.scale : 1,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: widget.child,

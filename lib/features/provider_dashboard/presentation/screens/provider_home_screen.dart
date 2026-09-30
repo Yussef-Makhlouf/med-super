@@ -25,6 +25,7 @@ import 'package:med_super/features/provider_dashboard/presentation/controllers/p
 import 'package:med_super/features/provider_dashboard/presentation/controllers/provider_failure_message.dart';
 import 'package:med_super/features/provider_dashboard/presentation/screens/provider_appointment_detail_screen.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/branch_tab.dart';
+import 'package:med_super/features/provider_dashboard/presentation/widgets/existing_patient_confirm_dialog.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_appointment_card.dart';
 import 'package:med_super/features/provider_dashboard/presentation/widgets/provider_page_header.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_slot.dart';
@@ -82,16 +83,6 @@ class ProviderHomeScreen extends ConsumerWidget {
     return dateOnly(d.subtract(Duration(days: diff)));
   }
 
-  static const _dayAbbrev = {
-    DateTime.saturday: 'سبت',
-    DateTime.sunday: 'أحد',
-    DateTime.monday: 'إثنين',
-    DateTime.tuesday: 'ثلاثاء',
-    DateTime.wednesday: 'أربعاء',
-    DateTime.thursday: 'خميس',
-    DateTime.friday: 'جمعة',
-  };
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(selectedCalendarDateProvider);
@@ -101,6 +92,9 @@ class ProviderHomeScreen extends ConsumerWidget {
 
     final templatesAsync = ref.watch(myScheduleTemplatesProvider());
     final clinicsAsync = ref.watch(myClinicsProvider);
+    final isAssistant =
+        ref.watch(sessionControllerProvider).asData?.value?.user.isAssistant ??
+        false;
     final doctorId = ref
         .watch(doctorAccountProvider)
         .maybeWhen(data: (account) => account.id, orElse: () => null);
@@ -113,7 +107,11 @@ class ProviderHomeScreen extends ConsumerWidget {
       body: Column(
         children: [
           ProviderPageHeader(
-            title: 'provider_dashboard.home.title'.tr(),
+            title:
+                (isAssistant
+                        ? 'provider_dashboard.home.assistant_title'
+                        : 'provider_dashboard.home.title')
+                    .tr(),
             unreadNotificationsCount: unreadNotifsCount,
             avatarUrl: avatarUrl,
           ),
@@ -131,7 +129,9 @@ class ProviderHomeScreen extends ConsumerWidget {
                       .select(selectedDate.add(const Duration(days: 7))),
                   onToday: dateOnly(selectedDate) == today
                       ? null
-                      : () => ref.read(selectedCalendarDateProvider.notifier).select(today),
+                      : () => ref
+                            .read(selectedCalendarDateProvider.notifier)
+                            .select(today),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -144,7 +144,8 @@ class ProviderHomeScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final day = weekDays[index];
                       final dayTemplates = templatesAsync.maybeWhen(
-                        data: (templates) => scheduleTemplatesForDate(templates, day),
+                        data: (templates) =>
+                            scheduleTemplatesForDate(templates, day),
                         orElse: () => const <DoctorScheduleTemplate>[],
                       );
                       return _DayTile(
@@ -153,9 +154,12 @@ class ProviderHomeScreen extends ConsumerWidget {
                         isSelected: dateOnly(day) == dateOnly(selectedDate),
                         isToday: dateOnly(day) == today,
                         isWorkingDay: dayTemplates.isNotEmpty,
-                        dayLabel: _dayAbbrev[day.weekday] ?? '',
-                        onTap: () =>
-                            ref.read(selectedCalendarDateProvider.notifier).select(day),
+                        dayLabel: DateFormat.E(
+                          context.locale.toString(),
+                        ).format(day),
+                        onTap: () => ref
+                            .read(selectedCalendarDateProvider.notifier)
+                            .select(day),
                       );
                     },
                   ),
@@ -171,7 +175,8 @@ class ProviderHomeScreen extends ConsumerWidget {
                         if (doctorId != null) {
                           final dayStart = dateOnly(selectedDate);
                           final dayEnd = dayStart.add(const Duration(days: 1));
-                          for (final branch in clinicsAsync.value ?? const <DoctorClinic>[]) {
+                          for (final branch
+                              in clinicsAsync.value ?? const <DoctorClinic>[]) {
                             ref.invalidate(
                               doctorOpenSlotsProvider((
                                 doctorId: doctorId,
@@ -185,7 +190,9 @@ class ProviderHomeScreen extends ConsumerWidget {
                         }
                         // Give the invalidated providers a moment to refetch
                         // so the spinner doesn't vanish before new data lands.
-                        await Future<void>.delayed(const Duration(milliseconds: 400));
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 400),
+                        );
                       }
 
                       return clinicsAsync.when(
@@ -208,8 +215,11 @@ class ProviderHomeScreen extends ConsumerWidget {
                               onRefresh: onRefresh,
                               child: _refreshableEmpty(
                                 EmptyState(
-                                  title: 'provider_dashboard.home.day_off_title'.tr(),
-                                  subtitle: 'provider_dashboard.home.day_off_subtitle'.tr(),
+                                  title: 'provider_dashboard.home.day_off_title'
+                                      .tr(),
+                                  subtitle:
+                                      'provider_dashboard.home.day_off_subtitle'
+                                          .tr(),
                                   icon: SolarIconsOutline.umbrella,
                                 ),
                               ),
@@ -250,7 +260,8 @@ class _MonthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final monthLabel = DateFormat('MMMM yyyy', 'ar').format(selectedDate);
+    final localeName = context.locale.toString();
+    final monthLabel = DateFormat('MMMM yyyy', localeName).format(selectedDate);
     // Week pagination is a temporal axis, not a reading-direction control —
     // "previous" always sits left with a left-pointing arrow and "next"
     // always sits right with a right-pointing arrow, in both `ar` and `en`
@@ -263,7 +274,11 @@ class _MonthHeader extends StatelessWidget {
       child: Row(
         textDirection: ui.TextDirection.ltr,
         children: [
-          _NavCircleButton(icon: SolarIconsOutline.altArrowLeft, onTap: onPrevWeek),
+          _NavCircleButton(
+            icon: SolarIconsOutline.altArrowLeft,
+            semanticLabel: 'provider_dashboard.home.previous_week'.tr(),
+            onTap: onPrevWeek,
+          ),
           Expanded(
             child: Center(
               child: Text(
@@ -276,20 +291,29 @@ class _MonthHeader extends StatelessWidget {
               ),
             ),
           ),
-          _NavCircleButton(icon: SolarIconsOutline.altArrowRight, onTap: onNextWeek),
+          _NavCircleButton(
+            icon: SolarIconsOutline.altArrowRight,
+            semanticLabel: 'provider_dashboard.home.next_week'.tr(),
+            onTap: onNextWeek,
+          ),
           if (onToday != null) ...[
             const SizedBox(width: 6),
-            GestureDetector(
-              onTap: onToday,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: brandBlue.withValues(alpha: 0.1),
+            TextButton(
+              onPressed: onToday,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                backgroundColor: brandBlue.withValues(alpha: 0.1),
+                foregroundColor: brandBlue,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
-                child: Text(
-                  'provider_dashboard.home.today'.tr(),
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: brandBlue),
+              ),
+              child: Text(
+                'provider_dashboard.home.today'.tr(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -301,23 +325,30 @@ class _MonthHeader extends StatelessWidget {
 }
 
 class _NavCircleButton extends StatelessWidget {
-  const _NavCircleButton({required this.icon, required this.onTap});
+  const _NavCircleButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onTap,
+  });
 
   final IconData icon;
+  final String semanticLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: brandBlue.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: IconButton(
+        tooltip: semanticLabel,
+        onPressed: onTap,
+        style: IconButton.styleFrom(
+          fixedSize: const Size(48, 48),
+          backgroundColor: brandBlue.withValues(alpha: 0.08),
+          foregroundColor: brandBlue,
         ),
-        child: Icon(icon, size: 20, color: brandBlue),
+        icon: Icon(icon, size: 20),
       ),
     );
   }
@@ -343,54 +374,67 @@ class _DayTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        decoration: BoxDecoration(
-          color: isSelected ? brandBlue : Colors.white,
+    final dateLabel = DateFormat.yMMMMd(context.locale.toString()).format(date);
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '$dayLabel, $dateLabel',
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadii.md),
-          border: isSelected
-              ? null
-              : Border.all(
-                  color: isToday
-                      ? brandBlue.withValues(alpha: 0.4)
-                      : AppColors.borderLight,
-                ),
-          boxShadow: isSelected ? AppShadows.resting : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // The tile has a fixed 56x72 box, so a long weekday label (e.g.
-            // "ثلاثاء") must never wrap to a second line and push the column
-            // past its height — scale it down on one line instead.
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                dayLabel,
-                maxLines: 1,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected ? Colors.white.withValues(alpha: 0.9) : AppColors.mutedText2,
-                ),
-              ),
+          child: Container(
+            width: 56,
+            decoration: BoxDecoration(
+              color: isSelected ? brandBlue : Colors.white,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+              border: isSelected
+                  ? null
+                  : Border.all(
+                      color: isToday
+                          ? brandBlue.withValues(alpha: 0.4)
+                          : AppColors.borderLight,
+                    ),
+              boxShadow: isSelected ? AppShadows.resting : null,
             ),
-            const SizedBox(height: 4),
-            Text(
-              date.day.toString(),
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: isSelected ? Colors.white : AppColors.ink900,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // The tile has a fixed 56x72 box, so a long weekday label (e.g.
+                // "ثلاثاء") must never wrap to a second line and push the column
+                // past its height — scale it down on one line instead.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    dayLabel,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.9)
+                          : AppColors.mutedText2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  date.day.toString(),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? Colors.white : AppColors.ink900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (isWorkingDay)
+                  AppBadge.dot(color: isSelected ? Colors.white : brandBlue)
+                else
+                  const SizedBox(height: 8, width: 8),
+              ],
             ),
-            const SizedBox(height: 4),
-            if (isWorkingDay)
-              AppBadge.dot(color: isSelected ? Colors.white : brandBlue)
-            else
-              const SizedBox(height: 8, width: 8),
-          ],
+          ),
         ),
       ),
     );
@@ -472,10 +516,17 @@ class _BranchTimelineTabsState extends State<_BranchTimelineTabs>
             labelColor: brandBlue,
             unselectedLabelColor: AppColors.mutedText2,
             indicatorColor: brandBlue,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
             tabs: [
-              if (_showAllTab) Tab(text: 'provider_dashboard.home.tab_all'.tr()),
+              if (_showAllTab)
+                Tab(text: 'provider_dashboard.home.tab_all'.tr()),
               for (final branch in widget.branches) BranchTab(branch: branch),
             ],
           ),
@@ -530,7 +581,12 @@ class _AllBranchesTimeline extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rowsByBranch = <DoctorClinic, AsyncValue<List<_TimelineRow>>>{
       for (final branch in branches)
-        branch: _watchTimelineRows(ref, doctorId: doctorId, branch: branch, date: date),
+        branch: _watchTimelineRows(
+          ref,
+          doctorId: doctorId,
+          branch: branch,
+          date: date,
+        ),
     };
 
     if (rowsByBranch.values.any((v) => v.isLoading)) {
@@ -587,20 +643,20 @@ class _AllBranchesTimeline extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: ListView.separated(
-      // Without this, a short list (fewer rows than fit the viewport)
-      // never overscrolls, so the RefreshIndicator wrapping this screen
-      // never sees the pull gesture and pull-to-refresh silently does
-      // nothing on days with few appointments.
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-      itemCount: all.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _TimelineRowTile(
-        row: all[index].value,
-        branch: all[index].key,
-        doctorId: doctorId,
-        showBranchLabel: true,
-      ),
+        // Without this, a short list (fewer rows than fit the viewport)
+        // never overscrolls, so the RefreshIndicator wrapping this screen
+        // never sees the pull gesture and pull-to-refresh silently does
+        // nothing on days with few appointments.
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+        itemCount: all.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) => _TimelineRowTile(
+          row: all[index].value,
+          branch: all[index].key,
+          doctorId: doctorId,
+          showBranchLabel: true,
+        ),
       ),
     );
   }
@@ -640,7 +696,12 @@ class _BranchDayTimeline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rowsAsync = _watchTimelineRows(ref, doctorId: doctorId, branch: branch, date: date);
+    final rowsAsync = _watchTimelineRows(
+      ref,
+      doctorId: doctorId,
+      branch: branch,
+      date: date,
+    );
 
     return rowsAsync.when(
       loading: () => const CardSkeletonList(count: 3),
@@ -768,7 +829,10 @@ AsyncValue<List<_TimelineRow>> _watchTimelineRows(
     return const AsyncValue.loading();
   }
   if (appointmentsAsync.hasError) {
-    return AsyncValue.error(appointmentsAsync.error!, appointmentsAsync.stackTrace!);
+    return AsyncValue.error(
+      appointmentsAsync.error!,
+      appointmentsAsync.stackTrace!,
+    );
   }
   if (openSlotsAsync.hasError) {
     return AsyncValue.error(openSlotsAsync.error!, openSlotsAsync.stackTrace!);
@@ -788,10 +852,16 @@ AsyncValue<List<_TimelineRow>> _watchTimelineRows(
 }
 
 String _initials(String name) {
-  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((p) => p.isNotEmpty)
+      .toList();
   if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first.characters.take(1).toString().toUpperCase();
-  return (parts.first.characters.take(1).toString() + parts.last.characters.take(1).toString())
+  if (parts.length == 1)
+    return parts.first.characters.take(1).toString().toUpperCase();
+  return (parts.first.characters.take(1).toString() +
+          parts.last.characters.take(1).toString())
       .toUpperCase();
 }
 
@@ -831,11 +901,18 @@ class _TimelineRowTile extends ConsumerWidget {
               children: [
                 Text(
                   timeLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.ink900),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: AppColors.ink900,
+                  ),
                 ),
                 Text(
                   '$durationMinutes ${'provider_dashboard.home.minutes_short'.tr()}',
-                  style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.mutedText2,
+                  ),
                 ),
               ],
             ),
@@ -866,7 +943,11 @@ class _TimelineRowTile extends ConsumerWidget {
             backgroundColor: brandBlue.withValues(alpha: 0.12),
             child: Text(
               _initials(appointment.patientName),
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: brandBlue),
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+                color: brandBlue,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -878,14 +959,21 @@ class _TimelineRowTile extends ConsumerWidget {
                   appointment.patientName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.ink900),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.ink900,
+                  ),
                 ),
                 if (showBranchLabel)
                   Text(
                     '${branch.address.city} · ${branch.address.line1}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.mutedText2,
+                    ),
                   ),
               ],
             ),
@@ -894,7 +982,10 @@ class _TimelineRowTile extends ConsumerWidget {
           if (appointment.status == DoctorAppointmentStatus.confirmed)
             DoctorVisitStatusBadge(status: appointment.visitStatus)
           else
-            AppBadge.soft(label: lifecycleStatus.label, color: lifecycleStatus.color),
+            AppBadge.soft(
+              label: lifecycleStatus.label,
+              color: lifecycleStatus.color,
+            ),
         ],
       ),
     );
@@ -932,7 +1023,10 @@ class _TimelineRowTile extends ConsumerWidget {
                     '${branch.address.city} · ${branch.address.line1}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: AppColors.mutedText2),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.mutedText2,
+                    ),
                   ),
               ],
             ),
@@ -942,7 +1036,11 @@ class _TimelineRowTile extends ConsumerWidget {
     );
   }
 
-  Future<void> _bookSlot(BuildContext context, WidgetRef ref, DoctorSlot slot) async {
+  Future<void> _bookSlot(
+    BuildContext context,
+    WidgetRef ref,
+    DoctorSlot slot,
+  ) async {
     final booked = await showModalBottomSheet<(DoctorClinic, DoctorSlot)>(
       context: context,
       isScrollControlled: true,
@@ -951,7 +1049,9 @@ class _TimelineRowTile extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: _QuickBookSheet(
           doctorId: doctorId,
           initialBranch: branch,
@@ -1004,6 +1104,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
   final _nameController = TextEditingController();
   late DoctorClinic _branch;
   DoctorSlot? _slot;
+  DateTime? _selectedDay;
   bool _submitting = false;
   String? _error;
 
@@ -1012,6 +1113,8 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     super.initState();
     _branch = widget.initialBranch;
     _slot = widget.slot;
+    final local = widget.slot.startAtUtc.toLocal();
+    _selectedDay = DateTime(local.year, local.month, local.day);
   }
 
   @override
@@ -1028,6 +1131,7 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
       // The originally tapped slot belongs to the old branch — a new one
       // must be picked before submitting is possible again.
       _slot = null;
+      _selectedDay = null;
     });
   }
 
@@ -1035,13 +1139,25 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
     final slot = _slot;
     if (slot == null) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final phone = normalizeEgyptPhone(_phoneController.text.trim());
+    final name = _nameController.text.trim();
+
+    final lookup = await ref.read(lookupPatientByPhoneUseCaseProvider).call(phone);
+    if (!mounted) return;
+    final existingName = lookup.when(ok: (r) => r.exists ? r.name : null, err: (_) => null);
+    if (existingName != null && existingName.trim().isNotEmpty) {
+      final confirmed = await showExistingPatientConfirmDialog(
+        context,
+        existingName: existingName,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
     setState(() {
       _submitting = true;
       _error = null;
     });
-
-    final phone = normalizeEgyptPhone(_phoneController.text.trim());
-    final name = _nameController.text.trim();
 
     final result = await ref
         .read(bookWalkInAppointmentUseCaseProvider)
@@ -1103,8 +1219,10 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                 ),
                 validator: (value) {
                   final trimmed = (value ?? '').trim();
-                  if (trimmed.isEmpty) return 'provider_dashboard.walk_in.phone_required'.tr();
-                  if (!isValidEgyptPhone(trimmed)) return 'provider_dashboard.walk_in.phone_invalid'.tr();
+                  if (trimmed.isEmpty)
+                    return 'provider_dashboard.walk_in.phone_required'.tr();
+                  if (!isValidEgyptPhone(trimmed))
+                    return 'provider_dashboard.walk_in.phone_invalid'.tr();
                   return null;
                 },
               ),
@@ -1117,11 +1235,14 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                 ),
-                validator: (value) =>
-                    (value ?? '').trim().isEmpty ? 'provider_dashboard.walk_in.name_required'.tr() : null,
+                validator: (value) => (value ?? '').trim().isEmpty
+                    ? 'provider_dashboard.walk_in.name_required'.tr()
+                    : null,
               ),
               const SizedBox(height: 20),
-              SectionHeader(title: 'provider_dashboard.walk_in.step_branch'.tr()),
+              SectionHeader(
+                title: 'provider_dashboard.walk_in.step_branch'.tr(),
+              ),
               const SizedBox(height: 12),
               ref
                   .watch(myClinicsProvider)
@@ -1161,7 +1282,9 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                   ),
               if (_slot == null) ...[
                 const SizedBox(height: 24),
-                SectionHeader(title: 'provider_dashboard.walk_in.step_slot'.tr()),
+                SectionHeader(
+                  title: 'provider_dashboard.walk_in.step_slot'.tr(),
+                ),
                 const SizedBox(height: 12),
                 _slotPicker(),
               ],
@@ -1180,11 +1303,17 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : Text(
                           'provider_dashboard.walk_in.submit'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
                         ),
                 ),
               ),
@@ -1225,7 +1354,11 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
                 ),
                 const Spacer(),
                 if (selected)
-                  const Icon(SolarIconsBold.checkCircle, color: brandBlue, size: 20),
+                  const Icon(
+                    SolarIconsBold.checkCircle,
+                    color: brandBlue,
+                    size: 20,
+                  ),
               ],
             ),
             const SizedBox(height: 10),
@@ -1287,14 +1420,92 @@ class _QuickBookSheetState extends ConsumerState<_QuickBookSheet> {
             icon: SolarIconsOutline.calendarMinimalistic,
           );
         }
-        final sorted = [...slots]
+
+        final byDay = <DateTime, List<DoctorSlot>>{};
+        for (final slot in slots) {
+          final local = slot.startAtUtc.toLocal();
+          final day = DateTime(local.year, local.month, local.day);
+          (byDay[day] ??= []).add(slot);
+        }
+        final days = byDay.keys.toList()..sort();
+
+        final selectedDay =
+            (_selectedDay != null && byDay.containsKey(_selectedDay))
+            ? _selectedDay!
+            : days.first;
+        if (_selectedDay != selectedDay) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedDay = selectedDay);
+          });
+        }
+
+        final daySlots = (byDay[selectedDay] ?? const <DoctorSlot>[])
           ..sort((a, b) => a.startAtUtc.compareTo(b.startAtUtc));
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [for (final slot in sorted) _slotChip(slot)],
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 68,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: days.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) =>
+                    _dayChip(days[index], days[index] == selectedDay),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [for (final slot in daySlots) _slotChip(slot)],
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _dayChip(DateTime day, bool selected) {
+    return GestureDetector(
+      onTap: () => setState(() {
+        _selectedDay = day;
+        _slot = null;
+      }),
+      child: Container(
+        width: 68,
+        decoration: BoxDecoration(
+          color: selected ? brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(
+            color: selected ? brandBlue : AppColors.borderLight,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'provider_dashboard.weekday.${day.weekday}'.tr(),
+              style: TextStyle(
+                fontSize: 11,
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : AppColors.mutedText2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${day.day}/${day.month}',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.ink900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

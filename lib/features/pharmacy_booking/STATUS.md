@@ -16,6 +16,12 @@ Consequences of wiring real data, all deliberate:
 
 `PharmacyPrescriptionUploadScreen`'s submit CTA (step 1) calls the real, complete `POST /v1/prescriptions/upload` (**Prescriptions / Phase 6**) via `PrescriptionUploadController`/`PrescriptionRemoteDatasource`. `notes` now round-trips for real (`clinic-reservations` File 12 Part 44 added the column it was silently missing before). One remaining caveat: the endpoint's `fileUrls` are pre-hosted-URL-only by design (object storage is `DEC-009`, still an open/deferred decision — same gap as `ProviderVerificationDocument.file_url`), so no real image bytes are actually uploaded anywhere yet. Each attached image is sent as a distinct placeholder URL (`https://placeholder.medsuper.local/prescriptions/<id>.jpg`) purely so the real quality-check/OCR pipeline runs end-to-end — swap this for a real upload step once object storage is decided. The picker is capped at 5 images and the notes field at 500 chars, matching the backend's own `UploadPrescriptionDto` limits.
 
+**Correction, 2026-09-23:** the placeholder-URL caveat above is historical.
+The patient client currently uploads real image bytes as multipart data to
+private ImageKit storage. Provider document upload reuses the same datasource
+and pipeline, adding patient scope and an explicit `PRESCRIPTION` or
+`LAB_REFERRAL` purpose.
+
 ## Phase 7 (Pharmacy Fulfillment): order creation wired 2026-08-31
 
 `clinic-reservations` merged the whole module 2026-08-31 (PR #8), complete. Investigating it for `pharmacy_order_review_screen.dart` surfaced two blockers, both now fixed on the backend (`clinic-reservations` File 12 Part 44):
@@ -39,3 +45,27 @@ Closing an `OUT_FOR_DELIVERY` order was staff-only (`complete`) until this pass,
 ## Not affected by ADR-006
 
 `ADR-006-PROVIDER-SURFACE-SPLIT.md` (2026-08-14) routes future **pharmacy dashboard** (pharmacy *staff* operations) work to a separate Next.js web app. This feature is the *patient-facing* booking flow, a different surface — unaffected either way.
+
+## Live order status refresh
+
+Patient order lists and pharmacy order details refresh from the API every 15
+seconds while their route/tab is visible and the app is foregrounded. Returning
+to the app triggers an immediate refetch. Polling is paused when the app is
+backgrounded or the screen is inactive; the API remains the source of truth.
+
+**Staging submission diagnosis (2026-09-30):** Cloud Run recorded patient
+`POST /v1/pharmacy-orders` attempts returning `400 VALIDATION_ERROR`; nearby
+list reads returned `200`. Request bodies and rejected field names are not
+retained in those request logs, so the invalid input is not yet identified.
+The review screen now maps the API's Arabic `details.fields` into the error
+message so a new APK can show the actual rejected field. Successful live
+order creation has not yet been verified.
+
+## Clinic handover destination
+
+When `CLINIC_HANDOVER` is selected, the review screen requires one of the
+patient's `CONFIRMED`, `CHECKED_IN`, `IN_PROGRESS`, or `COMPLETED` appointments
+and sends its `appointmentId` with the pharmacy order. The backend verifies
+patient ownership and derives the receiving clinic from that appointment.
+Other fulfillment types omit `appointmentId`; the quote and fulfillment state
+machine are unchanged.

@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/error/dio_failure_mapper.dart';
@@ -45,6 +45,8 @@ class _WalletConfirmDepositScreenState
       // A PENDING ledger row now exists, so the history is already stale
       // even though the balance hasn't moved.
       ref.invalidate(walletTransactionsProvider);
+      ref.invalidate(walletTransactionHistoryProvider);
+      ref.invalidate(walletTransactionDetailProvider);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -249,6 +251,12 @@ class _WalletConfirmDepositScreenState
                         ),
                         Text(
                           row.value,
+                          textDirection: row.label == 'payments.phone'.tr()
+                              ? TextDirection.ltr
+                              : null,
+                          textAlign: row.label == 'payments.phone'.tr()
+                              ? TextAlign.left
+                              : null,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,

@@ -11,14 +11,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// a custom synchronous loader — see the doc comment on
 /// [pumpLocalizedWidget] for why a synchronous loader doesn't actually avoid
 /// needing real async I/O here.
-Widget _shell({required Widget child, required List<Override> overrides}) {
+Widget _shell({
+  required Widget child,
+  required List<Override> overrides,
+  required Locale startLocale,
+}) {
   return ProviderScope(
     overrides: overrides,
     child: EasyLocalization(
       supportedLocales: const [Locale('ar'), Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('ar'),
-      startLocale: const Locale('ar'),
+      startLocale: startLocale,
       saveLocale: false,
       useOnlyLangCode: true,
       child: Builder(
@@ -61,6 +65,7 @@ Future<void> pumpLocalizedWidget(
   WidgetTester tester,
   Widget child, {
   List<Override> overrides = const [],
+  Locale startLocale = const Locale('ar'),
 }) async {
   // easy_localization persists the chosen locale via SharedPreferences;
   // without a mock, SharedPreferences.getInstance() never resolves under
@@ -78,7 +83,9 @@ Future<void> pumpLocalizedWidget(
 
   await tester.runAsync(() async {
     await EasyLocalization.ensureInitialized();
-    await tester.pumpWidget(_shell(child: child, overrides: overrides));
+    await tester.pumpWidget(
+      _shell(child: child, overrides: overrides, startLocale: startLocale),
+    );
     // Not `pumpAndSettle()`: some widgets under test (e.g. a submit
     // spinner) run a perpetual animation, which would make it spin until
     // its internal timeout and fail the test.

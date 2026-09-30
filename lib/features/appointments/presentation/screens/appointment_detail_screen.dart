@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -292,11 +292,16 @@ class _DetailBody extends StatelessWidget {
                 _InfoRow(
                   icon: SolarIconsOutline.phone,
                   label: appt.clinicPhone,
+                  textDirection: TextDirection.ltr,
                 ),
               ],
             ],
           ),
         ),
+        if (appt.payment != null) ...[
+          const SizedBox(height: 16),
+          _PaymentCard(payment: appt.payment!),
+        ],
         if (appt.status == 'CANCELLED' && appt.cancelledReason != null) ...[
           const SizedBox(height: 16),
           _NoteCard(
@@ -379,10 +384,15 @@ class _DetailBody extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    this.textDirection,
+  });
 
   final IconData icon;
   final String label;
+  final TextDirection? textDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +402,115 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           label,
+          textDirection: textDirection,
           style: const TextStyle(fontSize: 14, color: AppPalette.ink),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({required this.payment});
+
+  final AppointmentPayment payment;
+
+  String _money(num value) => payment.currency == 'EGP'
+      ? '${value.toStringAsFixed(2)} ج.م'
+      : '${value.toStringAsFixed(2)} ${payment.currency}';
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'appointments.detail_payment_title'.tr(),
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppPalette.ink,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _PaymentRow(
+            label: 'appointments.detail_payment_fee'.tr(),
+            value: _money(payment.fullAmount),
+          ),
+          const SizedBox(height: 6),
+          _PaymentRow(
+            label: 'appointments.detail_payment_paid'.tr(),
+            value: _money(payment.paidAmount),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: payment.isFullyPaid
+                  ? const Color(0xFF10B981).withValues(alpha: 0.10)
+                  : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    payment.isFullyPaid
+                        ? 'appointments.detail_payment_fully_paid'.tr()
+                        : 'appointments.detail_payment_remaining'.tr(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppPalette.ink,
+                    ),
+                  ),
+                ),
+                if (!payment.isFullyPaid)
+                  Text(
+                    _money(payment.remainingBalance),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: AppPalette.ink,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: AppPalette.inkMuted),
+          ),
+        ),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppPalette.ink,
+            ),
+          ),
         ),
       ],
     );

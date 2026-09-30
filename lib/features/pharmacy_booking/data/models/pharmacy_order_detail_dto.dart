@@ -13,6 +13,8 @@ class PharmacyOrderDetailDto {
     required this.staffNote,
     required this.prescriptionImages,
     required this.rejection,
+    this.patientId,
+    this.prescriptionId,
   });
 
   factory PharmacyOrderDetailDto.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,8 @@ class PharmacyOrderDetailDto {
     final imagesJson = prescription?['images'] as List<dynamic>? ?? const [];
     return PharmacyOrderDetailDto(
       id: json['id'] as String? ?? '',
+      patientId: (json['patient'] as Map<String, dynamic>?)?['id'] as String?,
+      prescriptionId: prescription?['id'] as String?,
       status: json['status'] as String? ?? '',
       fulfillmentType: json['fulfillmentType'] as String? ?? '',
       createdAt: json['createdAt'] as String? ?? '',
@@ -32,8 +36,7 @@ class PharmacyOrderDetailDto {
           : PharmacyOrderQuote(
               totalPrice: quoteJson['totalPrice'] as String? ?? '',
               currency: quoteJson['currency'] as String? ?? '',
-              estimatedReadyMinutes:
-                  quoteJson['estimatedReadyMinutes'] as int?,
+              estimatedReadyMinutes: quoteJson['estimatedReadyMinutes'] as int?,
               note: quoteJson['note'] as String?,
               quotedAt: quoteJson['quotedAt'] as String? ?? '',
             ),
@@ -60,6 +63,8 @@ class PharmacyOrderDetailDto {
   }
 
   final String id;
+  final String? patientId;
+  final String? prescriptionId;
   final String status;
   final String fulfillmentType;
   final String createdAt;
@@ -73,6 +78,8 @@ class PharmacyOrderDetailDto {
 
   PharmacyOrderDetail toEntity() => PharmacyOrderDetail(
     id: id,
+    patientId: patientId,
+    prescriptionId: prescriptionId,
     status: status,
     fulfillmentType: fulfillmentType,
     createdAt: createdAt,
