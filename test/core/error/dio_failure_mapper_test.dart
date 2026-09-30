@@ -35,25 +35,29 @@ void main() {
     expect(failure, isA<AuthFailure>());
   });
 
-  test('carries payment-amount details on a 422 so the field can show the min',
-      () {
-    final failure = mapDioToFailure(
-      DioException(
-        requestOptions: RequestOptions(path: '/v1/appointments/hold-1/confirm'),
-        error: const ApiException(
-          statusCode: 422,
-          code: 'PAYMENT_AMOUNT_BELOW_MINIMUM',
-          message: 'المبلغ أقل من الحد الأدنى المسموح به للدفع.',
-          details: {'minAmount': '50.00'},
+  test(
+    'carries payment-amount details on a 422 so the field can show the min',
+    () {
+      final failure = mapDioToFailure(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/v1/appointments/hold-1/confirm',
+          ),
+          error: const ApiException(
+            statusCode: 422,
+            code: 'PAYMENT_AMOUNT_BELOW_MINIMUM',
+            message: 'المبلغ أقل من الحد الأدنى المسموح به للدفع.',
+            details: {'minAmount': '50.00'},
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(failure, isA<ValidationFailure>());
-    final validation = failure as ValidationFailure;
-    expect(validation.code, 'PAYMENT_AMOUNT_BELOW_MINIMUM');
-    expect(validation.fieldErrors['minAmount'], '50.00');
-  });
+      expect(failure, isA<ValidationFailure>());
+      final validation = failure as ValidationFailure;
+      expect(validation.code, 'PAYMENT_AMOUNT_BELOW_MINIMUM');
+      expect(validation.fieldErrors['minAmount'], '50.00');
+    },
+  );
 
   test('maps backend 400 validation details for patient order forms', () {
     final failure = mapDioToFailure(

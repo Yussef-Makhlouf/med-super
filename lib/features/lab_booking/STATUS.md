@@ -45,6 +45,14 @@ Flutter interceptor now attaches the key to lab-order writes, including
 provider referrals, and a regression test covers the provider clinical write
 routes. Unit tests were added; execution on Flutter is still pending.
 
+**Staging submission diagnosis (2026-09-30):** Cloud Run recorded patient
+`POST /v1/lab-orders` attempts returning `400 VALIDATION_ERROR`; nearby list
+reads returned `200`. Request bodies and rejected field names are not retained
+in those request logs, so the invalid input is not yet identified. The review
+screen now maps the API's Arabic `details.fields` into the error message so a
+new APK can show the actual rejected field. Successful live order creation
+has not yet been verified.
+
 ## What's deliberately gone (was fabricated, not backed by real data)
 
 Removed rather than kept as dead/misleading UI: lab rating, "starting

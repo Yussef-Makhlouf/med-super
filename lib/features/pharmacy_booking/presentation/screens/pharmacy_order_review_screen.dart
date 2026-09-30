@@ -84,9 +84,9 @@ class _PharmacyOrderReviewScreenState
         mapDioToFailure(result.error!),
         screenFallback: 'pharmacy_booking.review.confirm_error',
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     final confirmation = PharmacyOrderConfirmation(

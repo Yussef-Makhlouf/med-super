@@ -53,6 +53,14 @@ seconds while their route/tab is visible and the app is foregrounded. Returning
 to the app triggers an immediate refetch. Polling is paused when the app is
 backgrounded or the screen is inactive; the API remains the source of truth.
 
+**Staging submission diagnosis (2026-09-30):** Cloud Run recorded patient
+`POST /v1/pharmacy-orders` attempts returning `400 VALIDATION_ERROR`; nearby
+list reads returned `200`. Request bodies and rejected field names are not
+retained in those request logs, so the invalid input is not yet identified.
+The review screen now maps the API's Arabic `details.fields` into the error
+message so a new APK can show the actual rejected field. Successful live
+order creation has not yet been verified.
+
 ## Clinic handover destination
 
 When `CLINIC_HANDOVER` is selected, the review screen requires one of the

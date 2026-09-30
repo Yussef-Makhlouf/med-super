@@ -69,9 +69,9 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
         mapDioToFailure(result.error!),
         screenFallback: 'lab_booking.select_lab.confirm_error',
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     final confirmation = LabBookingConfirmation(
@@ -406,10 +406,7 @@ class _TermsCheckbox extends StatelessWidget {
             Expanded(
               child: Text(
                 'lab_booking.review.terms_agreement'.tr(),
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.bodyText,
-                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.bodyText),
               ),
             ),
             const SizedBox(width: 8),

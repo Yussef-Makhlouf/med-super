@@ -34,10 +34,7 @@ Failure mapDioToFailure(Object error, [StackTrace? stackTrace]) {
         // code alongside it so `failureMessage()` can prefer app-local copy.
         // Known `details` keys (`minAmount`, `fullAmount`) ride along so a
         // screen can show the server's number instead of guessing.
-        return Failure.validation(
-          _validationFieldErrors(api),
-          code: api.code,
-        );
+        return Failure.validation(_validationFieldErrors(api), code: api.code);
       }
       return Failure.server(
         statusCode: api.statusCode,
