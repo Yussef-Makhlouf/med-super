@@ -100,6 +100,7 @@ class _FakePharmacyOrder extends PharmacyOrderController {
     required String prescriptionId,
     required String fulfillmentType,
     String? pharmacyBranchId,
+    String? appointmentId,
   }) async {
     state = const AsyncLoading();
     await Future<void>.delayed(const Duration(milliseconds: 50));
