@@ -54,4 +54,25 @@ void main() {
     expect(validation.code, 'PAYMENT_AMOUNT_BELOW_MINIMUM');
     expect(validation.fieldErrors['minAmount'], '50.00');
   });
+
+  test('maps backend 400 validation details for patient order forms', () {
+    final failure = mapDioToFailure(
+      DioException(
+        requestOptions: RequestOptions(path: '/v1/lab-orders'),
+        error: const ApiException(
+          statusCode: 400,
+          code: 'VALIDATION_ERROR',
+          message: 'تعذر التحقق من البيانات.',
+          details: {
+            'fields': ['فرع المعمل مطلوب.'],
+          },
+        ),
+      ),
+    );
+
+    expect(failure, isA<ValidationFailure>());
+    final validation = failure as ValidationFailure;
+    expect(validation.code, 'VALIDATION_ERROR');
+    expect(validation.fieldErrors['form'], 'فرع المعمل مطلوب.');
+  });
 }

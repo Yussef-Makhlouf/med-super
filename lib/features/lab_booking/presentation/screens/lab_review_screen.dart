@@ -6,6 +6,8 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/error/dio_failure_mapper.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/flow_header.dart';
@@ -63,8 +65,12 @@ class _LabReviewScreenState extends ConsumerState<LabReviewScreen> {
 
     final result = ref.read(labOrderControllerProvider);
     if (result.hasError) {
+      final message = failureMessage(
+        mapDioToFailure(result.error!),
+        screenFallback: 'lab_booking.select_lab.confirm_error',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('lab_booking.select_lab.confirm_error'.tr())),
+        SnackBar(content: Text(message)),
       );
       return;
     }

@@ -23,7 +23,8 @@ class ApiException implements Exception {
 
   bool get isUnauthorized => statusCode == 401;
   bool get isConflict => statusCode == 409;
-  bool get isValidation => statusCode == 422;
+  bool get isValidation =>
+      statusCode == 422 || (statusCode == 400 && code == 'VALIDATION_ERROR');
   bool get isServerError => statusCode >= 500;
 
   @override

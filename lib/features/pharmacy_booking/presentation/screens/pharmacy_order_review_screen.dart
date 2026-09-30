@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:med_super/core/error/dio_failure_mapper.dart';
+import 'package:med_super/core/error/failure_message.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
@@ -78,8 +80,12 @@ class _PharmacyOrderReviewScreenState
 
     final result = ref.read(pharmacyOrderControllerProvider);
     if (result.hasError) {
+      final message = failureMessage(
+        mapDioToFailure(result.error!),
+        screenFallback: 'pharmacy_booking.review.confirm_error',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('pharmacy_booking.review.confirm_error'.tr())),
+        SnackBar(content: Text(message)),
       );
       return;
     }
