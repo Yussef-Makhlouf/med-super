@@ -89,8 +89,6 @@ class _AppLaunchSplashState extends State<AppLaunchSplash>
   }
 
   Widget _buildSplash(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final artHeight = (size.height * 0.38).clamp(220.0, 360.0).toDouble();
     final textTheme = Theme.of(context).textTheme;
 
     return ColoredBox(
@@ -111,11 +109,15 @@ class _AppLaunchSplashState extends State<AppLaunchSplash>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    'assets/illustrations/splash_orbit.png',
-                    width: 252,
-                    height: artHeight,
-                    fit: BoxFit.contain,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(38),
+                    child: Image.asset(
+                      'assets/branding/medsuper_app_icon.png',
+                      key: const Key('medsuper-app-splash-mark'),
+                      width: 164,
+                      height: 164,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(

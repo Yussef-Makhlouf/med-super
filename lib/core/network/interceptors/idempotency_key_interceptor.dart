@@ -22,6 +22,8 @@ class IdempotencyKeyInterceptor extends Interceptor {
     // Phase 7 (Pharmacy Fulfillment) — POST /v1/pharmacy-orders is guarded
     // the same way.
     '/pharmacy-orders',
+    // Provider lab requests also require an idempotency key on the backend.
+    '/lab-orders',
   ];
 
   @override

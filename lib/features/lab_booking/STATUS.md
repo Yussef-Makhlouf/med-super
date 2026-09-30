@@ -39,6 +39,12 @@ That order enters the existing branch intake queue; the existing detail
 contract returns its linked images. Provider history renders those images,
 while the backend remains authoritative for access and status.
 
+**Request retry safety (2026-09-29):** the backend requires
+`Idempotency-Key` on `POST /v1/lab-orders` and provider lab-order routes. The
+Flutter interceptor now attaches the key to lab-order writes, including
+provider referrals, and a regression test covers the provider clinical write
+routes. Unit tests were added; execution on Flutter is still pending.
+
 ## What's deliberately gone (was fabricated, not backed by real data)
 
 Removed rather than kept as dead/misleading UI: lab rating, "starting
