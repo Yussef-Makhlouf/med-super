@@ -6,6 +6,8 @@ import 'package:med_super/features/pharmacy_booking/domain/entities/prescription
 
 part 'lab_upload_providers.g.dart';
 
+const maxLabRequestImages = 5;
+
 /// Images the patient has attached to the lab request on screen 1
 /// ("تحميل طلب المختبر"). Starts empty on purpose — at least one image is a
 /// hard requirement before the "اختيار المختبر" CTA activates (see
@@ -25,13 +27,16 @@ class UploadedLabRequestImages extends _$UploadedLabRequestImages {
 
   /// Appends every (path, bytes) pair in [files], preserving order — used
   /// by the multi-select file picker on the upload box / "+" tile.
-  void addImages(Iterable<({String path, Uint8List? bytes})> files) {
+  int addImages(Iterable<({String path, Uint8List? bytes})> files) {
+    final remainingSlots = maxLabRequestImages - state.length;
+    if (remainingSlots <= 0) return 0;
     final additions = [
-      for (final file in files)
+      for (final file in files.take(remainingSlots))
         PrescriptionImage(id: '${_nextId++}', path: file.path, bytes: file.bytes),
     ];
-    if (additions.isEmpty) return;
+    if (additions.isEmpty) return 0;
     state = [...state, ...additions];
+    return additions.length;
   }
 
   /// Removes the image with [id] (tap on its red delete badge).

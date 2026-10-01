@@ -524,15 +524,9 @@ class SessionController extends _$SessionController {
     return Result.ok(session);
   }
 
-  /// Persists display name (and optionally email) via `PATCH /v1/auth/me`
-  /// and refreshes session. `email` is write-only server-side (`GET
-  /// /v1/auth/me` does return it as of File 12 Part 45, so it round-trips
-  /// back into `session.user.email` after this call) — an empty/unchanged
-  /// value is simply omitted from the request.
-  Future<Result<Session>> updateDisplayName(
-    String displayName, {
-    String? email,
-  }) async {
+  /// Persists only the editable display name via `PATCH /v1/auth/me`.
+  /// Email is set during onboarding and is immutable afterwards.
+  Future<Result<Session>> updateDisplayName(String displayName) async {
     final current = state.asData?.value;
     if (current == null) {
       return const Result.err(Failure.auth());
@@ -544,16 +538,9 @@ class SessionController extends _$SessionController {
         Failure.validation({'display_name': 'profile.full_name_required'}),
       );
     }
-    final trimmedEmail = email?.trim();
-
     final result = await ref
         .read(authRepositoryProvider)
-        .updateProfile(
-          displayName: name,
-          email: (trimmedEmail == null || trimmedEmail.isEmpty)
-              ? null
-              : trimmedEmail,
-        );
+        .updateProfile(displayName: name);
     switch (result) {
       case Err(:final failure):
         return Result.err(failure);

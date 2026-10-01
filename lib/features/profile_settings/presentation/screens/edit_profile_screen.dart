@@ -15,9 +15,8 @@ import 'package:solar_icons/solar_icons.dart';
 /// Date of birth, gender, and address were removed 2026-08-31 — none of
 /// them has a backing column on the real `User` model (`clinic-reservations`
 /// `prisma/schema/identity.prisma`), so they were pure UI with nothing to
-/// ever persist to. Only `displayName`/`email` are real, editable fields
-/// (`PATCH /v1/auth/me`, `UpdateMeDto`); `phone` stays read-only (no
-/// endpoint changes it post-signup).
+/// ever persist to. Only the display name is editable here; phone and email
+/// are account identifiers and are shown read-only.
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -35,19 +34,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _prefilled = false;
   bool _dirty = false;
   String _initialName = '';
-  String _initialEmail = '';
 
   @override
   void initState() {
     super.initState();
     _nameController.addListener(_recomputeDirty);
-    _emailController.addListener(_recomputeDirty);
   }
 
   @override
   void dispose() {
     _nameController.removeListener(_recomputeDirty);
-    _emailController.removeListener(_recomputeDirty);
     _nameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
@@ -55,9 +51,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   void _recomputeDirty() {
-    final dirty =
-        _nameController.text != _initialName ||
-        _emailController.text != _initialEmail;
+    final dirty = _nameController.text != _initialName;
     if (dirty != _dirty) setState(() => _dirty = dirty);
   }
 
@@ -65,10 +59,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (_prefilled || session == null) return;
     final user = session.user;
     _initialName = user.displayName ?? '';
-    _initialEmail = user.email ?? '';
     _nameController.text = _initialName;
     _phoneController.text = user.phone;
-    _emailController.text = _initialEmail;
+    _emailController.text = user.email ?? '';
     _prefilled = true;
   }
 
@@ -80,17 +73,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final result = await ref
           .read(sessionControllerProvider.notifier)
-          .updateDisplayName(
-            _nameController.text,
-            email: _emailController.text,
-          );
+          .updateDisplayName(_nameController.text);
 
       if (!mounted) return;
 
       switch (result) {
         case Ok():
           _initialName = _nameController.text;
-          _initialEmail = _emailController.text;
           if (mounted) setState(() => _dirty = false);
           ScaffoldMessenger.of(
             context,
@@ -206,17 +195,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               hint: 'profile.email_hint'.tr(),
                               icon: SolarIconsOutline.letter,
                               keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              validator: (value) {
-                                final trimmed = value?.trim() ?? '';
-                                if (trimmed.isEmpty) return null;
-                                if (!RegExp(
-                                  r'^[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}$',
-                                ).hasMatch(trimmed)) {
-                                  return 'profile.email_invalid'.tr();
-                                }
-                                return null;
-                              },
+                              readOnly: true,
                             ),
                           ),
                         ],

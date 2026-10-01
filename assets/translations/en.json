@@ -19,9 +19,14 @@
     "or": "or",
     "view_all": "View all",
     "back": "Back",
+    "open": "Open",
     "edit": "Edit",
     "delete": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "image_source": {
+      "camera": "Take a photo",
+      "gallery": "Choose from gallery"
+    }
   },
   "auth": {
     "welcome_intro": "Welcome to MedSuper!",
@@ -400,6 +405,7 @@
     "validation": "بعض البيانات غير صحيحة. راجعها ثم أعد المحاولة.",
     "rate_limited": "عدد المحاولات كبير خلال وقت قصير. انتظر قليلاً ثم أعد المحاولة.",
     "image_picker_failed": "تعذّر فتح معرض الصور. حاول مرة أخرى.",
+    "camera_access_denied": "Camera access was denied. Allow camera access in device settings and try again.",
     "codes": {
       "UNAUTHENTICATED": "يلزم تسجيل الدخول لإتمام هذا الإجراء.",
       "TOKEN_EXPIRED": "انتهت الجلسة. سجّل الدخول مرة أخرى للمتابعة.",
@@ -517,6 +523,8 @@
     "upload": {
       "title": "Upload lab request",
       "upload_cta": "Tap here to photograph or upload your lab request",
+      "camera_cta": "Take a photo",
+      "gallery_cta": "Choose from gallery",
       "upload_hint": "Make sure the image and details are clear so our medical team can read them easily.",
       "add_image_tooltip": "Add image",
       "remove_image_tooltip": "Remove image",
@@ -590,6 +598,8 @@
     "upload": {
       "title": "Upload Prescription",
       "upload_cta": "Tap here to photograph or upload the prescription",
+      "camera_cta": "Take a photo",
+      "gallery_cta": "Choose from gallery",
       "upload_hint": "Make sure the image and details are clear so it's easy to read.",
       "add_image_tooltip": "Add image",
       "remove_image_tooltip": "Remove image",

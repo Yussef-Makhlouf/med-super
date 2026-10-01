@@ -55,6 +55,16 @@ import 'package:solar_icons/solar_icons.dart';
       color: const Color(0xFF059669),
       icon: Icons.check_circle_rounded,
     ),
+    DoctorVisitStatus.cancelled => (
+      label: 'provider_dashboard.visit_status.cancelled'.tr(),
+      color: const Color(0xFF64748B),
+      icon: Icons.cancel_outlined,
+    ),
+    DoctorVisitStatus.timeExpired => (
+      label: 'provider_dashboard.visit_status.time_expired'.tr(),
+      color: const Color(0xFF64748B),
+      icon: Icons.event_busy_outlined,
+    ),
   };
 }
 

@@ -7,7 +7,7 @@ class NotificationPreferenceDto {
     'SAFETY_CRITICAL',
     'MARKETING',
   };
-  static const _channels = {'PUSH', 'SMS'};
+  static const _channels = {'PUSH'};
 
   const NotificationPreferenceDto({
     required this.tier,

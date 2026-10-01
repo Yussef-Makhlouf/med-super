@@ -57,7 +57,7 @@ class NotificationRemoteDatasource {
       }
       preferences.add(preference);
     }
-    if (preferences.length != 8) {
+    if (preferences.length != 4) {
       throw const FormatException('Incomplete notification preferences');
     }
     return List.unmodifiable(preferences);

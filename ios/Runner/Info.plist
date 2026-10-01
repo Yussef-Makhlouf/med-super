@@ -4,6 +4,8 @@
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>نحتاج موقعك لتحديد موقع عيادتك على الخريطة بدقة.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نحتاج الكاميرا لتصوير الروشتة أو طلب التحليل وإرفاقه بطلبك.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
