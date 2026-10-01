@@ -1,10 +1,10 @@
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/utils/request_image_picker.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
@@ -1605,19 +1605,17 @@ class _ClinicalImagePickerState extends State<_ClinicalImagePicker> {
   final List<PrescriptionImage> _images = [];
 
   Future<void> _pickImages() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-      withData: true,
+    final selected = await pickRequestImages(
+      context,
+      maxImages: _maxImages - _images.length,
     );
-    if (!mounted || result == null) return;
-    for (final file in result.files) {
-      if (_images.length >= _maxImages) break;
-      if (file.bytes == null) continue;
+    if (!mounted || selected == null || selected.isEmpty) return;
+    for (final file in selected) {
+      final name = file.path.split(RegExp(r'[\\/]')).last;
       _images.add(
         PrescriptionImage(
-          id: '${DateTime.now().microsecondsSinceEpoch}-${file.name}',
-          path: file.name,
+          id: '${DateTime.now().microsecondsSinceEpoch}-$name',
+          path: name,
           bytes: file.bytes,
         ),
       );
