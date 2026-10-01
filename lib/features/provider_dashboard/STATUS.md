@@ -50,8 +50,12 @@ branch queue. Provider history displays persisted private image URLs.
 Multi-patient mode requires a separate image set and independent request per
 patient; it does not create one shared clinical record.
 
-Focused DTO/widget tests and static analysis passed on 2026-09-23. Live
-backend/device verification remains pending.
+Focused DTO/widget tests and static analysis passed on 2026-09-23. At that
+date, live backend and device verification were still pending.
+
+### Clinical request integration check — 2026-10-01
+
+The current provider request paths, multipart field names, doctor decision payload, and DTO mapping were checked against the merged backend. Focused Flutter DTO/transport and clinical-request widget tests passed 12/12. On an isolated seeded backend, real HTTP/PostgreSQL coverage passed 6/6 for doctor-authored prescriptions, assistant draft approval/rejection, authorization failures, and resulting staff queue reads. Seeded pharmacy and lab staff also logged in and saw provider orders in their assigned branches in both browser dashboards. This verifies the backend contracts the Flutter client calls; a Flutter device/emulator run and a real ImageKit upload remain unverified.
 
 ## Pharmacy submission and quote visibility — 2026-09-24
 
