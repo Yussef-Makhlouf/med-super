@@ -788,7 +788,10 @@ class _ProviderAppointmentsScreenState
     final active = appointment.status == DoctorAppointmentStatus.confirmed;
     final payment = appointment.payment;
     final remaining = payment?.remainingBalance ?? 0;
-    final status = doctorAppointmentStatusStyle(appointment.status);
+    final status = doctorAppointmentStatusStyle(
+      appointment.status,
+      statusCode: appointment.statusCode,
+    );
 
     return Material(
       color: Colors.white,

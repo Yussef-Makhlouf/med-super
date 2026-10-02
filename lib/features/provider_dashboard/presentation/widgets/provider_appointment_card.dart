@@ -10,8 +10,9 @@ import 'package:solar_icons/solar_icons.dart';
 
 /// Localized label + colour for an appointment status.
 ({String label, Color color}) doctorAppointmentStatusStyle(
-  DoctorAppointmentStatus status,
-) {
+  DoctorAppointmentStatus status, {
+  String? statusCode,
+}) {
   return switch (status) {
     DoctorAppointmentStatus.confirmed => (
       label: 'provider_dashboard.status.confirmed'.tr(),
@@ -30,7 +31,14 @@ import 'package:solar_icons/solar_icons.dart';
       color: const Color(0xFF10B981),
     ),
     DoctorAppointmentStatus.other => (
-      label: 'provider_dashboard.status.other'.tr(),
+      label: switch (statusCode?.toUpperCase()) {
+        'CHECKED_IN' => 'provider_dashboard.status.checked_in'.tr(),
+        'IN_PROGRESS' => 'provider_dashboard.status.in_progress'.tr(),
+        'NO_SHOW' => 'provider_dashboard.status.no_show'.tr(),
+        'HELD' => 'provider_dashboard.status.held'.tr(),
+        'EXPIRED' => 'provider_dashboard.status.expired'.tr(),
+        _ => 'provider_dashboard.status.other'.tr(),
+      },
       color: AppColors.mutedText2,
     ),
   };
@@ -149,7 +157,10 @@ class ProviderAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lifecycleStatus = doctorAppointmentStatusStyle(appointment.status);
+    final lifecycleStatus = doctorAppointmentStatusStyle(
+      appointment.status,
+      statusCode: appointment.statusCode,
+    );
     final timeRange =
         '${formatAppointmentTime(appointment.startAt)} - ${formatAppointmentTime(appointment.endAt)}';
 

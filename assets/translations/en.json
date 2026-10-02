@@ -1117,6 +1117,11 @@
       "cancelled": "Cancelled",
       "rescheduled": "Rescheduled",
       "completed": "Completed",
+      "checked_in": "Checked in",
+      "in_progress": "In progress",
+      "no_show": "No-show",
+      "held": "On hold",
+      "expired": "Expired",
       "other": "Other"
     },
     "visit_status": {

@@ -1117,6 +1117,11 @@
       "cancelled": "ملغى",
       "rescheduled": "تم تغيير موعده",
       "completed": "مكتمل",
+      "checked_in": "تم تسجيل الحضور",
+      "in_progress": "جارٍ الآن",
+      "no_show": "لم يحضر",
+      "held": "محجوز مؤقتاً",
+      "expired": "منتهي الصلاحية",
       "other": "أخرى"
     },
     "visit_status": {

@@ -180,7 +180,10 @@ class ProviderPatientDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final apt = patientAppointments[index];
-                    final status = doctorAppointmentStatusStyle(apt.status);
+                    final status = doctorAppointmentStatusStyle(
+                      apt.status,
+                      statusCode: apt.statusCode,
+                    );
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
