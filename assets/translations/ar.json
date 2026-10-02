@@ -279,6 +279,7 @@
     "reschedule_current_slot": "الموعد الحالي",
     "reschedule_pick_slot": "اختر موعداً جديداً",
     "reschedule_submit": "تأكيد الموعد الجديد",
+    "reschedule_success": "تم تغيير موعدك بنجاح",
     "reschedule_unavailable": "إعادة الجدولة غير متاحة لهذا الموعد من هنا حالياً. يرجى التواصل مع العيادة لتغيير موعدك.",
     "detail_title": "تفاصيل الموعد",
     "detail_cancelled_reason": "ملغى: {}",

@@ -100,7 +100,8 @@ class AppointmentsRemoteDatasource {
     return CancelledAppointmentDto.fromJson(response.data!);
   }
 
-  Future<AppointmentHoldDto> reschedule({
+  /// Returns the new (already CONFIRMED) appointment id — no hold/payment step.
+  Future<String> reschedule({
     required String appointmentId,
     required String newSlotId,
   }) async {
@@ -108,7 +109,7 @@ class AppointmentsRemoteDatasource {
       '${ApiPaths.appointments}/$appointmentId/reschedule',
       data: {'newSlotId': newSlotId},
     );
-    return AppointmentHoldDto.fromJson(response.data!);
+    return response.data!['appointmentId'] as String;
   }
 
   /// `GET /v1/appointments` (`ListAppointmentsQueryDto`) — cursor-paginated,
