@@ -585,7 +585,12 @@
       "quote_total_label": "Total",
       "appointment_label": "Appointment",
       "prep_instructions_label": "Preparation instructions",
-      "rejection_label": "Rejection reason"
+      "rejection_label": "Rejection reason",
+      "request_images_label": "Lab request images",
+      "collection_label": "Collection method",
+      "collection_visit": "Visit the lab branch",
+      "collection_home": "Home sample collection",
+      "recollection_notice": "The sample needs to be collected again. Contact the lab to arrange a new time."
     }
   },
   "pharmacy_booking": {

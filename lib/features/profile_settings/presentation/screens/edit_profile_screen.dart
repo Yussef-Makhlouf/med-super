@@ -316,9 +316,12 @@ class _ProfileTextField extends StatelessWidget {
           : TextAlign.start,
       textInputAction: textInputAction,
       readOnly: readOnly,
+      canRequestFocus: !readOnly,
+      enableInteractiveSelection: !readOnly,
+      mouseCursor: readOnly ? SystemMouseCursors.forbidden : null,
       validator: validator,
-      style: const TextStyle(
-        color: AppPalette.ink,
+      style: TextStyle(
+        color: readOnly ? AppPalette.inkMuted : AppPalette.ink,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
@@ -328,13 +331,20 @@ class _ProfileTextField extends StatelessWidget {
           fontWeight: FontWeight.w400,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: readOnly ? const Color(0xFFF1F3F6) : Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 16,
         ),
         // Icons sit on the visual left in the RTL mockup → trailing/suffix.
-        suffixIcon: icon == null
+        // Read-only fields show a lock instead so they read as non-editable.
+        suffixIcon: readOnly
+            ? const Icon(
+                Icons.lock_outline_rounded,
+                color: AppPalette.inkFaint,
+                size: 20,
+              )
+            : icon == null
             ? null
             : Icon(icon, color: AppPalette.inkMuted, size: 22),
         border: OutlineInputBorder(
@@ -347,7 +357,9 @@ class _ProfileTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppPalette.primary, width: 1.5),
+          borderSide: readOnly
+              ? const BorderSide(color: AppPalette.border)
+              : const BorderSide(color: AppPalette.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),

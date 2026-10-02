@@ -50,6 +50,10 @@ class AppTextField extends StatelessWidget {
   final TextAlign? textAlign;
   final TextStyle? textStyle;
 
+  static const _readOnlyBorder = OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(12)),
+    borderSide: BorderSide(color: Color(0xFFE2E5EA)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +70,11 @@ class AppTextField extends StatelessWidget {
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       readOnly: readOnly,
+      // A read-only field must not look or behave like an editable one: no
+      // focus, no caret, no keyboard.
+      canRequestFocus: !readOnly,
+      enableInteractiveSelection: !readOnly,
+      mouseCursor: readOnly ? SystemMouseCursors.forbidden : null,
       focusNode: focusNode,
       validator: validator,
       // Phone values are LTR even inside the Arabic/RTL app. Letting them
@@ -78,8 +87,17 @@ class AppTextField extends StatelessWidget {
         labelText: label,
         hintText: hint,
         errorText: errorText,
-        suffixIcon: suffix,
+        suffixIcon:
+            suffix ??
+            (readOnly
+                ? const Icon(Icons.lock_outline_rounded, size: 20)
+                : null),
         prefixIcon: prefix,
+        filled: readOnly ? true : null,
+        fillColor: readOnly ? const Color(0xFFF1F3F6) : null,
+        border: readOnly ? _readOnlyBorder : null,
+        enabledBorder: readOnly ? _readOnlyBorder : null,
+        focusedBorder: readOnly ? _readOnlyBorder : null,
         counterText: '',
         // Prevents the label from floating up as garbled characters on web
         // RTL builds — keeps it always inline until focused/filled.

@@ -585,7 +585,12 @@
       "quote_total_label": "الإجمالي",
       "appointment_label": "الموعد",
       "prep_instructions_label": "تعليمات التحضير",
-      "rejection_label": "سبب الرفض"
+      "rejection_label": "سبب الرفض",
+      "request_images_label": "صور طلب التحاليل",
+      "collection_label": "طريقة سحب العينة",
+      "collection_visit": "زيارة فرع المعمل",
+      "collection_home": "سحب العينة من المنزل",
+      "recollection_notice": "يلزم إعادة سحب العينة. تواصل مع المعمل لتحديد موعد جديد."
     }
   },
   "pharmacy_booking": {
