@@ -28,7 +28,9 @@ class ErrorInterceptor extends Interceptor {
         }
       }
 
-      handler.reject(
+      // `next`, not `reject`: Dio 5's `reject` skips every later error
+      // interceptor, which silently disabled RetryInterceptor's 5xx retry.
+      handler.next(
         DioException(
           requestOptions: err.requestOptions,
           response: response,
