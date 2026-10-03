@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:med_super/core/constants/api_paths.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/features/provider_registration/domain/entities/clinic_working_day.dart';
 import 'package:med_super/features/provider_registration/domain/entities/doctor_registration_draft.dart';
 import 'package:med_super/features/provider_registration/domain/entities/uploaded_document.dart';
@@ -43,7 +43,7 @@ class ProviderRegistrationRemoteDatasource {
       'file': MultipartFile.fromBytes(
         bytes,
         filename: document.fileName,
-        contentType: _mimeTypeFor(document.fileName),
+        contentType: UploadMediaType.forUpload(bytes, document.fileName),
       ),
       'providerType': 'DOCTOR',
       'providerId': doctorId,
@@ -53,15 +53,6 @@ class ProviderRegistrationRemoteDatasource {
       ApiPaths.providerVerificationDocuments,
       data: formData,
     );
-  }
-
-  static MediaType _mimeTypeFor(String fileName) {
-    final ext = fileName.toLowerCase().split('.').last;
-    return switch (ext) {
-      'png' => MediaType('image', 'png'),
-      'pdf' => MediaType('application', 'pdf'),
-      _ => MediaType('image', 'jpeg'),
-    };
   }
 
   static String _docTypeFor(DocumentType type) => switch (type) {

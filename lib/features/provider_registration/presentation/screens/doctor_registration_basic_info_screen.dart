@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/core/utils/validators.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
@@ -311,6 +312,8 @@ class _ProfilePhotoUpload extends ConsumerWidget {
       result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         withData: true,
+        // See the prescription upload screen: JPEG from iOS, HEIC re-encoded.
+        compressionQuality: 90,
       );
     } catch (_) {
       if (!context.mounted) return;
@@ -325,6 +328,14 @@ class _ProfilePhotoUpload extends ConsumerWidget {
     }
     final file = result?.files.isEmpty ?? true ? null : result!.files.first;
     if (file == null || file.bytes == null) return;
+    final type = UploadMediaType.sniff(file.bytes!);
+    if (type == null || !type.isImage) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('errors.unsupported_image_format'.tr())),
+      );
+      return;
+    }
     ref
         .read(registrationFormControllerProvider.notifier)
         .updateProfilePhoto(
@@ -332,7 +343,7 @@ class _ProfilePhotoUpload extends ConsumerWidget {
           // No real file storage in mock mode — carry the actual picked
           // bytes as a base64 data URI so it becomes the real avatar_url
           // after submission instead of being dropped.
-          dataUri: 'data:image/jpeg;base64,${base64Encode(file.bytes!)}',
+          dataUri: 'data:${type.mimeType};base64,${base64Encode(file.bytes!)}',
         );
   }
 
