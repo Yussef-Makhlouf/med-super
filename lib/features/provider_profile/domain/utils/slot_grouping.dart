@@ -1,19 +1,17 @@
+import 'package:med_super/core/utils/iana_zone.dart';
+import 'package:timezone/timezone.dart' as tz;
+
 import '../entities/available_day.dart';
 import '../entities/doctor_slot.dart';
 import '../entities/time_slot.dart';
 
-/// Egypt-first MVP simplification: fixed +02:00 offset for `Africa/Cairo`
-/// (matching the backend's `PROVIDER_REGISTRATION_CONSTANTS.DEFAULT_IANA_TIMEZONE`
-/// default). Egypt has observed no DST since 2014, so a fixed offset is
-/// accurate for this single-market MVP. This is deliberately NOT a general
-/// IANA converter — no timezone/tzdata package is in pubspec.yaml. Any other
-/// `ianaTimezone` value is treated as unknown and shown as UTC rather than
-/// silently mislabeled as correct local time (see
-/// med-super/docs/backend_frontend_parity_matrix.md).
-const Map<String, Duration> _knownFixedOffsets = {
-  'Africa/Cairo': Duration(hours: 2),
-};
-
+/// Slot times are shown in the clinic branch's own IANA zone, never the
+/// device's. Egypt reinstated DST in 2023 (+03:00 from the last Friday of
+/// April to the last Thursday of October, +02:00 otherwise), so a fixed
+/// offset is wrong for half the year; the `timezone` package's IANA data
+/// (2025b, the same release the backend's ICU uses) applies the real rules.
+/// An unknown or missing zone is shown as UTC and labelled as such rather
+/// than silently mislabeled as correct local time.
 /// ISO weekday 1..7 (Monday..Sunday), matching FILE_12 Part 33.5's convention.
 const List<String> _arabicWeekdays = [
   'الإثنين',
@@ -31,14 +29,18 @@ class _Localized {
   final bool isKnownZone;
 }
 
+/// The clinic wall-clock time for [utc], carried in a UTC-flagged `DateTime`
+/// so nothing downstream re-applies the device zone to it.
 _Localized _toLocal(DateTime utc, String? ianaTimezone) {
-  final offset = ianaTimezone == null
-      ? null
-      : _knownFixedOffsets[ianaTimezone];
-  if (offset == null) {
-    return _Localized(utc, false);
+  final location = ianaLocation(ianaTimezone);
+  if (location == null) {
+    return _Localized(utc.toUtc(), false);
   }
-  return _Localized(utc.add(offset), true);
+  final local = tz.TZDateTime.from(utc, location);
+  return _Localized(
+    DateTime.utc(local.year, local.month, local.day, local.hour, local.minute),
+    true,
+  );
 }
 
 String _timeLabel(_Localized localized) {

@@ -279,7 +279,8 @@
     "reschedule_current_slot": "Current time",
     "reschedule_pick_slot": "Pick a new slot",
     "reschedule_submit": "Confirm New Slot",
-    "reschedule_success": "Your appointment was rescheduled",
+    "reschedule_confirmed": "Appointment rescheduled",
+    "reschedule_confirmed_message": "Your appointment with {} is now at {}. Your original payment carries over, so there is nothing more to pay.",
     "reschedule_unavailable": "Rescheduling isn't available for this appointment from here yet. Please contact the clinic to change your slot.",
     "detail_title": "Appointment details",
     "detail_cancelled_reason": "Cancelled: {}",
@@ -407,6 +408,7 @@
     "rate_limited": "عدد المحاولات كبير خلال وقت قصير. انتظر قليلاً ثم أعد المحاولة.",
     "image_picker_failed": "تعذّر فتح معرض الصور. حاول مرة أخرى.",
     "camera_access_denied": "Camera access was denied. Allow camera access in device settings and try again.",
+    "unsupported_image_format": "This image format isn't supported. Choose a JPEG or PNG photo.",
     "codes": {
       "UNAUTHENTICATED": "يلزم تسجيل الدخول لإتمام هذا الإجراء.",
       "TOKEN_EXPIRED": "انتهت الجلسة. سجّل الدخول مرة أخرى للمتابعة.",
@@ -1138,9 +1140,9 @@
       "complete": "Visit complete",
       "updated": "Visit status updated.",
       "booking_locked": "This appointment can’t be cancelled or rescheduled after the patient visit has started.",
-      "available_near_time": "Visit controls will become available near the appointment time.",
-      "too_early": "The visit status cannot be changed before the allowed appointment time.",
-      "outside_window": "Visit status can only be changed during the appointment window."
+      "only_on_appointment_day": "The visit can only be started on the appointment day.",
+      "time_expired": "Time expired",
+      "cancelled": "Cancelled"
     },
     "cancel": {
       "action": "Cancel appointment",

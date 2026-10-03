@@ -7,6 +7,7 @@ import 'package:med_super/features/appointments/domain/entities/appointment_paym
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/confirmed_appointment.dart';
 import 'package:med_super/features/appointments/domain/entities/online_payment_initiation.dart';
+import 'package:med_super/features/appointments/domain/entities/rescheduled_appointment.dart';
 import 'package:med_super/features/appointments/domain/repositories/appointment_repository.dart';
 
 class AppointmentRepositoryImpl implements AppointmentRepository {
@@ -90,16 +91,16 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
-  Future<Result<String>> reschedule({
+  Future<Result<RescheduledAppointment>> reschedule({
     required String appointmentId,
     required String newSlotId,
   }) async {
     try {
-      final newAppointmentId = await _remote.reschedule(
+      final dto = await _remote.reschedule(
         appointmentId: appointmentId,
         newSlotId: newSlotId,
       );
-      return Result.ok(newAppointmentId);
+      return Result.ok(dto.toEntity());
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));
     }

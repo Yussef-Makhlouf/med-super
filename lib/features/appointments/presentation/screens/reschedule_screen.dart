@@ -10,8 +10,10 @@ import 'package:med_super/core/utils/formatters.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
+import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:med_super/features/appointments/presentation/screens/booking_success_screen.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
@@ -20,11 +22,12 @@ import 'package:solar_icons/solar_icons.dart';
 
 typedef _SlotSelection = void Function(String id, String label);
 
-/// Pick a new slot for an existing confirmed appointment, then call
-/// `POST /v1/appointments/{id}/reschedule`. The backend completes the move in
-/// one step and carries the original payment over, so this screen never goes
-/// to a payment/confirm step (that double-charged and could strand the patient
-/// without an appointment). Reached from the "Reschedule" button.
+/// Reschedule step 1: pick a new slot for an existing confirmed appointment,
+/// then call `POST /v1/appointments/{id}/reschedule` (File 12 Part 35.10).
+/// That endpoint returns a fresh hold, not a confirmed appointment — so on
+/// success this hands off to [BookingConfirmScreen] with that hold already
+/// set, reusing its countdown + confirm UI. Reached from
+/// `PatientAppointmentsScreen`'s "Reschedule" button.
 class RescheduleScreen extends ConsumerStatefulWidget {
   const RescheduleScreen({required this.target, super.key});
 
@@ -36,11 +39,13 @@ class RescheduleScreen extends ConsumerStatefulWidget {
 
 class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
   String? _selectedDayId;
+  String? _selectedDayLabel;
   String? _selectedSlotId;
+  String? _selectedTimeLabel;
   bool _submitting = false;
   Failure? _submitError;
 
-  Future<void> _submit() async {
+  Future<void> _submit(DoctorProfile profile) async {
     final slotId = _selectedSlotId;
     if (slotId == null) return;
 
@@ -55,14 +60,26 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     if (!mounted) return;
 
     result.when(
+      // Already confirmed server-side with the original payment carried
+      // over — no hold to confirm, nothing to pay again.
       ok: (_) {
-        // Completed in one step — the payment carried over, so there is no
-        // hold/payment screen. Refresh the list and go back with a message.
         ref.read(myAppointmentsRefreshProvider.notifier).state++;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('appointments.reschedule_success'.tr())),
+        context.pushReplacement(
+          '/patient/home/appointments/success',
+          extra: BookingSuccessArgs.rescheduled(
+            request: BookingRequest(
+              doctorClinicAffiliationId:
+                  widget.target.doctorClinicAffiliationId,
+              slotId: slotId,
+              doctorName: profile.name,
+              specialty: profile.specialty,
+              dayLabel: _selectedDayLabel ?? '',
+              timeLabel: _selectedTimeLabel ?? '',
+              consultationFee: profile.consultationFee,
+              currency: profile.currency,
+            ),
+          ),
         );
-        context.pop();
       },
       err: (failure) => setState(() {
         _submitting = false;
@@ -100,10 +117,13 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
                       submitError: _submitError,
                       onDaySelected: (id, label) => setState(() {
                         _selectedDayId = id;
+                        _selectedDayLabel = label;
                         _selectedSlotId = null;
+                        _selectedTimeLabel = null;
                       }),
                       onSlotSelected: (id, label) => setState(() {
                         _selectedSlotId = id;
+                        _selectedTimeLabel = label;
                       }),
                     ),
             ),
@@ -111,7 +131,7 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
               _SubmitBar(
                 canSubmit: _selectedSlotId != null && !_submitting,
                 isBusy: _submitting,
-                onSubmit: _submit,
+                onSubmit: () => _submit(resolvedProfile),
               ),
           ],
         ),

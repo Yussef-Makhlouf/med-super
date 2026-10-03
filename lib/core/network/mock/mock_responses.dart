@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:med_super/core/constants/api_paths.dart';
 import 'package:med_super/core/constants/hive_box_names.dart';
+import 'package:med_super/core/utils/iana_zone.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'mock_interceptor.dart';
 
 /// In-memory mock Identity store for Sprint 1 auth flows.
@@ -738,19 +740,26 @@ void registerAvailabilityMocks(MockInterceptor interceptor) {
         (toParam != null ? DateTime.tryParse(toParam) : null) ??
         from.add(const Duration(days: 14));
 
-    // 09:00–16:30 Cairo-local (UTC+2), 30-min slots, next 14 days — a
-    // deterministic mock standing in for real GenerateSlotsUseCase output.
-    const cairoOffset = Duration(hours: 2);
+    // 09:00–16:30 Cairo wall-clock (real IANA rules, so +03:00 in Egyptian
+    // summer time), 30-min slots, next 14 days — a deterministic mock
+    // standing in for real GenerateSlotsUseCase output.
+    final cairo = ianaLocation('Africa/Cairo')!;
     final slots = <Map<String, dynamic>>[];
     for (var dayOffset = 0; dayOffset < 14; dayOffset++) {
-      final dayStartLocal = DateTime.utc(
+      final day = DateTime.utc(
         from.year,
         from.month,
         from.day,
-      ).add(Duration(days: dayOffset)).add(const Duration(hours: 9));
+      ).add(Duration(days: dayOffset));
       for (var i = 0; i < 16; i++) {
-        final startLocal = dayStartLocal.add(Duration(minutes: 30 * i));
-        final startUtc = startLocal.subtract(cairoOffset);
+        final startUtc = tz.TZDateTime(
+          cairo,
+          day.year,
+          day.month,
+          day.day,
+          9 + (30 * i) ~/ 60,
+          (30 * i) % 60,
+        ).toUtc();
         final endUtc = startUtc.add(const Duration(minutes: 30));
         if (startUtc.isBefore(from) || !startUtc.isBefore(to)) continue;
         slots.add({
@@ -782,7 +791,6 @@ class _MockHold {
     required this.slotId,
     required this.doctorClinicAffiliationId,
     required this.expiresAt,
-    this.rescheduledFromAppointmentId,
   });
   final String slotId;
   final String doctorClinicAffiliationId;
@@ -790,12 +798,31 @@ class _MockHold {
   /// Mutable so the Fawry mock can extend it the way
   /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
   DateTime expiresAt;
-  final String? rescheduledFromAppointmentId;
 
   /// First `paymentAmount` on this hold wins — a retry with a different
   /// amount is ignored, matching the real initiate-online use-case.
   String? lockedPaymentAmount;
 }
+
+/// Availability mock slot ids end in their UTC start (`<branch>-<ISO>`), so a
+/// booking can carry the real slot time — the patient start-time cutoff
+/// (PM-APPT-01) then behaves as it does against the backend. Unknown ids fall
+/// back to "tomorrow" so mock bookings stay changeable.
+DateTime _mockSlotStart(String slotId) {
+  final iso = RegExp(r'(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)$').firstMatch(slotId);
+  return (iso == null ? null : DateTime.tryParse(iso.group(1)!))?.toUtc() ??
+      DateTime.now().toUtc().add(const Duration(days: 1));
+}
+
+/// PM-APPT-01, mirrored from the backend for patient cancel/reschedule.
+Map<String, dynamic>? _mockPatientChangeWindowClosed(_MockAppointment a) =>
+    DateTime.now().toUtc().isBefore(a.startAt)
+    ? null
+    : _error(
+        422,
+        'APPOINTMENT_CHANGE_WINDOW_CLOSED',
+        'لا يمكن إلغاء الموعد أو تغييره بعد بدء موعده.',
+      );
 
 class _MockAppointment {
   _MockAppointment({
@@ -951,15 +978,14 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
     }
 
     _mockHolds.remove(holdId);
-    final now = DateTime.now().toUtc();
     _mockAppointmentSeq++;
     final appointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    final startAt = _mockSlotStart(hold.slotId);
     _mockAppointments[appointmentId] = _MockAppointment(
       slotId: hold.slotId,
       doctorClinicAffiliationId: hold.doctorClinicAffiliationId,
-      startAt: now,
-      endAt: now.add(const Duration(minutes: 20)),
-      rescheduledFromAppointmentId: hold.rescheduledFromAppointmentId,
+      startAt: startAt,
+      endAt: startAt.add(const Duration(minutes: 20)),
     );
 
     return {
@@ -984,6 +1010,8 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'لا يمكن إلغاء هذا الموعد إلا وهو مؤكّد.',
       );
     }
+    final windowClosed = _mockPatientChangeWindowClosed(appointment);
+    if (windowClosed != null) return windowClosed;
 
     final body = _body(options) ?? {};
     appointment.status = 'CANCELLED';
@@ -1012,6 +1040,8 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'لا يمكن تغيير هذا الموعد إلا وهو مؤكّد.',
       );
     }
+    final rescheduleWindowClosed = _mockPatientChangeWindowClosed(appointment);
+    if (rescheduleWindowClosed != null) return rescheduleWindowClosed;
 
     final body = _body(options) ?? {};
     final newSlotId = body['newSlotId'] as String?;
@@ -1019,23 +1049,26 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       return _error(400, 'VALIDATION_ERROR', 'اختر الموعد الجديد.');
     }
 
+    // Mirrors the backend's one-step reschedule: the old appointment becomes
+    // RESCHEDULED and a new CONFIRMED one carries the original payment over.
     appointment.status = 'RESCHEDULED';
-    final holdId = 'mock-hold-${DateTime.now().microsecondsSinceEpoch}';
-    final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 5));
-    _mockHolds[holdId] = _MockHold(
+    _mockAppointmentSeq++;
+    final newAppointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    final newStartAt = _mockSlotStart(newSlotId);
+    _mockAppointments[newAppointmentId] = _MockAppointment(
       slotId: newSlotId,
       doctorClinicAffiliationId: appointment.doctorClinicAffiliationId,
-      expiresAt: expiresAt,
+      startAt: newStartAt,
+      endAt: newStartAt.add(const Duration(minutes: 20)),
       rescheduledFromAppointmentId: appointmentId,
     );
 
     return {
       'statusCode': 200,
       'data': {
-        'holdId': holdId,
+        'status': 'CONFIRMED',
+        'appointmentId': newAppointmentId,
         'slotId': newSlotId,
-        'expiresAt': expiresAt.toIso8601String(),
-        'status': 'HELD',
         'previousAppointmentId': appointmentId,
       },
     };
@@ -3008,8 +3041,28 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         'يجب تحديث حالة الزيارة بالترتيب.',
       );
     }
+    // PM-APPT-03, mirrored: start the visit only on the appointment's day in
+    // the branch zone; finishing an active visit is always allowed.
+    if (requested == 'IN_DOCTOR_ROOM') {
+      final zone = ianaLocation(appointment['ianaTimezone'] as String?);
+      final start = DateTime.tryParse(appointment['startAt'] as String? ?? '');
+      final sameDay = zone != null && start != null && () {
+        final a = tz.TZDateTime.from(start, zone);
+        final b = tz.TZDateTime.from(DateTime.now().toUtc(), zone);
+        return a.year == b.year && a.month == b.month && a.day == b.day;
+      }();
+      if (!sameDay) {
+        return _error(
+          422,
+          'VISIT_STATUS_OUTSIDE_APPOINTMENT_DAY',
+          'يمكن بدء الزيارة في يوم الموعد فقط.',
+        );
+      }
+    }
 
     appointment['visitStatus'] = requested;
+    // PM-APPT-04, mirrored: LEFT completes the appointment.
+    if (requested == 'LEFT') appointment['status'] = 'COMPLETED';
     appointment['version'] = currentVersion + 1;
     _mockProviderDashboardStore.appointments[index] = appointment;
     _mockProviderDashboardStore.persistAppointments();

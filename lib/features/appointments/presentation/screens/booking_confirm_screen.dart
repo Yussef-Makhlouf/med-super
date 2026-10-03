@@ -29,18 +29,6 @@ import 'package:med_super/features/wallet/presentation/controllers/wallet_provid
 
 enum _Stage { holding, held, confirming, error }
 
-/// Wraps a [BookingRequest] together with an already-created
-/// [AppointmentHold] — used when arriving from [RescheduleScreen], where
-/// `RescheduleAppointmentUseCase` already produced the hold (File 12 Part
-/// 35.10) and this screen just needs to show the countdown and confirm it,
-/// not create a fresh one.
-class BookingConfirmArgs {
-  const BookingConfirmArgs({required this.request, required this.initialHold});
-
-  final BookingRequest request;
-  final AppointmentHold initialHold;
-}
-
 /// Step 2 (final) of the booking flow: reserve the slot for 5 minutes
 /// (`POST /v1/appointments/hold`), show a countdown, then pay.
 ///
@@ -50,18 +38,12 @@ class BookingConfirmArgs {
 /// goes to `POST /v1/appointments/{holdId}/payments` and leaves the booking
 /// pending until the gateway webhook confirms it.
 ///
-/// Reached from `doctor_details_screen`'s "Book Now" button, or from
-/// [RescheduleScreen] with [initialHold] already set (skips the auto-hold
-/// step).
+/// Reached from `doctor_details_screen`'s "Book Now" button. Reschedule no
+/// longer passes through here: the backend confirms it in one step.
 class BookingConfirmScreen extends ConsumerStatefulWidget {
-  const BookingConfirmScreen({
-    required this.request,
-    this.initialHold,
-    super.key,
-  });
+  const BookingConfirmScreen({required this.request, super.key});
 
   final BookingRequest request;
-  final AppointmentHold? initialHold;
 
   @override
   ConsumerState<BookingConfirmScreen> createState() =>
@@ -85,21 +67,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     _amountController = TextEditingController(
       text: PaymentAmount.fromNum(widget.request.consultationFee),
     );
-    final initial = widget.initialHold;
-    if (initial != null) {
-      _hold = initial;
-      _setAmountText(
-        PaymentAmount.fromNum(
-          initial.fullAmount ?? widget.request.consultationFee,
-        ),
-      );
-      _stage = _Stage.held;
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _startCountdown(initial.expiresAt),
-      );
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _createHold());
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _createHold());
   }
 
   @override

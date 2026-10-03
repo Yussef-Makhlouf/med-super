@@ -6,8 +6,8 @@ void main() {
     'appointmentId': 'apt-1',
     'status': status,
     'slotId': 'slot-1',
-    'startAt': '2026-09-17T09:00:00.000Z',
-    'endAt': '2026-09-17T09:30:00.000Z',
+    'startAt': '2099-09-17T09:00:00.000Z',
+    'endAt': '2099-09-17T09:30:00.000Z',
     'doctorClinicAffiliationId': 'aff-1',
     if (visitStatus != null) 'visitStatus': visitStatus,
   };
@@ -37,4 +37,26 @@ void main() {
       expect(appointment.isCancellable, isFalse);
     });
   }
+
+  group('patient start-time cutoff (PM-APPT-01)', () {
+    final start = DateTime.utc(2026, 10, 3, 9);
+    final appointment = AppointmentSummaryDto.fromJson({
+      ...json(visitStatus: 'WAITING'),
+      'startAt': start.toIso8601String(),
+      'endAt': start.add(const Duration(minutes: 30)).toIso8601String(),
+    }).toEntity();
+
+    test('offers cancel/reschedule until 1 ms before start', () {
+      expect(appointment.isChangeableAt(start.subtract(const Duration(milliseconds: 1))), isTrue);
+    });
+
+    test('hides them at and after the start instant', () {
+      expect(appointment.isChangeableAt(start), isFalse);
+      expect(appointment.isChangeableAt(start.add(const Duration(minutes: 5))), isFalse);
+    });
+
+    test('a past appointment is never cancellable (the reproduced refund hole)', () {
+      expect(appointment.isChangeableAt(DateTime.utc(2026, 11, 3)), isFalse);
+    });
+  });
 }
