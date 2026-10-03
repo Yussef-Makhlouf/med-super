@@ -791,7 +791,6 @@ class _MockHold {
     required this.slotId,
     required this.doctorClinicAffiliationId,
     required this.expiresAt,
-    this.rescheduledFromAppointmentId,
   });
   final String slotId;
   final String doctorClinicAffiliationId;
@@ -799,7 +798,6 @@ class _MockHold {
   /// Mutable so the Fawry mock can extend it the way
   /// `InitiateOnlineAppointmentPaymentUseCase` does (15 min, File 12 Part 50.1).
   DateTime expiresAt;
-  final String? rescheduledFromAppointmentId;
 
   /// First `paymentAmount` on this hold wins — a retry with a different
   /// amount is ignored, matching the real initiate-online use-case.
@@ -968,7 +966,6 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       doctorClinicAffiliationId: hold.doctorClinicAffiliationId,
       startAt: now,
       endAt: now.add(const Duration(minutes: 20)),
-      rescheduledFromAppointmentId: hold.rescheduledFromAppointmentId,
     );
 
     return {
@@ -1028,23 +1025,26 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
       return _error(400, 'VALIDATION_ERROR', 'اختر الموعد الجديد.');
     }
 
+    // Mirrors the backend's one-step reschedule: the old appointment becomes
+    // RESCHEDULED and a new CONFIRMED one carries the original payment over.
     appointment.status = 'RESCHEDULED';
-    final holdId = 'mock-hold-${DateTime.now().microsecondsSinceEpoch}';
-    final expiresAt = DateTime.now().toUtc().add(const Duration(minutes: 5));
-    _mockHolds[holdId] = _MockHold(
+    final now = DateTime.now().toUtc();
+    _mockAppointmentSeq++;
+    final newAppointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    _mockAppointments[newAppointmentId] = _MockAppointment(
       slotId: newSlotId,
       doctorClinicAffiliationId: appointment.doctorClinicAffiliationId,
-      expiresAt: expiresAt,
+      startAt: now,
+      endAt: now.add(const Duration(minutes: 20)),
       rescheduledFromAppointmentId: appointmentId,
     );
 
     return {
       'statusCode': 200,
       'data': {
-        'holdId': holdId,
+        'status': 'CONFIRMED',
+        'appointmentId': newAppointmentId,
         'slotId': newSlotId,
-        'expiresAt': expiresAt.toIso8601String(),
-        'status': 'HELD',
         'previousAppointmentId': appointmentId,
       },
     };

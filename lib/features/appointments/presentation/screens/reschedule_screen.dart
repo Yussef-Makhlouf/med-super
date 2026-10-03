@@ -13,7 +13,7 @@ import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/features/appointments/domain/entities/booking_request.dart';
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
-import 'package:med_super/features/appointments/presentation/screens/booking_confirm_screen.dart';
+import 'package:med_super/features/appointments/presentation/screens/booking_success_screen.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
@@ -60,11 +60,13 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     if (!mounted) return;
 
     result.when(
-      ok: (hold) {
+      // Already confirmed server-side with the original payment carried
+      // over — no hold to confirm, nothing to pay again.
+      ok: (_) {
         ref.read(myAppointmentsRefreshProvider.notifier).state++;
         context.pushReplacement(
-          '/patient/home/appointments/confirm',
-          extra: BookingConfirmArgs(
+          '/patient/home/appointments/success',
+          extra: BookingSuccessArgs.rescheduled(
             request: BookingRequest(
               doctorClinicAffiliationId:
                   widget.target.doctorClinicAffiliationId,
@@ -76,7 +78,6 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
               consultationFee: profile.consultationFee,
               currency: profile.currency,
             ),
-            initialHold: hold,
           ),
         );
       },

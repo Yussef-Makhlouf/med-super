@@ -6,6 +6,7 @@ import 'package:med_super/features/appointments/data/models/appointment_summary_
 import 'package:med_super/features/appointments/data/models/cancelled_appointment_dto.dart';
 import 'package:med_super/features/appointments/data/models/confirmed_appointment_dto.dart';
 import 'package:med_super/features/appointments/data/models/online_payment_initiation_dto.dart';
+import 'package:med_super/features/appointments/data/models/rescheduled_appointment_dto.dart';
 import 'package:med_super/features/appointments/domain/entities/appointment_payment_method.dart';
 
 /// One page of `GET /v1/appointments` — `nextCursor` is null once there's
@@ -100,7 +101,7 @@ class AppointmentsRemoteDatasource {
     return CancelledAppointmentDto.fromJson(response.data!);
   }
 
-  Future<AppointmentHoldDto> reschedule({
+  Future<RescheduledAppointmentDto> reschedule({
     required String appointmentId,
     required String newSlotId,
   }) async {
@@ -108,7 +109,7 @@ class AppointmentsRemoteDatasource {
       '${ApiPaths.appointments}/$appointmentId/reschedule',
       data: {'newSlotId': newSlotId},
     );
-    return AppointmentHoldDto.fromJson(response.data!);
+    return RescheduledAppointmentDto.fromJson(response.data!);
   }
 
   /// `GET /v1/appointments` (`ListAppointmentsQueryDto`) — cursor-paginated,

@@ -20,20 +20,8 @@ final appointmentRoutes = <RouteBase>[
   GoRoute(
     path: 'appointments/confirm',
     name: 'bookingConfirm',
-    // Either a plain BookingRequest (fresh booking from doctor_details_screen)
-    // or a BookingConfirmArgs bundling a request with an already-created hold
-    // (from RescheduleScreen, which must call RescheduleAppointmentUseCase
-    // itself to get the hold before this screen can show it).
-    builder: (context, state) {
-      final extra = state.extra;
-      if (extra is BookingConfirmArgs) {
-        return BookingConfirmScreen(
-          request: extra.request,
-          initialHold: extra.initialHold,
-        );
-      }
-      return BookingConfirmScreen(request: extra as BookingRequest);
-    },
+    builder: (context, state) =>
+        BookingConfirmScreen(request: state.extra! as BookingRequest),
   ),
   GoRoute(
     path: 'appointments/success',
