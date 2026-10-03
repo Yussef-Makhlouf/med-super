@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:med_super/features/auth/domain/entities/user.dart';
+import 'package:med_super/features/auth/domain/entities/user_role.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/core/error/result.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_account_profile.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
@@ -13,6 +16,21 @@ import '../../../../helpers/pump_localized_widget.dart';
 
 /// Minimal repository stub — the screens under test read through the real
 /// use-case providers, so overriding the repository once covers all of them.
+class _AssistantSessionController extends SessionController {
+  @override
+  Future<Session?> build() async => Session(
+    user: User(
+      id: 'assistant-1',
+      phone: '+201000000001',
+      roles: [UserRole.clinicStaff],
+      activeRole: UserRole.clinicStaff,
+      displayName: 'Clinic Assistant',
+    ),
+    onboardingComplete: true,
+    passwordComplete: true,
+  );
+}
+
 class _StubRepo implements ProviderDashboardRepository {
   _StubRepo({required this.appointment});
 
@@ -80,8 +98,10 @@ DoctorAppointment _appointment({
   appointmentId: 'apt-101',
   status: status,
   slotId: 'slot-1',
-  startAt: startAt ?? DateTime.now().toUtc().subtract(const Duration(minutes: 10)),
-  endAt: endAt ?? DateTime.now().toUtc().add(const Duration(minutes: 20)),
+  // "Now" is always on the appointment's local day, so the PM-APPT-03 visit
+  // window never makes the default fixture flaky around midnight.
+  startAt: startAt ?? DateTime.now().toUtc(),
+  endAt: endAt ?? DateTime.now().toUtc().add(const Duration(minutes: 30)),
   doctorClinicAffiliationId: 'aff-1',
   clinicId: 'clinic-1',
   clinicName: 'عيادة النيل التخصصية',
@@ -220,13 +240,10 @@ void main() {
     expect(find.text('الزيارة مكتملة'), findsOneWidget);
   });
 
-  // Visit transitions are not time-gated on either side (9bd5f7c removed the
-  // client window; the backend never had one). Whether a time window should
-  // exist is an open product decision (PM-APPT-03 in
-  // clinic-reservations/docs/V1_LAUNCH_READINESS.md); this pins current
-  // behavior until it is made.
-  testWidgets('a future appointment still offers the next visit action (no time window)', (tester) async {
-    final futureStart = DateTime.now().toUtc().add(const Duration(hours: 2));
+  // PM-APPT-03: a visit can only be started on the appointment's local day
+  // in the branch zone; the backend enforces it, the screen explains it.
+  testWidgets('a future-day appointment explains that the visit starts on its day', (tester) async {
+    final futureStart = DateTime.now().toUtc().add(const Duration(days: 3));
     await pumpLocalizedWidget(
       tester,
       const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
@@ -240,9 +257,43 @@ void main() {
       ],
     );
 
-    expect(find.text('استخدم الإجراء التالي مع انتقال المريض داخل العيادة.'), findsOneWidget);
-    expect(find.text('ستتاح إدارة حالة الزيارة عند اقتراب موعد المريض.'), findsNothing);
-    expect(find.text('إدخال المريض للطبيب'), findsOneWidget);
+    expect(find.text('يمكن بدء الزيارة في يوم الموعد فقط.'), findsOneWidget);
+    expect(find.text('إدخال المريض للطبيب'), findsNothing);
+    // Booking changes are still possible for a waiting patient.
+    expect(find.text('تغيير الموعد'), findsOneWidget);
+  });
+
+  // PM-APPT-05: assistants reschedule but never cancel (doctor-only).
+  testWidgets('an assistant sees reschedule but no cancel action', (tester) async {
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+      overrides: [
+        sessionControllerProvider.overrideWith(_AssistantSessionController.new),
+        providerDashboardRepositoryProvider.overrideWithValue(
+          _StubRepo(appointment: _appointment()),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('تغيير الموعد'), findsOneWidget);
+    expect(find.text('إلغاء الموعد'), findsNothing);
+  });
+
+  testWidgets('a doctor sees both reschedule and cancel for a waiting patient', (tester) async {
+    await pumpLocalizedWidget(
+      tester,
+      const ProviderAppointmentDetailScreen(appointmentId: 'apt-101'),
+      overrides: [
+        providerDashboardRepositoryProvider.overrideWithValue(
+          _StubRepo(appointment: _appointment()),
+        ),
+      ],
+    );
+
+    expect(find.text('تغيير الموعد'), findsOneWidget);
+    expect(find.text('إلغاء الموعد'), findsOneWidget);
   });
 
   testWidgets('ProviderPatientDetailScreen renders patient snapshot', (
