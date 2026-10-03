@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/utils/avatar_image.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_text_field.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
@@ -77,6 +79,8 @@ class _ProviderEditProfileScreenState
       result = await FilePicker.platform.pickFiles(
         type: FileType.image,
         withData: true,
+        // See the prescription upload screen: JPEG from iOS, HEIC re-encoded.
+        compressionQuality: 90,
       );
     } catch (_) {
       if (!mounted) return;
@@ -88,9 +92,18 @@ class _ProviderEditProfileScreenState
     final file = result?.files.isEmpty ?? true ? null : result!.files.first;
     final bytes = file?.bytes;
     if (bytes == null) return;
+    final type = UploadMediaType.sniff(bytes);
+    if (type == null || !type.isImage) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('errors.unsupported_image_format'.tr())),
+      );
+      return;
+    }
 
     setState(() {
-      _pickedPhotoDataUri = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      _pickedPhotoDataUri =
+          'data:${type.mimeType};base64,${base64Encode(bytes)}';
       _isDirty = true;
     });
   }

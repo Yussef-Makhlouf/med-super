@@ -7,6 +7,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/flow_header.dart';
@@ -47,6 +48,9 @@ class _LabRequestUploadScreenState
         // Flutter Web there is no real filesystem path to read from later,
         // and dart:io's File/Image.file don't work there at all.
         withData: true,
+        // Non-zero asks iOS for its compatible (JPEG) representation and
+        // makes Android re-encode HEIC; the backend accepts JPEG/PNG only.
+        compressionQuality: 90,
       );
     } catch (_) {
       if (!mounted) return;
@@ -57,7 +61,18 @@ class _LabRequestUploadScreenState
       );
       return;
     }
-    final files = result?.files ?? const <PlatformFile>[];
+    final picked = result?.files ?? const <PlatformFile>[];
+    final files = picked
+        .where(
+          (file) =>
+              UploadMediaType.sniff(file.bytes ?? const [])?.isImage ?? false,
+        )
+        .toList();
+    if (files.length < picked.length && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('errors.unsupported_image_format'.tr())),
+      );
+    }
     if (files.isEmpty) return;
     ref
         .read(uploadedLabRequestImagesProvider.notifier)

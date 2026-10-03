@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
@@ -67,6 +68,9 @@ class _PharmacyPrescriptionUploadScreenState
         // Flutter Web there is no real filesystem path to read from later,
         // and dart:io's File/Image.file don't work there at all.
         withData: true,
+        // Non-zero asks iOS for its compatible (JPEG) representation and
+        // makes Android re-encode HEIC; the backend accepts JPEG/PNG only.
+        compressionQuality: 90,
       );
     } catch (_) {
       if (!mounted) return;
@@ -75,7 +79,18 @@ class _PharmacyPrescriptionUploadScreenState
       );
       return;
     }
-    final files = result?.files ?? const <PlatformFile>[];
+    final picked = result?.files ?? const <PlatformFile>[];
+    final files = picked
+        .where(
+          (file) =>
+              UploadMediaType.sniff(file.bytes ?? const [])?.isImage ?? false,
+        )
+        .toList();
+    if (files.length < picked.length && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('errors.unsupported_image_format'.tr())),
+      );
+    }
     if (files.isEmpty) return;
     final added = ref
         .read(uploadedPrescriptionImagesProvider.notifier)
@@ -380,7 +395,10 @@ class _ImageThumbnail extends StatelessWidget {
             height: size,
             color: AppColors.surfaceMuted,
             child: image.bytes == null
-                ? const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText)
+                ? const Icon(
+                    SolarIconsOutline.gallery,
+                    color: AppColors.mutedText,
+                  )
                 : Image.memory(
                     image.bytes!,
                     width: size,
