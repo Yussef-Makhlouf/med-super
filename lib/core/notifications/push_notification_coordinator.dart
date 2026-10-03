@@ -1,8 +1,9 @@
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/app/router/app_router.dart';
@@ -12,9 +13,8 @@ import 'package:med_super/features/auth/presentation/controllers/session_provide
 import 'package:med_super/features/notifications/domain/utils/notification_deep_link.dart';
 import 'package:med_super/features/notifications/presentation/controllers/notification_providers.dart';
 
-/// Wires FCM delivery to the app: shows a real OS notification when a push
-/// arrives in the foreground (FCM alone never surfaces a tray notification
-/// while the app is open), and navigates to the right screen when the user
+/// Wires FCM delivery to the app: shows a short in-app banner when a push
+/// arrives in the foreground, and navigates to the right screen when the user
 /// taps a notification — whether that tap happened in-app, from the tray
 /// while backgrounded, or from a cold start.
 ///
@@ -106,7 +106,7 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
         .classify(message.data);
 
     // MARKETING pushes are shown as an in-app inbox entry only (already
-    // handled by the pull-based list refresh), never as an OS tray popup.
+    // handled by the pull-based list refresh), never as a popup.
     if (priority == NotificationPriority.marketing) return;
 
     final notification = message.notification;
@@ -114,19 +114,38 @@ class PushNotificationCoordinator with WidgetsBindingObserver {
     final body = notification?.body ?? message.data['body'] as String?;
     if (title == null && body == null) return;
 
-    // flutter_local_notifications requires a non-negative 32-bit id;
-    // messageId is unique per push, hashCode alone can be negative.
-    final id =
-        (message.messageId ?? message.data.toString()).hashCode & 0x7fffffff;
-
-    _ref
-        .read(localNotificationServiceProvider)
-        .show(
-          id: id,
-          title: title ?? '',
-          body: body ?? '',
-          payload: jsonEncode(message.data),
-        );
+    // A foreground OS notification duplicates the UI the person is already
+    // looking at. Keep the alert inside the app, WhatsApp-style, while the
+    // background/terminated path remains handled by FCM/the OS.
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null && title.isNotEmpty)
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            if (body != null && body.isNotEmpty)
+              Text(body, maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'common.open'.tr(),
+          onPressed: () => _navigate(message.data),
+        ),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _handleTap(RemoteMessage message) => _navigate(message.data);

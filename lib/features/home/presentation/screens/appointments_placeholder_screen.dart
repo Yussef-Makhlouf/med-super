@@ -151,14 +151,21 @@ class _PatientAppointmentsScreenState
                   // "past" until a real completed/no-show status exists.
                   // Backend paginates oldest-first (stable cursor order);
                   // show most recent on top without disturbing that order.
+                  // CHECKED_IN / IN_PROGRESS are still-active visits, so they
+                  // stay under "upcoming" rather than jumping to "past".
+                  const activeStatuses = {
+                    'CONFIRMED',
+                    'CHECKED_IN',
+                    'IN_PROGRESS',
+                  };
                   final appts = _selectedTab == 0
                       ? state.items
-                            .where((a) => a.status == 'CONFIRMED')
+                            .where((a) => activeStatuses.contains(a.status))
                             .toList()
                             .reversed
                             .toList()
                       : state.items
-                            .where((a) => a.status != 'CONFIRMED')
+                            .where((a) => !activeStatuses.contains(a.status))
                             .toList()
                             .reversed
                             .toList();
@@ -166,7 +173,7 @@ class _PatientAppointmentsScreenState
                   return Column(
                     children: [
                       Expanded(
-                        child: appts.isEmpty
+                        child: appts.isEmpty && !state.hasMore
                             ? Center(
                                 child: Text(
                                   'appointments.empty'.tr(),
@@ -181,29 +188,36 @@ class _PatientAppointmentsScreenState
                                   16,
                                   16,
                                 ),
-                                itemCount: appts.length,
+                                // "Load more" is the list's last item (not a
+                                // pinned footer) so the cards get the whole
+                                // screen height and it scrolls with them.
+                                itemCount:
+                                    appts.length + (state.hasMore ? 1 : 0),
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(height: 14),
-                                itemBuilder: (context, i) => _AppointmentCard(
-                                  appt: appts[i],
-                                  isCancelling:
-                                      _cancellingId == appts[i].appointmentId,
-                                  isNavigatingToReschedule:
-                                      _navigatingToReschedule,
-                                  onCancel: () => _cancel(appts[i]),
-                                  onReschedule: () => _reschedule(appts[i]),
-                                  onTap: () => _openDetail(appts[i]),
-                                ),
+                                itemBuilder: (context, i) {
+                                  if (i == appts.length) {
+                                    return _LoadMoreAppointments(
+                                      isLoading: state.isLoadingMore,
+                                      hasError: state.loadMoreFailure != null,
+                                      onLoadMore: () => ref
+                                          .read(myAppointmentsProvider.notifier)
+                                          .loadMore(),
+                                    );
+                                  }
+                                  return _AppointmentCard(
+                                    appt: appts[i],
+                                    isCancelling:
+                                        _cancellingId == appts[i].appointmentId,
+                                    isNavigatingToReschedule:
+                                        _navigatingToReschedule,
+                                    onCancel: () => _cancel(appts[i]),
+                                    onReschedule: () => _reschedule(appts[i]),
+                                    onTap: () => _openDetail(appts[i]),
+                                  );
+                                },
                               ),
                       ),
-                      if (state.hasMore)
-                        _LoadMoreAppointments(
-                          isLoading: state.isLoadingMore,
-                          hasError: state.loadMoreFailure != null,
-                          onLoadMore: () => ref
-                              .read(myAppointmentsProvider.notifier)
-                              .loadMore(),
-                        ),
                     ],
                   );
                 },
@@ -229,9 +243,9 @@ class _LoadMoreAppointments extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+    return Padding(
+      // Bottom room so the last item clears the floating bottom nav bar.
+      padding: const EdgeInsets.only(bottom: 88),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

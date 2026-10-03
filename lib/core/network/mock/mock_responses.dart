@@ -2340,7 +2340,7 @@ List<Map<String, dynamic>> _mockNotificationPreferencesForCurrentUser() {
         'SAFETY_CRITICAL',
         'MARKETING',
       ])
-        for (final channel in const ['PUSH', 'SMS'])
+        for (final channel in const ['PUSH'])
           {
             'tier': tier,
             'channel': channel,

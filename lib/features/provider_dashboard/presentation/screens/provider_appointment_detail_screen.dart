@@ -286,7 +286,10 @@ class _ProviderAppointmentDetailScreenState
     DoctorAppointment appointment,
     ScrollController scrollController,
   ) {
-    final status = doctorAppointmentStatusStyle(appointment.status);
+    final status = doctorAppointmentStatusStyle(
+      appointment.status,
+      statusCode: appointment.statusCode,
+    );
 
     return ListView(
       controller: scrollController,

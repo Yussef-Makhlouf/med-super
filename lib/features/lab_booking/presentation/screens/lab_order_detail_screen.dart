@@ -10,6 +10,7 @@ import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/app_surface_card.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/core/widgets/image_gallery_viewer.dart';
 import 'package:med_super/core/widgets/active_refresh_scope.dart';
 import 'package:med_super/core/widgets/result_file_thumbnail.dart';
 import 'package:med_super/core/widgets/section_header.dart';
@@ -35,6 +36,59 @@ String _resultStateLabel(String resultState) {
       return 'lab_booking.orders.result_state_pending'.tr();
     default:
       return resultState;
+  }
+}
+
+String _collectionLabel(String collectionType) {
+  switch (collectionType) {
+    case 'HOME_COLLECTION':
+      return 'lab_booking.orders.collection_home'.tr();
+    case 'VISIT':
+      return 'lab_booking.orders.collection_visit'.tr();
+    default:
+      return collectionType;
+  }
+}
+
+Object _requestImageHeroTag(String orderId, int index) =>
+    'lab-order-$orderId-request-image-$index';
+
+class _RequestImageThumbnail extends StatelessWidget {
+  const _RequestImageThumbnail({
+    required this.url,
+    required this.heroTag,
+    required this.onTap,
+  });
+
+  final String url;
+  final Object heroTag;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          width: 96,
+          height: 128,
+          child: Hero(
+            tag: heroTag,
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                SolarIconsOutline.gallery,
+                color: AppColors.mutedText2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -155,6 +209,15 @@ class _OrderDetailBody extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (order.collectionType.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${'lab_booking.orders.collection_label'.tr()}: ${_collectionLabel(order.collectionType)}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.ink900,
+                    ),
+                  ),
+                ],
                 if (order.bookingCode != null &&
                     order.bookingCode!.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -172,6 +235,48 @@ class _OrderDetailBody extends StatelessWidget {
             ),
           ),
         ),
+        if (order.requestImages.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              boxShadow: AppShadows.resting,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionHeader(
+                  title: 'lab_booking.orders.request_images_label'.tr(),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 128,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: order.requestImages.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (context, i) => _RequestImageThumbnail(
+                      url: order.requestImages[i].fileUrl,
+                      heroTag: _requestImageHeroTag(order.id, i),
+                      onTap: () => ImageGalleryViewer.open(
+                        context,
+                        imageUrls: [
+                          for (final image in order.requestImages)
+                            image.fileUrl,
+                        ],
+                        initialIndex: i,
+                        heroTagFor: (index) =>
+                            _requestImageHeroTag(order.id, index),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (order.items.isNotEmpty) ...[
           const SizedBox(height: 16),
           Container(
@@ -277,6 +382,20 @@ class _OrderDetailBody extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+        if (order.recollectionRequired) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.errorRed.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+            child: Text(
+              'lab_booking.orders.recollection_notice'.tr(),
+              style: const TextStyle(color: AppColors.errorRed),
             ),
           ),
         ],

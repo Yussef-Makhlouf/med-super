@@ -32,7 +32,9 @@ abstract interface class AppointmentRepository {
     String? note,
   });
 
-  Future<Result<AppointmentHold>> reschedule({
+  /// Moves a confirmed appointment; completes in one step (payment carries over)
+  /// and resolves to the NEW appointment's id.
+  Future<Result<String>> reschedule({
     required String appointmentId,
     required String newSlotId,
   });

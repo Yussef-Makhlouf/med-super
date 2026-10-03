@@ -10,8 +10,9 @@ import 'package:solar_icons/solar_icons.dart';
 
 /// Localized label + colour for an appointment status.
 ({String label, Color color}) doctorAppointmentStatusStyle(
-  DoctorAppointmentStatus status,
-) {
+  DoctorAppointmentStatus status, {
+  String? statusCode,
+}) {
   return switch (status) {
     DoctorAppointmentStatus.confirmed => (
       label: 'provider_dashboard.status.confirmed'.tr(),
@@ -30,7 +31,14 @@ import 'package:solar_icons/solar_icons.dart';
       color: const Color(0xFF10B981),
     ),
     DoctorAppointmentStatus.other => (
-      label: 'provider_dashboard.status.other'.tr(),
+      label: switch (statusCode?.toUpperCase()) {
+        'CHECKED_IN' => 'provider_dashboard.status.checked_in'.tr(),
+        'IN_PROGRESS' => 'provider_dashboard.status.in_progress'.tr(),
+        'NO_SHOW' => 'provider_dashboard.status.no_show'.tr(),
+        'HELD' => 'provider_dashboard.status.held'.tr(),
+        'EXPIRED' => 'provider_dashboard.status.expired'.tr(),
+        _ => 'provider_dashboard.status.other'.tr(),
+      },
       color: AppColors.mutedText2,
     ),
   };
@@ -54,6 +62,16 @@ import 'package:solar_icons/solar_icons.dart';
       label: 'provider_dashboard.visit_status.left'.tr(),
       color: const Color(0xFF059669),
       icon: Icons.check_circle_rounded,
+    ),
+    DoctorVisitStatus.cancelled => (
+      label: 'provider_dashboard.visit_status.cancelled'.tr(),
+      color: const Color(0xFF64748B),
+      icon: Icons.cancel_outlined,
+    ),
+    DoctorVisitStatus.timeExpired => (
+      label: 'provider_dashboard.visit_status.time_expired'.tr(),
+      color: const Color(0xFF64748B),
+      icon: Icons.event_busy_outlined,
     ),
   };
 }
@@ -139,7 +157,10 @@ class ProviderAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lifecycleStatus = doctorAppointmentStatusStyle(appointment.status);
+    final lifecycleStatus = doctorAppointmentStatusStyle(
+      appointment.status,
+      statusCode: appointment.statusCode,
+    );
     final timeRange =
         '${formatAppointmentTime(appointment.startAt)} - ${formatAppointmentTime(appointment.endAt)}';
 

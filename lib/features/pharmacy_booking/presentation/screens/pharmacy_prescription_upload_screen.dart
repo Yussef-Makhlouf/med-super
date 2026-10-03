@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_radii.dart';
+import 'package:med_super/core/utils/request_image_picker.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_nav_icons.dart';
 import 'package:med_super/core/widgets/step_progress_header.dart';
@@ -58,33 +58,15 @@ class _PharmacyPrescriptionUploadScreenState
   }
 
   Future<void> _pickImages() async {
-    FilePickerResult? result;
-    try {
-      result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true,
-        // Bytes (not just a path) are required on every platform: on
-        // Flutter Web there is no real filesystem path to read from later,
-        // and dart:io's File/Image.file don't work there at all.
-        withData: true,
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('errors.image_picker_failed'.tr())),
-      );
-      return;
-    }
-    final files = result?.files ?? const <PlatformFile>[];
-    if (files.isEmpty) return;
+    final selected = await pickRequestImages(
+      context,
+      maxImages: maxPrescriptionImages - ref.read(uploadedPrescriptionImagesProvider).length,
+    );
+    if (selected == null || selected.isEmpty) return;
     final added = ref
         .read(uploadedPrescriptionImagesProvider.notifier)
-        .addImages(
-          files.map(
-            (file) => (path: file.path ?? file.name, bytes: file.bytes),
-          ),
-        );
-    if (!mounted || added >= files.length) return;
+        .addImages(selected);
+    if (!mounted || added >= selected.length) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -380,7 +362,10 @@ class _ImageThumbnail extends StatelessWidget {
             height: size,
             color: AppColors.surfaceMuted,
             child: image.bytes == null
-                ? const Icon(SolarIconsOutline.gallery, color: AppColors.mutedText)
+                ? const Icon(
+                    SolarIconsOutline.gallery,
+                    color: AppColors.mutedText,
+                  )
                 : Image.memory(
                     image.bytes!,
                     width: size,

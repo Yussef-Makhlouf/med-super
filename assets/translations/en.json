@@ -19,9 +19,14 @@
     "or": "or",
     "view_all": "View all",
     "back": "Back",
+    "open": "Open",
     "edit": "Edit",
     "delete": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "image_source": {
+      "camera": "Take a photo",
+      "gallery": "Choose from gallery"
+    }
   },
   "auth": {
     "welcome_intro": "Welcome to MedSuper!",
@@ -274,6 +279,7 @@
     "reschedule_current_slot": "Current time",
     "reschedule_pick_slot": "Pick a new slot",
     "reschedule_submit": "Confirm New Slot",
+    "reschedule_success": "Your appointment was rescheduled",
     "reschedule_unavailable": "Rescheduling isn't available for this appointment from here yet. Please contact the clinic to change your slot.",
     "detail_title": "Appointment details",
     "detail_cancelled_reason": "Cancelled: {}",
@@ -400,6 +406,7 @@
     "validation": "بعض البيانات غير صحيحة. راجعها ثم أعد المحاولة.",
     "rate_limited": "عدد المحاولات كبير خلال وقت قصير. انتظر قليلاً ثم أعد المحاولة.",
     "image_picker_failed": "تعذّر فتح معرض الصور. حاول مرة أخرى.",
+    "camera_access_denied": "Camera access was denied. Allow camera access in device settings and try again.",
     "codes": {
       "UNAUTHENTICATED": "يلزم تسجيل الدخول لإتمام هذا الإجراء.",
       "TOKEN_EXPIRED": "انتهت الجلسة. سجّل الدخول مرة أخرى للمتابعة.",
@@ -517,6 +524,8 @@
     "upload": {
       "title": "Upload lab request",
       "upload_cta": "Tap here to photograph or upload your lab request",
+      "camera_cta": "Take a photo",
+      "gallery_cta": "Choose from gallery",
       "upload_hint": "Make sure the image and details are clear so our medical team can read them easily.",
       "add_image_tooltip": "Add image",
       "remove_image_tooltip": "Remove image",
@@ -577,7 +586,12 @@
       "quote_total_label": "Total",
       "appointment_label": "Appointment",
       "prep_instructions_label": "Preparation instructions",
-      "rejection_label": "Rejection reason"
+      "rejection_label": "Rejection reason",
+      "request_images_label": "Lab request images",
+      "collection_label": "Collection method",
+      "collection_visit": "Visit the lab branch",
+      "collection_home": "Home sample collection",
+      "recollection_notice": "The sample needs to be collected again. Contact the lab to arrange a new time."
     }
   },
   "pharmacy_booking": {
@@ -590,6 +604,8 @@
     "upload": {
       "title": "Upload Prescription",
       "upload_cta": "Tap here to photograph or upload the prescription",
+      "camera_cta": "Take a photo",
+      "gallery_cta": "Choose from gallery",
       "upload_hint": "Make sure the image and details are clear so it's easy to read.",
       "add_image_tooltip": "Add image",
       "remove_image_tooltip": "Remove image",
@@ -1102,6 +1118,11 @@
       "cancelled": "Cancelled",
       "rescheduled": "Rescheduled",
       "completed": "Completed",
+      "checked_in": "Checked in",
+      "in_progress": "In progress",
+      "no_show": "No-show",
+      "held": "On hold",
+      "expired": "Expired",
       "other": "Other"
     },
     "visit_status": {

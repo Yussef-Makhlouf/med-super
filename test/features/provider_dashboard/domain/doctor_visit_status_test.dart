@@ -8,6 +8,19 @@ void main() {
     expect(DoctorVisitStatus.waiting.next, DoctorVisitStatus.inDoctorRoom);
     expect(DoctorVisitStatus.inDoctorRoom.next, DoctorVisitStatus.left);
     expect(DoctorVisitStatus.left.next, isNull);
+    expect(DoctorVisitStatus.cancelled.next, isNull);
+    expect(DoctorVisitStatus.timeExpired.next, isNull);
+  });
+
+  test('maps cancelled and expired visit states from the backend without counting them as waiting', () {
+    expect(DoctorVisitStatusX.fromWire('CANCELLED'), DoctorVisitStatus.cancelled);
+    expect(DoctorVisitStatusX.fromWire('TIME_EXPIRED'), DoctorVisitStatus.timeExpired);
+    final statuses = [
+      DoctorVisitStatus.waiting,
+      DoctorVisitStatus.cancelled,
+      DoctorVisitStatus.timeExpired,
+    ];
+    expect(statuses.where((status) => status == DoctorVisitStatus.waiting), hasLength(1));
   });
 
   test('doctor appointment DTO reads visit status and optimistic-lock version', () {

@@ -90,16 +90,16 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
-  Future<Result<AppointmentHold>> reschedule({
+  Future<Result<String>> reschedule({
     required String appointmentId,
     required String newSlotId,
   }) async {
     try {
-      final dto = await _remote.reschedule(
+      final newAppointmentId = await _remote.reschedule(
         appointmentId: appointmentId,
         newSlotId: newSlotId,
       );
-      return Result.ok(dto.toEntity());
+      return Result.ok(newAppointmentId);
     } catch (e, st) {
       return Result.err(mapDioToFailure(e, st));
     }

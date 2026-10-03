@@ -33,10 +33,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Android SDK 37
-        run: |
-          yes | sdkmanager --licenses >/dev/null
-          sdkmanager 'platform-tools' 'platforms;android-37' 'build-tools;36.0.0'
+      - name: Install Android SDK 37.2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-37.2 build-tools;37.0.0'
 
       - name: Resolve Flutter packages
         run: flutter pub get

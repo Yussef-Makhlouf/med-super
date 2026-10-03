@@ -930,7 +930,10 @@ class _TimelineRowTile extends ConsumerWidget {
 
   Widget _bookedContent(BuildContext context) {
     final appointment = row.appointment!;
-    final lifecycleStatus = doctorAppointmentStatusStyle(appointment.status);
+    final lifecycleStatus = doctorAppointmentStatusStyle(
+      appointment.status,
+      statusCode: appointment.statusCode,
+    );
     return InkWell(
       onTap: () => showProviderAppointmentDetailSheet(
         context,

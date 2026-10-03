@@ -40,6 +40,7 @@ String? notificationDeepLink({
         return '/provider/appointments?openAppointmentId=${Uri.encodeQueryComponent(appointmentId)}';
       }
       return '/provider/appointments';
+    case 'LabOrderRequested':
     case 'LabResultReady':
     case 'CriticalLabResult':
     case 'ProviderLabOrderCreated':

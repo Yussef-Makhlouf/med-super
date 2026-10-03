@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -50,7 +51,7 @@ class _ProviderEditProfileScreenState
   void initState() {
     super.initState();
     _nameController = TextEditingController()..addListener(_markDirty);
-    _emailController = TextEditingController()..addListener(_markDirty);
+    _emailController = TextEditingController();
     _degreeController = TextEditingController()..addListener(_markDirty);
     _experienceController = TextEditingController()..addListener(_markDirty);
     _bioController = TextEditingController()..addListener(_markDirty);
@@ -122,27 +123,6 @@ class _ProviderEditProfileScreenState
       return;
     }
 
-    // Email lives on `User`, not `Doctor` — same shared `PATCH /v1/auth/me`
-    // call the assistant/patient side uses, sent alongside (not instead of)
-    // the doctor-specific update below. `name` is passed through unchanged
-    // since it isn't editable on this screen for a doctor.
-    final emailResult = await ref
-        .read(sessionControllerProvider.notifier)
-        .updateDisplayName(
-          _nameController.text.trim(),
-          email: _emailController.text,
-        );
-    if (!mounted) return;
-    if (emailResult is Err) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ: ${(emailResult as Err).failure.toString()}'),
-        ),
-      );
-      return;
-    }
-
     final useCase = ref.read(updateDoctorAccountUseCaseProvider);
     final result = await useCase.call(
       bio: _bioController.text,
@@ -192,7 +172,9 @@ class _ProviderEditProfileScreenState
             _nameController.text = isAssistant
                 ? (session?.user.displayName ?? account.name)
                 : account.name;
-            _emailController.text = account.email ?? '';
+            _emailController.text = isAssistant
+                ? (session?.user.email ?? account.email ?? '')
+                : (account.email ?? '');
             _degreeController.text = account.degree ?? '';
             _experienceController.text = account.yearsOfExperience == null
                 ? ''
@@ -285,6 +267,13 @@ class _ProviderEditProfileScreenState
                           // endpoint exists on the Doctor record itself.
                           readOnly: !isAssistant,
                         ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'profile.email'.tr(),
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          readOnly: true,
+                        ),
                         if (!isAssistant) ...[
                           const SizedBox(height: 16),
                           AppTextField(
@@ -294,12 +283,6 @@ class _ProviderEditProfileScreenState
                             ),
                             keyboardType: TextInputType.phone,
                             readOnly: true,
-                          ),
-                          const SizedBox(height: 16),
-                          AppTextField(
-                            label: 'البريد الإلكتروني',
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 16),
                           AppTextField(

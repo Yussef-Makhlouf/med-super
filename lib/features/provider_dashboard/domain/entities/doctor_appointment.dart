@@ -19,25 +19,31 @@ enum DoctorAppointmentStatus {
 /// Live, operational clinic-flow state for a confirmed appointment.
 /// Separate from [DoctorAppointmentStatus], which represents the booking
 /// lifecycle rather than where the patient is inside the clinic.
-enum DoctorVisitStatus { waiting, inDoctorRoom, left }
+enum DoctorVisitStatus { waiting, inDoctorRoom, left, cancelled, timeExpired }
 
 extension DoctorVisitStatusX on DoctorVisitStatus {
   String get wireValue => switch (this) {
     DoctorVisitStatus.waiting => 'WAITING',
     DoctorVisitStatus.inDoctorRoom => 'IN_DOCTOR_ROOM',
     DoctorVisitStatus.left => 'LEFT',
+    DoctorVisitStatus.cancelled => 'CANCELLED',
+    DoctorVisitStatus.timeExpired => 'TIME_EXPIRED',
   };
 
   DoctorVisitStatus? get next => switch (this) {
     DoctorVisitStatus.waiting => DoctorVisitStatus.inDoctorRoom,
     DoctorVisitStatus.inDoctorRoom => DoctorVisitStatus.left,
     DoctorVisitStatus.left => null,
+    DoctorVisitStatus.cancelled => null,
+    DoctorVisitStatus.timeExpired => null,
   };
 
   static DoctorVisitStatus fromWire(String? value) =>
       switch (value?.toUpperCase()) {
         'IN_DOCTOR_ROOM' => DoctorVisitStatus.inDoctorRoom,
         'LEFT' => DoctorVisitStatus.left,
+        'CANCELLED' => DoctorVisitStatus.cancelled,
+        'TIME_EXPIRED' => DoctorVisitStatus.timeExpired,
         _ => DoctorVisitStatus.waiting,
       };
 }

@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:med_super/features/provider_dashboard/data/datasources/remote/provider_clinical_requests_remote_datasource.dart';
 import 'package:med_super/features/provider_dashboard/data/models/provider_clinical_request_dto.dart';
+import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 
 void main() {
   test(
@@ -87,6 +90,82 @@ void main() {
       );
 
       expect(requests.single['pharmacyBranchId'], 'branch-1');
+    },
+  );
+
+  test(
+    'uploads a provider referral with the backend multipart field names',
+    () async {
+      RequestOptions? sent;
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              sent = options;
+              handler.resolve(
+                Response<Map<String, dynamic>>(
+                  requestOptions: options,
+                  data: const {
+                    'prescriptionId': 'referral-1',
+                    'status': 'QUALITY_CHECK_PASSED',
+                  },
+                ),
+              );
+            },
+          ),
+        );
+
+      final result = await ProviderClinicalRequestsRemoteDatasource(dio)
+          .uploadClinicalDocument(
+            patientId: 'patient-1',
+            documentType: 'LAB_REFERRAL',
+            images: [
+              PrescriptionImage(
+                id: 'image-1',
+                path: 'referral.png',
+                bytes: Uint8List.fromList([1, 2, 3]),
+              ),
+            ],
+          );
+
+      expect(sent?.path, '/v1/prescriptions/provider/upload');
+      final form = sent?.data as FormData;
+      expect(Map.fromEntries(form.fields)['patientId'], 'patient-1');
+      expect(Map.fromEntries(form.fields)['documentType'], 'LAB_REFERRAL');
+      expect(form.files.single.key, 'files');
+      expect(form.files.single.value.contentType.toString(), 'image/png');
+      expect(result.prescriptionId, 'referral-1');
+    },
+  );
+
+  test(
+    'sends the observed version and reason when a doctor rejects a draft',
+    () async {
+      RequestOptions? sent;
+      final dio = Dio()
+        ..interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              sent = options;
+              handler.resolve(
+                Response<Map<String, dynamic>>(
+                  requestOptions: options,
+                  data: const {},
+                ),
+              );
+            },
+          ),
+        );
+
+      await ProviderClinicalRequestsRemoteDatasource(dio).decidePrescription(
+        id: 'prescription-1',
+        version: 3,
+        approve: false,
+        reason: 'Needs correction',
+      );
+
+      expect(sent?.path, '/v1/prescriptions/provider/prescription-1/reject');
+      expect(sent?.data, {'expectedVersion': 3, 'reason': 'Needs correction'});
     },
   );
 }
