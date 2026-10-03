@@ -407,7 +407,6 @@
     "validation": "بعض البيانات غير صحيحة. راجعها ثم أعد المحاولة.",
     "rate_limited": "عدد المحاولات كبير خلال وقت قصير. انتظر قليلاً ثم أعد المحاولة.",
     "image_picker_failed": "تعذّر فتح معرض الصور. حاول مرة أخرى.",
-    "camera_access_denied": "Camera access was denied. Allow camera access in device settings and try again.",
     "unsupported_image_format": "This image format isn't supported. Choose a JPEG or PNG photo.",
     "codes": {
       "UNAUTHENTICATED": "يلزم تسجيل الدخول لإتمام هذا الإجراء.",
@@ -1120,12 +1119,8 @@
       "cancelled": "Cancelled",
       "rescheduled": "Rescheduled",
       "completed": "Completed",
-      "checked_in": "Checked in",
-      "in_progress": "In progress",
-      "no_show": "No-show",
-      "held": "On hold",
-      "expired": "Expired",
-      "other": "Other"
+      "other": "Other",
+      "no_show": "No-show"
     },
     "visit_status": {
       "title": "Live visit status",

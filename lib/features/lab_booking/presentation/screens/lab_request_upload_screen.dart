@@ -6,7 +6,7 @@ import 'package:med_super/core/theme/app_colors.dart';
 import 'package:med_super/core/theme/app_palette.dart';
 import 'package:med_super/core/theme/app_radii.dart';
 import 'package:med_super/core/theme/app_shadows.dart';
-import 'package:med_super/core/utils/request_image_picker.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/core/widgets/app_button.dart';
 import 'package:med_super/core/widgets/app_icon_tile.dart';
 import 'package:med_super/core/widgets/flow_header.dart';
@@ -38,16 +38,48 @@ class LabRequestUploadScreen extends ConsumerStatefulWidget {
 class _LabRequestUploadScreenState
     extends ConsumerState<LabRequestUploadScreen> {
   Future<void> _pickImages() async {
-    final selected = await pickRequestImages(
-      context,
-      maxImages: maxLabRequestImages - ref.read(uploadedLabRequestImagesProvider).length,
-    );
-    if (selected == null || selected.isEmpty) return;
-    final added = ref.read(uploadedLabRequestImagesProvider.notifier).addImages(selected);
-    if (!mounted || added >= selected.length) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('lab_booking.upload.max_images_reached'.tr(args: ['$maxLabRequestImages']))),
-    );
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        // Bytes (not just a path) are required on every platform: on
+        // Flutter Web there is no real filesystem path to read from later,
+        // and dart:io's File/Image.file don't work there at all.
+        withData: true,
+        // Non-zero asks iOS for its compatible (JPEG) representation and
+        // makes Android re-encode HEIC; the backend accepts JPEG/PNG only.
+        compressionQuality: 90,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('errors.image_picker_failed'.tr()),
+        ),
+      );
+      return;
+    }
+    final picked = result?.files ?? const <PlatformFile>[];
+    final files = picked
+        .where(
+          (file) =>
+              UploadMediaType.sniff(file.bytes ?? const [])?.isImage ?? false,
+        )
+        .toList();
+    if (files.length < picked.length && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('errors.unsupported_image_format'.tr())),
+      );
+    }
+    if (files.isEmpty) return;
+    ref
+        .read(uploadedLabRequestImagesProvider.notifier)
+        .addImages(
+          files.map(
+            (file) => (path: file.path ?? file.name, bytes: file.bytes),
+          ),
+        );
   }
 
   Future<void> _continue() async {
