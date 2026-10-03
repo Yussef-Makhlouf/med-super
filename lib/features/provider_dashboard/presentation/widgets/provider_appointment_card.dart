@@ -29,6 +29,10 @@ import 'package:solar_icons/solar_icons.dart';
       label: 'provider_dashboard.status.completed'.tr(),
       color: const Color(0xFF10B981),
     ),
+    DoctorAppointmentStatus.noShow => (
+      label: 'provider_dashboard.status.no_show'.tr(),
+      color: AppColors.errorRed,
+    ),
     DoctorAppointmentStatus.other => (
       label: 'provider_dashboard.status.other'.tr(),
       color: AppColors.mutedText2,
@@ -54,6 +58,16 @@ import 'package:solar_icons/solar_icons.dart';
       label: 'provider_dashboard.visit_status.left'.tr(),
       color: const Color(0xFF059669),
       icon: Icons.check_circle_rounded,
+    ),
+    DoctorVisitStatus.timeExpired => (
+      label: 'provider_dashboard.visit_status.time_expired'.tr(),
+      color: AppColors.mutedText2,
+      icon: Icons.timer_off_outlined,
+    ),
+    DoctorVisitStatus.cancelled => (
+      label: 'provider_dashboard.visit_status.cancelled'.tr(),
+      color: AppColors.errorRed,
+      icon: Icons.cancel_outlined,
     ),
   };
 }

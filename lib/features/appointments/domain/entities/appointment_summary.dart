@@ -72,7 +72,13 @@ class AppointmentSummary {
   final AppointmentPayment? payment;
 
   /// Drives both cancel and reschedule: only a confirmed appointment whose
-  /// patient hasn't entered the doctor's room yet — the backend rejects both
-  /// with `APPOINTMENT_VISIT_IN_PROGRESS` after that.
-  bool get isCancellable => status == 'CONFIRMED' && visitStatus == 'WAITING';
+  /// patient is still waiting (PM-APPT-02, else `APPOINTMENT_VISIT_IN_PROGRESS`)
+  /// and whose start time has not been reached (PM-APPT-01, else
+  /// `APPOINTMENT_CHANGE_WINDOW_CLOSED`). The backend stays authoritative.
+  bool get isCancellable => isChangeableAt(DateTime.now().toUtc());
+
+  bool isChangeableAt(DateTime nowUtc) =>
+      status == 'CONFIRMED' &&
+      visitStatus == 'WAITING' &&
+      nowUtc.isBefore(startAt);
 }

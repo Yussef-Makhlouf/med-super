@@ -5,6 +5,7 @@ import 'package:med_super/features/appointments/domain/entities/appointment_paym
 import 'package:med_super/features/appointments/domain/entities/appointment_summary.dart';
 import 'package:med_super/features/appointments/domain/entities/confirmed_appointment.dart';
 import 'package:med_super/features/appointments/domain/entities/online_payment_initiation.dart';
+import 'package:med_super/features/appointments/domain/entities/rescheduled_appointment.dart';
 
 abstract interface class AppointmentRepository {
   Future<Result<AppointmentHold>> createHold({
@@ -32,7 +33,7 @@ abstract interface class AppointmentRepository {
     String? note,
   });
 
-  Future<Result<AppointmentHold>> reschedule({
+  Future<Result<RescheduledAppointment>> reschedule({
     required String appointmentId,
     required String newSlotId,
   });

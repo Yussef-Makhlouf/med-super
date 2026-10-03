@@ -1,3 +1,6 @@
+import 'package:med_super/core/utils/iana_zone.dart';
+import 'package:timezone/timezone.dart' as tz;
+
 /// The appointment lifecycle the backend actually persists
 /// (`appointments_status_enum`). `HELD`/`EXPIRED` are pre-confirmation
 /// booking-funnel states — an `Appointment` row is only created at confirm
@@ -13,31 +16,42 @@ enum DoctorAppointmentStatus {
   cancelled,
   rescheduled,
   completed,
+  noShow,
   other,
 }
 
 /// Live, operational clinic-flow state for a confirmed appointment.
 /// Separate from [DoctorAppointmentStatus], which represents the booking
 /// lifecycle rather than where the patient is inside the clinic.
-enum DoctorVisitStatus { waiting, inDoctorRoom, left }
+/// [timeExpired] and [cancelled] are set by the system only (expiry sweep,
+/// cancellation) and are terminal.
+enum DoctorVisitStatus { waiting, inDoctorRoom, left, timeExpired, cancelled }
 
 extension DoctorVisitStatusX on DoctorVisitStatus {
   String get wireValue => switch (this) {
     DoctorVisitStatus.waiting => 'WAITING',
     DoctorVisitStatus.inDoctorRoom => 'IN_DOCTOR_ROOM',
     DoctorVisitStatus.left => 'LEFT',
+    DoctorVisitStatus.timeExpired => 'TIME_EXPIRED',
+    DoctorVisitStatus.cancelled => 'CANCELLED',
   };
 
   DoctorVisitStatus? get next => switch (this) {
     DoctorVisitStatus.waiting => DoctorVisitStatus.inDoctorRoom,
     DoctorVisitStatus.inDoctorRoom => DoctorVisitStatus.left,
     DoctorVisitStatus.left => null,
+    DoctorVisitStatus.timeExpired => null,
+    DoctorVisitStatus.cancelled => null,
   };
 
   static DoctorVisitStatus fromWire(String? value) =>
       switch (value?.toUpperCase()) {
         'IN_DOCTOR_ROOM' => DoctorVisitStatus.inDoctorRoom,
         'LEFT' => DoctorVisitStatus.left,
+        // Previously fell through to `waiting`, which offered "admit" on an
+        // expired or cancelled visit and inflated the waiting-room count.
+        'TIME_EXPIRED' => DoctorVisitStatus.timeExpired,
+        'CANCELLED' => DoctorVisitStatus.cancelled,
         _ => DoctorVisitStatus.waiting,
       };
 }
@@ -50,6 +64,7 @@ extension DoctorAppointmentStatusX on DoctorAppointmentStatus {
     DoctorAppointmentStatus.cancelled => 'CANCELLED',
     DoctorAppointmentStatus.rescheduled => 'RESCHEDULED',
     DoctorAppointmentStatus.completed => 'COMPLETED',
+    DoctorAppointmentStatus.noShow => 'NO_SHOW',
     DoctorAppointmentStatus.other => null,
   };
 
@@ -59,6 +74,7 @@ extension DoctorAppointmentStatusX on DoctorAppointmentStatus {
         'CANCELLED' => DoctorAppointmentStatus.cancelled,
         'RESCHEDULED' => DoctorAppointmentStatus.rescheduled,
         'COMPLETED' => DoctorAppointmentStatus.completed,
+        'NO_SHOW' => DoctorAppointmentStatus.noShow,
         _ => DoctorAppointmentStatus.other,
       };
 }
@@ -179,6 +195,20 @@ class DoctorAppointment {
   /// `APPOINTMENT_VISIT_IN_PROGRESS`.
   bool get canChangeBooking =>
       isActionable && visitStatus == DoctorVisitStatus.waiting;
+
+  /// Whether [nowUtc] falls on this appointment's calendar day in the
+  /// branch's IANA zone (PM-APPT-03 — the backend only lets a visit *start*
+  /// on that day and stays authoritative; this only shapes the UI). An
+  /// unknown zone is treated as "not today", matching the server.
+  bool isOnAppointmentDay(DateTime nowUtc) {
+    final location = ianaLocation(ianaTimezone);
+    if (location == null) return false;
+    final start = tz.TZDateTime.from(startAt, location);
+    final now = tz.TZDateTime.from(nowUtc, location);
+    return start.year == now.year &&
+        start.month == now.month &&
+        start.day == now.day;
+  }
 }
 
 /// One page of the cursor-paginated doctor appointment list.
