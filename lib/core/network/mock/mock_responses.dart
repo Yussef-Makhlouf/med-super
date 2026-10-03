@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:med_super/core/constants/api_paths.dart';
 import 'package:med_super/core/constants/hive_box_names.dart';
+import 'package:med_super/core/utils/iana_zone.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'mock_interceptor.dart';
 
 /// In-memory mock Identity store for Sprint 1 auth flows.
@@ -738,19 +740,26 @@ void registerAvailabilityMocks(MockInterceptor interceptor) {
         (toParam != null ? DateTime.tryParse(toParam) : null) ??
         from.add(const Duration(days: 14));
 
-    // 09:00–16:30 Cairo-local (UTC+2), 30-min slots, next 14 days — a
-    // deterministic mock standing in for real GenerateSlotsUseCase output.
-    const cairoOffset = Duration(hours: 2);
+    // 09:00–16:30 Cairo wall-clock (real IANA rules, so +03:00 in Egyptian
+    // summer time), 30-min slots, next 14 days — a deterministic mock
+    // standing in for real GenerateSlotsUseCase output.
+    final cairo = ianaLocation('Africa/Cairo')!;
     final slots = <Map<String, dynamic>>[];
     for (var dayOffset = 0; dayOffset < 14; dayOffset++) {
-      final dayStartLocal = DateTime.utc(
+      final day = DateTime.utc(
         from.year,
         from.month,
         from.day,
-      ).add(Duration(days: dayOffset)).add(const Duration(hours: 9));
+      ).add(Duration(days: dayOffset));
       for (var i = 0; i < 16; i++) {
-        final startLocal = dayStartLocal.add(Duration(minutes: 30 * i));
-        final startUtc = startLocal.subtract(cairoOffset);
+        final startUtc = tz.TZDateTime(
+          cairo,
+          day.year,
+          day.month,
+          day.day,
+          9 + (30 * i) ~/ 60,
+          (30 * i) % 60,
+        ).toUtc();
         final endUtc = startUtc.add(const Duration(minutes: 30));
         if (startUtc.isBefore(from) || !startUtc.isBefore(to)) continue;
         slots.add({
