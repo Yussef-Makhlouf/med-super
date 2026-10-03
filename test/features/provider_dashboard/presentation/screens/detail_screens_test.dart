@@ -220,7 +220,12 @@ void main() {
     expect(find.text('الزيارة مكتملة'), findsOneWidget);
   });
 
-  testWidgets('a future appointment explains that visit controls are not ready', (tester) async {
+  // Visit transitions are not time-gated on either side (9bd5f7c removed the
+  // client window; the backend never had one). Whether a time window should
+  // exist is an open product decision (PM-APPT-03 in
+  // clinic-reservations/docs/V1_LAUNCH_READINESS.md); this pins current
+  // behavior until it is made.
+  testWidgets('a future appointment still offers the next visit action (no time window)', (tester) async {
     final futureStart = DateTime.now().toUtc().add(const Duration(hours: 2));
     await pumpLocalizedWidget(
       tester,
@@ -235,8 +240,9 @@ void main() {
       ],
     );
 
-    expect(find.text('ستتاح إدارة حالة الزيارة عند اقتراب موعد المريض.'), findsOneWidget);
-    expect(find.text('إدخال المريض للطبيب'), findsNothing);
+    expect(find.text('استخدم الإجراء التالي مع انتقال المريض داخل العيادة.'), findsOneWidget);
+    expect(find.text('ستتاح إدارة حالة الزيارة عند اقتراب موعد المريض.'), findsNothing);
+    expect(find.text('إدخال المريض للطبيب'), findsOneWidget);
   });
 
   testWidgets('ProviderPatientDetailScreen renders patient snapshot', (
