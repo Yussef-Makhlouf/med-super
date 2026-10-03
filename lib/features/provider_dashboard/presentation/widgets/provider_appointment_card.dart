@@ -30,6 +30,10 @@ import 'package:solar_icons/solar_icons.dart';
       label: 'provider_dashboard.status.completed'.tr(),
       color: const Color(0xFF10B981),
     ),
+    DoctorAppointmentStatus.noShow => (
+      label: 'provider_dashboard.status.no_show'.tr(),
+      color: AppColors.errorRed,
+    ),
     DoctorAppointmentStatus.other => (
       label: switch (statusCode?.toUpperCase()) {
         'CHECKED_IN' => 'provider_dashboard.status.checked_in'.tr(),
@@ -63,15 +67,15 @@ import 'package:solar_icons/solar_icons.dart';
       color: const Color(0xFF059669),
       icon: Icons.check_circle_rounded,
     ),
-    DoctorVisitStatus.cancelled => (
-      label: 'provider_dashboard.visit_status.cancelled'.tr(),
-      color: const Color(0xFF64748B),
-      icon: Icons.cancel_outlined,
-    ),
     DoctorVisitStatus.timeExpired => (
       label: 'provider_dashboard.visit_status.time_expired'.tr(),
-      color: const Color(0xFF64748B),
-      icon: Icons.event_busy_outlined,
+      color: AppColors.mutedText2,
+      icon: Icons.timer_off_outlined,
+    ),
+    DoctorVisitStatus.cancelled => (
+      label: 'provider_dashboard.visit_status.cancelled'.tr(),
+      color: AppColors.errorRed,
+      icon: Icons.cancel_outlined,
     ),
   };
 }

@@ -18,10 +18,12 @@ import 'package:med_super/core/network/interceptors/response_envelope_intercepto
 /// Idempotency → (Mock short-circuit, dev only) → Debug logging → Response envelope unwrap → Error
 /// normalization → Safe retry.
 ///
-/// Request-side interceptors run in add-order; error-side interceptors run
-/// in *reverse* add-order (Dio semantics) — so this same list also yields
-/// the error chain Retry → Error → Auth(401 refresh-and-retry, last, as the
-/// final fallback after generic retry has been exhausted).
+/// Dio 5 runs request, response *and* error interceptors in add-order, so the
+/// error chain is Auth (401 refresh-and-replay, first) → Error (normalize to
+/// [ApiException]) → Retry (GET / keyed POST on network error or 5xx). Every
+/// error interceptor must hand on with `handler.next`; `handler.reject`
+/// skips all later error interceptors. Verified by
+/// test/core/network/dio_client_chain_test.dart against the installed Dio.
 ///
 /// Correlation ID / Idempotency / Retry previously only ran when
 /// `!config.isMock`, meaning the default dev mode never exercised this

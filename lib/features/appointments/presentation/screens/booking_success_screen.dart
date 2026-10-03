@@ -10,10 +10,18 @@ import 'package:med_super/features/appointments/domain/entities/booking_request.
 /// synchronous methods (pay-at-clinic/wallet); Fawry never routes here
 /// (see `BookingConfirmScreen._payWithFawry`).
 class BookingSuccessArgs {
-  const BookingSuccessArgs({required this.request, required this.method});
+  const BookingSuccessArgs({required this.request, required this.method})
+    : rescheduled = false;
+
+  /// A completed reschedule: already confirmed, original payment carried
+  /// over, so there is no payment method to describe.
+  const BookingSuccessArgs.rescheduled({required this.request})
+    : method = null,
+      rescheduled = true;
 
   final BookingRequest request;
-  final AppointmentPaymentMethod method;
+  final AppointmentPaymentMethod? method;
+  final bool rescheduled;
 }
 
 class BookingSuccessScreen extends StatelessWidget {
@@ -24,11 +32,16 @@ class BookingSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final request = args.request;
-    final messageKey = args.method == AppointmentPaymentMethod.wallet
+    final messageKey = args.rescheduled
+        ? 'appointments.reschedule_confirmed_message'
+        : args.method == AppointmentPaymentMethod.wallet
         ? 'appointments.booking_confirmed_message_wallet'
         : 'appointments.booking_confirmed_message';
     return SimpleSuccessScreen(
-      title: 'appointments.booking_confirmed'.tr(),
+      title: (args.rescheduled
+              ? 'appointments.reschedule_confirmed'
+              : 'appointments.booking_confirmed')
+          .tr(),
       message: messageKey.tr(args: [request.doctorName, request.timeLabel]),
       primaryActionLabel: 'appointments.view_my_appointments'.tr(),
       onPrimaryAction: () => context.go('/patient/appointments'),

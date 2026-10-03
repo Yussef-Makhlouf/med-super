@@ -1,33 +1,41 @@
 import 'entities/doctor_appointment.dart';
 
-/// Presentation-safe reflection of the backend live-visit timing contract.
+/// Presentation-safe reflection of the backend live-visit contract.
 ///
-/// API timestamps and [now] are compared as UTC instants, never as calendar
-/// dates in the device timezone. The API remains authoritative when this
-/// derived state is stale.
+/// The API remains authoritative when this derived state is stale.
 enum DoctorAppointmentVisitActionAvailability {
   available,
+
+  /// Waiting patient, but today is not the appointment's local day: the
+  /// backend refuses to start the visit (PM-APPT-03).
+  notOnAppointmentDay,
   terminal,
   unavailable,
 }
 
-/// Visit transitions belong to an individual confirmed appointment, not its
-/// scheduled slot time. A short visit or an early arrival must not be blocked
-/// by the calendar. The backend remains authoritative for scope, version, and
-/// valid transition order.
+/// PM-APPT-03 ("B+"): a visit may only be *started* (`WAITING ->
+/// IN_DOCTOR_ROOM`) on the appointment's calendar day in the branch's IANA
+/// zone, so a future-day or old past-day appointment is not changed by
+/// accident. Once started it can always be finished (`-> LEFT`), even after
+/// midnight. Never uses the device timezone.
 class DoctorAppointmentVisitActionPolicy {
   const DoctorAppointmentVisitActionPolicy();
 
   static const standard = DoctorAppointmentVisitActionPolicy();
 
   DoctorAppointmentVisitActionAvailability evaluate(
-    DoctorAppointment appointment,
-  ) {
+    DoctorAppointment appointment, {
+    DateTime? nowUtc,
+  }) {
     if (!appointment.isActionable) {
       return DoctorAppointmentVisitActionAvailability.unavailable;
     }
     if (appointment.visitStatus.next == null) {
       return DoctorAppointmentVisitActionAvailability.terminal;
+    }
+    if (appointment.visitStatus == DoctorVisitStatus.waiting &&
+        !appointment.isOnAppointmentDay(nowUtc ?? DateTime.now().toUtc())) {
+      return DoctorAppointmentVisitActionAvailability.notOnAppointmentDay;
     }
 
     return DoctorAppointmentVisitActionAvailability.available;

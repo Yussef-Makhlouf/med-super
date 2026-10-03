@@ -12,6 +12,7 @@ import 'package:med_super/core/widgets/async_value_view.dart';
 import 'package:med_super/core/widgets/error_banner.dart';
 import 'package:med_super/features/appointments/domain/entities/reschedule_target.dart';
 import 'package:med_super/features/appointments/presentation/controllers/appointment_providers.dart';
+import 'package:med_super/features/appointments/presentation/screens/booking_success_screen.dart';
 import 'package:med_super/features/provider_profile/domain/entities/available_day.dart';
 import 'package:med_super/features/provider_profile/domain/entities/doctor_profile.dart';
 import 'package:med_super/features/provider_profile/presentation/controllers/doctor_availability_providers.dart';
@@ -55,14 +56,26 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     if (!mounted) return;
 
     result.when(
+      // Already confirmed server-side with the original payment carried
+      // over — no hold to confirm, nothing to pay again.
       ok: (_) {
-        // Completed in one step — the payment carried over, so there is no
-        // hold/payment screen. Refresh the list and go back with a message.
         ref.read(myAppointmentsRefreshProvider.notifier).state++;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('appointments.reschedule_success'.tr())),
+        context.pushReplacement(
+          '/patient/home/appointments/success',
+          extra: BookingSuccessArgs.rescheduled(
+            request: BookingRequest(
+              doctorClinicAffiliationId:
+                  widget.target.doctorClinicAffiliationId,
+              slotId: slotId,
+              doctorName: profile.name,
+              specialty: profile.specialty,
+              dayLabel: _selectedDayLabel ?? '',
+              timeLabel: _selectedTimeLabel ?? '',
+              consultationFee: profile.consultationFee,
+              currency: profile.currency,
+            ),
+          ),
         );
-        context.pop();
       },
       err: (failure) => setState(() {
         _submitting = false;

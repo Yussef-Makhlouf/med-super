@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:med_super/core/constants/api_paths.dart';
+import 'package:med_super/core/utils/upload_media_type.dart';
 import 'package:med_super/features/pharmacy_booking/data/models/prescription_upload_dto.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_image.dart';
 import 'package:med_super/features/pharmacy_booking/domain/entities/prescription_upload_result.dart';
@@ -24,12 +24,10 @@ class PrescriptionRemoteDatasource {
             (image) => MultipartFile.fromBytes(
               image.bytes!,
               filename: image.path,
-              // Without an explicit content type, Dio defaults to
-              // `application/octet-stream` — the backend's
-              // `assertValidMediaFiles` allowlists only jpeg/png/pdf
-              // (`MEDIA_CONSTANTS.DOCUMENT_MIME_TYPES`) and rejects anything
-              // else with `400 UNSUPPORTED_FILE_TYPE`.
-              contentType: _mimeTypeFor(image.path),
+              // Labelled from the bytes, not the name: the backend checks
+              // the content against the declared type (jpeg/png/pdf only),
+              // and Dio would otherwise send `application/octet-stream`.
+              contentType: UploadMediaType.forUpload(image.bytes!, image.path),
             ),
           )
           .toList(),
@@ -65,7 +63,7 @@ class PrescriptionRemoteDatasource {
             (image) => MultipartFile.fromBytes(
               image.bytes!,
               filename: image.path,
-              contentType: _mimeTypeFor(image.path),
+              contentType: UploadMediaType.forUpload(image.bytes!, image.path),
             ),
           )
           .toList(growable: false),
@@ -77,21 +75,5 @@ class PrescriptionRemoteDatasource {
     return PrescriptionUploadDto.fromJson(
       response.data ?? const <String, dynamic>{},
     ).toEntity();
-  }
-
-  /// Maps a picked file's extension to one of the backend's exact allowed
-  /// MIME types (`MEDIA_CONSTANTS.DOCUMENT_MIME_TYPES`: jpeg/png/pdf) — the
-  /// image picker only offers `FileType.image`, so `.jpg`/`.jpeg`/`.png` are
-  /// the only extensions expected in practice; anything else falls back to
-  /// `image/jpeg` rather than leaving the content type unset (which Dio
-  /// would otherwise default to `application/octet-stream`, always rejected
-  /// by `assertValidMediaFiles`).
-  static MediaType _mimeTypeFor(String path) {
-    final ext = path.toLowerCase().split('.').last;
-    return switch (ext) {
-      'png' => MediaType('image', 'png'),
-      'pdf' => MediaType('application', 'pdf'),
-      _ => MediaType('image', 'jpeg'),
-    };
   }
 }
