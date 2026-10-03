@@ -1139,9 +1139,9 @@
       "complete": "Visit complete",
       "updated": "Visit status updated.",
       "booking_locked": "This appointment can’t be cancelled or rescheduled after the patient visit has started.",
-      "available_near_time": "Visit controls will become available near the appointment time.",
-      "too_early": "The visit status cannot be changed before the allowed appointment time.",
-      "outside_window": "Visit status can only be changed during the appointment window."
+      "only_on_appointment_day": "The visit can only be started on the appointment day.",
+      "time_expired": "Time expired",
+      "cancelled": "Cancelled"
     },
     "cancel": {
       "action": "Cancel appointment",

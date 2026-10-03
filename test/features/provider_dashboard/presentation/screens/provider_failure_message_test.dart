@@ -31,23 +31,9 @@ void main() {
     await pumpLocalizedWidget(
       tester,
       const _FailureMessage(
-        Failure.validation({}, code: 'VISIT_STATUS_TOO_EARLY'),
+        Failure.validation({}, code: 'VISIT_STATUS_OUTSIDE_APPOINTMENT_DAY'),
       ),
     );
-    expect(
-      find.text('لا يمكن تغيير حالة الزيارة قبل موعد المريض المسموح به.'),
-      findsOneWidget,
-    );
-
-    await pumpLocalizedWidget(
-      tester,
-      const _FailureMessage(
-        Failure.validation({}, code: 'VISIT_STATUS_OUTSIDE_APPOINTMENT_WINDOW'),
-      ),
-    );
-    expect(
-      find.text('تغيير حالة الزيارة متاح فقط خلال وقت الموعد المحدد.'),
-      findsOneWidget,
-    );
+    expect(find.text('يمكن بدء الزيارة في يوم الموعد فقط.'), findsOneWidget);
   });
 }

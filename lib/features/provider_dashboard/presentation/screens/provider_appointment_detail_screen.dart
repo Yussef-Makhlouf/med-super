@@ -7,6 +7,7 @@ import 'package:med_super/core/theme/app_shadows.dart';
 import 'package:med_super/core/theme/color_schemes.dart';
 import 'package:med_super/core/widgets/app_badge.dart';
 import 'package:med_super/core/widgets/async_value_view.dart';
+import 'package:med_super/features/auth/presentation/controllers/session_provider.dart';
 import 'package:med_super/features/provider_dashboard/domain/entities/doctor_appointment.dart';
 import 'package:med_super/features/provider_dashboard/domain/doctor_appointment_visit_action_policy.dart';
 import 'package:med_super/features/provider_dashboard/presentation/controllers/doctor_open_slots_provider.dart';
@@ -63,6 +64,10 @@ class ProviderAppointmentDetailScreen extends ConsumerStatefulWidget {
 
 class _ProviderAppointmentDetailScreenState
     extends ConsumerState<ProviderAppointmentDetailScreen> {
+  bool get _isAssistant =>
+      ref.watch(sessionControllerProvider).asData?.value?.user.isAssistant ??
+      false;
+
   bool _mutating = false;
   bool _changed = false;
   DoctorAppointment? _visitOverride;
@@ -408,30 +413,34 @@ class _ProviderAppointmentDetailScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SizedBox(
-                  height: 54,
-                  child: TextButton.icon(
-                    onPressed: _mutating ? null : () => _cancel(appointment),
-                    icon: const Icon(SolarIconsOutline.closeCircle, size: 18),
-                    label: Text(
-                      'provider_dashboard.cancel.action'.tr(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.errorRed,
-                      backgroundColor: AppColors.errorRed.withValues(
-                        alpha: 0.045,
+              // PM-APPT-05: provider-side cancellation is doctor-only in V1;
+              // the backend refuses an assistant independently.
+              if (!_isAssistant) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 54,
+                    child: TextButton.icon(
+                      onPressed: _mutating ? null : () => _cancel(appointment),
+                      icon: const Icon(SolarIconsOutline.closeCircle, size: 18),
+                      label: Text(
+                        'provider_dashboard.cancel.action'.tr(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(17),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.errorRed,
+                        backgroundColor: AppColors.errorRed.withValues(
+                          alpha: 0.045,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(17),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -521,6 +530,8 @@ class _ProviderAppointmentDetailScreenState
     final hint = switch (availability) {
       DoctorAppointmentVisitActionAvailability.available =>
         'provider_dashboard.visit_status.next_hint'.tr(),
+      DoctorAppointmentVisitActionAvailability.notOnAppointmentDay =>
+        'provider_dashboard.visit_status.only_on_appointment_day'.tr(),
       DoctorAppointmentVisitActionAvailability.terminal =>
         'provider_dashboard.visit_status.complete_hint'.tr(),
       DoctorAppointmentVisitActionAvailability.unavailable =>

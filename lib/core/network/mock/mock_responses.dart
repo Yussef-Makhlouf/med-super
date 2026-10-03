@@ -804,6 +804,26 @@ class _MockHold {
   String? lockedPaymentAmount;
 }
 
+/// Availability mock slot ids end in their UTC start (`<branch>-<ISO>`), so a
+/// booking can carry the real slot time — the patient start-time cutoff
+/// (PM-APPT-01) then behaves as it does against the backend. Unknown ids fall
+/// back to "tomorrow" so mock bookings stay changeable.
+DateTime _mockSlotStart(String slotId) {
+  final iso = RegExp(r'(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)$').firstMatch(slotId);
+  return (iso == null ? null : DateTime.tryParse(iso.group(1)!))?.toUtc() ??
+      DateTime.now().toUtc().add(const Duration(days: 1));
+}
+
+/// PM-APPT-01, mirrored from the backend for patient cancel/reschedule.
+Map<String, dynamic>? _mockPatientChangeWindowClosed(_MockAppointment a) =>
+    DateTime.now().toUtc().isBefore(a.startAt)
+    ? null
+    : _error(
+        422,
+        'APPOINTMENT_CHANGE_WINDOW_CLOSED',
+        'لا يمكن إلغاء الموعد أو تغييره بعد بدء موعده.',
+      );
+
 class _MockAppointment {
   _MockAppointment({
     required this.slotId,
@@ -958,14 +978,14 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
     }
 
     _mockHolds.remove(holdId);
-    final now = DateTime.now().toUtc();
     _mockAppointmentSeq++;
     final appointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    final startAt = _mockSlotStart(hold.slotId);
     _mockAppointments[appointmentId] = _MockAppointment(
       slotId: hold.slotId,
       doctorClinicAffiliationId: hold.doctorClinicAffiliationId,
-      startAt: now,
-      endAt: now.add(const Duration(minutes: 20)),
+      startAt: startAt,
+      endAt: startAt.add(const Duration(minutes: 20)),
     );
 
     return {
@@ -990,6 +1010,8 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'لا يمكن إلغاء هذا الموعد إلا وهو مؤكّد.',
       );
     }
+    final windowClosed = _mockPatientChangeWindowClosed(appointment);
+    if (windowClosed != null) return windowClosed;
 
     final body = _body(options) ?? {};
     appointment.status = 'CANCELLED';
@@ -1018,6 +1040,8 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
         'لا يمكن تغيير هذا الموعد إلا وهو مؤكّد.',
       );
     }
+    final rescheduleWindowClosed = _mockPatientChangeWindowClosed(appointment);
+    if (rescheduleWindowClosed != null) return rescheduleWindowClosed;
 
     final body = _body(options) ?? {};
     final newSlotId = body['newSlotId'] as String?;
@@ -1028,14 +1052,14 @@ void registerAppointmentMocks(MockInterceptor interceptor) {
     // Mirrors the backend's one-step reschedule: the old appointment becomes
     // RESCHEDULED and a new CONFIRMED one carries the original payment over.
     appointment.status = 'RESCHEDULED';
-    final now = DateTime.now().toUtc();
     _mockAppointmentSeq++;
     final newAppointmentId = 'mock-appointment-$_mockAppointmentSeq';
+    final newStartAt = _mockSlotStart(newSlotId);
     _mockAppointments[newAppointmentId] = _MockAppointment(
       slotId: newSlotId,
       doctorClinicAffiliationId: appointment.doctorClinicAffiliationId,
-      startAt: now,
-      endAt: now.add(const Duration(minutes: 20)),
+      startAt: newStartAt,
+      endAt: newStartAt.add(const Duration(minutes: 20)),
       rescheduledFromAppointmentId: appointmentId,
     );
 
@@ -3017,8 +3041,28 @@ void registerProviderDashboardMocks(MockInterceptor interceptor) {
         'يجب تحديث حالة الزيارة بالترتيب.',
       );
     }
+    // PM-APPT-03, mirrored: start the visit only on the appointment's day in
+    // the branch zone; finishing an active visit is always allowed.
+    if (requested == 'IN_DOCTOR_ROOM') {
+      final zone = ianaLocation(appointment['ianaTimezone'] as String?);
+      final start = DateTime.tryParse(appointment['startAt'] as String? ?? '');
+      final sameDay = zone != null && start != null && () {
+        final a = tz.TZDateTime.from(start, zone);
+        final b = tz.TZDateTime.from(DateTime.now().toUtc(), zone);
+        return a.year == b.year && a.month == b.month && a.day == b.day;
+      }();
+      if (!sameDay) {
+        return _error(
+          422,
+          'VISIT_STATUS_OUTSIDE_APPOINTMENT_DAY',
+          'يمكن بدء الزيارة في يوم الموعد فقط.',
+        );
+      }
+    }
 
     appointment['visitStatus'] = requested;
+    // PM-APPT-04, mirrored: LEFT completes the appointment.
+    if (requested == 'LEFT') appointment['status'] = 'COMPLETED';
     appointment['version'] = currentVersion + 1;
     _mockProviderDashboardStore.appointments[index] = appointment;
     _mockProviderDashboardStore.persistAppointments();
